@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadState, mutate, publicUser } from './lib/store.mjs';
-import { FLOORS, INITIAL_BANKROLL, STAKE_TIERS, stakeTierFor } from './lib/constants.mjs';
+import { FLOORS, INITIAL_BANKROLL, STAKE_TIERS } from './lib/constants.mjs';
+import { validateStakeAgainstFloor } from './lib/stakes.mjs';
 import { autoRecharge, floorsFor, lockBet, increaseBetLock, ranking, rechargeStatus, requestRecharge, reviewRecharge, settleHouseGame, settleLockedHouseGame, totalBalance, addLedger } from './lib/economy.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
 
@@ -21,13 +22,7 @@ function actorId(req){return req.headers['x-player-id']||'hanseo';}
 function getUser(state,req){const u=state.users[actorId(req)];if(!u)throw new Error('USER_NOT_FOUND');return u;}
 function floorBySlug(slug){return FLOORS.find(f=>f.slug===slug)||FLOORS[1];}
 function validateStake(user,floorSlug,stake){
-  const floor=floorBySlug(floorSlug);
-  if(!user.account.unlockedFloors.includes(floor.slug)) throw new Error('FLOOR_LOCKED');
-  if(!Number.isSafeInteger(stake)||stake<floor.minBet||stake>floor.maxBet) throw new Error('BET_OUTSIDE_TABLE_LIMIT');
-  const tier=stakeTierFor(stake);
-  if(!tier||!floor.stakeTiers.includes(tier.slug)) throw new Error('STAKE_TIER_NOT_ALLOWED');
-  if(user.account.available<stake) throw new Error('INSUFFICIENT_BANKROLL');
-  return {floor,tier};
+  return validateStakeAgainstFloor(user,floorBySlug(floorSlug),stake);
 }
 function summarize(state,user){
   const ledger=state.ledger.filter(x=>x.userId===user.id).slice(-50).reverse();

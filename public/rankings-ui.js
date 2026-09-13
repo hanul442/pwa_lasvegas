@@ -86,7 +86,7 @@ function surfaceHtml(state) {
     : model.view === 'vip'
       ? vipSurface(model)
       : allTimeSurface(model, state.user.id);
-  return `<section id="ranking-surfaces" class="ranking-surfaces"><div class="ranking-tabs" role="tablist" aria-label="Ranking view"><button type="button" data-ranking-view="allTime" class="${model.view === 'allTime' ? 'active' : ''}">ALL-TIME</button><button type="button" data-ranking-view="season" class="${model.view === 'season' ? 'active' : ''}" ${model.seasonAvailable ? '' : 'disabled'}>SEASON${model.seasonAvailable ? '' : ' · SOON'}</button><button type="button" data-ranking-view="vip" class="${model.view === 'vip' ? 'active' : ''}">VIP RECORDS</button></div>${content}<p class="ranking-disclaimer">CH is fictional game currency. It has no cash value and cannot be deposited, withdrawn, or cashed out.</p></section>`;
+  return `<section id="ranking-surfaces" class="ranking-surfaces" data-view="${model.view}"><div class="ranking-tabs" role="tablist" aria-label="Ranking view"><button type="button" data-ranking-view="allTime" class="${model.view === 'allTime' ? 'active' : ''}">ALL-TIME</button><button type="button" data-ranking-view="season" class="${model.view === 'season' ? 'active' : ''}" ${model.seasonAvailable ? '' : 'disabled'}>SEASON${model.seasonAvailable ? '' : ' · SOON'}</button><button type="button" data-ranking-view="vip" class="${model.view === 'vip' ? 'active' : ''}">VIP RECORDS</button></div>${content}<p class="ranking-disclaimer">CH is fictional game currency. It has no cash value and cannot be deposited, withdrawn, or cashed out.</p></section>`;
 }
 
 async function fetchState() {
@@ -102,6 +102,8 @@ async function decorateRankings() {
   const content = document.querySelector('.content');
   const heading = content?.querySelector('.head h1');
   if (!content || heading?.textContent?.trim() !== 'Rankings') return;
+  const existing = content.querySelector('#ranking-surfaces');
+  if (existing?.dataset.view === rankingView) return;
   decorating = true;
   try {
     const state = await fetchState();

@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadState, mutate, publicUser } from './lib/store.mjs';
-import { FLOORS, INITIAL_BANKROLL } from './lib/constants.mjs';
+import { FLOORS, INITIAL_BANKROLL, STAKE_TIERS, stakeTierFor } from './lib/constants.mjs';
 import { autoRecharge, floorsFor, lockBet, increaseBetLock, ranking, rechargeStatus, requestRecharge, reviewRecharge, settleHouseGame, settleLockedHouseGame, totalBalance, addLedger } from './lib/economy.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
 
@@ -24,8 +24,10 @@ function validateStake(user,floorSlug,stake){
   const floor=floorBySlug(floorSlug);
   if(!user.account.unlockedFloors.includes(floor.slug)) throw new Error('FLOOR_LOCKED');
   if(!Number.isSafeInteger(stake)||stake<floor.minBet||stake>floor.maxBet) throw new Error('BET_OUTSIDE_TABLE_LIMIT');
+  const tier=stakeTierFor(stake);
+  if(!tier||!floor.stakeTiers.includes(tier.slug)) throw new Error('STAKE_TIER_NOT_ALLOWED');
   if(user.account.available<stake) throw new Error('INSUFFICIENT_BANKROLL');
-  return floor;
+  return {floor,tier};
 }
 function summarize(state,user){
   const ledger=state.ledger.filter(x=>x.userId===user.id).slice(-50).reverse();
@@ -35,6 +37,7 @@ function summarize(state,user){
     user:publicUser(user),
     users:Object.values(state.users).map(publicUser),
     floors:floorsFor(user),
+    stakeTiers:STAKE_TIERS.map(tier=>({...tier})),
     rankings:{wealth:ranking(state,'wealth'),profit:ranking(state,'profit'),highRoller:ranking(state,'high-roller')},
     recharge:rechargeStatus(user),
     rechargeRequests:requests,
@@ -100,7 +103,7 @@ async function api(req,res,url){
       const out=await mutate(state=>{const u=getUser(state,req);state.ledger=state.ledger.filter(x=>x.userId!==u.id);state.rounds=state.rounds.filter(r=>r.userId!==u.id);state.rechargeRequests=state.rechargeRequests.filter(r=>r.userId!==u.id);u.account={available:0,locked:0,rawPnl:0,qualifiedPnl:0,totalWagered:0,peakBankroll:0,progressionValue:0,unlockedFloors:[]};u.recharge={lastAt:null,dailyDate:new Date().toISOString().slice(0,10),dailyCount:0,total:0};u.stats={};u.bankruptcies=[];addLedger(state,u,{type:'INITIAL_GRANT',amount:INITIAL_BANKROLL,referenceType:'DEV_RESET'});u.account.unlockedFloors=['downtown','strip'];return summarize(state,u);});return json(res,200,out);
     }
     return error(res,404,'NOT_FOUND');
-  }catch(e){const map={FORBIDDEN:403,USER_NOT_FOUND:404,ROUND_NOT_FOUND:404,REQUEST_NOT_FOUND:404,INSUFFICIENT_BANKROLL:409,FLOOR_LOCKED:403,BET_OUTSIDE_TABLE_LIMIT:400,RECHARGE_NOT_AVAILABLE:409,PENDING_REQUEST_EXISTS:409,OPEN_BLACKJACK_ROUND:409};return error(res,map[e.message]||400,e.message||'BAD_REQUEST');}
+  }catch(e){const map={FORBIDDEN:403,USER_NOT_FOUND:404,ROUND_NOT_FOUND:404,REQUEST_NOT_FOUND:404,INSUFFICIENT_BANKROLL:409,FLOOR_LOCKED:403,BET_OUTSIDE_TABLE_LIMIT:400,STAKE_TIER_NOT_ALLOWED:400,RECHARGE_NOT_AVAILABLE:409,PENDING_REQUEST_EXISTS:409,OPEN_BLACKJACK_ROUND:409};return error(res,map[e.message]||400,e.message||'BAD_REQUEST');}
 }
 
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'social-vegas-shell-v1';
+const CACHE_NAME = 'social-vegas-shell-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -7,7 +7,11 @@ const APP_SHELL = [
   '/manifest.webmanifest',
   '/offline.html',
   '/icons/icon.svg',
-  '/icons/maskable.svg'
+  '/icons/maskable.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/maskable-512.png',
+  '/robots.txt'
 ];
 
 self.addEventListener('install', event => {

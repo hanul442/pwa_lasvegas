@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { loadState, mutate, publicUser } from './lib/store.mjs';
 import { FLOORS, INITIAL_BANKROLL, STAKE_TIERS } from './lib/constants.mjs';
 import { validateStakeAgainstFloor } from './lib/stakes.mjs';
-import { autoRecharge, floorsFor, lockBet, increaseBetLock, ranking, rechargeStatus, requestRecharge, reviewRecharge, settleHouseGame, settleLockedHouseGame, totalBalance, addLedger } from './lib/economy.mjs';
+import { autoRecharge, floorsFor, lockBet, increaseBetLock, rechargeStatus, requestRecharge, reviewRecharge, settleHouseGame, settleLockedHouseGame, totalBalance, addLedger } from './lib/economy.mjs';
+import { buildRankingSnapshot } from './lib/rankings.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -33,7 +34,7 @@ function summarize(state,user){
     users:Object.values(state.users).map(publicUser),
     floors:floorsFor(user),
     stakeTiers:STAKE_TIERS.map(tier=>({...tier})),
-    rankings:{wealth:ranking(state,'wealth'),profit:ranking(state,'profit'),highRoller:ranking(state,'high-roller')},
+    rankings:buildRankingSnapshot(state),
     recharge:rechargeStatus(user),
     rechargeRequests:requests,
     adminRequests:user.isAdmin?state.rechargeRequests.filter(r=>r.status==='PENDING').map(r=>({...r,nickname:state.users[r.userId]?.nickname})):[],

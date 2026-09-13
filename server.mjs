@@ -7,6 +7,7 @@ import { FLOORS, INITIAL_BANKROLL, STAKE_TIERS } from './lib/constants.mjs';
 import { validateStakeAgainstFloor } from './lib/stakes.mjs';
 import { autoRecharge, floorsFor, lockBet, increaseBetLock, rechargeStatus, requestRecharge, reviewRecharge, settleHouseGame, settleLockedHouseGame, totalBalance, addLedger } from './lib/economy.mjs';
 import { buildRankingSnapshot } from './lib/rankings.mjs';
+import { buildSocialCompetitionSnapshot } from './lib/social-competition.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +36,7 @@ function summarize(state,user){
     floors:floorsFor(user),
     stakeTiers:STAKE_TIERS.map(tier=>({...tier})),
     rankings:buildRankingSnapshot(state),
+    socialCompetition:buildSocialCompetitionSnapshot(state,user.id),
     recharge:rechargeStatus(user),
     rechargeRequests:requests,
     adminRequests:user.isAdmin?state.rechargeRequests.filter(r=>r.status==='PENDING').map(r=>({...r,nickname:state.users[r.userId]?.nickname})):[],

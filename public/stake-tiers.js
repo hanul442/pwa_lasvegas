@@ -1,13 +1,15 @@
-export const STAKE_TIER_BANDS = [
-  { slug: 'low', name: 'LOW', minBet: 100_000, maxBet: 999_999 },
-  { slug: 'mid', name: 'MID', minBet: 1_000_000, maxBet: 9_999_999 },
-  { slug: 'high', name: 'HIGH', minBet: 10_000_000, maxBet: 49_999_999 },
-  { slug: 'vip', name: 'VIP', minBet: 50_000_000, maxBet: Number.MAX_SAFE_INTEGER }
-];
+let stakeTierBands = [];
 
-export function stakeTierForUi(stake) {
+export function setStakeTierBands(bands = []) {
+  stakeTierBands = Array.isArray(bands)
+    ? bands.filter(tier => tier && typeof tier.slug === 'string' && Number.isSafeInteger(tier.minBet) && Number.isSafeInteger(tier.maxBet))
+    : [];
+  return stakeTierBands;
+}
+
+export function stakeTierForUi(stake, bands = stakeTierBands) {
   if (!Number.isSafeInteger(stake) || stake <= 0) return null;
-  return STAKE_TIER_BANDS.find(tier => stake >= tier.minBet && stake <= tier.maxBet) ?? null;
+  return bands.find(tier => stake >= tier.minBet && stake <= tier.maxBet) ?? null;
 }
 
 function tierLabel(slugs = []) {
@@ -25,10 +27,10 @@ function setText(node, text) {
   if (node && node.textContent !== text) node.textContent = text;
 }
 
-function decorateBets() {
+function decorateBets(bands) {
   const buttons = [...document.querySelectorAll('[data-bet]')];
   for (const button of buttons) {
-    const tier = stakeTierForUi(Number(button.dataset.bet));
+    const tier = stakeTierForUi(Number(button.dataset.bet), bands);
     if (!tier) continue;
     let tag = button.querySelector('.stake-tier-chip');
     if (!tag) {
@@ -42,7 +44,7 @@ function decorateBets() {
   const active = buttons.find(button => button.classList.contains('on'));
   const chips = active?.closest('.chips');
   if (!active || !chips) return;
-  const tier = stakeTierForUi(Number(active.dataset.bet));
+  const tier = stakeTierForUi(Number(active.dataset.bet), bands);
   if (!tier) return;
   let current = chips.previousElementSibling;
   if (!current?.classList.contains('stake-tier-current')) {
@@ -90,10 +92,11 @@ let scheduled = false;
 async function decorate() {
   try {
     const latestState = await fetchState();
+    const bands = setStakeTierBands(latestState.stakeTiers);
     decorateFloors(latestState);
-    decorateBets();
+    decorateBets(bands);
   } catch {
-    decorateBets();
+    // Fail closed: tier labels are metadata, so do not invent local boundaries when API state is unavailable.
   }
 }
 

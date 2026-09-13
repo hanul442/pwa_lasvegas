@@ -1,4 +1,4 @@
-const CACHE_NAME = 'social-vegas-shell-v2';
+const CACHE_NAME = 'social-vegas-shell-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -8,9 +8,6 @@ const APP_SHELL = [
   '/offline.html',
   '/icons/icon.svg',
   '/icons/maskable.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/maskable-512.png',
   '/robots.txt'
 ];
 

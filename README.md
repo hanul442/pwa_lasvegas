@@ -2,6 +2,12 @@
 
 A fictional-chip social table-game project. **CH has no real-world monetary value and cannot be purchased, withdrawn, exchanged, or redeemed for prizes.**
 
+## Live preview
+
+- Railway HTTPS: https://social-vegas-web-production.up.railway.app
+- GitHub: https://github.com/hanul442/pwa_lasvegas
+- Current deployment is a **preview build**. Supabase Auth is not connected yet, so do not treat demo player switching as production identity.
+
 ## PWA readiness
 
 The web client includes a Web App Manifest, service worker, standalone display metadata, install prompt hook and offline app shell. Authoritative `/api/*` game/economy responses are intentionally never cached. Game play and CH mutations still require an online server connection.
@@ -40,7 +46,6 @@ Open `http://localhost:3000`.
 
 ```bash
 npm test
-npm run verify
 ```
 
 ## Architecture notes
@@ -58,4 +63,4 @@ Economy invariants:
 
 ## Production next step
 
-Use `hanul442/pwa_lasvegas` as the dedicated GitHub repository, then create a dedicated Supabase project, apply the migration, replace the JSON store with Postgres transactions, add Supabase Auth, then deploy the Node service to Railway. Do not reuse the Black Oracle database or Railway service.
+Railway deployment is live. Next, create a dedicated Supabase project, apply the migration, replace the JSON store with Postgres transactions and add Supabase Auth before sharing the app as a real friends-only service. Do not reuse the Black Oracle database or Railway service.

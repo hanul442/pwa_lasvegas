@@ -1,10 +1,12 @@
-const CACHE_NAME = 'social-vegas-shell-v6';
+const CACHE_NAME = 'social-vegas-shell-v7';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
   '/game-stability.js',
+  '/baccarat-trace.js',
+  '/baccarat-trace.css',
   '/blackjack-v2.css',
   '/blackjack-stability.css',
   '/blackjack-v2.js',
@@ -34,7 +36,6 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // Never cache authoritative game/economy API responses.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(request));
     return;

@@ -1,0 +1,35 @@
+/* Stabilization overrides for the multi-spot Blackjack table. */
+.bjv2-overlay{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+}
+.bjv2-shell{min-width:0}
+.bjv2-card{animation:none!important}
+.bjv2-card.deal{
+  animation:bjv2-deal .42s cubic-bezier(.2,.85,.25,1.2) both!important;
+  animation-delay:calc(var(--deal) * 55ms)!important;
+}
+.bjv2-notice{
+  margin:12px 18px 0;
+  padding:10px 12px;
+  border:1px solid rgba(229,187,99,.28);
+  border-radius:12px;
+  background:rgba(229,187,99,.07);
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  font-size:9px;
+}
+.bjv2-notice b{font-size:8px;letter-spacing:.14em;color:#f2dca7}
+.bjv2-notice span{color:#c3b9a8;line-height:1.45}
+.bjv2-notice.error{border-color:rgba(239,91,98,.4);background:rgba(239,91,98,.07)}
+.bjv2-notice.error b{color:#ff9aa1}
+@media(max-width:760px){
+  .bjv2-notice{margin:10px 10px 0}
+  .bjv2-overlay{scrollbar-gutter:stable}
+}
+@media(prefers-reduced-motion:reduce){
+  .bjv2-card.deal{animation:none!important}
+}

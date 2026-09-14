@@ -36,6 +36,11 @@ jobs:
           node --check public/casino-audio.js
           node --check public/sw.js
 
+      - name: Syntax check deployment tooling
+        run: |
+          node --check lib/deployment-provenance.mjs
+          node --check scripts/smoke-deployment.mjs
+
       - name: Run tests
         run: npm test
 

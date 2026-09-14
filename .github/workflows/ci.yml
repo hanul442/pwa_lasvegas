@@ -26,6 +26,12 @@ jobs:
       - name: Syntax check server
         run: node --check server.mjs
 
+      - name: Syntax check browser modules
+        run: |
+          node --check public/app.js
+          node --check public/blackjack-v2.js
+          node --check public/casino-audio.js
+
       - name: Run tests
         run: npm test
 

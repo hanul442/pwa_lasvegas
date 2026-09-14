@@ -10,6 +10,7 @@ import { buildRankingSnapshot } from './lib/rankings.mjs';
 import { activeHybridSeason } from './lib/seasons.mjs';
 import { buildSocialCompetitionSnapshot, createRival, archiveRival, createChallenge, acceptChallenge, cancelChallenge } from './lib/social-competition.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
+import { startBlackjackV2, blackjackV2Action, blackjackV2ActionCost, blackjackV2Public, settleBlackjackV2 } from './lib/blackjack-v2.mjs';
 import { buildInfo } from './lib/build-info.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -80,6 +81,32 @@ async function api(req,res,url){
     }
     if(url.pathname.startsWith('/api/admin/recharge/')&&req.method==='POST'){
       const requestId=url.pathname.split('/').pop();const b=await body(req);const out=await mutate(state=>{const admin=getUser(state,req);const request=reviewRecharge(state,admin,requestId,b.decision,b.approvedAmount?Number(b.approvedAmount):null);return {request,state:summarize(state,admin)};});return json(res,200,out);
+    }
+    if(url.pathname==='/api/blackjack/v2/start'&&req.method==='POST'){
+      const b=await body(req);const out=await mutate(state=>{
+        const u=getUser(state,req);const stake=Number(b.stake);const spots=Number(b.spots||1);validateStake(u,b.floor,stake);
+        if(state.rounds.some(r=>r.userId===u.id&&r.game==='Blackjack'&&r.status!=='SETTLED')) throw new Error('OPEN_BLACKJACK_ROUND');
+        const round=startBlackjackV2(stake,spots);round.userId=u.id;round.floor=b.floor||'strip';
+        lockBet(state,u,{stake:round.stake,game:'Blackjack',roundId:round.id,metadata:{engineVersion:round.engineVersion,spots}});state.rounds.push(round);
+        if(round.status==='READY_TO_SETTLE'){
+          const result=settleBlackjackV2(round);settleLockedHouseGame(state,u,{game:'Blackjack',stake:result.totalStake,netPnl:result.netPnl,roundId:round.id,details:{engineVersion:round.engineVersion,spots,outcomes:result.outcomes}});
+          return {round:result.public,result:result.outcomes,netPnl:result.netPnl,state:summarize(state,u)};
+        }
+        return {round:blackjackV2Public(round,false),state:summarize(state,u)};
+      });return json(res,200,out);
+    }
+    if(url.pathname==='/api/blackjack/v2/action'&&req.method==='POST'){
+      const b=await body(req);const out=await mutate(state=>{
+        const u=getUser(state,req);const round=state.rounds.find(r=>r.id===b.roundId&&r.userId===u.id&&r.game==='Blackjack'&&r.engineVersion==='MULTI_SPOT_V2');if(!round)throw new Error('ROUND_NOT_FOUND');
+        const handIndex=Number(b.handIndex);const extra=blackjackV2ActionCost(round,b.action,handIndex);
+        if(extra>0){if(u.account.available<extra)throw new Error('INSUFFICIENT_BANKROLL');increaseBetLock(state,u,{stake:extra,game:'Blackjack',roundId:round.id,metadata:{engineVersion:round.engineVersion,action:b.action,handIndex}});}
+        blackjackV2Action(round,b.action,handIndex);
+        if(round.status==='READY_TO_SETTLE'){
+          const result=settleBlackjackV2(round);settleLockedHouseGame(state,u,{game:'Blackjack',stake:result.totalStake,netPnl:result.netPnl,roundId:round.id,details:{engineVersion:round.engineVersion,spots:round.spots,outcomes:result.outcomes}});
+          return {round:result.public,result:result.outcomes,netPnl:result.netPnl,state:summarize(state,u)};
+        }
+        return {round:blackjackV2Public(round,false),state:summarize(state,u)};
+      });return json(res,200,out);
     }
     if(url.pathname==='/api/blackjack/start'&&req.method==='POST'){
       const b=await body(req);const out=await mutate(state=>{

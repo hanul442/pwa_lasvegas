@@ -1,4 +1,4 @@
-const CACHE_NAME = 'social-vegas-shell-v7';
+const CACHE_NAME = 'social-vegas-shell-v8';
 const APP_SHELL = [
   '/',
   '/index.html',

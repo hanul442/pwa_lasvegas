@@ -19,6 +19,25 @@ function activeBlackjackRound() {
   };
 }
 
+function activeMultiSpotRound() {
+  return {
+    id: 'bj2_watch',
+    game: 'Blackjack',
+    engineVersion: 'MULTI_SPOT_V2',
+    userId: 'zero',
+    floor: 'strip',
+    stake: 2_000_000,
+    status: 'PLAYER',
+    hands: [
+      { spot: 1, cards: [{ r: '8', s: '♠' }, { r: '8', s: '♦' }], doubled: false, fromSplit: false },
+      { spot: 2, cards: [{ r: 'K', s: '♣' }, { r: '7', s: '♥' }], doubled: false, fromSplit: false }
+    ],
+    dealer: [{ r: '6', s: '♣' }, { r: 'Q', s: '♥' }],
+    deck: [{ r: '2', s: '♠' }],
+    createdAt: '2026-09-14T00:00:00.000Z'
+  };
+}
+
 test('spectating exposes only public active blackjack state and never dealer hole card or deck', () => {
   const state = defaultState();
   state.rounds.push(activeBlackjackRound());
@@ -40,6 +59,21 @@ test('spectating exposes only public active blackjack state and never dealer hol
   assert.equal(snapshot.capabilities.chipTransfer, false);
   assert.equal(snapshot.capabilities.hiddenCardsExposed, false);
   assert.deepEqual(state, before);
+});
+
+test('spectating supports multi-spot blackjack without exposing stake, deck, or dealer hole card', () => {
+  const state = defaultState();
+  state.rounds.push(activeMultiSpotRound());
+  const snapshot = buildSpectatingSnapshot(state, 'hanseo');
+
+  assert.equal(snapshot.tables.length, 1);
+  assert.equal(snapshot.tables[0].gameState.multiSpot, true);
+  assert.equal(snapshot.tables[0].gameState.hands.length, 2);
+  assert.deepEqual(snapshot.tables[0].gameState.hands[0].cards, ['8♠', '8♦']);
+  assert.deepEqual(snapshot.tables[0].gameState.dealerCards, ['6♣', 'HIDDEN']);
+  assert.equal(JSON.stringify(snapshot).includes('Q♥'), false);
+  assert.equal(JSON.stringify(snapshot).includes('2♠'), false);
+  assert.equal(JSON.stringify(snapshot).includes('2000000'), false);
 });
 
 test('spectating excludes settled, malformed, unknown-user and unsupported rounds', () => {

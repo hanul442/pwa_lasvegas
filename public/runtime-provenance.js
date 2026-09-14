@@ -40,10 +40,11 @@ async function mount(){
   catch(e){document.getElementById(ROOT_ID)?.remove();host.insertAdjacentHTML('beforeend',card({},e.message));}
 }
 
-document.addEventListener('click',e=>{
-  if(e.target.closest?.('[data-runtime-refresh]')){document.getElementById(ROOT_ID)?.remove();mount();return;}
-  if(e.target.closest?.('[data-page="admin"]'))setTimeout(mount,0);
-},true);
-
-new MutationObserver(()=>mount()).observe(document.getElementById('app'),{childList:true,subtree:true});
-mount();
+if(typeof document!=='undefined'){
+  document.addEventListener('click',e=>{
+    if(e.target.closest?.('[data-runtime-refresh]')){document.getElementById(ROOT_ID)?.remove();mount();return;}
+    if(e.target.closest?.('[data-page="admin"]'))setTimeout(mount,0);
+  },true);
+  new MutationObserver(()=>mount()).observe(document.getElementById('app'),{childList:true,subtree:true});
+  mount();
+}

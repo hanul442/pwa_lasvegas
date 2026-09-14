@@ -29,6 +29,10 @@ function setBusy(game,on){
       delete button.dataset.stableLabel;
     }
   });
+  document.querySelectorAll('.overlay [data-bet], .overlay [data-choice]').forEach(control=>{
+    control.disabled=on;
+    control.setAttribute('aria-disabled',on?'true':'false');
+  });
 }
 
 window.fetch=async function guardedFetch(input,init){

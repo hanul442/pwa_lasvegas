@@ -11,6 +11,7 @@ import { activeHybridSeason } from './lib/seasons.mjs';
 import { buildSocialCompetitionSnapshot, createRival, archiveRival, createChallenge, acceptChallenge, cancelChallenge } from './lib/social-competition.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
 import { startBlackjackV2, blackjackV2Action, blackjackV2ActionCost, blackjackV2Public, settleBlackjackV2 } from './lib/blackjack-v2.mjs';
+import { activeBlackjackV2Round } from './lib/blackjack-session.mjs';
 import { buildInfo } from './lib/build-info.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -57,6 +58,10 @@ async function api(req,res,url){
     if(url.pathname==='/api/version'&&req.method==='GET') return json(res,200,buildInfo());
     if(url.pathname==='/api/state'&&req.method==='GET'){
       const state=await loadState(); return json(res,200,summarize(state,getUser(state,req)));
+    }
+    if(url.pathname==='/api/blackjack/v2/open'&&req.method==='GET'){
+      const state=await loadState();const u=getUser(state,req);const round=activeBlackjackV2Round(state,u.id);
+      return json(res,200,{round:round?blackjackV2Public(round,false):null,floor:round?.floor??null,state:summarize(state,u)});
     }
     if(url.pathname==='/api/social/rivals'&&req.method==='POST'){
       const b=await body(req);const out=await mutate(state=>{const u=getUser(state,req);const rival=createRival(state,u.id,b.opponentId);return {rival,state:summarize(state,u)};});return json(res,201,out);

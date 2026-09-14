@@ -7,6 +7,8 @@ import {
   blackjackV2Public,
   settleBlackjackV2
 } from '../lib/blackjack-v2.mjs';
+import { defaultState } from '../lib/store.mjs';
+import { lockBet, increaseBetLock, settleLockedHouseGame } from '../lib/economy.mjs';
 
 test('blackjack v2 opens up to three simultaneous betting spots', () => {
   const round = startBlackjackV2(1_000_000, 3);
@@ -32,6 +34,37 @@ test('blackjack v2 split creates another hand on the same spot and increases loc
   assert.equal(round.hands[1].spot, 1);
   assert.equal(round.stake, 2_000_000);
   assert.ok(round.hands.every(h => h.cards.length === 2));
+});
+
+test('blackjack v2 split lock and settlement conserve bankroll plus net PnL', () => {
+  const state = defaultState();
+  const user = state.users.hanseo;
+  const opening = user.account.available;
+  let round = null;
+
+  for (let i = 0; i < 500; i++) {
+    const candidate = startBlackjackV2(1_000_000, 1);
+    const hand = candidate.hands[0];
+    if (candidate.status === 'PLAYER' && hand.cards[0].r === hand.cards[1].r) { round = candidate; break; }
+  }
+  assert.ok(round, 'could not produce a splittable random hand');
+
+  lockBet(state, user, { stake: round.stake, game: 'Blackjack', roundId: round.id });
+  const extra = blackjackV2ActionCost(round, 'SPLIT', 0);
+  increaseBetLock(state, user, { stake: extra, game: 'Blackjack', roundId: round.id });
+  blackjackV2Action(round, 'SPLIT', 0);
+  assert.equal(user.account.locked, round.stake);
+
+  while (round.status === 'PLAYER') blackjackV2Action(round, 'STAND', round.activeHand);
+  const out = settleBlackjackV2(round);
+  settleLockedHouseGame(state, user, {
+    game: 'Blackjack', stake: out.totalStake, netPnl: out.netPnl, roundId: round.id,
+    details: { engineVersion: round.engineVersion, outcomes: out.outcomes }
+  });
+
+  assert.equal(user.account.locked, 0);
+  assert.equal(user.account.available, opening + out.netPnl);
+  assert.equal(user.account.totalWagered, out.totalStake);
 });
 
 test('blackjack v2 settlement reveals every dealer draw and explains each hand independently', () => {

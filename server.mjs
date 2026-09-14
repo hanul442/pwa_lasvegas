@@ -10,6 +10,7 @@ import { buildRankingSnapshot } from './lib/rankings.mjs';
 import { activeHybridSeason } from './lib/seasons.mjs';
 import { buildSocialCompetitionSnapshot, createRival, archiveRival, createChallenge, acceptChallenge, cancelChallenge } from './lib/social-competition.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
+import { buildInfo } from './lib/build-info.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR=path.join(__dirname,'public');
@@ -52,6 +53,7 @@ function summarize(state,user){
 async function api(req,res,url){
   try{
     if(url.pathname==='/api/health') return json(res,200,{ok:true,service:'social-vegas',time:new Date().toISOString()});
+    if(url.pathname==='/api/version'&&req.method==='GET') return json(res,200,buildInfo());
     if(url.pathname==='/api/state'&&req.method==='GET'){
       const state=await loadState(); return json(res,200,summarize(state,getUser(state,req)));
     }

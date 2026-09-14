@@ -34,6 +34,7 @@ jobs:
           node --check public/game-stability.js
           node --check public/baccarat-trace.js
           node --check public/roulette-trace.js
+          node --check public/sicbo-trace.js
           node --check public/casino-audio.js
           node --check public/sw.js
 

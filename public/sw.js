@@ -1,4 +1,4 @@
-const CACHE_NAME = 'social-vegas-shell-v9';
+const CACHE_NAME = 'social-vegas-shell-v10';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -9,6 +9,8 @@ const APP_SHELL = [
   '/baccarat-trace.css',
   '/roulette-trace.js',
   '/roulette-trace.css',
+  '/sicbo-trace.js',
+  '/sicbo-trace.css',
   '/blackjack-v2.css',
   '/blackjack-stability.css',
   '/blackjack-v2.js',

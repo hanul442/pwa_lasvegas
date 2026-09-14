@@ -7,7 +7,8 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "verify": "node scripts/verify-ledger.mjs"
+    "verify": "node scripts/verify-ledger.mjs",
+    "smoke:deploy": "node scripts/smoke-deployment.mjs"
   },
   "engines": {
     "node": ">=22"

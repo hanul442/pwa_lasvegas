@@ -7,6 +7,7 @@ import { FLOORS, INITIAL_BANKROLL, STAKE_TIERS } from './lib/constants.mjs';
 import { validateStakeAgainstFloor } from './lib/stakes.mjs';
 import { autoRecharge, floorsFor, lockBet, increaseBetLock, rechargeStatus, requestRecharge, reviewRecharge, settleHouseGame, settleLockedHouseGame, totalBalance, addLedger } from './lib/economy.mjs';
 import { buildRankingSnapshot } from './lib/rankings.mjs';
+import { activeHybridSeason } from './lib/seasons.mjs';
 import { buildSocialCompetitionSnapshot, createRival, archiveRival, createChallenge, acceptChallenge, cancelChallenge } from './lib/social-competition.mjs';
 import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo } from './lib/games.mjs';
 
@@ -30,12 +31,13 @@ function summarize(state,user){
   const ledger=state.ledger.filter(x=>x.userId===user.id).slice(-50).reverse();
   const requests=state.rechargeRequests.filter(x=>x.userId===user.id).slice(0,10);
   const latestBust=user.bankruptcies?.[0]||null;
+  const season=activeHybridSeason(state);
   return {
     user:publicUser(user),
     users:Object.values(state.users).map(publicUser),
     floors:floorsFor(user),
     stakeTiers:STAKE_TIERS.map(tier=>({...tier})),
-    rankings:buildRankingSnapshot(state),
+    rankings:buildRankingSnapshot(state,season),
     socialCompetition:buildSocialCompetitionSnapshot(state,user.id),
     recharge:rechargeStatus(user),
     rechargeRequests:requests,

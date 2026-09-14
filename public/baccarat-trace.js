@@ -13,12 +13,55 @@ export function describeBaccaratTrace(round){
   return out;
 }
 
+export function baccaratDealOrder(round){
+  const player=round?.player||[],banker=round?.banker||[],out=[];
+  if(player[0])out.push({side:'PLAYER',card:player[0],phase:'INITIAL DEAL'});
+  if(banker[0])out.push({side:'BANKER',card:banker[0],phase:'INITIAL DEAL'});
+  if(player[1])out.push({side:'PLAYER',card:player[1],phase:'INITIAL DEAL'});
+  if(banker[1])out.push({side:'BANKER',card:banker[1],phase:'INITIAL DEAL'});
+  if(player[2])out.push({side:'PLAYER',card:player[2],phase:'PLAYER DECISION'});
+  if(banker[2])out.push({side:'BANKER',card:banker[2],phase:'BANKER DECISION'});
+  return out;
+}
+
+export function baccaratSequencePhases(round){
+  if(!round?.trace)return [];
+  const phases=['INITIAL DEAL'];
+  if(!round.trace.natural){
+    phases.push('PLAYER DECISION','BANKER DECISION');
+  }
+  phases.push('REVEAL','SETTLEMENT');
+  return phases;
+}
+
 export function baccaratTraceViewModel(round){
   return {
     winner:round?.winner||'',
     rows:describeBaccaratTrace(round),
-    cards:[...(round?.player||[]),...(round?.banker||[])]
+    cards:[...(round?.player||[]),...(round?.banker||[])],
+    dealOrder:baccaratDealOrder(round),
+    phases:baccaratSequencePhases(round)
   };
+}
+
+let sequenceTimer=null;
+function runSequence(stage,vm){
+  clearTimeout(sequenceTimer);
+  const cards=[...stage.querySelectorAll('.playing-card')];
+  cards.forEach(card=>card.classList.remove('baccarat-visible'));
+  stage.dataset.baccaratPhase='0';
+  const phaseNodes=[...stage.querySelectorAll('[data-baccarat-phase]')];
+  const tick=step=>{
+    if(!stage.isConnected)return;
+    const visible=Math.min(cards.length,step);
+    cards.forEach((card,i)=>card.classList.toggle('baccarat-visible',i<visible));
+    const phaseIndex=Math.min(vm.phases.length-1,Math.floor(step/Math.max(1,Math.ceil(cards.length/vm.phases.length))));
+    stage.dataset.baccaratPhase=String(phaseIndex);
+    phaseNodes.forEach((node,i)=>node.classList.toggle('active',i===phaseIndex));
+    if(step<cards.length+2)sequenceTimer=setTimeout(()=>tick(step+1),160);
+    else phaseNodes.forEach((node,i)=>node.classList.toggle('active',i===vm.phases.length-1));
+  };
+  tick(1);
 }
 
 function render(round){
@@ -29,9 +72,14 @@ function render(round){
   const panel=document.createElement('section');
   panel.className='baccarat-trace';
   panel.setAttribute('aria-label','Baccarat round explanation');
-  panel.innerHTML=`<div class="baccarat-trace-head"><span>ROUND EXPLANATION</span><b>${vm.winner}</b></div>${vm.rows.map((x,i)=>`<div class="baccarat-trace-row"><i>${i+1}</i><span>${x}</span></div>`).join('')}`;
+  panel.innerHTML=`<div class="baccarat-sequence" aria-label="Baccarat deal sequence">${vm.phases.map((phase,i)=>`<span data-baccarat-phase="${i}"><i>${i+1}</i>${phase}</span>`).join('')}</div><div class="baccarat-trace-head"><span>ROUND EXPLANATION</span><b>${vm.winner}</b></div>${vm.rows.map((x,i)=>`<div class="baccarat-trace-row"><i>${i+1}</i><span>${x}</span></div>`).join('')}`;
   stage.append(panel);
-  stage.querySelectorAll('.playing-card').forEach((card,i)=>{card.style.setProperty('--bac-delay',`${i*70}ms`);card.classList.add('baccarat-deal')});
+  stage.querySelectorAll('.playing-card').forEach((card,i)=>{
+    card.style.setProperty('--bac-delay',`${i*55}ms`);
+    card.classList.add('baccarat-deal');
+    card.setAttribute('data-deal-index',String(i));
+  });
+  runSequence(stage,vm);
 }
 
 if(typeof window!=='undefined'&&typeof document!=='undefined'){

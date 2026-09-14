@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeHybridSeason, buildSeasonPerformanceFromLedger, normalizeHybridSeason } from '../lib/seasons.mjs';
+import { activeHybridSeason, buildSeasonPerformanceFromLedger, canonicalActiveSeasonBoundary, normalizeHybridSeason } from '../lib/seasons.mjs';
 
 test('normalizes explicit hybrid season without changing bankroll semantics', () => {
   const season = normalizeHybridSeason({
@@ -26,8 +26,30 @@ test('derives season performance from canonical ledger events only', () => {
 });
 
 test('active season prefers canonical ledger-derived metrics over stale embedded metrics', () => {
-  const state = { meta:{activeSeason:{id:'s',name:'S',startsAt:'2026-09-01',endsAt:'2026-10-01',performanceByUser:{hanseo:{profit:999,wagered:999,wins:9}}}}, ledger:[{type:'GAME_WIN',userId:'hanseo',createdAt:'2026-09-02',rawPnlDelta:10,metadata:{stake:50}}] };
+  const state = { meta:{activeSeason:{id:'s',name:'S',startsAt:'2026-09-01',endsAt:'2026-10-01',performanceByUser:{hanseo:{profit:999,wagered:999,wins:9}}}}, ledger:[{type:'GAME_WIN',userId:'hanseo',createdAt:'2026-09-02',rawPnlDelta:10,metadata:{stake:50}}], users:{hanseo:{id:'hanseo'}} };
   assert.deepEqual(activeHybridSeason(state).performanceByUser, {hanseo:{profit:10,wagered:50,wins:1}});
+});
+
+test('canonical boundary source takes precedence over legacy activeSeason', () => {
+  const state = {
+    meta: {
+      activeSeasonBoundary: { id:'canonical', name:'Canonical', startsAt:'2026-09-10', endsAt:'2026-10-10' },
+      activeSeason: { id:'legacy', name:'Legacy', startsAt:'2026-09-01', endsAt:'2026-10-01', performanceByUser:{ hanseo:{profit:999,wagered:999,wins:9} } }
+    }
+  };
+  assert.deepEqual(canonicalActiveSeasonBoundary(state), { id:'canonical', name:'Canonical', startsAt:'2026-09-10', endsAt:'2026-10-10' });
+  assert.equal(activeHybridSeason(state), null);
+});
+
+test('malformed canonical boundary fails closed instead of falling back to legacy season', () => {
+  const state = {
+    meta: {
+      activeSeasonBoundary: { id:'bad', name:'Bad', startsAt:'2026-10-01', endsAt:'2026-09-01' },
+      activeSeason: { id:'legacy', name:'Legacy', startsAt:'2026-09-01', endsAt:'2026-10-01', performanceByUser:{ hanseo:{profit:1,wagered:2,wins:1} } }
+    }
+  };
+  assert.equal(canonicalActiveSeasonBoundary(state), null);
+  assert.equal(activeHybridSeason(state), null);
 });
 
 test('does not synthesize a season when canonical source is absent', () => {

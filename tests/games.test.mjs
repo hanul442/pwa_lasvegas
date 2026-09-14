@@ -56,16 +56,16 @@ test('baccarat naturals stand without drawing',()=>{
 test('baccarat tie pushes non-tie bets and banker win applies commission',()=>{
   const tieDeck=[
     {r:'2',s:'♣'},{r:'3',s:'♣'},
-    {r:'4',s:'♣'},{r:'4',s:'♦'},
-    {r:'8',s:'♥'},{r:'8',s:'♠'}
+    {r:'A',s:'♣'},{r:'7',s:'♦'},
+    {r:'K',s:'♥'},{r:'8',s:'♠'}
   ];
   const tie=resolveBaccarat(1_000_000,'PLAYER',tieDeck);
   assert.equal(tie.winner,'TIE');assert.equal(tie.netPnl,0);assert.equal(tie.trace.payoutRule,'NON_TIE_PUSH');
 
   const bankerDeck=[
     {r:'2',s:'♣'},{r:'3',s:'♣'},
-    {r:'5',s:'♣'},{r:'4',s:'♦'},
-    {r:'9',s:'♥'},{r:'8',s:'♠'}
+    {r:'K',s:'♣'},{r:'9',s:'♦'},
+    {r:'K',s:'♥'},{r:'8',s:'♠'}
   ];
   const banker=resolveBaccarat(1_000_000,'BANKER',bankerDeck);
   assert.equal(banker.winner,'BANKER');assert.equal(banker.netPnl,950_000);assert.equal(banker.trace.payoutRule,'BANKER_0_95_TO_1');

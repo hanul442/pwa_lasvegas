@@ -13,27 +13,38 @@ export function describeBaccaratTrace(round){
   return out;
 }
 
+export function baccaratTraceViewModel(round){
+  return {
+    winner:round?.winner||'',
+    rows:describeBaccaratTrace(round),
+    cards:[...(round?.player||[]),...(round?.banker||[])]
+  };
+}
+
 function render(round){
   const stage=document.querySelector('.modal-body .stage');
   if(!stage||!round?.trace)return;
+  const vm=baccaratTraceViewModel(round);
   stage.querySelector('.baccarat-trace')?.remove();
   const panel=document.createElement('section');
   panel.className='baccarat-trace';
-  panel.innerHTML=`<div class="baccarat-trace-head"><span>ROUND EXPLANATION</span><b>${round.winner}</b></div>${describeBaccaratTrace(round).map((x,i)=>`<div class="baccarat-trace-row"><i>${i+1}</i><span>${x}</span></div>`).join('')}`;
+  panel.setAttribute('aria-label','Baccarat round explanation');
+  panel.innerHTML=`<div class="baccarat-trace-head"><span>ROUND EXPLANATION</span><b>${vm.winner}</b></div>${vm.rows.map((x,i)=>`<div class="baccarat-trace-row"><i>${i+1}</i><span>${x}</span></div>`).join('')}`;
   stage.append(panel);
   stage.querySelectorAll('.playing-card').forEach((card,i)=>{card.style.setProperty('--bac-delay',`${i*70}ms`);card.classList.add('baccarat-deal')});
 }
 
-const nativeFetch=window.fetch.bind(window);
-window.fetch=async function baccaratTraceFetch(input,init){
-  const response=await nativeFetch(input,init);
-  try{
-    const path=new URL(typeof input==='string'?input:input.url,location.href).pathname;
-    if(path==='/api/baccarat/play'&&response.ok){
-      const clone=response.clone();
-      const data=await clone.json();
-      queueMicrotask(()=>requestAnimationFrame(()=>render(data.round)));
-    }
-  }catch{}
-  return response;
-};
+if(typeof window!=='undefined'&&typeof document!=='undefined'){
+  const nativeFetch=window.fetch.bind(window);
+  window.fetch=async function baccaratTraceFetch(input,init){
+    const response=await nativeFetch(input,init);
+    try{
+      const path=new URL(typeof input==='string'?input:input.url,location.href).pathname;
+      if(path==='/api/baccarat/play'&&response.ok){
+        const data=await response.clone().json();
+        queueMicrotask(()=>requestAnimationFrame(()=>render(data.round)));
+      }
+    }catch{}
+    return response;
+  };
+}

@@ -10,9 +10,11 @@ test('social competition fails closed to empty read-only surfaces when source st
 
   assert.deepEqual(snapshot.rivals, []);
   assert.deepEqual(snapshot.challenges, []);
+  assert.deepEqual(snapshot.spectating.tables, []);
+  assert.equal(snapshot.spectating.mode, 'READ_ONLY');
   assert.equal(snapshot.capabilities.rivals, true);
   assert.equal(snapshot.capabilities.challenges, true);
-  assert.equal(snapshot.capabilities.spectating, false);
+  assert.equal(snapshot.capabilities.spectating, true);
   assert.equal(snapshot.capabilities.socialMoments, false);
   assert.deepEqual(state.users.hanseo.account, before);
 });

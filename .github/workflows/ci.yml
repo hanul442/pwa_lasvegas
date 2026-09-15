@@ -37,6 +37,7 @@ jobs:
           node --check public/roulette-trace.js
           node --check public/roulette-chip-motion.js
           node --check public/sicbo-trace.js
+          node --check public/sicbo-chip-motion.js
           node --check public/runtime-provenance.js
           node --check public/vault-record-room.js
           node --check public/casino-audio.js

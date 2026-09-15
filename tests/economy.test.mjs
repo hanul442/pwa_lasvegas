@@ -22,6 +22,24 @@ test('locked bet conserves total balance until settlement',()=>{
   assert.equal(u.account.qualifiedPnl,10_000_000);
 });
 
+test('locked round cannot settle twice even if other locked CH exists',()=>{
+  const s=fresh(),u=s.users.hanseo;
+  lockBet(s,u,{stake:10_000_000,game:'Blackjack',roundId:'locked-a'});
+  lockBet(s,u,{stake:10_000_000,game:'Blackjack',roundId:'locked-b'});
+  settleLockedHouseGame(s,u,{game:'Blackjack',stake:10_000_000,netPnl:10_000_000,roundId:'locked-a'});
+  const before={available:u.account.available,locked:u.account.locked,pnl:u.account.qualifiedPnl,wagered:u.account.totalWagered,ledger:s.ledger.length};
+  assert.throws(()=>settleLockedHouseGame(s,u,{game:'Blackjack',stake:10_000_000,netPnl:10_000_000,roundId:'locked-a'}),/ROUND_ALREADY_SETTLED/);
+  assert.deepEqual({available:u.account.available,locked:u.account.locked,pnl:u.account.qualifiedPnl,wagered:u.account.totalWagered,ledger:s.ledger.length},before);
+});
+
+test('instant round cannot write a second settlement ledger entry',()=>{
+  const s=fresh(),u=s.users.hanseo;
+  settleHouseGame(s,u,{game:'Roulette',stake:1_000_000,netPnl:1_000_000,roundId:'instant-a'});
+  const before={available:u.account.available,pnl:u.account.qualifiedPnl,wagered:u.account.totalWagered,rounds:u.stats.Roulette.rounds,ledger:s.ledger.length};
+  assert.throws(()=>settleHouseGame(s,u,{game:'Roulette',stake:1_000_000,netPnl:1_000_000,roundId:'instant-a'}),/ROUND_ALREADY_SETTLED/);
+  assert.deepEqual({available:u.account.available,pnl:u.account.qualifiedPnl,wagered:u.account.totalWagered,rounds:u.stats.Roulette.rounds,ledger:s.ledger.length},before);
+});
+
 test('loss cannot create negative bankroll',()=>{
   const s=fresh(),u=s.users.hanseo;
   assert.throws(()=>settleHouseGame(s,u,{game:'Roulette',stake:200_000_000,netPnl:-200_000_000,roundId:'r2'}),/INSUFFICIENT_BANKROLL/);

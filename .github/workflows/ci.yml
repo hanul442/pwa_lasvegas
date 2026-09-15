@@ -38,6 +38,7 @@ jobs:
           node --check public/runtime-provenance.js
           node --check public/vault-record-room.js
           node --check public/casino-audio.js
+          node --check public/casino-chip-motion.js
           node --check public/sw.js
 
       - name: Syntax check deployment tooling

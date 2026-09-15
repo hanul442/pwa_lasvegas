@@ -44,16 +44,15 @@ if(typeof window!=='undefined'&&typeof fetch==='function'){
   const nativeFetch=window.fetch.bind(window);
   window.fetch=async function instantIdempotentFetch(input,init={}){
     const path=requestPath(input);
-    if(!INSTANT_PATHS.has(path)||(init.method||'GET').toUpperCase()!=='POST')return nativeFetch(input,init);
+    const method=(init.method||(input instanceof Request?input.method:'GET')).toUpperCase();
+    if(!INSTANT_PATHS.has(path)||method!=='POST')return nativeFetch(input,init);
     const player=playerFrom(input,init),name=slot(path,player);
     const headers=new Headers(init.headers||(input instanceof Request?input.headers:undefined));
     if(!headers.has('x-idempotency-key'))headers.set('x-idempotency-key',pendingKey(name));
-    try{
-      const response=await nativeFetch(input,{...init,headers});
-      if(response.ok||(response.status>=400&&response.status<500))clearKey(name);
-      return response;
-    }catch(error){
-      throw error;
-    }
+    const response=await nativeFetch(input,{...init,headers});
+    if(response.ok){
+      try{await response.clone().json();clearKey(name);}catch{}
+    }else if(response.status>=400&&response.status<500)clearKey(name);
+    return response;
   };
 }

@@ -15,6 +15,18 @@ test('legacy blackjack rejects multi-spot v2 round objects',()=>{
   assert.throws(()=>blackjackPublic(v2Round,false),/BLACKJACK_ENGINE_MISMATCH/);
 });
 
+test('blackjack settlement fails closed while player action is still open',()=>{
+  for(let i=0;i<50;i++){
+    const r=startBlackjack(1_000_000);
+    if(r.status==='PLAYER'){
+      assert.throws(()=>settleBlackjack(r),/BAD_STATE/);
+      assert.equal(r.status,'PLAYER');
+      return;
+    }
+  }
+  assert.fail('could not find actionable round');
+});
+
 test('blackjack double doubles stake and ends player action',()=>{
   for(let i=0;i<50;i++){
     const r=startBlackjack(1_000_000);

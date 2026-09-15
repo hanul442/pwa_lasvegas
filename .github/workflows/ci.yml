@@ -32,6 +32,7 @@ jobs:
           node --check public/blackjack-v2.js
           node --check public/blackjack-session.js
           node --check public/game-stability.js
+          node --check public/instant-idempotency.js
           node --check public/baccarat-trace.js
           node --check public/baccarat-chip-motion.js
           node --check public/roulette-trace.js

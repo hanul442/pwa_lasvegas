@@ -1,0 +1,22 @@
+# ACTIVE SPRINT
+
+- Sprint ID/title: VEGAS-UX-01 — Mobile Landscape Usability
+- Objective: Make mobile landscape a first-class, usable casino layout before further presentation work.
+- User-visible outcome: Landscape phones retain scrolling, safe-area access, clear game entry, bankroll visibility, and usable controls without obscured content.
+- Acceptance criteria:
+  - Vertical scrolling remains available in lobby and game overlays where content exceeds viewport.
+  - Landscape layout does not hide bankroll, exit/back, game entry, or primary betting controls.
+  - Touch targets remain usable and content is not clipped behind fixed/sticky UI.
+  - Existing portrait and desktop behavior is not intentionally regressed.
+  - Virtual-only economy and all approved feature invariants remain unchanged.
+- Current phase: DISCOVER
+- Completed checkpoints:
+  - Canonical sprint state initialized from latest main 4ce35c327891d5a752fad3ce6e72d859df261541.
+  - Approved design references confirmed under docs/design; mobile landscape is explicitly first-class.
+  - Railway production deployment b1ddc8e7-a869-4b0c-81f3-f308ce05c586 confirmed SUCCESS.
+- Next checkpoint: Audit current CSS/DOM landscape and overflow rules, identify the smallest coherent usability fix, then implement it with targeted regression coverage.
+- Blockers: None.
+- Relevant PR/branch: automation/active-sprint-mobile-landscape
+- Validation status: Not run yet; implementation pending.
+- Deploy status: Production currently healthy on pre-sprint revision; no sprint deploy yet.
+- Next action: Inspect styles.css, AAAC shell/game CSS, and landscape media queries for clipping/overflow/sticky-control conflicts.

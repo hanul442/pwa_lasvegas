@@ -1,10 +1,11 @@
-const CACHE_NAME = 'social-vegas-shell-v16';
+const CACHE_NAME = 'social-vegas-shell-v17';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
   '/game-stability.js',
+  '/instant-idempotency.js',
   '/baccarat-trace.js',
   '/baccarat-trace.css',
   '/baccarat-chip-motion.js',

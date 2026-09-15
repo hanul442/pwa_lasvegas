@@ -13,6 +13,7 @@ import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, play
 import { startBlackjackV2, blackjackV2Action, blackjackV2ActionCost, blackjackV2Public, settleBlackjackV2 } from './lib/blackjack-v2.mjs';
 import { activeBlackjackV2Round } from './lib/blackjack-session.mjs';
 import { buildInfo } from './lib/build-info.mjs';
+import { idempotentInstantRound, instantPublicRound, instantRequestFingerprint, normalizeIdempotencyKey } from './lib/instant-idempotency.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR=path.join(__dirname,'public');
@@ -140,19 +141,37 @@ async function api(req,res,url){
       });return json(res,200,out);
     }
     if(url.pathname==='/api/baccarat/play'&&req.method==='POST'){
-      const b=await body(req);const out=await mutate(state=>{const u=getUser(state,req);const stake=Number(b.stake);validateStake(u,b.floor,stake);const round=playBaccarat(stake,b.betType);state.rounds.push({...round,userId:u.id,floor:b.floor||'strip',status:'SETTLED',createdAt:new Date().toISOString()});settleHouseGame(state,u,{game:'Baccarat',stake,netPnl:round.netPnl,roundId:round.id,details:{betType:b.betType,winner:round.winner}});return {round,state:summarize(state,u)};});return json(res,200,out);
+      const b=await body(req);const key=normalizeIdempotencyKey(req.headers['x-idempotency-key']);const out=await mutate(state=>{
+        const u=getUser(state,req),stake=Number(b.stake),floor=b.floor||'strip';validateStake(u,b.floor,stake);
+        const fingerprint=instantRequestFingerprint({game:'Baccarat',stake,floor,betType:b.betType});
+        const attempt=idempotentInstantRound(state,{userId:u.id,game:'Baccarat',key,fingerprint,create:()=>({...playBaccarat(stake,b.betType),userId:u.id,floor,status:'SETTLED',createdAt:new Date().toISOString()})});
+        if(!attempt.replayed)settleHouseGame(state,u,{game:'Baccarat',stake,netPnl:attempt.round.netPnl,roundId:attempt.round.id,details:{betType:b.betType,winner:attempt.round.winner}});
+        return {round:instantPublicRound(attempt.round),replayed:attempt.replayed,state:summarize(state,u)};
+      });return json(res,200,out);
     }
     if(url.pathname==='/api/roulette/play'&&req.method==='POST'){
-      const b=await body(req);const out=await mutate(state=>{const u=getUser(state,req);const stake=Number(b.stake);validateStake(u,b.floor,stake);const round=playRoulette(stake,b.betType,b.target===undefined?null:Number(b.target));state.rounds.push({...round,userId:u.id,floor:b.floor||'strip',status:'SETTLED',createdAt:new Date().toISOString()});settleHouseGame(state,u,{game:'Roulette',stake,netPnl:round.netPnl,roundId:round.id,details:{betType:b.betType,target:b.target,number:round.number}});return {round,state:summarize(state,u)};});return json(res,200,out);
+      const b=await body(req);const key=normalizeIdempotencyKey(req.headers['x-idempotency-key']);const out=await mutate(state=>{
+        const u=getUser(state,req),stake=Number(b.stake),floor=b.floor||'strip',target=b.target===undefined?null:Number(b.target);validateStake(u,b.floor,stake);
+        const fingerprint=instantRequestFingerprint({game:'Roulette',stake,floor,betType:b.betType,target});
+        const attempt=idempotentInstantRound(state,{userId:u.id,game:'Roulette',key,fingerprint,create:()=>({...playRoulette(stake,b.betType,target),userId:u.id,floor,status:'SETTLED',createdAt:new Date().toISOString()})});
+        if(!attempt.replayed)settleHouseGame(state,u,{game:'Roulette',stake,netPnl:attempt.round.netPnl,roundId:attempt.round.id,details:{betType:b.betType,target,number:attempt.round.number}});
+        return {round:instantPublicRound(attempt.round),replayed:attempt.replayed,state:summarize(state,u)};
+      });return json(res,200,out);
     }
     if(url.pathname==='/api/sicbo/play'&&req.method==='POST'){
-      const b=await body(req);const out=await mutate(state=>{const u=getUser(state,req);const stake=Number(b.stake);validateStake(u,b.floor,stake);const round=playSicBo(stake,b.betType,b.target===undefined?null:Number(b.target));state.rounds.push({...round,userId:u.id,floor:b.floor||'strip',status:'SETTLED',createdAt:new Date().toISOString()});settleHouseGame(state,u,{game:'Sic Bo',stake,netPnl:round.netPnl,roundId:round.id,details:{betType:b.betType,target:b.target,dice:round.dice}});return {round,state:summarize(state,u)};});return json(res,200,out);
+      const b=await body(req);const key=normalizeIdempotencyKey(req.headers['x-idempotency-key']);const out=await mutate(state=>{
+        const u=getUser(state,req),stake=Number(b.stake),floor=b.floor||'strip',target=b.target===undefined?null:Number(b.target);validateStake(u,b.floor,stake);
+        const fingerprint=instantRequestFingerprint({game:'Sic Bo',stake,floor,betType:b.betType,target});
+        const attempt=idempotentInstantRound(state,{userId:u.id,game:'Sic Bo',key,fingerprint,create:()=>({...playSicBo(stake,b.betType,target),userId:u.id,floor,status:'SETTLED',createdAt:new Date().toISOString()})});
+        if(!attempt.replayed)settleHouseGame(state,u,{game:'Sic Bo',stake,netPnl:attempt.round.netPnl,roundId:attempt.round.id,details:{betType:b.betType,target,dice:attempt.round.dice}});
+        return {round:instantPublicRound(attempt.round),replayed:attempt.replayed,state:summarize(state,u)};
+      });return json(res,200,out);
     }
     if(url.pathname==='/api/dev/reset'&&req.method==='POST'&&process.env.NODE_ENV!=='production'){
       const out=await mutate(state=>{const u=getUser(state,req);state.ledger=state.ledger.filter(x=>x.userId!==u.id);state.rounds=state.rounds.filter(r=>r.userId!==u.id);state.rechargeRequests=state.rechargeRequests.filter(r=>r.userId!==u.id);u.account={available:0,locked:0,rawPnl:0,qualifiedPnl:0,totalWagered:0,peakBankroll:0,progressionValue:0,unlockedFloors:[]};u.recharge={lastAt:null,dailyDate:new Date().toISOString().slice(0,10),dailyCount:0,total:0};u.stats={};u.bankruptcies=[];addLedger(state,u,{type:'INITIAL_GRANT',amount:INITIAL_BANKROLL,referenceType:'DEV_RESET'});u.account.unlockedFloors=['downtown','strip'];return summarize(state,u);});return json(res,200,out);
     }
     return error(res,404,'NOT_FOUND');
-  }catch(e){const map={FORBIDDEN:403,USER_NOT_FOUND:404,ROUND_NOT_FOUND:404,REQUEST_NOT_FOUND:404,RIVAL_NOT_FOUND:404,CHALLENGE_NOT_FOUND:404,INSUFFICIENT_BANKROLL:409,FLOOR_LOCKED:403,BET_OUTSIDE_TABLE_LIMIT:400,STAKE_TIER_NOT_ALLOWED:400,RECHARGE_NOT_AVAILABLE:409,PENDING_REQUEST_EXISTS:409,OPEN_BLACKJACK_ROUND:409,RIVAL_ALREADY_ACTIVE:409,RIVAL_NOT_ACTIVE:409,CHALLENGE_ALREADY_OPEN:409,CHALLENGE_NOT_PENDING:409,CHALLENGE_NOT_OPEN:409,INVALID_SOCIAL_TARGET:400,INVALID_CHALLENGE_METRIC:400};return error(res,map[e.message]||400,e.message||'BAD_REQUEST');}
+  }catch(e){const map={FORBIDDEN:403,USER_NOT_FOUND:404,ROUND_NOT_FOUND:404,REQUEST_NOT_FOUND:404,RIVAL_NOT_FOUND:404,CHALLENGE_NOT_FOUND:404,INSUFFICIENT_BANKROLL:409,FLOOR_LOCKED:403,BET_OUTSIDE_TABLE_LIMIT:400,STAKE_TIER_NOT_ALLOWED:400,RECHARGE_NOT_AVAILABLE:409,PENDING_REQUEST_EXISTS:409,OPEN_BLACKJACK_ROUND:409,RIVAL_ALREADY_ACTIVE:409,RIVAL_NOT_ACTIVE:409,CHALLENGE_ALREADY_OPEN:409,CHALLENGE_NOT_PENDING:409,CHALLENGE_NOT_OPEN:409,INVALID_SOCIAL_TARGET:400,INVALID_CHALLENGE_METRIC:400,INVALID_IDEMPOTENCY_KEY:400,IDEMPOTENCY_CONFLICT:409};return error(res,map[e.message]||400,e.message||'BAD_REQUEST');}
 }
 
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};

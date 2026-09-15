@@ -1,0 +1,31 @@
+/* AAAC Phase 2B — cinematic Blackjack moments.
+   Presentation-only: reacts to existing table/result classes without changing wagers, payouts, bankroll, or settlement. */
+
+.bjv2-chip-lock{animation:aaac-no-more-bets .7s cubic-bezier(.2,.8,.2,1) both}
+.bjv2-card.deal{transform-origin:50% -160%;will-change:transform,opacity,filter}
+.bjv2-hand.active{animation:aaac-active-hand 1.8s ease-in-out infinite}
+.bjv2-round-result{position:relative;isolation:isolate;overflow:hidden}
+.bjv2-round-result::before{content:"";position:absolute;inset:-80% -25%;z-index:-1;pointer-events:none;opacity:0;transform:translateX(-45%) rotate(14deg);background:linear-gradient(90deg,transparent 34%,rgba(255,255,255,.05) 44%,rgba(244,216,141,.28) 50%,rgba(255,255,255,.05) 56%,transparent 66%)}
+.bjv2-round-result.win{animation:aaac-win-rise .78s cubic-bezier(.16,.84,.3,1) both;box-shadow:0 18px 54px rgba(0,0,0,.32),0 0 44px rgba(72,218,151,.12)}
+.bjv2-round-result.win::before{animation:aaac-win-sweep 1.15s .08s ease-out both}
+.bjv2-round-result.win b{animation:aaac-win-number .9s cubic-bezier(.18,.9,.28,1.2) both;text-shadow:0 0 24px rgba(102,220,157,.28)}
+.bjv2-round-result.loss{animation:aaac-loss-settle .62s ease-out both}
+.bjv2-round-result.loss b{filter:saturate(.82)}
+.bjv2-shell:has(.bjv2-round-result.win) .bjv2-table{animation:aaac-table-win 1.35s ease-out both}
+.bjv2-shell:has(.bjv2-round-result.win) .bjv2-hand.win{animation:aaac-winning-hand 1.05s cubic-bezier(.16,.84,.3,1) both}
+.bjv2-shell:has(.bjv2-round-result.loss) .bjv2-hand.loss{animation:aaac-losing-hand .65s ease-out both}
+.bjv2-shell:has(.bjv2-round-result.win) .bjv2-bank b{animation:aaac-bankroll-confirm .85s ease-out both}
+
+@keyframes aaac-no-more-bets{0%{opacity:0;transform:translate(-50%,-42%) scale(.9);filter:blur(5px)}55%{opacity:1;transform:translate(-50%,-50%) scale(1.04);filter:blur(0)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes aaac-active-hand{0%,100%{box-shadow:0 0 0 1px rgba(231,199,123,.18),0 12px 34px rgba(0,0,0,.2),0 0 24px rgba(231,199,123,.09)}50%{box-shadow:0 0 0 1px rgba(239,212,145,.34),0 16px 38px rgba(0,0,0,.24),0 0 42px rgba(231,199,123,.2)}}
+@keyframes aaac-win-rise{0%{opacity:.35;transform:translateY(18px) scale(.985);filter:brightness(.8)}60%{opacity:1;transform:translateY(-2px) scale(1.008);filter:brightness(1.08)}100%{opacity:1;transform:none;filter:none}}
+@keyframes aaac-win-sweep{0%{opacity:0;transform:translateX(-55%) rotate(14deg)}25%{opacity:1}100%{opacity:0;transform:translateX(55%) rotate(14deg)}}
+@keyframes aaac-win-number{0%{opacity:.2;transform:scale(.84)}55%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes aaac-table-win{0%{box-shadow:inset 0 0 0 2px rgba(231,199,123,.5),inset 0 0 100px rgba(0,0,0,.48),0 26px 70px rgba(0,0,0,.48)}42%{box-shadow:inset 0 0 0 2px rgba(244,219,151,.72),inset 0 0 95px rgba(0,0,0,.4),0 26px 70px rgba(0,0,0,.48),0 0 92px rgba(78,220,154,.2)}100%{box-shadow:inset 0 0 0 2px rgba(231,199,123,.5),inset 0 0 100px rgba(0,0,0,.48),0 26px 70px rgba(0,0,0,.48),0 0 70px rgba(54,129,96,.08)}}
+@keyframes aaac-winning-hand{0%{transform:translateY(8px);filter:brightness(.85)}48%{transform:translateY(-4px) scale(1.012);filter:brightness(1.13)}100%{transform:none;filter:none}}
+@keyframes aaac-loss-settle{0%{transform:translateY(-4px);filter:brightness(1.08)}100%{transform:none;filter:brightness(.9)}}
+@keyframes aaac-losing-hand{0%{opacity:1;filter:saturate(1)}100%{opacity:.78;filter:saturate(.72) brightness(.88)}}
+@keyframes aaac-bankroll-confirm{0%{transform:scale(.92);filter:brightness(.8)}55%{transform:scale(1.06);filter:brightness(1.22)}100%{transform:none;filter:none}}
+
+@media(max-width:760px){.bjv2-hand.active{animation-duration:2.2s}.bjv2-round-result.win{box-shadow:0 12px 34px rgba(0,0,0,.3),0 0 28px rgba(72,218,151,.1)}}
+@media(prefers-reduced-motion:reduce){.bjv2-chip-lock,.bjv2-hand.active,.bjv2-round-result,.bjv2-round-result::before,.bjv2-round-result b,.bjv2-table,.bjv2-hand,.bjv2-bank b{animation:none!important}.bjv2-card.deal{will-change:auto}}

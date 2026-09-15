@@ -1,10 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startBlackjack, blackjackAction, settleBlackjack, playBaccarat, playRoulette, playSicBo, baccaratShouldBankerDraw, resolveBaccarat } from '../lib/games.mjs';
+import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo, baccaratShouldBankerDraw, resolveBaccarat } from '../lib/games.mjs';
 
 test('blackjack round starts with two cards each',()=>{
   const r=startBlackjack(1_000_000);
   assert.equal(r.player.length,2);assert.equal(r.dealer.length,2);
+  assert.equal(r.engineVersion,'LEGACY_V1');
+});
+
+test('legacy blackjack rejects multi-spot v2 round objects',()=>{
+  const v2Round={id:'bj2_test',game:'Blackjack',engineVersion:'MULTI_SPOT_V2',status:'PLAYER',hands:[],dealer:[],stake:1_000_000};
+  assert.throws(()=>blackjackAction(v2Round,'HIT',true),/BLACKJACK_ENGINE_MISMATCH/);
+  assert.throws(()=>settleBlackjack(v2Round),/BLACKJACK_ENGINE_MISMATCH/);
+  assert.throws(()=>blackjackPublic(v2Round,false),/BLACKJACK_ENGINE_MISMATCH/);
 });
 
 test('blackjack double doubles stake and ends player action',()=>{

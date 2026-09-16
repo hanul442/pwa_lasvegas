@@ -13,7 +13,9 @@ test('VEGAS V2 visual layer loads after legacy luxury layers', () => {
   const legacy = index.indexOf('/aaac-blackjack-cinematic.css');
   const v2 = index.indexOf('/vegas-ui-v2.css');
   const assets = index.indexOf('/vegas-ui-v2-assets.css');
-  assert.ok(legacy >= 0 && v2 > legacy && assets > v2);
+  const games = index.indexOf('/vegas-game-v2.css');
+  const motion = index.indexOf('/vegas-motion-v2.css');
+  assert.ok(legacy >= 0 && v2 > legacy && assets > v2 && games > assets && motion > games);
   assert.ok(index.indexOf('/vegas-ui-v2.js') > index.indexOf('/blackjack-v2.js'));
 });
 
@@ -24,11 +26,25 @@ test('VEGAS V2 binds the canonical approved wordmark', () => {
 });
 
 test('VEGAS V2 ships mobile-landscape first-class layout rules', () => {
-  const css = read('public/vegas-ui-v2.css');
+  const css = `${read('public/vegas-ui-v2.css')}\n${read('public/vegas-motion-v2.css')}`;
   assert.match(css, /orientation:landscape/);
   assert.match(css, /max-height:620px/);
   assert.match(css, /scroll-snap-type:x proximity/);
   assert.match(css, /safe-area-inset-bottom/);
+  assert.match(css, /position:sticky/);
+});
+
+test('VEGAS V2 motion layer has accessibility fallback and game-result states', () => {
+  const css = read('public/vegas-motion-v2.css');
+  const adapter = read('public/vegas-ui-v2.js');
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.match(css, /v2RouletteSpin/);
+  assert.match(css, /v2DiceThrow/);
+  assert.match(css, /v2CardDeal/);
+  assert.match(css, /\.v2-win/);
+  assert.match(css, /\.v2-loss/);
+  assert.match(adapter, /classList\.toggle\('v2-win'/);
+  assert.match(adapter, /classList\.toggle\('v2-loss'/);
 });
 
 test('VEGAS V2 ships vector artwork for current and expansion game families', () => {
@@ -41,10 +57,10 @@ test('VEGAS V2 ships vector artwork for current and expansion game families', ()
   }
 });
 
-test('service worker precaches VEGAS V2 shell and vector assets', () => {
+test('service worker precaches VEGAS V2 shell and motion assets', () => {
   const sw = read('public/sw.js');
-  assert.match(sw, /social-vegas-shell-v21/);
-  for (const asset of ['/vegas-ui-v2.css','/vegas-ui-v2-assets.css','/vegas-ui-v2.js','/assets/vegas-logo.svg']) {
+  assert.match(sw, /social-vegas-shell-v22/);
+  for (const asset of ['/vegas-ui-v2.css','/vegas-ui-v2-assets.css','/vegas-game-v2.css','/vegas-motion-v2.css','/vegas-ui-v2.js','/assets/vegas-logo.svg']) {
     assert.ok(sw.includes(asset), asset);
   }
 });

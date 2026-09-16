@@ -33,6 +33,7 @@ const APP_SHELL = [
   '/aaac-blackjack-cinematic.css',
   '/vegas-ui-v2.css',
   '/vegas-ui-v2-assets.css',
+  '/vegas-game-v2.css',
   '/vegas-ui-v2.js',
   '/assets/vegas-logo.svg',
   '/assets/ui-v2/game-blackjack.svg',

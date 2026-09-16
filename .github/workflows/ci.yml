@@ -44,6 +44,7 @@ jobs:
           node --check public/vault-record-room.js
           node --check public/casino-audio.js
           node --check public/casino-chip-motion.js
+          node --check public/vegas-ui-v2.js
           node --check public/sw.js
 
       - name: Syntax check deployment tooling

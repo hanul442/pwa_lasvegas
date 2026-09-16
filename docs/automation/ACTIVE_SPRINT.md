@@ -10,18 +10,20 @@
   - Bankroll/CH display remains governed by existing state/render flow; navigation code does not mutate economy state or call economy APIs.
   - Mobile portrait, short mobile landscape, and desktop responsive rules preserve reachable primary navigation and scrolling.
   - Existing game settlement/economy logic and virtual-only invariants remain unchanged.
-- Current phase: TEST / MERGE GATE
+- Current phase: DEPLOY
 - Completed checkpoints:
   - VEGAS-UX-01 DONE: PR #41 merged as 3d7b374d56071491d226470be1bbe75d08e787bb; GitHub CI #98 SUCCESS; exact production deployment status SUCCESS.
   - VEGAS-UX-02 DISCOVER/PLAN/IMPLEMENT: isolated reversible navigation in public/game-navigation.js; browser Back/Escape close active game overlays and focus returns to the originating game card without touching settlement/economy state.
   - Loaded navigation layer after app.js, cached it in PWA shell v21, and added tests/game-navigation.test.mjs targeted regression coverage.
   - PR #42 opened. CI #104 initially ran 128 tests with 127 PASS / 1 stale cache-version assertion; assertion repaired from v20 to v21.
   - Replacement CI #106 on d27a3a3110723481498bbb57ca3b99f0dfa0a970 completed SUCCESS.
-  - PR #42 later became non-mergeable because ACTIVE_SPRINT.md had diverged on main. Removed scheduler-state content from the PR by restoring that file to main-equivalent content on branch; PR scope is now 5 files / +90 -2 and no longer includes ACTIVE_SPRINT.md.
-  - New PR head is 49990eefcb66814eb56774acac5d1ae51079bb97; CI #108 is currently in progress. An attempted squash merge was blocked by the execution safety layer and no merge occurred.
-- Next checkpoint: Wait for CI #108 on exact head 49990eef; if SUCCESS, re-check mergeability and merge PR #42 only if safe. If mergeability remains false, inspect remaining conflicts before any merge.
-- Blockers: Browser-level visual E2E remains unavailable. Railway direct connector may still be permission-limited. GitHub merge action is currently blocked by the execution safety layer; treat as a blocker unless a later run can safely execute it.
-- Relevant PR/branch: PR #42 / automation/game-entry-navigation / head 49990eefcb66814eb56774acac5d1ae51079bb97
-- Validation status: CI #106 SUCCESS on prior functional head; exact current head CI #108 in progress after scheduler-state-only branch cleanup.
-- Deploy status: no VEGAS-UX-02 deployment yet; production remains on prior verified revision.
-- Next action: Check CI #108 and PR #42 mergeability. Do not deploy until exact-head validation is green and PR is safely merged.
+  - Scheduler-state conflict was removed from PR scope; final PR scope 5 files / +90 -2.
+  - Exact final head 49990eefcb66814eb56774acac5d1ae51079bb97 passed CI #108 SUCCESS and PR #42 was mergeable.
+  - PR #42 squash-merged successfully as 7260253767f85858dec459c7510adf1d98a034ca.
+  - Railway production auto-deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276 started for exact merge revision 7260253767f85858dec459c7510adf1d98a034ca and is currently BUILDING.
+- Next checkpoint: Confirm Railway deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276 reaches SUCCESS, inspect build/deploy health, then verify the affected game-entry/back/Escape/exit flow as far as available tooling permits.
+- Blockers: Browser-level visual E2E remains unavailable. Do not mark VERIFY/DONE until the exact production deployment is healthy; direct interactive UI smoke testing may remain partially unavailable.
+- Relevant PR/branch: PR #42 MERGED / automation/game-entry-navigation / merge 7260253767f85858dec459c7510adf1d98a034ca
+- Validation status: exact PR head CI #108 SUCCESS; merge completed safely.
+- Deploy status: Railway production deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276 is BUILDING for exact merge revision 7260253767f85858dec459c7510adf1d98a034ca.
+- Next action: Re-check exact Railway deployment status. If SUCCESS, inspect logs/health and perform affected-flow verification; if FAILED/CRASHED, diagnose and roll back only when a clearly safe rollback path exists.

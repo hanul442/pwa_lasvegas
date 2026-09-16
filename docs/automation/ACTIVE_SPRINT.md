@@ -11,17 +11,19 @@
   - Virtual-only economy and all approved feature invariants remain unchanged.
 - Current phase: TEST
 - Completed checkpoints:
-  - Canonical sprint state initialized from latest main 4ce35c327891d5a752fad3ce6e72d859df261541.
+  - Canonical sprint state initialized from main 4ce35c327891d5a752fad3ce6e72d859df261541.
   - Approved design references confirmed under docs/design; mobile landscape is explicitly first-class.
-  - Railway production deployment b1ddc8e7-a869-4b0c-81f3-f308ce05c586 confirmed SUCCESS.
-  - DISCOVER: AAAC lobby only had width-based mobile overflow recovery; short landscape phones could inherit desktop sizing because their width exceeds 680px.
-  - DISCOVER: Blackjack immersive layer likewise lacked a short-landscape override, leaving a tall table/header/bank stack and desktop sticky-action behavior possible on landscape phones.
-  - PLAN: Use coarse-pointer + landscape + max-height:520px scoped overrides so portrait and desktop remain untouched.
+  - Railway production deployment b1ddc8e7-a869-4b0c-81f3-f308ce05c586 confirmed SUCCESS before sprint changes.
+  - DISCOVER: AAAC lobby width-only mobile recovery allowed short landscape phones to inherit desktop sizing.
+  - DISCOVER: Blackjack immersive layer lacked a short-landscape override, risking tall sticky UI and unreachable controls.
+  - PLAN: Scope overrides to orientation:landscape + max-height:520px + pointer:coarse to isolate landscape phones.
   - IMPLEMENT: Added scroll-safe compact landscape lobby flow, safe-area padding, two-column game cards, compact metrics and non-clipping modal behavior in public/aaac-luxury-shell.css.
   - IMPLEMENT: Added scrollable compact Blackjack landscape flow with sticky compact header/bank, reduced table/card dimensions, reachable controls and non-sticky action panel in public/aaac-blackjack-immersive.css.
-- Next checkpoint: Add targeted regression coverage for the new landscape media-query invariants and run the repository validation stack.
-- Blockers: Browser-level visual E2E may depend on available browser tooling; static/regression validation is available.
-- Relevant PR/branch: automation/active-sprint-mobile-landscape
-- Validation status: Pending targeted tests and CI.
+  - TEST: Added targeted regression assertions for landscape lobby scrolling/touch/safe-area/two-column flow and Blackjack overlay/header/bank/action reachability in tests/aaac-blackjack-ui.test.mjs.
+  - REVIEW: Opened PR #41 (fix: make short landscape casino flows scroll-safe), head 1356a0f0278da43ab804479f4ffce7cb5ef752fe.
+- Next checkpoint: Observe PR #41 repository CI; if green, review diff/mergeability and advance REVIEW -> MERGE.
+- Blockers: GitHub PR workflow run had not appeared at the time of this state update. Browser-level visual E2E may depend on available browser tooling.
+- Relevant PR/branch: PR #41 / automation/active-sprint-mobile-landscape
+- Validation status: Targeted regression coverage committed; repository CI pending.
 - Deploy status: Production remains on pre-sprint healthy revision; no sprint deploy yet.
-- Next action: Add regression test, run/observe CI, then open PR only if green.
+- Next action: Check PR #41 CI and mergeability; merge only if validation is green, then verify Railway preview/production according to deployment policy.

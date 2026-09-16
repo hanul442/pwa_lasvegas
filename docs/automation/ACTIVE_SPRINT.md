@@ -19,9 +19,11 @@
   - IMPLEMENT: explicit CH wording states virtual-only, non-purchasable/non-redeemable/non-withdrawable and no real-world monetary value.
   - TEST: added tests/game-floor-stake-entry.test.mjs targeted regression for four games, four tier thresholds, virtual-only semantics, history/Escape navigation, touch and short-landscape reachability.
   - PR #48 opened at head 65eced9b9605a23bffb8bfc2b11f952b67365ffc with 4 changed files.
-- Next checkpoint: Wait for/check exact-head CI on PR #48; if green, review diff and mergeability, resolve only branch/base drift if needed, then squash merge when safe.
-- Blockers: PR #48 initially reports mergeable=false immediately after creation; determine whether this is transient mergeability calculation or base drift before merge. Browser-level visual E2E remains unavailable. Railway has an unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #48 OPEN; automation/vegas-game-01-stake-floor; exact head 65eced9b9605a23bffb8bfc2b11f952b67365ffc.
-- Validation status: Targeted regression committed; exact-head GitHub Actions result pending. Previous production health remains green.
+  - TEST: CI #151 on 65eced9b failed in backend/core tests while syntax checks passed. Root cause isolated to the pre-existing clean-shell focus regression contract expecting lastLobbyTrigger; the implementation had renamed it to lastTrigger without behavioral need.
+  - TEST FIX: restored the compatible lastLobbyTrigger identifier on PR branch in commit 5c26a8b3c5ca434192683795c17083d3286ffb5e; no product/economy behavior changed.
+- Next checkpoint: Check replacement exact-head CI for PR #48 at 5c26a8b3c5ca434192683795c17083d3286ffb5e; if green, review scoped diff/mergeability and squash merge when safe.
+- Blockers: Browser-level visual E2E remains unavailable. Railway has an unrelated staged environment change; do not accept it automatically.
+- Relevant PR/branch: PR #48 OPEN; automation/vegas-game-01-stake-floor; exact head 5c26a8b3c5ca434192683795c17083d3286ffb5e; mergeable was true before repair commit and must be rechecked.
+- Validation status: Initial CI #151 FAILED at backend/core tests due to clean-shell regression-contract identifier drift; syntax checks passed. Compatibility repair committed; replacement exact-head CI pending.
 - Deploy status: No VEGAS-GAME-01 deployment yet; production remains on prior healthy main lineage.
-- Next action: Check PR #48 exact-head CI and mergeability. If CI is green and diff remains scoped, squash merge, then verify exact Railway revision and affected flow before DONE.
+- Next action: Check PR #48 replacement exact-head CI and mergeability. If green and diff remains scoped, squash merge, then verify exact Railway revision and affected flow before DONE.

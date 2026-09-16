@@ -1,25 +1,25 @@
 # ACTIVE SPRINT
 
 - Sprint ID/title: VEGAS-MOTION-01 — Casino Table Motion & Responsive Feedback
-- Objective: Build the first approved Vegas-presentation slice on top of the now-stable player shell and Stake Tier entry, adding intentional casino ambience and game-specific table motion without blocking input, scrolling, navigation, or state clarity.
-- User-visible outcome: Entering Blackjack, Roulette and Dice tables feels visibly alive through concise table transitions and game-specific card/roulette/dice motion, while controls remain immediately usable across mobile portrait, short landscape and desktop.
+- Objective: Build the first approved Vegas-presentation slice on top of the stable player shell and Stake Tier entry, adding intentional casino ambience and game-specific table motion without blocking input, scrolling, navigation, or state clarity.
+- User-visible outcome: Entering Blackjack, Roulette and Dice tables feels visibly alive through concise game-specific motion while controls remain immediately usable across mobile portrait, short landscape and desktop.
 - Acceptance criteria:
-  - Preserve the existing Lobby/Games/Stake Tier/full-screen table navigation and virtual-only CH semantics.
-  - Add intentional, bounded table-entry feedback and at least one game-specific motion treatment for Blackjack/cards, Roulette wheel, and Dice.
-  - Motion must not intercept scrolling, Back/browser Back/Escape, or primary controls.
-  - Respect prefers-reduced-motion with a clear non-animated fallback.
+  - Preserve Lobby/Games/Stake Tier/full-screen table navigation and virtual-only CH semantics.
+  - Blackjack card deal/spread, Roulette wheel spin and Dice throw appear as bounded table-entry feedback.
+  - Motion is decorative and must not intercept scrolling, Back/browser Back/Escape or primary controls.
+  - Respect prefers-reduced-motion with a clear static fallback.
   - Mobile portrait, short landscape and desktop keep table content and controls reachable.
   - No backend/economy/settlement/database changes.
-  - Add targeted regression coverage for reduced-motion, non-blocking interaction hooks, and responsive table reachability.
-- Current phase: DISCOVER
+  - Validate targeted motion hooks, reduced-motion fallback and existing regression suite before merge.
+- Current phase: TEST
 - Completed checkpoints:
-  - VEGAS-GAME-01 DONE: PR #48 merged at 6d670dc04989715e9fbd075740349839d4ff8bad; CI #153 SUCCESS.
-  - VEGAS-GAME-01 VERIFY: exact feature revision was deployed then superseded by scheduler-state main commit 58fc33cdf5c376cd241b7e73676ee5c654a5fd0a; latest Railway production deployment fa09efcb-cfb3-4839-ab83-d3152855e601 is SUCCESS.
-  - VEGAS-GAME-01 VERIFY: Railway build completed, /api/health passed 1/1, Supabase persistence initialized, and server listens on 0.0.0.0:8080.
-  - Browser-level visual E2E remains unavailable, so no unverified visual PASS is claimed.
-- Next checkpoint: Trace the current full-screen table DOM/CSS and existing motion/reduced-motion hooks on main, then select one coherent non-blocking animation implementation slice for Blackjack cards, Roulette wheel and Dice while preserving current navigation and responsive reachability.
-- Blockers: Browser-level visual E2E remains unavailable. Railway has an unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: None yet for VEGAS-MOTION-01. Prior PR #48 MERGED.
-- Validation status: Prior sprint CI #153 SUCCESS; production health verified. New motion sprint validation not started.
-- Deploy status: Railway production deployment fa09efcb-cfb3-4839-ab83-d3152855e601 at main revision 58fc33cdf5c376cd241b7e73676ee5c654a5fd0a is SUCCESS; /api/health PASS.
-- Next action: Inspect current table markup/styles/scripts and existing reduced-motion handling, then implement the smallest coherent Vegas-motion slice with targeted regression coverage.
+  - DISCOVER: traced current full-screen table markup, app.js navigation/history behavior, short-landscape CSS and existing global prefers-reduced-motion fallback on main.
+  - PLAN: selected one coherent decorative table-entry slice covering Blackjack cards, Roulette wheel and Dice; Poker remains intentionally static in this slice.
+  - IMPLEMENT: PR #49 adds pointer-events:none motion layer, game-specific entry trigger, bounded keyframes, short-landscape sizing and reduced-motion static fallback.
+  - Existing navigation/economy/settlement/database behavior was not modified.
+- Next checkpoint: Confirm PR #49 exact-head CI and mergeability; if green and scoped, review diff then squash merge.
+- Blockers: Browser-level visual E2E remains unavailable. PR #49 reported mergeable=false immediately after creation; re-check after GitHub computes mergeability/CI. Railway has an unrelated staged environment change; do not accept it automatically.
+- Relevant PR/branch: PR #49 OPEN; branch automation/vegas-motion-01; exact head 6d11573dba1660f6fd1bff826ec4d1a0f42a5721.
+- Validation status: Implementation complete; GitHub CI pending. Browser visual PASS is not claimed.
+- Deploy status: No VEGAS-MOTION-01 deployment yet; prior production remains healthy.
+- Next action: Check exact-head CI for PR #49 and mergeability, inspect scoped diff, then merge only if checks are green; afterward verify exact Railway revision and affected flow.

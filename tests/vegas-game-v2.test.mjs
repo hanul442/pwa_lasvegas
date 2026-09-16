@@ -28,7 +28,7 @@ test('future Korean rooms remain presentation-only coming-soon surfaces', () => 
   const css = read('public/vegas-game-v2.css');
   for (const game of ['matgo','seotda','holdem']) assert.ok(css.includes(`data-v2-game="${game}"`), game);
   const lower = css.toLowerCase();
-  for (const forbidden of ['fetch(', '/api/', 'settlement', 'ledger write', 'cash-out', 'real-money']) {
+  for (const forbidden of ['fetch(', '/api/', 'xmlhttprequest', 'websocket', 'cash-out', 'real-money']) {
     assert.equal(lower.includes(forbidden), false, `game presentation CSS must not introduce ${forbidden}`);
   }
 });

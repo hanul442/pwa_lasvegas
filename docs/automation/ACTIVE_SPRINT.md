@@ -1,24 +1,25 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-UX-03 — Responsive Navigation & Obscured-Content Hardening
-- Objective: Remove the next highest-impact usability failures in primary navigation, responsive layout, obscured content, and scroll/touch reachability across mobile portrait, mobile landscape, and desktop before further casino presentation work.
-- User-visible outcome: Players can move through the lobby and primary surfaces without fixed/sticky chrome hiding content, trapped scrolling, unreachable controls, or responsive navigation collisions.
+- Sprint ID/title: VEGAS-UI-RESET-01 — Clean-Slate Player Shell
+- Objective: Rebuild the player-facing Vegas UI from the intentional clean slate without restoring discarded legacy UI, starting with a mobile-first full-screen information architecture and navigation shell that can host each game as its own screen rather than a popup.
+- User-visible outcome: The reset placeholder becomes the foundation for a new Vegas experience with clear full-screen Lobby / Games / Ranking / Profile surfaces, safe scrolling, responsive navigation, and no legacy popup architecture.
 - Acceptance criteria:
-  - Primary navigation and lobby controls remain reachable at mobile portrait, short mobile landscape, and desktop breakpoints.
-  - Fixed/sticky headers, bottom bars, overlays, and safe-area padding do not obscure actionable content.
-  - Vertical scrolling and touch gestures remain enabled on scrollable surfaces; decorative/animation layers do not intercept input.
-  - Responsive layout changes preserve game/table entry and existing Back/Escape/focus-restoration behavior from VEGAS-UX-02.
-  - Existing bankroll/CH, settlement, economy, Stake Tier, ranking, season, social, and virtual-only invariants remain unchanged.
-  - Targeted regression coverage is added for the concrete responsive/navigation gap selected during DISCOVER.
-- Current phase: DISCOVER
+  - Rebuild starts from current clean-slate main at 72bb1ef6a089f2d82b2ad927bfd4707d638a5b37; discarded legacy UI is not restored.
+  - Mobile-first shell supports portrait, short landscape, and desktop without trapping vertical scrolling or obscuring content.
+  - Game/table entry architecture is full-screen route/surface based, not modal/popup based.
+  - Navigation and content remain reachable with safe-area padding and touch-friendly targets.
+  - Existing backend/economy/settlement/Stake Tier/ranking/season/social modules remain untouched and virtual-only.
+  - First implementation slice includes targeted regression coverage for shell reachability and non-popup game entry architecture.
+- Current phase: PLAN
 - Completed checkpoints:
-  - VEGAS-UX-01 DONE: PR #41 merged as 3d7b374d56071491d226470be1bbe75d08e787bb; GitHub CI #98 SUCCESS; exact production deployment status SUCCESS.
-  - VEGAS-UX-02 DONE: PR #42 squash-merged as 7260253767f85858dec459c7510adf1d98a034ca after exact head CI #108 SUCCESS.
-  - VEGAS-UX-02 production verification: GitHub commit status for exact merge revision 7260253767f85858dec459c7510adf1d98a034ca is SUCCESS with context `SOCIAL VEGAS - social-vegas-web` and description `Success - social-vegas-web-production.up.railway.app`; status target identifies Railway deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276.
-  - VEGAS-UX-02 affected-flow verification is covered by the merged targeted navigation regression suite; direct browser visual E2E remains unavailable, so no unsupported visual claim is made.
-- Next checkpoint: Inspect current main navigation/layout CSS and shell markup for the highest-impact remaining fixed/sticky/overflow/touch collision, then select one coherent responsive usability slice and implement it with targeted regression coverage.
-- Blockers: Browser-level visual E2E remains unavailable. Direct Railway connector access currently returns a viewer-role error, but exact production deployment success can be independently confirmed through the GitHub status attached to the deployed revision.
-- Relevant PR/branch: No PR yet for VEGAS-UX-03; base main includes PR #42 merge 7260253767f85858dec459c7510adf1d98a034ca.
-- Validation status: VEGAS-UX-02 exact PR head CI #108 SUCCESS; exact merged revision production status SUCCESS. VEGAS-UX-03 validation not started.
-- Deploy status: Production SUCCESS for VEGAS-UX-02 exact merge revision 7260253767f85858dec459c7510adf1d98a034ca via Railway deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276.
-- Next action: Resume VEGAS-UX-03 DISCOVER from current main; inspect navigation/layout overflow and input reachability, choose the highest-impact concrete gap, then PLAN/IMPLEMENT without altering economy or settlement state.
+  - Repository state re-read before work; previous VEGAS-UX-03 scheduler state was stale relative to main.
+  - Confirmed main was intentionally reset by commits 83205e54 (wipe legacy player UI) and 72bb1ef6 (remove legacy UI tests/reset CI).
+  - Confirmed current public/index.html is an explicit `VEGAS — UI RESET` clean slate and public/styles.css contains only reset-screen styling.
+  - Marked VEGAS-UX-03 obsolete rather than attempting responsive fixes against UI that no longer exists.
+  - Selected first coherent rebuild slice: mobile-first player shell + full-screen surface navigation, with no game logic/economy changes.
+- Next checkpoint: Implement the clean-slate shell on a dedicated branch: semantic app frame, Lobby/Games/Ranking/Profile full-screen surfaces, safe-area aware responsive navigation, scroll-safe layout, and regression tests proving game entry is not modal/popup based.
+- Blockers: No code blocker. Browser-level visual E2E remains unavailable, so responsive behavior must be guarded by source/regression checks until an interactive preview can be verified.
+- Relevant PR/branch: No PR yet; base main 72bb1ef6a089f2d82b2ad927bfd4707d638a5b37. Next branch: automation/vegas-clean-shell.
+- Validation status: DISCOVER realignment complete. Implementation validation not started.
+- Deploy status: No deployment for the rebuild slice yet; production currently reflects the intentional UI reset.
+- Next action: Create automation/vegas-clean-shell from current main, implement the shell and targeted tests, run CI, then review/merge/deploy only when green.

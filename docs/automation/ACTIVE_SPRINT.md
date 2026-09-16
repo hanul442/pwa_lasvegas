@@ -1,30 +1,25 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-GAME-01 — Playable Game Floor & Stake Tier Entry
-- Objective: Turn the clean player shell into a usable casino floor by connecting Games and full-screen table entry to the established virtual-only economy architecture with clear Stake Tier selection.
-- User-visible outcome: Players can browse Blackjack, Roulette, Dice and Poker, choose LOW/MID/HIGH/VIP virtual CH ranges, and enter/leave a dedicated full-screen table without popup or scroll traps.
+- Sprint ID/title: VEGAS-MOTION-01 — Casino Table Motion & Responsive Feedback
+- Objective: Build the first approved Vegas-presentation slice on top of the now-stable player shell and Stake Tier entry, adding intentional casino ambience and game-specific table motion without blocking input, scrolling, navigation, or state clarity.
+- User-visible outcome: Entering Blackjack, Roulette and Dice tables feels visibly alive through concise table transitions and game-specific card/roulette/dice motion, while controls remain immediately usable across mobile portrait, short landscape and desktop.
 - Acceptance criteria:
-  - Games exposes the approved game catalog and Stake Tier entry affordances.
-  - Stake Tiers remain virtual CH-only and never imply purchase, redemption, cash-out, or real-world value.
-  - Table entry remains full-screen and Back/browser Back/Escape remain reliable.
-  - Mobile portrait, short landscape, and desktop layouts keep controls/content reachable and vertically scrollable.
-  - Existing backend/economy/settlement modules remain untouched in this slice.
-  - Targeted regression coverage guards catalog reachability, Stake Tier semantics, virtual-only wording, and table navigation.
-- Current phase: DEPLOY
+  - Preserve the existing Lobby/Games/Stake Tier/full-screen table navigation and virtual-only CH semantics.
+  - Add intentional, bounded table-entry feedback and at least one game-specific motion treatment for Blackjack/cards, Roulette wheel, and Dice.
+  - Motion must not intercept scrolling, Back/browser Back/Escape, or primary controls.
+  - Respect prefers-reduced-motion with a clear non-animated fallback.
+  - Mobile portrait, short landscape and desktop keep table content and controls reachable.
+  - No backend/economy/settlement/database changes.
+  - Add targeted regression coverage for reduced-motion, non-blocking interaction hooks, and responsive table reachability.
+- Current phase: DISCOVER
 - Completed checkpoints:
-  - DISCOVER: confirmed canonical STAKE_TIERS in lib/constants.mjs: LOW 100K–999,999 CH; MID 1M–9,999,999; HIGH 10M–49,999,999; VIP 50M+.
-  - DISCOVER: current clean shell Games surface was placeholder-only while Lobby already exposed Blackjack/Roulette/Dice/Poker and full-screen table navigation.
-  - PLAN: selected one coherent slice: Games catalog -> game selection -> Stake Tier selection -> full-screen table; no settlement/database changes.
-  - IMPLEMENT: branch automation/vegas-game-01-stake-floor adds Games catalog, virtual-only tier chooser, selected tier context on table, responsive tier/floor layouts, and tier-aware Back/browser Back/Escape navigation.
-  - IMPLEMENT: explicit CH wording states virtual-only, non-purchasable/non-redeemable/non-withdrawable and no real-world monetary value.
-  - TEST: added tests/game-floor-stake-entry.test.mjs targeted regression for four games, four tier thresholds, virtual-only semantics, history/Escape navigation, touch and short-landscape reachability.
-  - TEST: CI #151 failed due to clean-shell regression-contract identifier drift; compatibility repair restored lastLobbyTrigger with no behavior/economy change.
-  - TEST: replacement exact-head CI #153 on 5c26a8b3c5ca434192683795c17083d3286ffb5e completed SUCCESS.
-  - REVIEW: PR #48 rechecked OPEN, mergeable=true, 4 changed files, scoped to the approved playable-entry slice.
-  - MERGE: PR #48 squash merged to main at exact revision 6d670dc04989715e9fbd075740349839d4ff8bad.
-- Next checkpoint: Verify Railway deployment 6227bada-27f6-4699-8349-28e00716cfcc for exact revision 6d670dc04989715e9fbd075740349839d4ff8bad reaches SUCCESS, inspect build/deploy health, then verify affected Games -> Stake Tier -> table -> Back/Escape flow as far as available tooling permits.
+  - VEGAS-GAME-01 DONE: PR #48 merged at 6d670dc04989715e9fbd075740349839d4ff8bad; CI #153 SUCCESS.
+  - VEGAS-GAME-01 VERIFY: exact feature revision was deployed then superseded by scheduler-state main commit 58fc33cdf5c376cd241b7e73676ee5c654a5fd0a; latest Railway production deployment fa09efcb-cfb3-4839-ab83-d3152855e601 is SUCCESS.
+  - VEGAS-GAME-01 VERIFY: Railway build completed, /api/health passed 1/1, Supabase persistence initialized, and server listens on 0.0.0.0:8080.
+  - Browser-level visual E2E remains unavailable, so no unverified visual PASS is claimed.
+- Next checkpoint: Trace the current full-screen table DOM/CSS and existing motion/reduced-motion hooks on main, then select one coherent non-blocking animation implementation slice for Blackjack cards, Roulette wheel and Dice while preserving current navigation and responsive reachability.
 - Blockers: Browser-level visual E2E remains unavailable. Railway has an unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #48 MERGED; automation/vegas-game-01-stake-floor; merged revision 6d670dc04989715e9fbd075740349839d4ff8bad.
-- Validation status: CI #153 SUCCESS on exact PR head; PR mergeability true before squash merge.
-- Deploy status: Railway production deployment 6227bada-27f6-4699-8349-28e00716cfcc for exact merged revision 6d670dc04989715e9fbd075740349839d4ff8bad is BUILDING.
-- Next action: Wait for the exact Railway deployment to finish; if SUCCESS, inspect health/logs and complete VERIFY before marking DONE.
+- Relevant PR/branch: None yet for VEGAS-MOTION-01. Prior PR #48 MERGED.
+- Validation status: Prior sprint CI #153 SUCCESS; production health verified. New motion sprint validation not started.
+- Deploy status: Railway production deployment fa09efcb-cfb3-4839-ab83-d3152855e601 at main revision 58fc33cdf5c376cd241b7e73676ee5c654a5fd0a is SUCCESS; /api/health PASS.
+- Next action: Inspect current table markup/styles/scripts and existing reduced-motion handling, then implement the smallest coherent Vegas-motion slice with targeted regression coverage.

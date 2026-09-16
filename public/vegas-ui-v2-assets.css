@@ -1,0 +1,9 @@
+/* Canonical VEGAS V2 asset bindings. Loaded after vegas-ui-v2.css. */
+.vegas-v2 .game[data-v2-game="blackjack"] .vegas-game-art{background-image:url('/assets/ui-v2/game-blackjack.svg')}
+.vegas-v2 .game[data-v2-game="roulette"] .vegas-game-art{background-image:url('/assets/ui-v2/game-roulette.svg')}
+.vegas-v2 .game[data-v2-game="baccarat"] .vegas-game-art{background-image:url('/assets/ui-v2/game-baccarat.svg')}
+.vegas-v2 .game[data-v2-game="sicbo"] .vegas-game-art{background-image:url('/assets/ui-v2/game-sicbo.svg')}
+.vegas-v2 .game[data-v2-game="holdem"] .vegas-game-art{background-image:url('/assets/ui-v2/game-holdem.svg')}
+.vegas-v2 .game[data-v2-game="seotda"] .vegas-game-art{background-image:url('/assets/ui-v2/game-seotda.svg')}
+.vegas-v2 .game[data-v2-game="matgo"] .vegas-game-art{background-image:url('/assets/ui-v2/game-matgo.svg')}
+@media(orientation:landscape) and (max-height:620px) and (pointer:coarse){.vegas-v2 .topbar:before{background-image:url('/assets/vegas-logo.svg')}}

@@ -2,27 +2,22 @@
 
 - Sprint ID/title: VEGAS-UX-02 — Game Entry & Navigation Reliability
 - Objective: Verify and harden the lobby-to-table entry/exit/navigation flow across mobile portrait, mobile landscape, and desktop before adding further casino presentation work.
-- User-visible outcome: Players can enter supported game tables, use browser Back or Escape to return, retain visible bankroll/CH context, and resume the lobby without trapped navigation.
+- User-visible outcome: Players can enter supported game tables, retain visible bankroll/CH context, return to the lobby reliably, and scroll/navigate without trapped or obscured controls.
 - Acceptance criteria:
   - Lobby game/table entry controls remain reachable and activate the intended game overlay/route.
-  - Exit/back controls, browser Back, and Escape reliably return to a usable lobby without stale overlays.
-  - Keyboard focus returns to the originating game control after modal exit when practical.
-  - Bankroll/CH display remains governed by existing state/render flow; navigation code does not mutate economy state or call economy APIs.
+  - Exit/back controls reliably return to a usable lobby without stale overlays or scroll lock.
+  - Bankroll/CH display remains consistent across lobby and game entry/exit transitions.
   - Mobile portrait, short mobile landscape, and desktop responsive rules preserve reachable primary navigation and scrolling.
   - Existing game settlement/economy logic and virtual-only invariants remain unchanged.
-- Current phase: TEST
+- Current phase: DISCOVER
 - Completed checkpoints:
-  - VEGAS-UX-01 DONE: PR #41 merged as 3d7b374d56071491d226470be1bbe75d08e787bb; GitHub CI #98 SUCCESS; exact production deployment status SUCCESS.
-  - VEGAS-UX-02 DISCOVER: traced public/app.js entry/exit handlers. Game entry/close was render-local only: opening a table did not create browser history state, browser Back could leave the app instead of closing the game, and Escape had no overlay-close path.
-  - VEGAS-UX-02 PLAN: isolate navigation reliability in a presentation/navigation-only module; do not modify game settlement, bankroll, stake, ledger, schema, or API behavior.
-  - VEGAS-UX-02 IMPLEMENT: added public/game-navigation.js to create a reversible history boundary on game entry, close visible game overlays on browser Back or Escape, restore focus to the originating game card, and track overlay presence without mutating game/economy state.
-  - VEGAS-UX-02 IMPLEMENT: loaded the navigation layer immediately after app.js and added it to PWA shell cache v21.
-  - VEGAS-UX-02 TEST: added tests/game-navigation.test.mjs assertions for load/cache order, history boundary, Back/Escape handling, focus restoration, and economy-neutral scope.
-  - VEGAS-UX-02 REVIEW gate: PR #42 opened with 5-file low-risk navigation-only scope; no settlement/economy/database/schema/secrets changes.
-  - CI #104 ran 128 tests: 127 passed; the only failure was a stale pre-existing AAAC test expecting PWA cache v20 after this sprint intentionally advanced the shell to v21. Navigation regressions themselves passed. Updated that cache-version assertion to v21 in commit 4be4228b29776e0ec0fc10ad90598abd080f4fe1.
-- Next checkpoint: Check the new PR #42 CI run after cache-assertion repair; if green, review mergeability/diff and merge. If it still fails, repair only safe sprint-related failures.
-- Blockers: Browser-level visual E2E remains unavailable. Railway direct connector may still be permission-limited.
-- Relevant PR/branch: PR #42 / automation/game-entry-navigation
-- Validation status: CI #104 failed only on stale cache-version expectation; 127/128 tests passed and all new navigation tests passed. Safe test-only repair committed; replacement CI pending.
-- Deploy status: no VEGAS-UX-02 deployment yet; production remains on prior verified revision.
-- Next action: Check replacement PR #42 CI; do not merge or deploy unless required validation is green.
+  - VEGAS-UX-01 DONE: PR #41 merged as 3d7b374d56071491d226470be1bbe75d08e787bb; GitHub CI #98 SUCCESS.
+  - VEGAS-UX-01 DEPLOY/VERIFY: GitHub commit deployment status for exact revision 3d7b374d56071491d226470be1bbe75d08e787bb is SUCCESS for SOCIAL VEGAS / social-vegas-web, target social-vegas-web-production.up.railway.app, recorded 2026-09-16T01:08:52Z. Railway target deployment reference aca164fd-8917-4b49-aee5-29f768d22808 in production environment 14e5248d-4180-48a1-b0cd-15deee3780b5.
+  - VEGAS-UX-01 affected landscape flow is protected by repository targeted regression assertions that passed in CI; direct browser visual E2E was unavailable and was not falsely claimed.
+  - VEGAS-UX-02 initialized as the next highest-priority approved usability sprint after landscape usability completion.
+- Next checkpoint: Inspect current lobby game-entry, overlay/route exit, scroll-lock, and bankroll/CH synchronization paths; identify one coherent highest-impact reliability gap before implementation.
+- Blockers: Railway connector direct project query still returns a viewer-role error, but exact merged-revision production deployment success is independently confirmed by the GitHub deployment status attached to the commit. Browser-level visual E2E remains unavailable in the current execution environment.
+- Relevant PR/branch: none yet / main
+- Validation status: VEGAS-UX-01 GitHub CI #98 SUCCESS and exact merged revision deployment status SUCCESS. VEGAS-UX-02 validation not started.
+- Deploy status: VEGAS-UX-01 exact revision 3d7b374d56071491d226470be1bbe75d08e787bb confirmed deployed successfully to SOCIAL VEGAS production via commit deployment status. VEGAS-UX-02 has no changes or deployment yet.
+- Next action: Resume VEGAS-UX-02 DISCOVER by tracing game/table entry and return navigation plus bankroll/CH display consistency, then scope one low-risk coherent fix.

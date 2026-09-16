@@ -19,9 +19,10 @@
   - VEGAS-UX-02 IMPLEMENT: loaded the navigation layer immediately after app.js and added it to PWA shell cache v21.
   - VEGAS-UX-02 TEST: added tests/game-navigation.test.mjs assertions for load/cache order, history boundary, Back/Escape handling, focus restoration, and economy-neutral scope.
   - VEGAS-UX-02 REVIEW gate: PR #42 opened with 5-file low-risk navigation-only scope; no settlement/economy/database/schema/secrets changes.
-- Next checkpoint: Wait for/run GitHub PR CI on PR #42 head; if green, review mergeability/diff and merge. If CI fails, repair only safe failures before merge.
-- Blockers: GitHub PR workflow had not produced a run at the first post-open check. Browser-level visual E2E remains unavailable. Railway direct connector may still be permission-limited.
+  - CI #104 ran 128 tests: 127 passed; the only failure was a stale pre-existing AAAC test expecting PWA cache v20 after this sprint intentionally advanced the shell to v21. Navigation regressions themselves passed. Updated that cache-version assertion to v21 in commit 4be4228b29776e0ec0fc10ad90598abd080f4fe1.
+- Next checkpoint: Check the new PR #42 CI run after cache-assertion repair; if green, review mergeability/diff and merge. If it still fails, repair only safe sprint-related failures.
+- Blockers: Browser-level visual E2E remains unavailable. Railway direct connector may still be permission-limited.
 - Relevant PR/branch: PR #42 / automation/game-entry-navigation
-- Validation status: targeted regression committed; GitHub PR CI pending/not yet emitted at last check.
+- Validation status: CI #104 failed only on stale cache-version expectation; 127/128 tests passed and all new navigation tests passed. Safe test-only repair committed; replacement CI pending.
 - Deploy status: no VEGAS-UX-02 deployment yet; production remains on prior verified revision.
-- Next action: Check PR #42 CI and mergeability; do not deploy unless required validation is green.
+- Next action: Check replacement PR #42 CI; do not merge or deploy unless required validation is green.

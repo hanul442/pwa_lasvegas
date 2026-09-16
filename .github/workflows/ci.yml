@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - automation/stake-tier-model
+      - ui/clean-slate-rebuild
 
 permissions:
   contents: read
@@ -26,32 +26,15 @@ jobs:
       - name: Syntax check server
         run: node --check server.mjs
 
-      - name: Syntax check browser modules
-        run: |
-          node --check public/app.js
-          node --check public/blackjack-v2.js
-          node --check public/blackjack-session.js
-          node --check public/game-stability.js
-          node --check public/instant-idempotency.js
-          node --check public/blackjack-idempotency.js
-          node --check public/baccarat-trace.js
-          node --check public/baccarat-chip-motion.js
-          node --check public/roulette-trace.js
-          node --check public/roulette-chip-motion.js
-          node --check public/sicbo-trace.js
-          node --check public/sicbo-chip-motion.js
-          node --check public/runtime-provenance.js
-          node --check public/vault-record-room.js
-          node --check public/casino-audio.js
-          node --check public/casino-chip-motion.js
-          node --check public/sw.js
+      - name: Syntax check clean UI bootstrap
+        run: node --check public/app.js
 
       - name: Syntax check deployment tooling
         run: |
           node --check lib/deployment-provenance.mjs
           node --check scripts/smoke-deployment.mjs
 
-      - name: Run tests
+      - name: Run backend/core tests
         run: npm test
 
       - name: Verify ledger invariants

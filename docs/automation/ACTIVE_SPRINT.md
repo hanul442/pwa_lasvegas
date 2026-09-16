@@ -10,7 +10,7 @@
   - Navigation and content remain reachable with safe-area padding and touch-friendly targets.
   - Existing backend/economy/settlement/Stake Tier/ranking/season/social modules remain untouched and virtual-only.
   - Targeted regression coverage guards shell reachability and non-popup game entry architecture.
-- Current phase: TEST
+- Current phase: DEPLOY
 - Completed checkpoints:
   - Detected previous VEGAS-UX-03 state was stale after intentional UI wipe commits 83205e54 and 72bb1ef6; obsolete responsive-fix sprint was not continued against nonexistent legacy UI.
   - PLAN: selected clean-slate player shell as the first coherent rebuild slice.
@@ -19,10 +19,12 @@
   - IMPLEMENT: added safe-area aware bottom navigation, desktop rail, short-landscape layout, scroll-safe body behavior, touch-friendly controls, and reduced-motion handling.
   - IMPLEMENT: game cards now enter a full-screen table surface using reversible browser history; Back, browser Back, and Escape return to Lobby with trigger focus restoration.
   - TEST: added tests/clean-shell-ui.test.mjs guarding primary surfaces, absence of dialog/popup architecture, scroll/safe-area/landscape/desktop rules, and reversible game navigation.
-  - REVIEW GATE: opened PR #45 at exact head 659b18c9e6ae9ed65a985f901c3adf795194fa59; 4 changed files, +113/-12.
-- Next checkpoint: Wait for PR #45 CI on exact head 659b18c9e6ae9ed65a985f901c3adf795194fa59; if green, review exact diff/mergeability, squash merge, then verify Railway deployment revision and affected shell flow.
-- Blockers: PR #45 workflow run has not appeared yet. Browser-level visual E2E remains unavailable, so no unsupported visual PASS claim will be made.
-- Relevant PR/branch: PR #45 OPEN; branch automation/vegas-clean-shell; exact head 659b18c9e6ae9ed65a985f901c3adf795194fa59.
-- Validation status: Targeted regression committed; GitHub CI pending/not yet created for PR #45 exact head.
-- Deploy status: No deployment for this rebuild slice; production remains on the intentional UI reset until merge.
-- Next action: Check PR #45 exact-head CI; only after green, perform diff/mergeability review and proceed to MERGE/DEPLOY/VERIFY.
+  - TEST: GitHub CI #142 completed SUCCESS on exact PR head 659b18c9e6ae9ed65a985f901c3adf795194fa59.
+  - REVIEW: PR #45 confirmed open, non-draft, mergeable=true, exact head unchanged, 4 changed files (+113/-12).
+  - MERGE: squash-merged PR #45 to main as 70201bb48f1804076c80efe0ef2baac825b25133.
+- Next checkpoint: Verify Railway production deployment for exact merged revision 70201bb48f1804076c80efe0ef2baac825b25133; then verify affected clean-shell flow and mark DONE if healthy.
+- Blockers: Browser-level visual E2E remains unavailable, so no unsupported visual PASS claim will be made. Railway deployment status still requires verification.
+- Relevant PR/branch: PR #45 MERGED; branch automation/vegas-clean-shell; validated head 659b18c9e6ae9ed65a985f901c3adf795194fa59; merge revision 70201bb48f1804076c80efe0ef2baac825b25133.
+- Validation status: GitHub CI #142 SUCCESS on exact validated head; PR mergeability reviewed before merge.
+- Deploy status: Merge completed; Railway exact-revision deployment/health not yet verified in this run.
+- Next action: Verify Railway deployment of 70201bb48f1804076c80efe0ef2baac825b25133 and affected shell flow; if healthy, mark VEGAS-UI-RESET-01 DONE and initialize the next approved high-value sprint.

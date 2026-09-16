@@ -1,27 +1,27 @@
 # ACTIVE SPRINT
 
 - Sprint ID/title: VEGAS-GAME-01 — Playable Game Floor & Stake Tier Entry
-- Objective: Turn the clean player shell from a navigation scaffold into a usable casino floor by connecting the Games surface and full-screen table entry to the established virtual-only game/economy architecture, beginning with clear Stake Tier selection and reliable table entry without restoring discarded legacy UI.
-- User-visible outcome: Players can browse the game floor, understand virtual Stake Tiers, choose a table, and enter/leave a dedicated full-screen game surface with clear virtual-chip context and no popup/scroll trap.
+- Objective: Turn the clean player shell into a usable casino floor by connecting Games and full-screen table entry to the established virtual-only economy architecture with clear Stake Tier selection.
+- User-visible outcome: Players can browse Blackjack, Roulette, Dice and Poker, choose LOW/MID/HIGH/VIP virtual CH ranges, and enter/leave a dedicated full-screen table without popup or scroll traps.
 - Acceptance criteria:
-  - Games surface is no longer placeholder copy; it exposes the approved game catalog and Stake Tier entry affordances.
+  - Games exposes the approved game catalog and Stake Tier entry affordances.
   - Stake Tiers remain virtual CH-only and never imply purchase, redemption, cash-out, or real-world value.
-  - Table entry remains full-screen surface based and Back/browser Back/Escape remain reliable.
+  - Table entry remains full-screen and Back/browser Back/Escape remain reliable.
   - Mobile portrait, short landscape, and desktop layouts keep controls/content reachable and vertically scrollable.
-  - Existing backend/economy/settlement/ranking/season/social modules are reused where compatible rather than duplicated.
-  - Motion/feedback added in this slice must not block input, scrolling, or game-state clarity.
+  - Existing backend/economy/settlement modules remain untouched in this slice.
   - Targeted regression coverage guards catalog reachability, Stake Tier semantics, virtual-only wording, and table navigation.
-- Current phase: DISCOVER
+- Current phase: TEST
 - Completed checkpoints:
-  - VEGAS-UI-RESET-01 DONE: clean-slate Lobby/Games/Ranking/Profile shell and full-screen table navigation merged as 70201bb48f1804076c80efe0ef2baac825b25133.
-  - VERIFY: Railway deployed clean-shell revision 70201bb48f1804076c80efe0ef2baac825b25133 successfully; that deployment was later superseded normally by newer main revisions rather than rolled back for failure.
-  - VERIFY: current production deployment 7dd371eb-8cf6-4407-a69c-78407ec251fc is SUCCESS on main revision 1c1f4868e3ab22795b07dd84fd9c98c96295b858.
-  - VERIFY: current Railway healthcheck /api/health succeeded 1/1; runtime started and reports SOCIAL VEGAS listening on 0.0.0.0:8080 with Supabase persistence ready.
-  - VERIFY: current main still contains the clean-shell surfaces and full-screen table architecture, so subsequent persistence work did not erase the UI slice.
-  - Initialized next approved high-value slice: playable game floor + Stake Tier entry, ahead of decorative Vegas animation work.
-- Next checkpoint: Inspect current game/economy/Stake Tier modules and current app.js/styles.css, map the smallest compatible integration path into Games -> tier -> full-screen table, then implement one coherent playable-entry slice with targeted regression coverage.
-- Blockers: Browser-level visual E2E remains unavailable, so visual behavior must be guarded by code/regression checks and Railway health until a browser verification path is available. Railway production currently has one unrelated staged environment change; do not accept/deploy it automatically as part of this sprint.
-- Relevant PR/branch: No PR yet for VEGAS-GAME-01. Previous PR #45 MERGED; clean-shell merge revision 70201bb48f1804076c80efe0ef2baac825b25133. Current deployed main revision 1c1f4868e3ab22795b07dd84fd9c98c96295b858.
-- Validation status: Previous shell CI #142 SUCCESS; Railway current production SUCCESS; /api/health PASS. New sprint implementation not yet tested.
-- Deploy status: Production healthy on Railway deployment 7dd371eb-8cf6-4407-a69c-78407ec251fc / revision 1c1f4868e3ab22795b07dd84fd9c98c96295b858. No VEGAS-GAME-01 deployment yet.
-- Next action: Resume DISCOVER by locating current Stake Tier/game catalog/economy interfaces and app shell integration points; then PLAN/IMPLEMENT the smallest coherent Games -> Stake Tier -> table entry slice without touching real-money functionality or unrelated persistence infrastructure.
+  - DISCOVER: confirmed canonical STAKE_TIERS in lib/constants.mjs: LOW 100K–999,999 CH; MID 1M–9,999,999; HIGH 10M–49,999,999; VIP 50M+.
+  - DISCOVER: current clean shell Games surface was placeholder-only while Lobby already exposed Blackjack/Roulette/Dice/Poker and full-screen table navigation.
+  - PLAN: selected one coherent slice: Games catalog -> game selection -> Stake Tier selection -> full-screen table; no settlement/database changes.
+  - IMPLEMENT: branch automation/vegas-game-01-stake-floor adds Games catalog, virtual-only tier chooser, selected tier context on table, responsive tier/floor layouts, and tier-aware Back/browser Back/Escape navigation.
+  - IMPLEMENT: explicit CH wording states virtual-only, non-purchasable/non-redeemable/non-withdrawable and no real-world monetary value.
+  - TEST: added tests/game-floor-stake-entry.test.mjs targeted regression for four games, four tier thresholds, virtual-only semantics, history/Escape navigation, touch and short-landscape reachability.
+  - PR #48 opened at head 65eced9b9605a23bffb8bfc2b11f952b67365ffc with 4 changed files.
+- Next checkpoint: Wait for/check exact-head CI on PR #48; if green, review diff and mergeability, resolve only branch/base drift if needed, then squash merge when safe.
+- Blockers: PR #48 initially reports mergeable=false immediately after creation; determine whether this is transient mergeability calculation or base drift before merge. Browser-level visual E2E remains unavailable. Railway has an unrelated staged environment change; do not accept it automatically.
+- Relevant PR/branch: PR #48 OPEN; automation/vegas-game-01-stake-floor; exact head 65eced9b9605a23bffb8bfc2b11f952b67365ffc.
+- Validation status: Targeted regression committed; exact-head GitHub Actions result pending. Previous production health remains green.
+- Deploy status: No VEGAS-GAME-01 deployment yet; production remains on prior healthy main lineage.
+- Next action: Check PR #48 exact-head CI and mergeability. If CI is green and diff remains scoped, squash merge, then verify exact Railway revision and affected flow before DONE.

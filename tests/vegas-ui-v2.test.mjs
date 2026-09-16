@@ -59,8 +59,8 @@ test('VEGAS V2 ships vector artwork for current and expansion game families', ()
 
 test('service worker precaches VEGAS V2 shell and motion assets', () => {
   const sw = read('public/sw.js');
-  assert.match(sw, /social-vegas-shell-v22/);
-  for (const asset of ['/vegas-ui-v2.css','/vegas-ui-v2-assets.css','/vegas-game-v2.css','/vegas-motion-v2.css','/vegas-ui-v2.js','/assets/vegas-logo.svg']) {
+  assert.match(sw, /social-vegas-shell-v21/);
+  for (const asset of ['/game-navigation.js','/vegas-ui-v2.css','/vegas-ui-v2-assets.css','/vegas-game-v2.css','/vegas-motion-v2.css','/vegas-ui-v2.js','/assets/vegas-logo.svg']) {
     assert.ok(sw.includes(asset), asset);
   }
 });

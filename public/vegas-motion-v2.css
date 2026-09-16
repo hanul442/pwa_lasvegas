@@ -1,0 +1,50 @@
+/* VEGAS V2 cinematic motion layer.
+   Pure presentation: no economy, payout, settlement, ledger, or API behavior. */
+.vegas-v2{--v2-motion-gold:rgba(243,205,103,.62);--v2-motion-red:rgba(167,37,42,.42)}
+.vegas-v2 .content>.head:first-child{position:relative}
+.vegas-v2 .content>.head:first-child:before{animation:v2HeroGlow 8s ease-in-out infinite alternate}
+.vegas-v2 .content>.head:first-child>div:first-child:after{content:"";position:absolute;left:45px;bottom:38px;width:min(420px,55vw);height:1px;background:linear-gradient(90deg,transparent,rgba(245,210,111,.58),transparent);transform-origin:center;animation:v2HeroLine 4.8s ease-in-out infinite;pointer-events:none}
+.vegas-v2 .game{isolation:isolate}
+.vegas-v2 .game:after{content:"";position:absolute;inset:-1px;z-index:3;border-radius:inherit;border:1px solid transparent;background:linear-gradient(115deg,transparent 10%,rgba(255,231,161,.0) 35%,rgba(255,231,161,.52) 49%,rgba(255,231,161,0) 62%,transparent 88%) border-box;mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);mask-composite:exclude;opacity:0;transform:translateX(-34%);pointer-events:none}
+.vegas-v2 .game:hover:after,.vegas-v2 .game:focus-within:after{opacity:1;animation:v2GoldSweep .9s ease-out both}
+.vegas-v2 .game .vegas-game-art{overflow:hidden;transition:transform .42s cubic-bezier(.2,.8,.2,1),filter .42s ease}
+.vegas-v2 .game:hover .vegas-game-art,.vegas-v2 .game:focus-within .vegas-game-art{transform:scale(1.025);filter:saturate(1.12) contrast(1.04)}
+.vegas-v2 .game .vegas-game-art:before{content:"";position:absolute;inset:-30%;background:linear-gradient(110deg,transparent 38%,rgba(255,240,194,.14) 49%,transparent 60%);transform:translateX(-55%) rotate(4deg);transition:transform .7s ease;pointer-events:none}
+.vegas-v2 .game:hover .vegas-game-art:before,.vegas-v2 .game:focus-within .vegas-game-art:before{transform:translateX(55%) rotate(4deg)}
+.vegas-v2 .vegas-game-modal{isolation:isolate}
+.vegas-v2 .vegas-game-modal:before{content:"";position:absolute;inset:-1px;z-index:-1;border-radius:inherit;background:radial-gradient(circle at 50% 0,rgba(212,175,55,.12),transparent 34%),linear-gradient(120deg,rgba(212,175,55,.12),transparent 25%,transparent 75%,rgba(212,175,55,.08));filter:blur(18px);opacity:.8;pointer-events:none}
+.vegas-v2 .vegas-game-modal .stage{overflow:hidden}
+.vegas-v2 .vegas-game-modal .stage:after{content:"";position:absolute;inset:-55% -20%;pointer-events:none;background:conic-gradient(from 180deg at 50% 50%,transparent 0 36%,rgba(239,203,104,.07) 45%,transparent 53% 100%);animation:v2TableHalo 9s linear infinite}
+.vegas-v2 .vegas-game-modal .playing-card{transform-origin:50% 115%;animation:v2CardDeal .42s cubic-bezier(.18,.84,.22,1.08) both}
+.vegas-v2 .vegas-game-modal .playing-card:nth-child(2){animation-delay:55ms}.vegas-v2 .vegas-game-modal .playing-card:nth-child(3){animation-delay:110ms}.vegas-v2 .vegas-game-modal .playing-card:nth-child(4){animation-delay:165ms}.vegas-v2 .vegas-game-modal .playing-card:nth-child(5){animation-delay:220ms}
+.vegas-v2 .vegas-game-modal .chips button.on{animation:v2ChipPulse 1.9s ease-in-out infinite}
+.vegas-v2 .vegas-game-modal .actions .btn,.vegas-v2 .vegas-game-modal .choices button,.vegas-v2 .vegas-game-modal .chips button{transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease,filter .18s ease}
+.vegas-v2 .vegas-game-modal .actions .btn:active,.vegas-v2 .vegas-game-modal .choices button:active,.vegas-v2 .vegas-game-modal .chips button:active{transform:translateY(1px) scale(.985);filter:brightness(.96)}
+.vegas-v2 .vegas-game-modal[data-v2-game="roulette"] .roulette{animation:v2RouletteSpin 1.05s cubic-bezier(.12,.72,.18,1) both}
+.vegas-v2 .vegas-game-modal[data-v2-game="sicbo"] .dice i{animation:v2DiceThrow .58s cubic-bezier(.16,.75,.22,1.18) both}.vegas-v2 .vegas-game-modal[data-v2-game="sicbo"] .dice i:nth-child(2){animation-delay:60ms}.vegas-v2 .vegas-game-modal[data-v2-game="sicbo"] .dice i:nth-child(3){animation-delay:120ms}
+.vegas-v2 .vegas-game-modal.v2-win .modal-body:after,.vegas-v2 .vegas-game-modal.v2-loss .modal-body:after{content:"";position:absolute;inset:0;z-index:8;pointer-events:none;opacity:0}
+.vegas-v2 .vegas-game-modal.v2-win .modal-body:after{background:radial-gradient(circle at 50% 45%,rgba(255,220,118,.24),transparent 44%);animation:v2ResultFlash .85s ease-out both}
+.vegas-v2 .vegas-game-modal.v2-loss .modal-body:after{background:radial-gradient(circle at 50% 45%,rgba(154,28,34,.22),transparent 48%);animation:v2ResultFlash .72s ease-out both}
+.vegas-v2 .vegas-game-modal.v2-win .stage{box-shadow:inset 0 0 72px rgba(212,175,55,.13),0 20px 56px rgba(0,0,0,.42),0 0 30px rgba(212,175,55,.08)}
+.vegas-v2 .vegas-game-modal.v2-loss .stage{box-shadow:inset 0 0 72px rgba(112,20,25,.15),0 20px 56px rgba(0,0,0,.42)}
+.vegas-v2 .vegas-game-modal .btn.primary:not(:disabled){position:relative;overflow:hidden}
+.vegas-v2 .vegas-game-modal .btn.primary:not(:disabled):after{content:"";position:absolute;top:-40%;bottom:-40%;left:-45%;width:22%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);animation:v2PrimaryShine 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes v2HeroGlow{from{opacity:.62;filter:saturate(.92)}to{opacity:1;filter:saturate(1.14)}}
+@keyframes v2HeroLine{0%,100%{opacity:.18;transform:scaleX(.72)}50%{opacity:.62;transform:scaleX(1)}}
+@keyframes v2GoldSweep{from{transform:translateX(-34%);opacity:0}18%{opacity:.9}to{transform:translateX(34%);opacity:0}}
+@keyframes v2TableHalo{to{transform:rotate(360deg)}}
+@keyframes v2CardDeal{0%{opacity:0;transform:translateY(-22px) rotate(-5deg) scale(.92)}100%{opacity:1;transform:none}}
+@keyframes v2ChipPulse{0%,100%{box-shadow:inset 0 0 0 2px rgba(255,249,224,.18),0 0 12px rgba(212,175,55,.1)}50%{box-shadow:inset 0 0 0 2px rgba(255,249,224,.28),0 0 26px rgba(212,175,55,.23)}}
+@keyframes v2RouletteSpin{0%{opacity:.45;transform:rotate(-720deg) scale(.72)}72%{opacity:1;transform:rotate(18deg) scale(1.035)}100%{opacity:1;transform:none}}
+@keyframes v2DiceThrow{0%{opacity:0;transform:translate3d(0,-42px,0) rotate(42deg) scale(.65)}68%{opacity:1;transform:translate3d(0,5px,0) rotate(-6deg) scale(1.04)}100%{transform:none}}
+@keyframes v2ResultFlash{0%{opacity:0}24%{opacity:1}100%{opacity:0}}
+@keyframes v2PrimaryShine{0%,62%{left:-45%;opacity:0}68%{opacity:.7}86%{left:125%;opacity:0}100%{left:125%;opacity:0}}
+@media(pointer:coarse){.vegas-v2 .game:hover .vegas-game-art{transform:none}.vegas-v2 .game:hover:after{animation:none;opacity:0}}
+@media(orientation:landscape) and (max-height:620px) and (pointer:coarse){
+  .vegas-v2 .vegas-game-modal .actions{position:sticky;bottom:max(4px,env(safe-area-inset-bottom));z-index:9;padding:6px;border:1px solid rgba(212,175,55,.14);border-radius:14px;background:rgba(5,5,5,.86);backdrop-filter:blur(16px) saturate(125%);box-shadow:0 -8px 28px rgba(0,0,0,.24)}
+  .vegas-v2 .vegas-game-modal .actions .btn{min-height:42px}
+  .vegas-v2 .vegas-game-modal .stage:after{animation-duration:12s}
+}
+@media(prefers-reduced-motion:reduce){
+  .vegas-v2 .content>.head:first-child:before,.vegas-v2 .content>.head:first-child>div:first-child:after,.vegas-v2 .game:after,.vegas-v2 .game .vegas-game-art:before,.vegas-v2 .vegas-game-modal .stage:after,.vegas-v2 .vegas-game-modal .playing-card,.vegas-v2 .vegas-game-modal .chips button.on,.vegas-v2 .vegas-game-modal .roulette,.vegas-v2 .vegas-game-modal .dice i,.vegas-v2 .vegas-game-modal .btn.primary:not(:disabled):after,.vegas-v2 .vegas-game-modal.v2-win .modal-body:after,.vegas-v2 .vegas-game-modal.v2-loss .modal-body:after{animation:none!important;transition:none!important}
+}

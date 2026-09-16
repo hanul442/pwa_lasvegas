@@ -1,29 +1,24 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-UX-02 — Game Entry & Navigation Reliability
-- Objective: Verify and harden the lobby-to-table entry/exit/navigation flow across mobile portrait, mobile landscape, and desktop before adding further casino presentation work.
-- User-visible outcome: Players can enter supported game tables, use browser Back or Escape to return, retain visible bankroll/CH context, and resume the lobby without trapped navigation.
+- Sprint ID/title: VEGAS-UX-03 — Responsive Navigation & Obscured-Content Hardening
+- Objective: Remove the next highest-impact usability failures in primary navigation, responsive layout, obscured content, and scroll/touch reachability across mobile portrait, mobile landscape, and desktop before further casino presentation work.
+- User-visible outcome: Players can move through the lobby and primary surfaces without fixed/sticky chrome hiding content, trapped scrolling, unreachable controls, or responsive navigation collisions.
 - Acceptance criteria:
-  - Lobby game/table entry controls remain reachable and activate the intended game overlay/route.
-  - Exit/back controls, browser Back, and Escape reliably return to a usable lobby without stale overlays.
-  - Keyboard focus returns to the originating game control after modal exit when practical.
-  - Bankroll/CH display remains governed by existing state/render flow; navigation code does not mutate economy state or call economy APIs.
-  - Mobile portrait, short mobile landscape, and desktop responsive rules preserve reachable primary navigation and scrolling.
-  - Existing game settlement/economy logic and virtual-only invariants remain unchanged.
-- Current phase: DEPLOY
+  - Primary navigation and lobby controls remain reachable at mobile portrait, short mobile landscape, and desktop breakpoints.
+  - Fixed/sticky headers, bottom bars, overlays, and safe-area padding do not obscure actionable content.
+  - Vertical scrolling and touch gestures remain enabled on scrollable surfaces; decorative/animation layers do not intercept input.
+  - Responsive layout changes preserve game/table entry and existing Back/Escape/focus-restoration behavior from VEGAS-UX-02.
+  - Existing bankroll/CH, settlement, economy, Stake Tier, ranking, season, social, and virtual-only invariants remain unchanged.
+  - Targeted regression coverage is added for the concrete responsive/navigation gap selected during DISCOVER.
+- Current phase: DISCOVER
 - Completed checkpoints:
   - VEGAS-UX-01 DONE: PR #41 merged as 3d7b374d56071491d226470be1bbe75d08e787bb; GitHub CI #98 SUCCESS; exact production deployment status SUCCESS.
-  - VEGAS-UX-02 DISCOVER/PLAN/IMPLEMENT: isolated reversible navigation in public/game-navigation.js; browser Back/Escape close active game overlays and focus returns to the originating game card without touching settlement/economy state.
-  - Loaded navigation layer after app.js, cached it in PWA shell v21, and added tests/game-navigation.test.mjs targeted regression coverage.
-  - PR #42 opened. CI #104 initially ran 128 tests with 127 PASS / 1 stale cache-version assertion; assertion repaired from v20 to v21.
-  - Replacement CI #106 on d27a3a3110723481498bbb57ca3b99f0dfa0a970 completed SUCCESS.
-  - Scheduler-state conflict was removed from PR scope; final PR scope 5 files / +90 -2.
-  - Exact final head 49990eefcb66814eb56774acac5d1ae51079bb97 passed CI #108 SUCCESS and PR #42 was mergeable.
-  - PR #42 squash-merged successfully as 7260253767f85858dec459c7510adf1d98a034ca.
-  - Railway production auto-deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276 started for exact merge revision 7260253767f85858dec459c7510adf1d98a034ca and is currently BUILDING.
-- Next checkpoint: Confirm Railway deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276 reaches SUCCESS, inspect build/deploy health, then verify the affected game-entry/back/Escape/exit flow as far as available tooling permits.
-- Blockers: Browser-level visual E2E remains unavailable. Do not mark VERIFY/DONE until the exact production deployment is healthy; direct interactive UI smoke testing may remain partially unavailable.
-- Relevant PR/branch: PR #42 MERGED / automation/game-entry-navigation / merge 7260253767f85858dec459c7510adf1d98a034ca
-- Validation status: exact PR head CI #108 SUCCESS; merge completed safely.
-- Deploy status: Railway production deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276 is BUILDING for exact merge revision 7260253767f85858dec459c7510adf1d98a034ca.
-- Next action: Re-check exact Railway deployment status. If SUCCESS, inspect logs/health and perform affected-flow verification; if FAILED/CRASHED, diagnose and roll back only when a clearly safe rollback path exists.
+  - VEGAS-UX-02 DONE: PR #42 squash-merged as 7260253767f85858dec459c7510adf1d98a034ca after exact head CI #108 SUCCESS.
+  - VEGAS-UX-02 production verification: GitHub commit status for exact merge revision 7260253767f85858dec459c7510adf1d98a034ca is SUCCESS with context `SOCIAL VEGAS - social-vegas-web` and description `Success - social-vegas-web-production.up.railway.app`; status target identifies Railway deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276.
+  - VEGAS-UX-02 affected-flow verification is covered by the merged targeted navigation regression suite; direct browser visual E2E remains unavailable, so no unsupported visual claim is made.
+- Next checkpoint: Inspect current main navigation/layout CSS and shell markup for the highest-impact remaining fixed/sticky/overflow/touch collision, then select one coherent responsive usability slice and implement it with targeted regression coverage.
+- Blockers: Browser-level visual E2E remains unavailable. Direct Railway connector access currently returns a viewer-role error, but exact production deployment success can be independently confirmed through the GitHub status attached to the deployed revision.
+- Relevant PR/branch: No PR yet for VEGAS-UX-03; base main includes PR #42 merge 7260253767f85858dec459c7510adf1d98a034ca.
+- Validation status: VEGAS-UX-02 exact PR head CI #108 SUCCESS; exact merged revision production status SUCCESS. VEGAS-UX-03 validation not started.
+- Deploy status: Production SUCCESS for VEGAS-UX-02 exact merge revision 7260253767f85858dec459c7510adf1d98a034ca via Railway deployment be70dcc2-1eb7-47a4-ba93-5cb025ea3276.
+- Next action: Resume VEGAS-UX-03 DISCOVER from current main; inspect navigation/layout overflow and input reachability, choose the highest-impact concrete gap, then PLAN/IMPLEMENT without altering economy or settlement state.

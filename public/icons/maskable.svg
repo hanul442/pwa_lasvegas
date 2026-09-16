@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#0d0f0f"/>
-  <circle cx="256" cy="256" r="188" fill="#151918" stroke="#d6b56f" stroke-width="12"/>
-  <text x="256" y="286" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="152" font-weight="800" letter-spacing="-10" fill="#eee9de">SV</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VEGAS"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0b5"/><stop offset=".28" stop-color="#d4af37"/><stop offset=".62" stop-color="#f7dea0"/><stop offset="1" stop-color="#8a621d"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="512" height="512" fill="#050505"/><circle cx="256" cy="256" r="194" fill="#080808" stroke="rgba(212,175,55,.38)" stroke-width="10"/><path d="M132 146L252 374 372 146" fill="none" stroke="url(#g)" stroke-width="34" stroke-linecap="square" stroke-linejoin="miter" filter="url(#glow)"/><g transform="translate(346 314)" fill="#fff0b5" filter="url(#glow)"><path d="M0-42C4-14 9-6 38 0 9 6 4 14 0 42-4 14-9 6-38 0-9-6-4-14 0-42Z"/><circle r="5" fill="#fff9e8"/></g></svg>

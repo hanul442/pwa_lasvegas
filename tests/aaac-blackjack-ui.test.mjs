@@ -70,7 +70,7 @@ test('cinematic layer reacts only to existing visual blackjack states', () => {
 test('PWA shell caches all AAAC presentation layers', () => {
   const sw = read('public/sw.js');
 
-  assert.match(sw, /social-vegas-shell-v21/);
+  assert.match(sw, /social-vegas-shell-v22/);
   assert.match(sw, /'\/aaac-luxury-shell\.css'/);
   assert.match(sw, /'\/aaac-blackjack-immersive\.css'/);
   assert.match(sw, /'\/aaac-blackjack-cinematic\.css'/);

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'social-vegas-shell-v20';
+const CACHE_NAME = 'social-vegas-shell-v21';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
+  '/game-navigation.js',
   '/game-stability.js',
   '/instant-idempotency.js',
   '/blackjack-idempotency.js',

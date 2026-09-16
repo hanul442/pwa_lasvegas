@@ -10,7 +10,7 @@
   - Mobile portrait, short landscape, and desktop layouts keep controls/content reachable and vertically scrollable.
   - Existing backend/economy/settlement modules remain untouched in this slice.
   - Targeted regression coverage guards catalog reachability, Stake Tier semantics, virtual-only wording, and table navigation.
-- Current phase: TEST
+- Current phase: DEPLOY
 - Completed checkpoints:
   - DISCOVER: confirmed canonical STAKE_TIERS in lib/constants.mjs: LOW 100K–999,999 CH; MID 1M–9,999,999; HIGH 10M–49,999,999; VIP 50M+.
   - DISCOVER: current clean shell Games surface was placeholder-only while Lobby already exposed Blackjack/Roulette/Dice/Poker and full-screen table navigation.
@@ -18,12 +18,13 @@
   - IMPLEMENT: branch automation/vegas-game-01-stake-floor adds Games catalog, virtual-only tier chooser, selected tier context on table, responsive tier/floor layouts, and tier-aware Back/browser Back/Escape navigation.
   - IMPLEMENT: explicit CH wording states virtual-only, non-purchasable/non-redeemable/non-withdrawable and no real-world monetary value.
   - TEST: added tests/game-floor-stake-entry.test.mjs targeted regression for four games, four tier thresholds, virtual-only semantics, history/Escape navigation, touch and short-landscape reachability.
-  - PR #48 opened at head 65eced9b9605a23bffb8bfc2b11f952b67365ffc with 4 changed files.
-  - TEST: CI #151 on 65eced9b failed in backend/core tests while syntax checks passed. Root cause isolated to the pre-existing clean-shell focus regression contract expecting lastLobbyTrigger; the implementation had renamed it to lastTrigger without behavioral need.
-  - TEST FIX: restored the compatible lastLobbyTrigger identifier on PR branch in commit 5c26a8b3c5ca434192683795c17083d3286ffb5e; no product/economy behavior changed.
-- Next checkpoint: Check replacement exact-head CI for PR #48 at 5c26a8b3c5ca434192683795c17083d3286ffb5e; if green, review scoped diff/mergeability and squash merge when safe.
+  - TEST: CI #151 failed due to clean-shell regression-contract identifier drift; compatibility repair restored lastLobbyTrigger with no behavior/economy change.
+  - TEST: replacement exact-head CI #153 on 5c26a8b3c5ca434192683795c17083d3286ffb5e completed SUCCESS.
+  - REVIEW: PR #48 rechecked OPEN, mergeable=true, 4 changed files, scoped to the approved playable-entry slice.
+  - MERGE: PR #48 squash merged to main at exact revision 6d670dc04989715e9fbd075740349839d4ff8bad.
+- Next checkpoint: Verify Railway deployment 6227bada-27f6-4699-8349-28e00716cfcc for exact revision 6d670dc04989715e9fbd075740349839d4ff8bad reaches SUCCESS, inspect build/deploy health, then verify affected Games -> Stake Tier -> table -> Back/Escape flow as far as available tooling permits.
 - Blockers: Browser-level visual E2E remains unavailable. Railway has an unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #48 OPEN; automation/vegas-game-01-stake-floor; exact head 5c26a8b3c5ca434192683795c17083d3286ffb5e; mergeable was true before repair commit and must be rechecked.
-- Validation status: Initial CI #151 FAILED at backend/core tests due to clean-shell regression-contract identifier drift; syntax checks passed. Compatibility repair committed; replacement exact-head CI pending.
-- Deploy status: No VEGAS-GAME-01 deployment yet; production remains on prior healthy main lineage.
-- Next action: Check PR #48 replacement exact-head CI and mergeability. If green and diff remains scoped, squash merge, then verify exact Railway revision and affected flow before DONE.
+- Relevant PR/branch: PR #48 MERGED; automation/vegas-game-01-stake-floor; merged revision 6d670dc04989715e9fbd075740349839d4ff8bad.
+- Validation status: CI #153 SUCCESS on exact PR head; PR mergeability true before squash merge.
+- Deploy status: Railway production deployment 6227bada-27f6-4699-8349-28e00716cfcc for exact merged revision 6d670dc04989715e9fbd075740349839d4ff8bad is BUILDING.
+- Next action: Wait for the exact Railway deployment to finish; if SUCCESS, inspect health/logs and complete VERIFY before marking DONE.

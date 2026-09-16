@@ -9,7 +9,7 @@
   - Touch targets remain usable and content is not clipped behind fixed/sticky UI.
   - Existing portrait and desktop behavior is not intentionally regressed.
   - Virtual-only economy and all approved feature invariants remain unchanged.
-- Current phase: TEST
+- Current phase: DEPLOY
 - Completed checkpoints:
   - Canonical sprint state initialized from main 4ce35c327891d5a752fad3ce6e72d859df261541.
   - Approved design references confirmed under docs/design; mobile landscape is explicitly first-class.
@@ -20,10 +20,12 @@
   - IMPLEMENT: Added scroll-safe compact landscape lobby flow, safe-area padding, two-column game cards, compact metrics and non-clipping modal behavior in public/aaac-luxury-shell.css.
   - IMPLEMENT: Added scrollable compact Blackjack landscape flow with sticky compact header/bank, reduced table/card dimensions, reachable controls and non-sticky action panel in public/aaac-blackjack-immersive.css.
   - TEST: Added targeted regression assertions for landscape lobby scrolling/touch/safe-area/two-column flow and Blackjack overlay/header/bank/action reachability in tests/aaac-blackjack-ui.test.mjs.
-  - REVIEW: Opened PR #41 (fix: make short landscape casino flows scroll-safe), head 1356a0f0278da43ab804479f4ffce7cb5ef752fe.
-- Next checkpoint: Observe PR #41 repository CI; if green, review diff/mergeability and advance REVIEW -> MERGE.
-- Blockers: GitHub PR workflow run had not appeared at the time of this state update. Browser-level visual E2E may depend on available browser tooling.
-- Relevant PR/branch: PR #41 / automation/active-sprint-mobile-landscape
-- Validation status: Targeted regression coverage committed; repository CI pending.
-- Deploy status: Production remains on pre-sprint healthy revision; no sprint deploy yet.
-- Next action: Check PR #41 CI and mergeability; merge only if validation is green, then verify Railway preview/production according to deployment policy.
+  - REVIEW: PR #41 final head aeda05e059ba44410b74afc4a98cdfdf000e9fcd reviewed as mergeable; presentation-only scope retained.
+  - TEST: GitHub CI run #98 completed SUCCESS on final PR head.
+  - MERGE: PR #41 squash-merged to main as 3d7b374d56071491d226470be1bbe75d08e787bb.
+- Next checkpoint: Confirm Railway deployment of merged revision and run post-deploy health/affected-flow verification; mark DONE only after deployment verification is available.
+- Blockers: Railway connector currently returns a viewer-role access error for the project, so exact deployment/revision health cannot be verified in this run. Browser-level visual E2E remains dependent on available browser tooling.
+- Relevant PR/branch: PR #41 merged / automation/active-sprint-mobile-landscape
+- Validation status: GitHub CI #98 SUCCESS; targeted landscape regression included and passed within repository CI.
+- Deploy status: Merge completed; Railway deployment status not verifiable due current connector permission error. No manual Railway configuration changes performed.
+- Next action: Retry Railway status first. If merged revision is healthy, verify affected flow and mark VEGAS-UX-01 DONE; otherwise follow rollback discipline before any new sprint.

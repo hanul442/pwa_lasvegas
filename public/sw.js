@@ -1,4 +1,4 @@
-const CACHE_NAME = 'social-vegas-shell-v20';
+const CACHE_NAME = 'social-vegas-shell-v21';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -31,6 +31,17 @@ const APP_SHELL = [
   '/aaac-luxury-shell.css',
   '/aaac-blackjack-immersive.css',
   '/aaac-blackjack-cinematic.css',
+  '/vegas-ui-v2.css',
+  '/vegas-ui-v2-assets.css',
+  '/vegas-ui-v2.js',
+  '/assets/vegas-logo.svg',
+  '/assets/ui-v2/game-blackjack.svg',
+  '/assets/ui-v2/game-roulette.svg',
+  '/assets/ui-v2/game-baccarat.svg',
+  '/assets/ui-v2/game-sicbo.svg',
+  '/assets/ui-v2/game-holdem.svg',
+  '/assets/ui-v2/game-seotda.svg',
+  '/assets/ui-v2/game-matgo.svg',
   '/blackjack-v2.js',
   '/blackjack-session.js',
   '/casino-audio.js',

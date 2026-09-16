@@ -18,9 +18,10 @@
   - VEGAS-UX-02 IMPLEMENT: added public/game-navigation.js to create a reversible history boundary on game entry, close visible game overlays on browser Back or Escape, restore focus to the originating game card, and track overlay presence without mutating game/economy state.
   - VEGAS-UX-02 IMPLEMENT: loaded the navigation layer immediately after app.js and added it to PWA shell cache v21.
   - VEGAS-UX-02 TEST: added tests/game-navigation.test.mjs assertions for load/cache order, history boundary, Back/Escape handling, focus restoration, and economy-neutral scope.
-- Next checkpoint: Run repository validation/CI on branch automation/game-entry-navigation; repair safe failures, then review diff and open PR only if green.
-- Blockers: Browser-level visual E2E remains unavailable in the current execution environment. Railway direct connector may still be permission-limited; deployment can be verified through GitHub deployment status if needed.
-- Relevant PR/branch: no PR yet / automation/game-entry-navigation
-- Validation status: targeted regression added; CI not yet run on current branch head.
+  - VEGAS-UX-02 REVIEW gate: PR #42 opened with 5-file low-risk navigation-only scope; no settlement/economy/database/schema/secrets changes.
+- Next checkpoint: Wait for/run GitHub PR CI on PR #42 head; if green, review mergeability/diff and merge. If CI fails, repair only safe failures before merge.
+- Blockers: GitHub PR workflow had not produced a run at the first post-open check. Browser-level visual E2E remains unavailable. Railway direct connector may still be permission-limited.
+- Relevant PR/branch: PR #42 / automation/game-entry-navigation
+- Validation status: targeted regression committed; GitHub PR CI pending/not yet emitted at last check.
 - Deploy status: no VEGAS-UX-02 deployment yet; production remains on prior verified revision.
-- Next action: Validate branch, review for navigation/history regressions, then create PR if all required checks pass.
+- Next action: Check PR #42 CI and mergeability; do not deploy unless required validation is green.

@@ -12,15 +12,17 @@
   - Do not add real-money semantics, deposits, withdrawals, purchasable/redeemable chips or CH-to-currency value.
   - No destructive database migration, secrets change or irreversible data change.
   - Validate targeted transition/motion hooks plus the existing regression suite before merge.
-- Current phase: DISCOVER
+- Current phase: TEST
 - Completed checkpoints:
-  - VEGAS-MOTION-01 VERIFY: Railway read access restored. Production service social-vegas-web latest deployment 734859d0-c9f4-42e6-8bc9-75e1d278858a is SUCCESS on main revision 109e0d4cac1692de85be2713d011ffd0ff1eb6fc, which contains merged motion revision a7ed3aca63afdf81f6c12d0030923136f879cf4d.
-  - VEGAS-MOTION-01 runtime health: build completed, /api/health succeeded 1/1, Supabase persistence reported ready, and server listened on 0.0.0.0:8080. No runtime crash was observed in deployment logs.
-  - VEGAS-MOTION-01 DONE: CI #158 was GREEN; PR #49 merged; production deployment/runtime gate is now verified. Browser-level visual PASS remains intentionally unclaimed because browser visual E2E is unavailable.
-  - VEGAS-MOTION-02 initialized as the next highest-value approved presentation sprint after usability and first game-specific motion were stabilized.
-- Next checkpoint: Trace current table entry/exit DOM, CSS stacking/overflow and motion hooks on main; identify the smallest coherent transition/ambience slice that improves Vegas presentation without obscuring controls or duplicating the existing game-specific animations.
-- Blockers: Browser-level visual E2E is unavailable. Railway production still reports one unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: No PR yet for VEGAS-MOTION-02. Prior PR #49 MERGED as a7ed3aca63afdf81f6c12d0030923136f879cf4d.
-- Validation status: Prior sprint production gate verified: Railway latest deployment SUCCESS, /api/health 1/1 PASS, Supabase persistence ready, server listening. New sprint implementation validation not started.
-- Deploy status: Production healthy on Railway deployment 734859d0-c9f4-42e6-8bc9-75e1d278858a, main revision 109e0d4cac1692de85be2713d011ffd0ff1eb6fc. One unrelated staged Railway environment change remains untouched.
-- Next action: Read the current table shell/app.js/styles.css motion paths and resume from DISCOVER; choose and implement one substantial table-transition/ambience slice, then run targeted regression and CI before review/merge/deploy.
+  - VEGAS-MOTION-01 production/runtime gate verified and prior sprint marked DONE.
+  - DISCOVER: traced current table DOM, stacking/overflow, game-specific motion and navigation. Table stage already isolates/overflows decorative game motion; table copy is the interaction/clarity foreground and Back remains outside the stage.
+  - PLAN: selected a CSS-first, non-blocking slice: brief full table-surface entrance plus slow decorative ambient light sweep/pulses behind existing game-specific animation. No JS/game-state change required.
+  - IMPLEMENT: added aria-hidden table-ambience layer with pointer-events:none; raised table copy above ambience/motion; added 340ms table-surface entrance; added ambient sweep/pulse; tuned short landscape; added static/instant prefers-reduced-motion fallback.
+  - IMPLEMENT: added tests/table-ambience-ui.test.mjs to protect decorative input pass-through, stacking, landscape and reduced-motion contracts.
+  - PR #50 opened from automation/vegas-motion-02-ambience; implementation head before state update was 80cd2ccf110a7b19023a445748e240ff7469c7e8.
+- Next checkpoint: Wait for PR #50 exact-head GitHub Actions; if GREEN, confirm mergeability and scoped diff, then squash merge. If CI fails, repair only the active slice and rerun.
+- Blockers: Browser-level visual E2E is unavailable. PR mergeability reported false immediately on creation and must be rechecked after GitHub computes mergeability/CI. Railway production still reports one unrelated staged environment change; do not accept it automatically.
+- Relevant PR/branch: PR #50 OPEN — automation/vegas-motion-02-ambience -> main.
+- Validation status: Targeted regression test committed; full GitHub Actions exact-head validation pending. Static design invariants preserve pointer pass-through, reduced motion and existing responsive breakpoints. No browser visual PASS claimed.
+- Deploy status: No deploy for VEGAS-MOTION-02 yet. Existing Production remains healthy from prior verified sprint; unrelated staged Railway environment change remains untouched.
+- Next action: Check PR #50 exact-head CI and mergeability. On GREEN/scoped diff, squash merge, then verify Railway exact deployed revision, /api/health and affected table-entry/navigation flow before DONE.

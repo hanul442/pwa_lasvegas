@@ -1,6 +1,6 @@
 // VEGAS UI V2 visual adapter.
 // Keeps existing game/account behavior intact and decorates each render with the approved brand system.
-const V2_LOGO='/assets/vegas-logo-source.png';
+const V2_LOGO='/assets/vegas-logo.svg';
 const gameKeys={blackjack:'blackjack',roulette:'roulette',baccarat:'baccarat','sic bo':'sicbo',"texas hold'em":'holdem','섯다':'seotda','맞고':'matgo',slots:'slots','vip lounge':'vip'};
 const navIcons=['⌂','◆','♛','◇','◎','⚙'];
 let queued=false;

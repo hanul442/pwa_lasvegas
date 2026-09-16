@@ -2,6 +2,7 @@ document.documentElement.dataset.vegasUi='clean-shell';
 
 const surfaces=[...document.querySelectorAll('[data-surface]')];
 const navItems=[...document.querySelectorAll('[data-nav]')];
+const tableStage=document.querySelector('[data-table-stage]');
 let lastLobbyTrigger=null;
 let selectedGame=null;
 
@@ -27,6 +28,14 @@ function chooseGame(button){
 
 document.querySelectorAll('[data-game]').forEach(button=>button.addEventListener('click',()=>chooseGame(button)));
 
+function cueTableMotion(game){
+  if(!tableStage)return;
+  tableStage.dataset.game=game;
+  tableStage.classList.remove('is-entering');
+  void tableStage.offsetWidth;
+  tableStage.classList.add('is-entering');
+}
+
 document.querySelectorAll('[data-tier]').forEach(button=>button.addEventListener('click',()=>{
   if(!selectedGame)return;
   const gameName=selectedGame.toUpperCase();
@@ -34,6 +43,7 @@ document.querySelectorAll('[data-tier]').forEach(button=>button.addEventListener
   document.querySelector('#table-title').textContent=gameName;
   document.querySelector('#table-tier').textContent=`${tier} · LIVE TABLE`;
   document.querySelector('#table-stake').textContent=`${button.querySelector('span').textContent}`;
+  cueTableMotion(selectedGame);
   history.pushState({vegasSurface:'table'},'',`#table-${selectedGame}-${button.dataset.tier}`);
   showSurface('table',{focus:true});
 }));

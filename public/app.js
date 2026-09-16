@@ -2,7 +2,7 @@ document.documentElement.dataset.vegasUi='clean-shell';
 
 const surfaces=[...document.querySelectorAll('[data-surface]')];
 const navItems=[...document.querySelectorAll('[data-nav]')];
-let lastTrigger=null;
+let lastLobbyTrigger=null;
 let selectedGame=null;
 
 function showSurface(name,{focus=false}={}){
@@ -18,7 +18,7 @@ function showSurface(name,{focus=false}={}){
 navItems.forEach(item=>item.addEventListener('click',()=>showSurface(item.dataset.nav,{focus:true})));
 
 function chooseGame(button){
-  lastTrigger=button;
+  lastLobbyTrigger=button;
   selectedGame=button.dataset.game;
   document.querySelector('#tier-game-name').textContent=(button.querySelector('strong')?.textContent||selectedGame)+' · select virtual CH range';
   history.pushState({vegasSurface:'tiers'},'',`#tiers-${selectedGame}`);
@@ -38,7 +38,7 @@ document.querySelectorAll('[data-tier]').forEach(button=>button.addEventListener
   showSurface('table',{focus:true});
 }));
 
-function restoreTrigger(){lastTrigger?.focus({preventScroll:true});}
+function restoreTrigger(){lastLobbyTrigger?.focus({preventScroll:true});}
 function leaveTable({useHistory=true}={}){
   if(!document.body.classList.contains('game-mode'))return;
   if(useHistory&&(history.state?.vegasSurface==='table'||history.state?.vegasSurface==='tiers')){history.back();return;}

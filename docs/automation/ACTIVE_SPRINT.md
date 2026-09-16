@@ -19,9 +19,10 @@
   - TEST: exact PR head 6d11573dba1660f6fd1bff826ec4d1a0f42a5721 passed GitHub CI run #158.
   - REVIEW: PR #49 became mergeable=true; scoped patch confirmed only public/app.js, public/index.html and public/styles.css motion/UI changes with no backend/economy/settlement/database changes.
   - MERGE: PR #49 squash-merged to main as a7ed3aca63afdf81f6c12d0030923136f879cf4d.
-- Next checkpoint: Confirm Railway production deployment for merge revision a7ed3aca63afdf81f6c12d0030923136f879cf4d reaches SUCCESS, then inspect build/runtime health and affected motion/navigation flow.
-- Blockers: Browser-level visual E2E remains unavailable. Railway production currently has one unrelated staged environment change; do not accept it automatically.
+  - DEPLOY verification attempt: Railway connector now rejects both deployment-list and deployment-log reads with required-role (viewer) access error, so SUCCESS/health cannot be truthfully asserted this run.
+- Next checkpoint: Re-check Railway production access and deployment for merge revision a7ed3aca63afdf81f6c12d0030923136f879cf4d; once readable, confirm SUCCESS, inspect build/runtime health and affected motion/navigation flow.
+- Blockers: Railway deployment verification is temporarily blocked by connector viewer-role access denial. Browser-level visual E2E remains unavailable. Railway production previously had one unrelated staged environment change; do not accept it automatically.
 - Relevant PR/branch: PR #49 MERGED; branch automation/vegas-motion-01; merged revision a7ed3aca63afdf81f6c12d0030923136f879cf4d.
-- Validation status: GitHub CI #158 SUCCESS; scoped diff reviewed and mergeable. Browser visual PASS is not claimed.
-- Deploy status: Railway production deployment 2e16bf7b-2706-4f79-af0b-af495184b988 is BUILDING as of this run; exact post-merge health verification pending.
-- Next action: Re-check Railway deployment 2e16bf7b-2706-4f79-af0b-af495184b988; on SUCCESS inspect build/deploy logs and health, verify navigation remains non-blocking, then mark VEGAS-MOTION-01 DONE and initialize the next approved sprint.
+- Validation status: GitHub CI #158 SUCCESS; scoped diff reviewed and mergeable. Browser visual PASS is not claimed. Production deploy/health remains unverified because Railway read access is denied.
+- Deploy status: Last known Railway production deployment 2e16bf7b-2706-4f79-af0b-af495184b988 was BUILDING; current status cannot be read due Railway viewer-role denial.
+- Next action: Retry Railway read access on the next run. If restored, verify exact deployment/revision, logs and health; then mark VEGAS-MOTION-01 DONE and initialize the next approved sprint. Do not start a new sprint before this gate is resolved.

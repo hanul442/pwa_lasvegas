@@ -1,4 +1,4 @@
-const CACHE_NAME = 'social-vegas-shell-v21';
+const CACHE_NAME = 'social-vegas-shell-v22';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -34,6 +34,7 @@ const APP_SHELL = [
   '/vegas-ui-v2.css',
   '/vegas-ui-v2-assets.css',
   '/vegas-game-v2.css',
+  '/vegas-motion-v2.css',
   '/vegas-ui-v2.js',
   '/assets/vegas-logo.svg',
   '/assets/ui-v2/game-blackjack.svg',

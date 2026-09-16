@@ -1,33 +1,23 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-UX-01 — Mobile Landscape Usability
-- Objective: Make mobile landscape a first-class, usable casino layout before further presentation work.
-- User-visible outcome: Landscape phones retain scrolling, safe-area access, clear game entry, bankroll visibility, and usable controls without obscured content.
+- Sprint ID/title: VEGAS-UX-02 — Game Entry & Navigation Reliability
+- Objective: Verify and harden the lobby-to-table entry/exit/navigation flow across mobile portrait, mobile landscape, and desktop before adding further casino presentation work.
+- User-visible outcome: Players can enter supported game tables, retain visible bankroll/CH context, return to the lobby reliably, and scroll/navigate without trapped or obscured controls.
 - Acceptance criteria:
-  - Vertical scrolling remains available in lobby and game overlays where content exceeds viewport.
-  - Landscape layout does not hide bankroll, exit/back, game entry, or primary betting controls.
-  - Touch targets remain usable and content is not clipped behind fixed/sticky UI.
-  - Existing portrait and desktop behavior is not intentionally regressed.
-  - Virtual-only economy and all approved feature invariants remain unchanged.
-- Current phase: DEPLOY
+  - Lobby game/table entry controls remain reachable and activate the intended game overlay/route.
+  - Exit/back controls reliably return to a usable lobby without stale overlays or scroll lock.
+  - Bankroll/CH display remains consistent across lobby and game entry/exit transitions.
+  - Mobile portrait, short mobile landscape, and desktop responsive rules preserve reachable primary navigation and scrolling.
+  - Existing game settlement/economy logic and virtual-only invariants remain unchanged.
+- Current phase: DISCOVER
 - Completed checkpoints:
-  - Canonical sprint state initialized from main 4ce35c327891d5a752fad3ce6e72d859df261541.
-  - Approved design references confirmed under docs/design; mobile landscape is explicitly first-class.
-  - Railway production deployment b1ddc8e7-a869-4b0c-81f3-f308ce05c586 confirmed SUCCESS before sprint changes.
-  - DISCOVER: AAAC lobby width-only mobile recovery allowed short landscape phones to inherit desktop sizing.
-  - DISCOVER: Blackjack immersive layer lacked a short-landscape override, risking tall sticky UI and unreachable controls.
-  - PLAN: Scope overrides to orientation:landscape + max-height:520px + pointer:coarse to isolate landscape phones.
-  - IMPLEMENT: Added scroll-safe compact landscape lobby flow, safe-area padding, two-column game cards, compact metrics and non-clipping modal behavior in public/aaac-luxury-shell.css.
-  - IMPLEMENT: Added scrollable compact Blackjack landscape flow with sticky compact header/bank, reduced table/card dimensions, reachable controls and non-sticky action panel in public/aaac-blackjack-immersive.css.
-  - TEST: Added targeted regression assertions for landscape lobby scrolling/touch/safe-area/two-column flow and Blackjack overlay/header/bank/action reachability in tests/aaac-blackjack-ui.test.mjs.
-  - REVIEW: PR #41 final head aeda05e059ba44410b74afc4a98cdfdf000e9fcd reviewed as mergeable; presentation-only scope retained.
-  - TEST: GitHub CI run #98 completed SUCCESS on final PR head.
-  - MERGE: PR #41 squash-merged to main as 3d7b374d56071491d226470be1bbe75d08e787bb.
-  - DEPLOY retry: Railway project/environment status was retried after merge; connector still returned required-role (viewer) access error, so no deployment state was inferred or modified.
-  - VERIFY retry: Public production health endpoint could not be independently opened from the available web execution path, so runtime health was not falsely marked PASS.
-- Next checkpoint: Confirm Railway deployment of merged revision and run post-deploy health/affected-flow verification; mark DONE only after deployment verification is available.
-- Blockers: Railway connector still returns a viewer-role access error for the project. Public production health endpoint is also not independently reachable through the current web execution path. Browser-level visual E2E remains dependent on available browser tooling.
-- Relevant PR/branch: PR #41 merged / automation/active-sprint-mobile-landscape
-- Validation status: GitHub CI #98 SUCCESS; targeted landscape regression included and passed within repository CI.
-- Deploy status: Merge completed; Railway deployment/revision status remains unverified due connector permission error. No manual Railway configuration or deployment changes performed.
-- Next action: Retry Railway status first on the next run. If merged revision is healthy, verify affected flow and mark VEGAS-UX-01 DONE; if deployment is unhealthy, follow rollback discipline before any new sprint.
+  - VEGAS-UX-01 DONE: PR #41 merged as 3d7b374d56071491d226470be1bbe75d08e787bb; GitHub CI #98 SUCCESS.
+  - VEGAS-UX-01 DEPLOY/VERIFY: GitHub commit deployment status for exact revision 3d7b374d56071491d226470be1bbe75d08e787bb is SUCCESS for SOCIAL VEGAS / social-vegas-web, target social-vegas-web-production.up.railway.app, recorded 2026-09-16T01:08:52Z. Railway target deployment reference aca164fd-8917-4b49-aee5-29f768d22808 in production environment 14e5248d-4180-48a1-b0cd-15deee3780b5.
+  - VEGAS-UX-01 affected landscape flow is protected by repository targeted regression assertions that passed in CI; direct browser visual E2E was unavailable and was not falsely claimed.
+  - VEGAS-UX-02 initialized as the next highest-priority approved usability sprint after landscape usability completion.
+- Next checkpoint: Inspect current lobby game-entry, overlay/route exit, scroll-lock, and bankroll/CH synchronization paths; identify one coherent highest-impact reliability gap before implementation.
+- Blockers: Railway connector direct project query still returns a viewer-role error, but exact merged-revision production deployment success is independently confirmed by the GitHub deployment status attached to the commit. Browser-level visual E2E remains unavailable in the current execution environment.
+- Relevant PR/branch: none yet / main
+- Validation status: VEGAS-UX-01 GitHub CI #98 SUCCESS and exact merged revision deployment status SUCCESS. VEGAS-UX-02 validation not started.
+- Deploy status: VEGAS-UX-01 exact revision 3d7b374d56071491d226470be1bbe75d08e787bb confirmed deployed successfully to SOCIAL VEGAS production via commit deployment status. VEGAS-UX-02 has no changes or deployment yet.
+- Next action: Resume VEGAS-UX-02 DISCOVER by tracing game/table entry and return navigation plus bankroll/CH display consistency, then scope one low-risk coherent fix.

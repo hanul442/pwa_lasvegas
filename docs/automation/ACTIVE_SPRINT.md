@@ -11,15 +11,17 @@
   - Mobile portrait, short landscape and desktop keep table content and controls reachable.
   - No backend/economy/settlement/database changes.
   - Validate targeted motion hooks, reduced-motion fallback and existing regression suite before merge.
-- Current phase: TEST
+- Current phase: DEPLOY
 - Completed checkpoints:
   - DISCOVER: traced current full-screen table markup, app.js navigation/history behavior, short-landscape CSS and existing global prefers-reduced-motion fallback on main.
   - PLAN: selected one coherent decorative table-entry slice covering Blackjack cards, Roulette wheel and Dice; Poker remains intentionally static in this slice.
   - IMPLEMENT: PR #49 adds pointer-events:none motion layer, game-specific entry trigger, bounded keyframes, short-landscape sizing and reduced-motion static fallback.
-  - Existing navigation/economy/settlement/database behavior was not modified.
-- Next checkpoint: Confirm PR #49 exact-head CI and mergeability; if green and scoped, review diff then squash merge.
-- Blockers: Browser-level visual E2E remains unavailable. PR #49 reported mergeable=false immediately after creation; re-check after GitHub computes mergeability/CI. Railway has an unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #49 OPEN; branch automation/vegas-motion-01; exact head 6d11573dba1660f6fd1bff826ec4d1a0f42a5721.
-- Validation status: Implementation complete; GitHub CI pending. Browser visual PASS is not claimed.
-- Deploy status: No VEGAS-MOTION-01 deployment yet; prior production remains healthy.
-- Next action: Check exact-head CI for PR #49 and mergeability, inspect scoped diff, then merge only if checks are green; afterward verify exact Railway revision and affected flow.
+  - TEST: exact PR head 6d11573dba1660f6fd1bff826ec4d1a0f42a5721 passed GitHub CI run #158.
+  - REVIEW: PR #49 became mergeable=true; scoped patch confirmed only public/app.js, public/index.html and public/styles.css motion/UI changes with no backend/economy/settlement/database changes.
+  - MERGE: PR #49 squash-merged to main as a7ed3aca63afdf81f6c12d0030923136f879cf4d.
+- Next checkpoint: Confirm Railway production deployment for merge revision a7ed3aca63afdf81f6c12d0030923136f879cf4d reaches SUCCESS, then inspect build/runtime health and affected motion/navigation flow.
+- Blockers: Browser-level visual E2E remains unavailable. Railway production currently has one unrelated staged environment change; do not accept it automatically.
+- Relevant PR/branch: PR #49 MERGED; branch automation/vegas-motion-01; merged revision a7ed3aca63afdf81f6c12d0030923136f879cf4d.
+- Validation status: GitHub CI #158 SUCCESS; scoped diff reviewed and mergeable. Browser visual PASS is not claimed.
+- Deploy status: Railway production deployment 2e16bf7b-2706-4f79-af0b-af495184b988 is BUILDING as of this run; exact post-merge health verification pending.
+- Next action: Re-check Railway deployment 2e16bf7b-2706-4f79-af0b-af495184b988; on SUCCESS inspect build/deploy logs and health, verify navigation remains non-blocking, then mark VEGAS-MOTION-01 DONE and initialize the next approved sprint.

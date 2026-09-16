@@ -29,6 +29,7 @@ jobs:
       - name: Syntax check browser modules
         run: |
           node --check public/app.js
+          node --check public/game-navigation.js
           node --check public/blackjack-v2.js
           node --check public/blackjack-session.js
           node --check public/game-stability.js

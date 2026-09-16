@@ -3,6 +3,7 @@
 const V2_LOGO='/assets/vegas-logo.svg';
 const gameKeys={blackjack:'blackjack',roulette:'roulette',baccarat:'baccarat','sic bo':'sicbo',"texas hold'em":'holdem','섯다':'seotda','맞고':'matgo',slots:'slots','vip lounge':'vip'};
 const navIcons=['⌂','◆','♛','◇','◎','⚙'];
+const liveRooms=new Set(['blackjack','roulette','baccarat','sicbo']);
 let queued=false;
 function gameKeyFromTitle(text=''){
   const t=text.trim().toLowerCase();
@@ -45,7 +46,15 @@ function decorateModal(){
   document.querySelectorAll('.overlay .modal').forEach(modal=>{
     modal.classList.add('vegas-game-modal');
     const title=modal.querySelector('header h2')?.textContent||'';
-    modal.dataset.v2Game=gameKeyFromTitle(title);
+    const key=gameKeyFromTitle(title);
+    modal.dataset.v2Game=key;
+    modal.classList.toggle('v2-live-room',liveRooms.has(key));
+    modal.classList.toggle('v2-win',Boolean(modal.querySelector('.stage .good,.stage h3.good')));
+    modal.classList.toggle('v2-loss',Boolean(modal.querySelector('.stage .bad,.stage h3.bad')));
+    const close=modal.querySelector('[data-close]');
+    if(close&&!close.getAttribute('aria-label')) close.setAttribute('aria-label','게임 닫기');
+    const phase=modal.querySelector('.roulette')?'roulette-result':modal.querySelector('.dice')?'dice-result':modal.querySelector('.playing-card')?'card-table':'ready';
+    modal.dataset.v2Phase=phase;
   });
 }
 function decorate(){

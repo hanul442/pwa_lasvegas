@@ -23,9 +23,11 @@
   - REVIEW: PR #41 final head aeda05e059ba44410b74afc4a98cdfdf000e9fcd reviewed as mergeable; presentation-only scope retained.
   - TEST: GitHub CI run #98 completed SUCCESS on final PR head.
   - MERGE: PR #41 squash-merged to main as 3d7b374d56071491d226470be1bbe75d08e787bb.
+  - DEPLOY retry: Railway project/environment status was retried after merge; connector still returned required-role (viewer) access error, so no deployment state was inferred or modified.
+  - VERIFY retry: Public production health endpoint could not be independently opened from the available web execution path, so runtime health was not falsely marked PASS.
 - Next checkpoint: Confirm Railway deployment of merged revision and run post-deploy health/affected-flow verification; mark DONE only after deployment verification is available.
-- Blockers: Railway connector currently returns a viewer-role access error for the project, so exact deployment/revision health cannot be verified in this run. Browser-level visual E2E remains dependent on available browser tooling.
+- Blockers: Railway connector still returns a viewer-role access error for the project. Public production health endpoint is also not independently reachable through the current web execution path. Browser-level visual E2E remains dependent on available browser tooling.
 - Relevant PR/branch: PR #41 merged / automation/active-sprint-mobile-landscape
 - Validation status: GitHub CI #98 SUCCESS; targeted landscape regression included and passed within repository CI.
-- Deploy status: Merge completed; Railway deployment status not verifiable due current connector permission error. No manual Railway configuration changes performed.
-- Next action: Retry Railway status first. If merged revision is healthy, verify affected flow and mark VEGAS-UX-01 DONE; otherwise follow rollback discipline before any new sprint.
+- Deploy status: Merge completed; Railway deployment/revision status remains unverified due connector permission error. No manual Railway configuration or deployment changes performed.
+- Next action: Retry Railway status first on the next run. If merged revision is healthy, verify affected flow and mark VEGAS-UX-01 DONE; if deployment is unhealthy, follow rollback discipline before any new sprint.

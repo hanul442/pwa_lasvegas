@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0d0f0f"/>
-  <rect x="38" y="38" width="436" height="436" rx="88" fill="none" stroke="#d6b56f" stroke-width="12"/>
-  <text x="256" y="286" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="168" font-weight="800" letter-spacing="-12" fill="#eee9de">SV</text>
-  <circle cx="392" cy="126" r="18" fill="#d6b56f"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VEGAS"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0b5"/><stop offset=".28" stop-color="#d4af37"/><stop offset=".62" stop-color="#f7dea0"/><stop offset="1" stop-color="#8a621d"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="512" height="512" rx="112" fill="#050505"/><rect x="30" y="30" width="452" height="452" rx="96" fill="none" stroke="rgba(212,175,55,.35)" stroke-width="8"/><path d="M126 142L252 382 378 142" fill="none" stroke="url(#g)" stroke-width="34" stroke-linecap="square" stroke-linejoin="miter" filter="url(#glow)"/><g transform="translate(350 318)" fill="#fff0b5" filter="url(#glow)"><path d="M0-44C4-14 10-6 40 0 10 6 4 14 0 44-4 14-10 6-40 0-10-6-4-14 0-44Z"/><circle r="5" fill="#fff9e8"/></g></svg>

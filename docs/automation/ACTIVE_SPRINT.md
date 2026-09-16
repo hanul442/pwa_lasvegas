@@ -2,24 +2,27 @@
 
 - Sprint ID/title: VEGAS-UI-RESET-01 — Clean-Slate Player Shell
 - Objective: Rebuild the player-facing Vegas UI from the intentional clean slate without restoring discarded legacy UI, starting with a mobile-first full-screen information architecture and navigation shell that can host each game as its own screen rather than a popup.
-- User-visible outcome: The reset placeholder becomes the foundation for a new Vegas experience with clear full-screen Lobby / Games / Ranking / Profile surfaces, safe scrolling, responsive navigation, and no legacy popup architecture.
+- User-visible outcome: The reset placeholder becomes a new Vegas shell with Lobby / Games / Ranking / Profile surfaces and full-screen game/table entry, while remaining scroll-safe and responsive.
 - Acceptance criteria:
-  - Rebuild starts from current clean-slate main at 72bb1ef6a089f2d82b2ad927bfd4707d638a5b37; discarded legacy UI is not restored.
+  - Rebuild starts from the intentional clean-slate main; discarded legacy UI is not restored.
   - Mobile-first shell supports portrait, short landscape, and desktop without trapping vertical scrolling or obscuring content.
   - Game/table entry architecture is full-screen route/surface based, not modal/popup based.
   - Navigation and content remain reachable with safe-area padding and touch-friendly targets.
   - Existing backend/economy/settlement/Stake Tier/ranking/season/social modules remain untouched and virtual-only.
-  - First implementation slice includes targeted regression coverage for shell reachability and non-popup game entry architecture.
-- Current phase: PLAN
+  - Targeted regression coverage guards shell reachability and non-popup game entry architecture.
+- Current phase: TEST
 - Completed checkpoints:
-  - Repository state re-read before work; previous VEGAS-UX-03 scheduler state was stale relative to main.
-  - Confirmed main was intentionally reset by commits 83205e54 (wipe legacy player UI) and 72bb1ef6 (remove legacy UI tests/reset CI).
-  - Confirmed current public/index.html is an explicit `VEGAS — UI RESET` clean slate and public/styles.css contains only reset-screen styling.
-  - Marked VEGAS-UX-03 obsolete rather than attempting responsive fixes against UI that no longer exists.
-  - Selected first coherent rebuild slice: mobile-first player shell + full-screen surface navigation, with no game logic/economy changes.
-- Next checkpoint: Implement the clean-slate shell on a dedicated branch: semantic app frame, Lobby/Games/Ranking/Profile full-screen surfaces, safe-area aware responsive navigation, scroll-safe layout, and regression tests proving game entry is not modal/popup based.
-- Blockers: No code blocker. Browser-level visual E2E remains unavailable, so responsive behavior must be guarded by source/regression checks until an interactive preview can be verified.
-- Relevant PR/branch: No PR yet; base main 72bb1ef6a089f2d82b2ad927bfd4707d638a5b37. Next branch: automation/vegas-clean-shell.
-- Validation status: DISCOVER realignment complete. Implementation validation not started.
-- Deploy status: No deployment for the rebuild slice yet; production currently reflects the intentional UI reset.
-- Next action: Create automation/vegas-clean-shell from current main, implement the shell and targeted tests, run CI, then review/merge/deploy only when green.
+  - Detected previous VEGAS-UX-03 state was stale after intentional UI wipe commits 83205e54 and 72bb1ef6; obsolete responsive-fix sprint was not continued against nonexistent legacy UI.
+  - PLAN: selected clean-slate player shell as the first coherent rebuild slice.
+  - IMPLEMENT: created branch automation/vegas-clean-shell from current main.
+  - IMPLEMENT: replaced reset placeholder with semantic Lobby/Games/Ranking/Profile surfaces and a dedicated full-screen table surface.
+  - IMPLEMENT: added safe-area aware bottom navigation, desktop rail, short-landscape layout, scroll-safe body behavior, touch-friendly controls, and reduced-motion handling.
+  - IMPLEMENT: game cards now enter a full-screen table surface using reversible browser history; Back, browser Back, and Escape return to Lobby with trigger focus restoration.
+  - TEST: added tests/clean-shell-ui.test.mjs guarding primary surfaces, absence of dialog/popup architecture, scroll/safe-area/landscape/desktop rules, and reversible game navigation.
+  - REVIEW GATE: opened PR #45 at exact head 659b18c9e6ae9ed65a985f901c3adf795194fa59; 4 changed files, +113/-12.
+- Next checkpoint: Wait for PR #45 CI on exact head 659b18c9e6ae9ed65a985f901c3adf795194fa59; if green, review exact diff/mergeability, squash merge, then verify Railway deployment revision and affected shell flow.
+- Blockers: PR #45 workflow run has not appeared yet. Browser-level visual E2E remains unavailable, so no unsupported visual PASS claim will be made.
+- Relevant PR/branch: PR #45 OPEN; branch automation/vegas-clean-shell; exact head 659b18c9e6ae9ed65a985f901c3adf795194fa59.
+- Validation status: Targeted regression committed; GitHub CI pending/not yet created for PR #45 exact head.
+- Deploy status: No deployment for this rebuild slice; production remains on the intentional UI reset until merge.
+- Next action: Check PR #45 exact-head CI; only after green, perform diff/mergeability review and proceed to MERGE/DEPLOY/VERIFY.

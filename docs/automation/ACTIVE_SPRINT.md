@@ -1,28 +1,26 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-MOTION-01 — Casino Table Motion & Responsive Feedback
-- Objective: Build the first approved Vegas-presentation slice on top of the stable player shell and Stake Tier entry, adding intentional casino ambience and game-specific table motion without blocking input, scrolling, navigation, or state clarity.
-- User-visible outcome: Entering Blackjack, Roulette and Dice tables feels visibly alive through concise game-specific motion while controls remain immediately usable across mobile portrait, short landscape and desktop.
+- Sprint ID/title: VEGAS-MOTION-02 — Table Transitions & Casino Ambience
+- Objective: Continue the approved Vegas-presentation work on the now-verified motion foundation by adding a coherent, non-blocking table transition and ambient feedback slice without regressing scrolling, navigation, responsive reachability or game-state clarity.
+- User-visible outcome: Moving from game/stake selection into a table feels like entering a polished Vegas floor, with concise transition/ambient feedback that remains immediately usable on mobile portrait, short landscape and desktop.
 - Acceptance criteria:
   - Preserve Lobby/Games/Stake Tier/full-screen table navigation and virtual-only CH semantics.
-  - Blackjack card deal/spread, Roulette wheel spin and Dice throw appear as bounded table-entry feedback.
-  - Motion is decorative and must not intercept scrolling, Back/browser Back/Escape or primary controls.
-  - Respect prefers-reduced-motion with a clear static fallback.
-  - Mobile portrait, short landscape and desktop keep table content and controls reachable.
-  - No backend/economy/settlement/database changes.
-  - Validate targeted motion hooks, reduced-motion fallback and existing regression suite before merge.
-- Current phase: DEPLOY
+  - Add one coherent table-entry/exit transition and ambient feedback layer consistent with the existing Blackjack/Roulette/Dice motion language.
+  - Decorative effects must not intercept pointer/touch input, scrolling, Back/browser Back/Escape or primary controls.
+  - Respect prefers-reduced-motion with a clear static/instant fallback.
+  - Mobile portrait, short landscape and desktop keep table content and controls reachable and unobscured.
+  - Do not add real-money semantics, deposits, withdrawals, purchasable/redeemable chips or CH-to-currency value.
+  - No destructive database migration, secrets change or irreversible data change.
+  - Validate targeted transition/motion hooks plus the existing regression suite before merge.
+- Current phase: DISCOVER
 - Completed checkpoints:
-  - DISCOVER: traced current full-screen table markup, app.js navigation/history behavior, short-landscape CSS and existing global prefers-reduced-motion fallback on main.
-  - PLAN: selected one coherent decorative table-entry slice covering Blackjack cards, Roulette wheel and Dice; Poker remains intentionally static in this slice.
-  - IMPLEMENT: PR #49 adds pointer-events:none motion layer, game-specific entry trigger, bounded keyframes, short-landscape sizing and reduced-motion static fallback.
-  - TEST: exact PR head 6d11573dba1660f6fd1bff826ec4d1a0f42a5721 passed GitHub CI run #158.
-  - REVIEW: PR #49 became mergeable=true; scoped patch confirmed only public/app.js, public/index.html and public/styles.css motion/UI changes with no backend/economy/settlement/database changes.
-  - MERGE: PR #49 squash-merged to main as a7ed3aca63afdf81f6c12d0030923136f879cf4d.
-  - DEPLOY verification attempt: Railway connector now rejects both deployment-list and deployment-log reads with required-role (viewer) access error, so SUCCESS/health cannot be truthfully asserted this run.
-- Next checkpoint: Re-check Railway production access and deployment for merge revision a7ed3aca63afdf81f6c12d0030923136f879cf4d; once readable, confirm SUCCESS, inspect build/runtime health and affected motion/navigation flow.
-- Blockers: Railway deployment verification is temporarily blocked by connector viewer-role access denial. Browser-level visual E2E remains unavailable. Railway production previously had one unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #49 MERGED; branch automation/vegas-motion-01; merged revision a7ed3aca63afdf81f6c12d0030923136f879cf4d.
-- Validation status: GitHub CI #158 SUCCESS; scoped diff reviewed and mergeable. Browser visual PASS is not claimed. Production deploy/health remains unverified because Railway read access is denied.
-- Deploy status: Last known Railway production deployment 2e16bf7b-2706-4f79-af0b-af495184b988 was BUILDING; current status cannot be read due Railway viewer-role denial.
-- Next action: Retry Railway read access on the next run. If restored, verify exact deployment/revision, logs and health; then mark VEGAS-MOTION-01 DONE and initialize the next approved sprint. Do not start a new sprint before this gate is resolved.
+  - VEGAS-MOTION-01 VERIFY: Railway read access restored. Production service social-vegas-web latest deployment 734859d0-c9f4-42e6-8bc9-75e1d278858a is SUCCESS on main revision 109e0d4cac1692de85be2713d011ffd0ff1eb6fc, which contains merged motion revision a7ed3aca63afdf81f6c12d0030923136f879cf4d.
+  - VEGAS-MOTION-01 runtime health: build completed, /api/health succeeded 1/1, Supabase persistence reported ready, and server listened on 0.0.0.0:8080. No runtime crash was observed in deployment logs.
+  - VEGAS-MOTION-01 DONE: CI #158 was GREEN; PR #49 merged; production deployment/runtime gate is now verified. Browser-level visual PASS remains intentionally unclaimed because browser visual E2E is unavailable.
+  - VEGAS-MOTION-02 initialized as the next highest-value approved presentation sprint after usability and first game-specific motion were stabilized.
+- Next checkpoint: Trace current table entry/exit DOM, CSS stacking/overflow and motion hooks on main; identify the smallest coherent transition/ambience slice that improves Vegas presentation without obscuring controls or duplicating the existing game-specific animations.
+- Blockers: Browser-level visual E2E is unavailable. Railway production still reports one unrelated staged environment change; do not accept it automatically.
+- Relevant PR/branch: No PR yet for VEGAS-MOTION-02. Prior PR #49 MERGED as a7ed3aca63afdf81f6c12d0030923136f879cf4d.
+- Validation status: Prior sprint production gate verified: Railway latest deployment SUCCESS, /api/health 1/1 PASS, Supabase persistence ready, server listening. New sprint implementation validation not started.
+- Deploy status: Production healthy on Railway deployment 734859d0-c9f4-42e6-8bc9-75e1d278858a, main revision 109e0d4cac1692de85be2713d011ffd0ff1eb6fc. One unrelated staged Railway environment change remains untouched.
+- Next action: Read the current table shell/app.js/styles.css motion paths and resume from DISCOVER; choose and implement one substantial table-transition/ambience slice, then run targeted regression and CI before review/merge/deploy.

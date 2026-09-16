@@ -1,28 +1,18 @@
 # ACTIVE SPRINT
 
 - Sprint ID/title: VEGAS-MOTION-02 — Table Transitions & Casino Ambience
-- Objective: Continue the approved Vegas-presentation work on the now-verified motion foundation by adding a coherent, non-blocking table transition and ambient feedback slice without regressing scrolling, navigation, responsive reachability or game-state clarity.
-- User-visible outcome: Moving from game/stake selection into a table feels like entering a polished Vegas floor, with concise transition/ambient feedback that remains immediately usable on mobile portrait, short landscape and desktop.
-- Acceptance criteria:
-  - Preserve Lobby/Games/Stake Tier/full-screen table navigation and virtual-only CH semantics.
-  - Add one coherent table-entry/exit transition and ambient feedback layer consistent with the existing Blackjack/Roulette/Dice motion language.
-  - Decorative effects must not intercept pointer/touch input, scrolling, Back/browser Back/Escape or primary controls.
-  - Respect prefers-reduced-motion with a clear static/instant fallback.
-  - Mobile portrait, short landscape and desktop keep table content and controls reachable and unobscured.
-  - Do not add real-money semantics, deposits, withdrawals, purchasable/redeemable chips or CH-to-currency value.
-  - No destructive database migration, secrets change or irreversible data change.
-  - Validate targeted transition/motion hooks plus the existing regression suite before merge.
-- Current phase: TEST
+- Objective: Add a coherent non-blocking table transition and ambient feedback slice without regressing scrolling, navigation, responsive reachability or game-state clarity.
+- User-visible outcome: Table entry has concise polished transition and ambient feedback while remaining immediately usable across portrait, short landscape and desktop.
+- Acceptance criteria: Preserve existing navigation and virtual-only CH semantics; decorative effects do not intercept input or scrolling; respect reduced-motion; keep controls reachable; no database/secrets changes; validate before merge.
+- Current phase: DEPLOY
 - Completed checkpoints:
-  - VEGAS-MOTION-01 production/runtime gate verified and prior sprint marked DONE.
-  - DISCOVER: traced current table DOM, stacking/overflow, game-specific motion and navigation. Table stage already isolates/overflows decorative game motion; table copy is the interaction/clarity foreground and Back remains outside the stage.
-  - PLAN: selected a CSS-first, non-blocking slice: brief full table-surface entrance plus slow decorative ambient light sweep/pulses behind existing game-specific animation. No JS/game-state change required.
-  - IMPLEMENT: added aria-hidden table-ambience layer with pointer-events:none; raised table copy above ambience/motion; added 340ms table-surface entrance; added ambient sweep/pulse; tuned short landscape; added static/instant prefers-reduced-motion fallback.
-  - IMPLEMENT: added tests/table-ambience-ui.test.mjs to protect decorative input pass-through, stacking, landscape and reduced-motion contracts.
-  - PR #50 opened from automation/vegas-motion-02-ambience; implementation head before state update was 80cd2ccf110a7b19023a445748e240ff7469c7e8.
-- Next checkpoint: Wait for PR #50 exact-head GitHub Actions; if GREEN, confirm mergeability and scoped diff, then squash merge. If CI fails, repair only the active slice and rerun.
-- Blockers: Browser-level visual E2E is unavailable. PR mergeability reported false immediately on creation and must be rechecked after GitHub computes mergeability/CI. Railway production still reports one unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #50 OPEN — automation/vegas-motion-02-ambience -> main.
-- Validation status: Targeted regression test committed; full GitHub Actions exact-head validation pending. Static design invariants preserve pointer pass-through, reduced motion and existing responsive breakpoints. No browser visual PASS claimed.
-- Deploy status: No deploy for VEGAS-MOTION-02 yet. Existing Production remains healthy from prior verified sprint; unrelated staged Railway environment change remains untouched.
-- Next action: Check PR #50 exact-head CI and mergeability. On GREEN/scoped diff, squash merge, then verify Railway exact deployed revision, /api/health and affected table-entry/navigation flow before DONE.
+  - DISCOVER/PLAN/IMPLEMENT complete: CSS-first table entrance and ambient presentation layer added with input pass-through, responsive tuning and reduced-motion fallback.
+  - TEST: targeted regression added; exact head f167318273001effd3ccbb34abd1f381c8a3dee0 passed GitHub Actions CI #165.
+  - REVIEW: PR #50 mergeable=true and scoped diff reviewed.
+  - MERGE: PR #50 squash merged as 24410263a45e949ba6f2f6378d4b5b7110a69e01.
+- Next checkpoint: Verify Railway deployment containing merge revision 24410263a45e949ba6f2f6378d4b5b7110a69e01, runtime health and affected table-entry/navigation invariants before DONE.
+- Blockers: Browser visual E2E unavailable. Do not accept unrelated staged environment changes automatically.
+- Relevant PR/branch: PR #50 MERGED; merge revision 24410263a45e949ba6f2f6378d4b5b7110a69e01.
+- Validation status: CI #165 GREEN on exact PR head; mergeability and scoped diff reviewed; production verification pending.
+- Deploy status: Awaiting Railway verification for merged revision or a later main revision containing it.
+- Next action: Verify deployment revision/status and runtime health; if healthy, verify affected interaction invariants, mark DONE, and initialize the next approved sprint.

@@ -1,20 +1,17 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-USABILITY-02 — Game-Mode Navigation & Scroll Hardening
-- Objective: Harden full-screen game/table navigation and scrolling across mobile portrait, short landscape and desktop before adding more presentation work.
-- User-visible outcome: Entering and leaving Games → Stake Tier → Table remains predictable with Back/Escape/browser Back, while vertical scrolling and controls stay reachable in constrained viewports.
-- Acceptance criteria: Preserve existing Vegas visual language and motion; Back/Escape/browser Back restore the correct surface/focus; game-mode does not trap vertical scrolling; portrait, short-landscape and desktop CSS keep controls reachable; decorative motion remains non-intercepting and reduced-motion safe; preserve virtual-only CH semantics; no database/secrets changes; validate before merge.
-- Current phase: DEPLOY
+- Sprint ID/title: VEGAS-USABILITY-03 — Gesture, Obscured-Content & Responsive Control Audit
+- Objective: Continue highest-priority usability hardening by eliminating gesture conflicts, obscured interactive content, and control reachability regressions across game/table flows before adding further presentation work.
+- User-visible outcome: Games → Stake Tier → Table remains comfortably usable by touch and pointer in mobile portrait, short landscape and desktop, with controls visible/reachable and vertical scrolling preserved.
+- Acceptance criteria: Audit drag/touch-action/overscroll/fixed-sticky/z-index/safe-area interactions; no decorative layer intercepts input; no primary game/table control is obscured in portrait or short landscape; preserve Back/Escape/browser Back and focus restoration; preserve existing Vegas visual language/motion and reduced-motion safety; preserve virtual-only CH semantics; no database/secrets changes; validate before merge.
+- Current phase: DISCOVER
 - Completed checkpoints:
-  - VEGAS-MOTION-02 DEPLOY/VERIFY/DONE: production was healthy on main with #50 included.
-  - DISCOVER: audited public/styles.css, public/index.html and public/app.js. Existing game-mode hides bottom nav correctly and navigation/focus restoration is intact, but constrained landscape forced a 220px table minimum while game-mode lacked an explicit vertical-scroll/touch-pan contract.
-  - PLAN/IMPLEMENT: added post-base public/usability.css. Game mode explicitly permits vertical/momentum scrolling; table stage uses touch-action:pan-y; safe-area bottom reachability is retained; short landscape table minimum uses clamp(180px,54dvh,220px). No game/economy/backend/database behavior changed.
-  - TEST: targeted regression added; PR #51 exact-head 8ec350229d9d7ad39e0efd73fc6c7015ca2b3005 passed CI #170; GitHub reported mergeable=true.
-  - REVIEW: scoped diff reviewed: only docs/automation/ACTIVE_SPRINT.md, public/index.html, public/usability.css and tests/game-mode-scroll-hardening.test.mjs changed; no backend/economy/database/secrets changes.
-  - MERGE: PR #51 squash-merged to main as f5b7b0e215aafd469abacb8445f9e40cdf37152f.
-- Next checkpoint: Wait for Railway deployment f95dd2c8-c71e-4839-91b1-30427a19fb68 of exact merge revision f5b7b0e215aafd469abacb8445f9e40cdf37152f to finish; if SUCCESS, inspect build/runtime health and verify scroll/navigation invariants.
+  - VEGAS-USABILITY-02 TEST/REVIEW/MERGE: PR #51 exact-head 8ec350229d9d7ad39e0efd73fc6c7015ca2b3005 passed CI #170 and was squash-merged as f5b7b0e215aafd469abacb8445f9e40cdf37152f.
+  - VEGAS-USABILITY-02 DEPLOY/VERIFY/DONE: exact merge deployment f95dd2c8 was superseded/removed by the scheduler-state main commit, and Railway deployment 0c37f032-7fab-42fe-8134-2b0850146ac6 for main 333a7f1addcf131e4a8300c0c8926e97fb1f1a5c completed SUCCESS. Build healthcheck /api/health passed 1/1; runtime reported Supabase persistence ready (users=4) and listening on 0.0.0.0:8080. Because 333a7f1a descends from f5b7b0e2, the deployed revision contains the scroll hardening. Existing targeted regression evidence covers vertical pan/short-landscape reachability and navigation invariants; browser visual E2E remains unavailable.
+  - VEGAS-USABILITY-03 DISCOVER initialized from approved product priority after VEGAS-USABILITY-02 completed green.
+- Next checkpoint: Audit current public CSS/JS for touch-action, pointer/drag handlers, overscroll, fixed/sticky layers, z-index and safe-area interactions in Games → Stake Tier → Table; identify one concrete high-value gesture/obscured-content failure and define a coherent hardening slice.
 - Blockers: Browser visual E2E unavailable. Railway production has one unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: PR #51 MERGED; main; merge revision f5b7b0e215aafd469abacb8445f9e40cdf37152f.
-- Validation status: CI #170 GREEN; scoped review passed. Production verification pending.
-- Deploy status: Railway deployment f95dd2c8-c71e-4839-91b1-30427a19fb68 is BUILDING for exact merge revision f5b7b0e215aafd469abacb8445f9e40cdf37152f.
-- Next action: Confirm Railway SUCCESS, inspect /api/health/runtime, verify portrait/short-landscape/desktop scroll and Back/Escape invariants using available regression/runtime evidence, then mark VEGAS-USABILITY-02 DONE if green.
+- Relevant PR/branch: main. No PR yet for VEGAS-USABILITY-03.
+- Validation status: VEGAS-USABILITY-02 production GREEN: CI #170 GREEN; Railway 0c37f032 SUCCESS; /api/health 1/1; Supabase persistence ready; server :8080. VEGAS-USABILITY-03 validation not started.
+- Deploy status: Production healthy on Railway deployment 0c37f032-7fab-42fe-8134-2b0850146ac6, main revision 333a7f1addcf131e4a8300c0c8926e97fb1f1a5c, containing #51 merge f5b7b0e2.
+- Next action: Perform the scoped gesture/obscured-content audit, then implement one substantial low-risk hardening slice with targeted regression coverage; do not touch economy/backend/database/secrets.

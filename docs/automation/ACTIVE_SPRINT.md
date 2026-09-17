@@ -4,12 +4,16 @@
 - Objective: Harden full-screen game/table navigation and scrolling across mobile portrait, short landscape and desktop before adding more presentation work.
 - User-visible outcome: Entering and leaving Games → Stake Tier → Table remains predictable with Back/Escape/browser Back, while vertical scrolling and controls stay reachable in constrained viewports.
 - Acceptance criteria: Preserve existing Vegas visual language and motion; Back/Escape/browser Back restore the correct surface/focus; game-mode does not trap vertical scrolling; portrait, short-landscape and desktop CSS keep controls reachable; decorative motion remains non-intercepting and reduced-motion safe; preserve virtual-only CH semantics; no database/secrets changes; validate before merge.
-- Current phase: DISCOVER
+- Current phase: TEST
 - Completed checkpoints:
-  - VEGAS-MOTION-02 DEPLOY/VERIFY/DONE: Railway production deployment 5e30c4a8-b3e3-41c0-a91a-9332993ecfe7 is SUCCESS on main revision 5368047361bdf984c029b62e4f6b9714958f3879, which contains merge revision 24410263a45e949ba6f2f6378d4b5b7110a69e01. Build healthcheck /api/health passed 1/1; runtime reports Supabase persistence ready and server listening on :8080. Static regression confirms ambience is aria-hidden/pointer-events:none, copy/motion stacking is protected, short-landscape and reduced-motion fallbacks exist. app.js preserves Back/Escape/browser-popstate paths and focus restoration. Browser visual E2E remains unavailable, so verification is code/regression/runtime-health based.
-- Next checkpoint: Inspect game-mode/tier/table CSS overflow, min-height, fixed/sticky controls and short-landscape rules; identify any scroll/reachability trap and implement one coherent hardening slice with targeted regression.
+  - VEGAS-MOTION-02 DEPLOY/VERIFY/DONE: production was healthy on main with #50 included.
+  - DISCOVER: audited public/styles.css, public/index.html and public/app.js. Existing game-mode hides bottom nav correctly and navigation/focus restoration is intact, but constrained landscape forced a 220px table minimum while game-mode lacked an explicit vertical-scroll/touch-pan contract.
+  - PLAN/IMPLEMENT: added post-base public/usability.css. Game mode explicitly permits vertical/momentum scrolling; table stage uses touch-action:pan-y; safe-area bottom reachability is retained; short landscape table minimum uses clamp(180px,54dvh,220px). No game/economy/backend/database behavior changed.
+  - TEST PREP: added tests/game-mode-scroll-hardening.test.mjs guarding stylesheet load order, vertical scrolling, safe-area reachability, pan-y and short-landscape sizing.
+  - PR: opened #51 from automation/vegas-usability-02-scroll-hardening. Initial exact-head workflow lookup returned no run yet; mergeability initially false while GitHub computes state.
+- Next checkpoint: Check PR #51 exact-head CI and mergeability; if green/scoped, squash merge.
 - Blockers: Browser visual E2E unavailable. Railway production has one unrelated staged environment change; do not accept it automatically.
-- Relevant PR/branch: main; previous PR #50 MERGED as 24410263a45e949ba6f2f6378d4b5b7110a69e01. No PR yet for VEGAS-USABILITY-02.
-- Validation status: Previous sprint CI #165 GREEN; production deployment SUCCESS; /api/health 1/1; runtime healthy. New sprint discovery pending.
-- Deploy status: Production healthy on main revision 5368047361bdf984c029b62e4f6b9714958f3879. Unrelated staged Railway change left untouched.
-- Next action: Audit game-mode/tier/table responsive overflow and reachability, then implement and regression-test the highest-value safe usability fix.
+- Relevant PR/branch: PR #51; automation/vegas-usability-02-scroll-hardening; current state commit follows implementation head 741fba155bf9150c036f5a39d61dada32e175896.
+- Validation status: Targeted regression authored; exact-head CI pending.
+- Deploy status: Existing production remains healthy; no deployment for this sprint yet.
+- Next action: Check PR #51 exact-head CI + mergeability, review scoped diff, then squash merge only when green.

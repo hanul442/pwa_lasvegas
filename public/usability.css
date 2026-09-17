@@ -1,12 +1,20 @@
-/* VEGAS-USABILITY-02: constrained-viewport scroll and control reachability hardening. */
+/* VEGAS-USABILITY-02/03: constrained-viewport scroll, gesture and control reachability hardening. */
 .game-mode{
   min-height:100dvh;
   overflow-x:hidden;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:none;
+  scroll-padding-top:calc(58px + env(safe-area-inset-top));
+}
+.game-mode .topbar{
+  padding-left:max(18px,env(safe-area-inset-left));
+  padding-right:max(18px,env(safe-area-inset-right));
 }
 .game-mode .surface-stack{
   min-height:0;
+  padding-left:max(18px,env(safe-area-inset-left));
+  padding-right:max(18px,env(safe-area-inset-right));
   padding-bottom:max(24px,calc(18px + env(safe-area-inset-bottom)));
 }
 .game-mode .surface.is-active{
@@ -20,6 +28,10 @@
   position:relative;
   z-index:5;
   min-width:44px;
+  min-height:44px;
+  touch-action:manipulation;
+}
+.game-mode .tier-card{
   touch-action:manipulation;
 }
 .game-mode .table-stage{
@@ -27,8 +39,13 @@
   min-width:0;
   touch-action:pan-y;
 }
+.game-mode .table-ambience,
+.game-mode .table-motion{
+  pointer-events:none;
+}
 
 @media (orientation:landscape) and (max-height:520px){
+  .game-mode{scroll-padding-top:0}
   .game-mode .surface-stack{padding-bottom:max(18px,env(safe-area-inset-bottom))}
   .game-mode .surface.is-active{padding-top:14px;padding-bottom:18px}
   .game-mode .game-surface .back-button{margin-bottom:6px}

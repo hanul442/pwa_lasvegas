@@ -1,4 +1,4 @@
-/* VEGAS-USABILITY-02/03: constrained-viewport scroll, gesture and control reachability hardening. */
+/* VEGAS-USABILITY-02/03/04: constrained-viewport scroll, gesture, reachability and keyboard focus hardening. */
 .game-mode{
   min-height:100dvh;
   overflow-x:hidden;
@@ -42,6 +42,20 @@
 .game-mode .table-ambience,
 .game-mode .table-motion{
   pointer-events:none;
+}
+
+/* Keyboard users need a visible, unclipped focus contract across every navigation surface. */
+:where(.brand,.nav-item,.game-card,.floor-game,.tier-card,.back-button):focus-visible{
+  outline:3px solid var(--gold);
+  outline-offset:3px;
+  box-shadow:0 0 0 2px var(--bg),0 0 0 6px rgba(224,191,112,.24);
+}
+.game-mode :where(.tier-card,.back-button):focus-visible{
+  position:relative;
+  z-index:6;
+}
+.surface>h1[tabindex="-1"]:focus{
+  outline:none;
 }
 
 @media (orientation:landscape) and (max-height:520px){

@@ -1,0 +1,36 @@
+/* VEGAS-USABILITY-02: constrained-viewport scroll and control reachability hardening. */
+.game-mode{
+  min-height:100dvh;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.game-mode .surface-stack{
+  min-height:0;
+  padding-bottom:max(24px,calc(18px + env(safe-area-inset-bottom)));
+}
+.game-mode .surface.is-active{
+  min-height:0;
+}
+.game-mode .game-surface{
+  min-height:0;
+  padding-bottom:max(28px,calc(20px + env(safe-area-inset-bottom)));
+}
+.game-mode .back-button{
+  position:relative;
+  z-index:5;
+  min-width:44px;
+  touch-action:manipulation;
+}
+.game-mode .table-stage{
+  max-width:100%;
+  min-width:0;
+  touch-action:pan-y;
+}
+
+@media (orientation:landscape) and (max-height:520px){
+  .game-mode .surface-stack{padding-bottom:max(18px,env(safe-area-inset-bottom))}
+  .game-mode .surface.is-active{padding-top:14px;padding-bottom:18px}
+  .game-mode .game-surface .back-button{margin-bottom:6px}
+  .game-mode .table-stage{min-height:clamp(180px,54dvh,220px);padding:18px}
+}

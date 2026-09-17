@@ -1,18 +1,17 @@
 # ACTIVE SPRINT
 
-- Sprint ID/title: VEGAS-USABILITY-03 — Gesture, Obscured-Content & Responsive Control Audit
-- Objective: Eliminate gesture conflicts, obscured interactive content, and control reachability regressions across game/table flows.
-- User-visible outcome: Games → Stake Tier → Table remains usable in mobile portrait, short/notched landscape and desktop, with controls reachable and vertical scrolling preserved.
-- Acceptance criteria: Safe touch/scroll behavior; decorative layers do not intercept input; primary controls remain reachable; Back/Escape/browser Back and focus restoration preserved; existing Vegas visual language and virtual-only CH semantics preserved.
-- Current phase: DEPLOY
+- Sprint ID/title: VEGAS-USABILITY-04 — Keyboard Focus & Navigation Resilience
+- Objective: Harden focus visibility and keyboard/navigation continuity across Games → Stake Tier → Table without regressing touch, scrolling or Vegas presentation.
+- User-visible outcome: Back and primary game/tier/table controls remain visibly focusable and navigation state remains understandable after keyboard, Escape and browser-Back transitions on mobile/desktop-capable browsers.
+- Acceptance criteria: Visible `:focus-visible` treatment for primary interactive controls; no focus ring clipping/obscuring; Back/Escape/browser Back and focus restoration preserved; portrait/short/notched landscape scrolling and gesture contracts preserved; decorative layers remain input-transparent; existing Vegas visual language and virtual-only CH semantics preserved.
+- Current phase: DISCOVER
 - Completed checkpoints:
-  - DISCOVER/PLAN/IMPLEMENT: identified notched-landscape safe-area and Back touch-target risk; implemented horizontal safe-area protection, overscroll containment, 44px Back target, tier/table gesture contracts and pointer-transparent decorative layers; added targeted regression coverage.
-  - TEST: PR #52 exact head a8fed5e058880fe3b04da35a51c34e08d654db6b passed CI #175.
-  - REVIEW: mergeable=true; scoped files limited to ACTIVE_SPRINT.md, public/usability.css and tests/game-mode-gesture-safe-area.test.mjs.
-  - MERGE: PR #52 squash-merged as 8013e582747a7847b36dfdf32c56c42e747e6e11.
-- Next checkpoint: Confirm Railway deployment containing 8013e582 is successful, then verify runtime health and affected gesture/reachability/navigation invariants.
+  - VEGAS-USABILITY-03 DEPLOY: Railway deployment b5fd6211-bb38-4abd-9fc8-66947a4956c4 SUCCESS at main 906c5b97cc0d2cecce12519361fd13b973ca552a, which contains PR #52 merge 8013e582747a7847b36dfdf32c56c42e747e6e11.
+  - VEGAS-USABILITY-03 VERIFY: Railway healthcheck `/api/health` configured with 30s timeout; deployment passed Railway health gate; runtime logs show Supabase persistence ready (users=4) and server listening on 0.0.0.0:8080. Static invariants remain present in `public/usability.css`: safe-area padding, 44px Back target, tier manipulation, table pan-y, pointer-transparent ambience/motion and constrained-landscape sizing.
+  - VEGAS-USABILITY-03 DONE: production/runtime and affected static interaction invariants green; browser visual E2E remains unavailable but is non-blocking for the validated slice.
+- Next checkpoint: Audit existing focus-visible/focus restoration rules and active-surface navigation hooks; identify one concrete keyboard/focus failure and implement a coherent low-risk hardening slice with targeted regression coverage.
 - Blockers: Browser visual E2E unavailable. Leave unrelated Railway staged environment change untouched.
-- Relevant PR/branch: PR #52 MERGED; main contains 8013e582747a7847b36dfdf32c56c42e747e6e11.
-- Validation status: CI #175 GREEN; mergeability GREEN; scoped review complete; production verification pending.
-- Deploy status: Awaiting confirmation of Railway main deployment containing 8013e582; prior production baseline healthy.
-- Next action: Railway deployment status → runtime health → portrait/short-landscape/notched-landscape gesture/reachability plus Back/Escape VERIFY → DONE if green.
+- Relevant PR/branch: main; VEGAS-USABILITY-03 PR #52 MERGED. No PR yet for VEGAS-USABILITY-04.
+- Validation status: Previous sprint production GREEN. New sprint discovery pending.
+- Deploy status: Production healthy on Railway deployment b5fd6211-bb38-4abd-9fc8-66947a4956c4 / revision 906c5b97cc0d2cecce12519361fd13b973ca552a.
+- Next action: Focus-visible CSS + navigation/focus-restoration hook audit → select concrete failure → PLAN/IMPLEMENT targeted hardening + regression.

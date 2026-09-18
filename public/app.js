@@ -1,67 +1,21 @@
 document.documentElement.dataset.vegasUi='clean-shell';
-
-const surfaces=[...document.querySelectorAll('[data-surface]')];
-const navItems=[...document.querySelectorAll('[data-nav]')];
-const tableStage=document.querySelector('[data-table-stage]');
-let lastLobbyTrigger=null;
-let selectedGame=null;
-
-function showSurface(name,{focus=false}={}){
-  const target=surfaces.find(surface=>surface.dataset.surface===name);
-  if(!target)return;
-  surfaces.forEach(surface=>surface.classList.toggle('is-active',surface===target));
-  navItems.forEach(item=>item.classList.toggle('is-active',item.dataset.nav===name));
-  document.body.classList.toggle('game-mode',name==='table'||name==='tiers');
-  window.scrollTo({top:0,behavior:'auto'});
-  if(focus){const heading=target.querySelector('h1');heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true});}
-}
-
-navItems.forEach(item=>item.addEventListener('click',()=>showSurface(item.dataset.nav,{focus:true})));
-
-function chooseGame(button){
-  lastLobbyTrigger=button;
-  selectedGame=button.dataset.game;
-  document.querySelector('#tier-game-name').textContent=(button.querySelector('strong')?.textContent||selectedGame)+' · select virtual CH range';
-  history.pushState({vegasSurface:'tiers'},'',`#tiers-${selectedGame}`);
-  showSurface('tiers',{focus:true});
-}
-
-document.querySelectorAll('[data-game]').forEach(button=>button.addEventListener('click',()=>chooseGame(button)));
-
-function cueTableMotion(game){
-  if(!tableStage)return;
-  tableStage.dataset.game=game;
-  tableStage.classList.remove('is-entering');
-  void tableStage.offsetWidth;
-  tableStage.classList.add('is-entering');
-}
-
-document.querySelectorAll('[data-tier]').forEach(button=>button.addEventListener('click',()=>{
-  if(!selectedGame)return;
-  const gameName=selectedGame.toUpperCase();
-  const tier=button.dataset.tier.toUpperCase();
-  document.querySelector('#table-title').textContent=gameName;
-  document.querySelector('#table-tier').textContent=`${tier} · LIVE TABLE`;
-  document.querySelector('#table-stake').textContent=`${button.querySelector('span').textContent}`;
-  cueTableMotion(selectedGame);
-  history.pushState({vegasSurface:'table'},'',`#table-${selectedGame}-${button.dataset.tier}`);
-  showSurface('table',{focus:true});
-}));
-
-function restoreTrigger(){lastLobbyTrigger?.focus({preventScroll:true});}
-function leaveTable({useHistory=true}={}){
-  if(!document.body.classList.contains('game-mode'))return;
-  if(useHistory&&(history.state?.vegasSurface==='table'||history.state?.vegasSurface==='tiers')){history.back();return;}
-  showSurface('games');restoreTrigger();
-}
-
-document.querySelector('[data-back]')?.addEventListener('click',()=>leaveTable());
-document.querySelector('[data-tier-back]')?.addEventListener('click',()=>leaveTable());
-window.addEventListener('popstate',event=>{
-  if(event.state?.vegasSurface==='tiers'){showSurface('tiers',{focus:true});return;}
-  if(event.state?.vegasSurface==='table'){showSurface('table',{focus:true});return;}
-  if(document.body.classList.contains('game-mode')){showSurface('games');restoreTrigger();}
-});
-window.addEventListener('keydown',event=>{if(event.key==='Escape')leaveTable();});
-
-showSurface('lobby');
+const surfaces=[...document.querySelectorAll('[data-surface]')],navItems=[...document.querySelectorAll('[data-nav]')],tableStage=document.querySelector('[data-table-stage]');
+let lastLobbyTrigger=null,selectedGame=null,selectedStake=0,blackjackRound=null,busy=false;
+const $=s=>document.querySelector(s);
+function showSurface(name,{focus=false}={}){const target=surfaces.find(s=>s.dataset.surface===name);if(!target)return;surfaces.forEach(s=>s.classList.toggle('is-active',s===target));navItems.forEach(i=>i.classList.toggle('is-active',i.dataset.nav===name));document.body.classList.toggle('game-mode',name==='table'||name==='tiers');window.scrollTo({top:0,behavior:'auto'});if(focus){const h=target.querySelector('h1');h?.setAttribute('tabindex','-1');h?.focus({preventScroll:true});}}
+navItems.forEach(i=>i.addEventListener('click',()=>showSurface(i.dataset.nav,{focus:true})));
+function chooseGame(button){lastLobbyTrigger=button;selectedGame=button.dataset.game;$('#tier-game-name').textContent=(button.querySelector('strong')?.textContent||selectedGame)+' · select virtual CH range';history.pushState({vegasSurface:'tiers'},'',`#tiers-${selectedGame}`);showSurface('tiers',{focus:true});}
+document.querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>chooseGame(b)));
+function cueTableMotion(game){if(!tableStage)return;tableStage.dataset.game=game;tableStage.classList.remove('is-entering');void tableStage.offsetWidth;tableStage.classList.add('is-entering');}
+function formatCH(n){return Number(n||0).toLocaleString('en-US')+' CH';}
+function updateState(state){const balance=state?.user?.account?.available??state?.user?.bankroll??state?.user?.balance; if(balance!=null)$('[data-wallet]').textContent=formatCH(balance);}
+function cardLabel(card){if(typeof card==='string')return card;return card?.label||`${card?.rank||''}${card?.suit||''}`||'?';}
+function renderCards(node,cards=[]){node.replaceChildren(...cards.map(c=>{const el=document.createElement('i');el.textContent=cardLabel(c);return el;}));}
+function renderBlackjack(payload){blackjackRound=payload?.round||null;updateState(payload?.state);const live=$('[data-blackjack]'),placeholder=$('[data-placeholder]');live.hidden=false;placeholder.hidden=true;if(!blackjackRound){$('[data-round-status]').textContent='Ready to deal';return;}const hands=blackjackRound.hands||[];const hand=hands[blackjackRound.activeHandIndex||0]||hands[0];renderCards($('[data-player-cards]'),hand?.cards||blackjackRound.player||blackjackRound.playerCards||[]);renderCards($('[data-dealer-cards]'),blackjackRound.dealer?.cards||blackjackRound.dealer||blackjackRound.dealerCards||[]);$('[data-player-value]').textContent=hand?.value??blackjackRound.playerValue??'—';$('[data-dealer-value]').textContent=blackjackRound.dealer?.value??blackjackRound.dealerValue??'—';const settled=blackjackRound.status==='SETTLED';$('[data-round-status]').textContent=settled?`SETTLED · ${payload.netPnl>=0?'+':''}${formatCH(payload.netPnl)}`:`${blackjackRound.status||'PLAYING'} · ${formatCH(blackjackRound.stake||selectedStake)}`;document.querySelectorAll('[data-bj-action]').forEach(b=>b.disabled=settled||busy);$('[data-bj-deal]').hidden=!settled;}
+async function bjRequest(path,body){if(busy)return;busy=true;document.querySelectorAll('.table-actions button').forEach(b=>b.disabled=true);try{const res=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-idempotency-key':crypto.randomUUID()},body:JSON.stringify(body)});const data=await res.json();if(!res.ok)throw new Error(data.error||'REQUEST_FAILED');renderBlackjack(data);}catch(err){$('[data-round-status]').textContent=`TABLE ERROR · ${err.message}`;}finally{busy=false;if(blackjackRound?.status!=='SETTLED')document.querySelectorAll('[data-bj-action]').forEach(b=>b.disabled=false);}}
+async function openBlackjack(){try{const res=await fetch('/api/blackjack/v2/open');const data=await res.json();if(res.ok&&data.round)renderBlackjack(data);else await bjRequest('/api/blackjack/v2/start',{stake:selectedStake,spots:1,floor:'strip'});}catch{await bjRequest('/api/blackjack/v2/start',{stake:selectedStake,spots:1,floor:'strip'});}}
+document.querySelectorAll('[data-tier]').forEach(button=>button.addEventListener('click',async()=>{if(!selectedGame)return;selectedStake=Number(button.dataset.min);$('#table-title').textContent=selectedGame.toUpperCase();$('#table-tier').textContent=`${button.dataset.tier.toUpperCase()} · LIVE TABLE`;$('#table-stake').textContent=button.querySelector('span').textContent;cueTableMotion(selectedGame);history.pushState({vegasSurface:'table'},'',`#table-${selectedGame}-${button.dataset.tier}`);showSurface('table',{focus:true});$('[data-blackjack]').hidden=selectedGame!=='blackjack';$('[data-placeholder]').hidden=selectedGame==='blackjack';if(selectedGame==='blackjack')await openBlackjack();}));
+document.querySelectorAll('[data-bj-action]').forEach(b=>b.addEventListener('click',()=>{const handIndex=blackjackRound?.activeHandIndex??0;bjRequest('/api/blackjack/v2/action',{roundId:blackjackRound?.id,handIndex,action:b.dataset.bjAction});}));$('[data-bj-deal]')?.addEventListener('click',()=>bjRequest('/api/blackjack/v2/start',{stake:selectedStake,spots:1,floor:'strip'}));
+function restoreTrigger(){lastLobbyTrigger?.focus({preventScroll:true});}function leaveTable({useHistory=true}={}){if(!document.body.classList.contains('game-mode'))return;if(useHistory&&(history.state?.vegasSurface==='table'||history.state?.vegasSurface==='tiers')){history.back();return;}showSurface('games');restoreTrigger();}
+$('[data-back]')?.addEventListener('click',()=>leaveTable());$('[data-tier-back]')?.addEventListener('click',()=>leaveTable());window.addEventListener('popstate',e=>{if(e.state?.vegasSurface==='tiers'){showSurface('tiers',{focus:true});return;}if(e.state?.vegasSurface==='table'){showSurface('table',{focus:true});return;}if(document.body.classList.contains('game-mode')){showSurface('games');restoreTrigger();}});window.addEventListener('keydown',e=>{if(e.key==='Escape')leaveTable();});
+fetch('/api/state').then(r=>r.ok?r.json():null).then(updateState).catch(()=>{});showSurface('lobby');

@@ -614,3 +614,15 @@
   .bj{gap:4px}
   .bj .hand-wrap{padding:3px;gap:3px}
 }
+/* Readability: bet labels stay legible under AI chips, and nothing on a phone drops below ~11px. */
+.zone>strong,.zone>small{position:relative;z-index:4;text-shadow:0 1px 3px #000d,0 0 1px #000}
+.zone>.bet-stack{z-index:5}
+.action:disabled{opacity:.42}
+.bet-tool:disabled{opacity:.4}
+@media (max-width:519px){
+  .num{font-size:clamp(13px,3.6vw,16px);letter-spacing:-.04em}
+  .zone--total small{font-size:11px;color:#efe7d9d9}
+  .zone small{color:#efe7d9d9}
+  .side-label{font-size:10px;opacity:.85;white-space:nowrap;letter-spacing:-.02em}
+  .toast{font-size:14px}
+}

@@ -105,3 +105,10 @@
   .has-crowd .rl-outside .zone,.has-crowd .rl-dozens .zone{min-height:30px}
   .has-crowd .rl-layout{gap:4px}
 }
+/* Phones: roulette cells are tiny, so AI chips shrink and sit further out, clear of the number. */
+@media (max-width:519px){
+  .num .npc-stack{--npc:12px;left:-5px;bottom:-5px}
+  .num .npc-stack[data-seat="1"]{top:-5px}
+  .num .npc-stack[data-seat="2"]{right:-5px;top:-5px}
+  .num .npc-stack[data-seat="3"]{right:-5px;bottom:-5px}
+}

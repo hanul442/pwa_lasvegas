@@ -15,7 +15,7 @@ const MAX_QUEUE = 2;
 const bytes = new Map(); // id -> Promise<ArrayBuffer | null>
 const decoded = new Map(); // id -> Promise<AudioBuffer | null>
 let queue = [];
-let current = null;
+let current = []; // the sources of the line or phrase now playing
 let pumping = false;
 
 function fetchLine(id) {
@@ -41,16 +41,25 @@ function bufferFor(id, ac) {
   return decoded.get(id);
 }
 
-function play(buffer, ac) {
+const JOIN = 0.04; // pieces of a phrase overlap this much (s) so the words run together
+
+// Play one line, or the pieces of a phrase back to back on the audio clock.
+function play(buffers, ac) {
   return new Promise(resolve => {
-    const src = ac.createBufferSource();
     const gain = ac.createGain();
     gain.gain.value = level();
-    src.buffer = buffer;
-    src.connect(gain).connect(ac.destination);
-    src.onended = () => { if (current === src) current = null; resolve(); };
-    current = src;
-    src.start();
+    gain.connect(ac.destination);
+    let at = ac.currentTime + 0.02;
+    const srcs = buffers.map(buffer => {
+      const src = ac.createBufferSource();
+      src.buffer = buffer;
+      src.connect(gain);
+      src.start(at);
+      at += buffer.duration - JOIN;
+      return src;
+    });
+    srcs[srcs.length - 1].onended = () => { if (current === srcs) current = []; resolve(); };
+    current = srcs;
   });
 }
 
@@ -59,13 +68,13 @@ async function pump() {
   pumping = true;
   try {
     while (queue.length) {
-      const { id, at } = queue.shift();
+      const { ids, at } = queue.shift();
       const ac = silent() ? null : audioContext();
       if (!ac) { queue = []; break; }
-      const buffer = await bufferFor(id, ac);
-      if (!buffer || silent() || performance.now() - at > STALE_MS) continue;
+      const buffers = await Promise.all(ids.map(id => bufferFor(id, ac)));
+      if (buffers.some(b => !b) || silent() || performance.now() - at > STALE_MS) continue;
       music.duck(true);
-      await play(buffer, ac);
+      await play(buffers, ac);
       if (!queue.length) music.duck(false);
     }
   } finally {
@@ -75,22 +84,60 @@ async function pump() {
 }
 
 export const voice = {
-  // Queue a line. `cut` stops whatever he is saying first, for a call-out that supersedes it.
-  say(id, { cut = false } = {}) {
-    if (!id || silent()) return;
+  // Queue a line id, or an array of piece ids spoken as one phrase. `cut` stops whatever he is
+  // saying first, for a call-out that supersedes it; `next` drops what is waiting but lets the
+  // current line finish, for the cue that matters most ("Your action").
+  say(line, { cut = false, next = false } = {}) {
+    const ids = [line].flat().filter(Boolean);
+    if (!ids.length || silent()) return;
     if (cut) this.hush();
-    queue.push({ id, at: performance.now() });
+    else if (next) queue = [];
+    queue.push({ ids, at: performance.now() });
     if (queue.length > MAX_QUEUE) queue = queue.slice(-MAX_QUEUE);
     pump();
   },
   hush() {
     queue = [];
-    try { current?.stop(); } catch {}
-    current = null;
+    current.forEach(src => { try { src.stop(); } catch {} });
+    current = [];
   },
   // Fetch a table's lines when it opens so the first call-out is not late.
   preload(game) { (TABLE_LINES[game] || []).forEach(fetchLine); }
 };
+
+// ---------- line ids ----------
+// Bet amounts in words, as piece ids: 1,250,000 -> one million two hundred fifty thousand.
+const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const SCALES = [[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand'], [1, '']];
+const NUMBER_WORDS = [...ONES.slice(1), ...TENS.slice(2), 'hundred', ...SCALES.map(s => s[1]).filter(Boolean)];
+function belowThousand(n) {
+  const words = [];
+  if (n >= 100) words.push(ONES[Math.floor(n / 100)], 'hundred');
+  const r = n % 100;
+  if (r >= 20) words.push(TENS[Math.floor(r / 10)], ...(r % 10 ? [ONES[r % 10]] : []));
+  else if (r) words.push(ONES[r]);
+  return words;
+}
+export function amountWords(amount) {
+  let n = Math.round(Number(amount) || 0);
+  if (n <= 0 || n >= 1e15) return [];
+  const words = [];
+  for (const [size, name] of SCALES) {
+    const part = Math.floor(n / size);
+    n -= part * size;
+    if (part) words.push(...belowThousand(part), ...(name ? [name] : []));
+  }
+  return words;
+}
+const LEADS = { CALL: 'lead-call', RAISE: 'lead-raise', BET: 'lead-bet', ALL_IN: 'lead-all-in' };
+// "Call, fifty thousand." The last word is the falling, phrase-final take.
+export function betLine(action, amount) {
+  const words = amountWords(amount);
+  if (!LEADS[action] || !words.length) return null;
+  return [LEADS[action], ...words.map((w, i) => `n-${w}${i === words.length - 1 ? '-end' : ''}`)];
+}
 
 const range = (from, to, line) => Array.from({ length: to - from + 1 }, (_, i) => line(from + i));
 const TABLE_LINES = {
@@ -98,7 +145,8 @@ const TABLE_LINES = {
   baccarat: ['place-bets', 'player-wins', 'banker-wins', 'tie'],
   roulette: ['place-bets', 'no-more-bets', ...range(0, 36, n => `roulette-${n}`)],
   dice: ['place-bets', 'no-more-bets', ...range(4, 17, n => `sicbo-${n}`), ...range(1, 6, n => `triple-${n}`)],
-  poker: ['your-action', 'all-in', 'raise', 'flop', 'turn', 'river', 'you-win', ...range(0, 8, n => `hand-${n}`), 'royal-flush'],
+  poker: ['your-action', 'check', 'flop', 'turn', 'river', 'you-win', ...range(0, 8, n => `hand-${n}`), 'royal-flush',
+    'lead-call', 'lead-raise', 'lead-bet', 'lead-all-in', ...['', '-end'].flatMap(end => NUMBER_WORDS.map(w => `n-${w}${end}`))],
   matgo: ['your-turn', 'stop', 'you-win', ...range(1, 5, n => `go-${n}`)],
   seotda: ['your-action', 'call', 'check', 'half', 'die', 'you-win']
 };
@@ -107,7 +155,6 @@ export const OPENS_WITH_BETS = new Set(['blackjack', 'baccarat', 'roulette', 'di
 
 onSettings(key => { if ((key === 'voice' || key === null) && !settings.get('voice')) voice.hush(); });
 
-// ---------- line ids ----------
 const HAND_INDEX = ['하이카드', '원페어', '투페어', '트리플', '스트레이트', '플러시', '풀하우스', '포카드', '스트레이트 플러시'];
 export function handLine(name, cards = []) {
   const i = HAND_INDEX.indexOf(name);

@@ -5,7 +5,7 @@
 import { createCard, flipCard, setCardFace } from '../cards.js';
 import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../fx.js';
 import { createChip, breakdown, TIERS } from '../chips.js';
-import { voice, handLine } from '../voice.js';
+import { voice, handLine, betLine } from '../voice.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
@@ -28,6 +28,7 @@ function seatPoint(k, n) {
 }
 
 export function createPokerFelt(t, { sitdown = '' } = {}) {
+  voice.preload('poker');
   t.body.innerHTML = `
     <div class="pk">
       <div class="pk-oval" data-oval>
@@ -235,8 +236,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
-        if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
-        else if (ev.action === 'RAISE') voice.say('raise');
+        // The dealer calls each action with its size: "Call, fifty thousand", "Raise to two hundred thousand".
+        if (ev.action === 'ALL_IN') voice.say(betLine('ALL_IN', ev.bet) || 'all-in', { cut: true });
+        else if (ev.action === 'CHECK') voice.say('check');
+        else voice.say(betLine(ev.action, ev.bet));
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));

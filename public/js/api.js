@@ -42,7 +42,8 @@ export const api = {
   // stakes: one amount per betting box in play, left to right.
   blackjackStart: (stakes, floor) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor } }),
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
-  baccarat: (stake, floor, betType) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType } }),
+  // sideBets: { PLAYER_PAIR?: stake, BANKER_PAIR?: stake } riding alongside the main bet.
+  baccarat: (stake, floor, betType, sideBets) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType, sideBets } }),
   // bets: [{ betType, target?, stake }], one per spot on the layout.
   rouletteSpin: (bets, floor) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),

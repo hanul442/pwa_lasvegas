@@ -1,10 +1,12 @@
 // 맞고: two-player Go-Stop against the house AI. Cards are real objects on the blanket:
 // every play, flip, capture and stolen 피 moves the same card node to its new place.
+// "친구와 함께" puts a friend in the AI's chair (room-client.js), seen from my own seat.
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu, slap, hwatu, isBombCard, monthOf } from '../hwatu.js';
 import { animate, flyFrom, wait, sound, haptic, formatCH, el, ms } from '../fx.js';
 import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
+import { createRoomClient } from './room-client.js';
 
 const ME = 0, OPP = 1;
 const GROUPS = [['gwang', '광'], ['yeol', '끗'], ['tti', '띠'], ['pi', '피']];
@@ -17,11 +19,12 @@ export async function mountMatgo(ctx) {
   const caps = seat => `<div class="mg-caps" data-caps="${seat}">${GROUPS.map(([g, label]) => `<div class="mg-cap mg-cap--${g}" data-group="${g}"><span>${label}<b data-count>0</b></span><div class="mg-cap-cards"></div></div>`).join('')}</div>`;
   t.body.innerHTML = `
     <div class="mg">
-      <div class="mg-seat mg-seat--opp" data-seat="1"><span class="mg-name">하우스 AI <small data-go="1"></small></span><div class="mg-opp-hand" data-opp-hand aria-label="상대 패"></div><span class="mg-score" data-score="1">0<small>점</small></span></div>
+      <div class="mg-seat mg-seat--opp" data-seat="1"><span class="mg-name"><span data-opp-name>하우스 AI</span> <small data-go="1"></small></span><div class="mg-opp-hand" data-opp-hand aria-label="상대 패"></div><span class="mg-score" data-score="1">0<small>점</small></span></div>
       ${caps(OPP)}
       <div class="mg-board" data-board>
         <div class="mg-pile" data-pile aria-label="뒤집을 패 더미"><span class="mg-pile-count" data-pile-count>48</span></div>
         <button type="button" class="zone mg-zone" data-zone="POINT"><strong>점당</strong><small>이긴 점수 × 점당</small></button>
+        <button type="button" class="pk-friends-open mg-friends" data-friends-open>친구와 함께</button>
       </div>
       ${caps(ME)}
       <div class="mg-seat mg-seat--me" data-seat="0"><span class="mg-name">나 <small data-go="0"></small></span><span class="mg-score" data-score="0">0<small>점</small></span></div>
@@ -39,6 +42,16 @@ export async function mountMatgo(ctx) {
   let selected = null;
   let options = null;   // floor cards the player may pick: { kind: 'pick' | 'choose', ids, card }
   t.mg = { get view() { return view; }, get selected() { return selected; }, plays: 0 };
+  const oppName = $('[data-opp-name]');
+  const paintOpp = v => { oppName.textContent = v?.seats?.[OPP]?.name || '하우스 AI'; };
+
+  const room = createRoomClient(t, 'matgo', {
+    label: '맞고', word: '점당',
+    soloBusy: () => Boolean(view && view.status === 'PLAYING'),
+    begin, apply, snapshot, refreshActions,
+    clear: () => clearFelt()
+  });
+  t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
 
   // ---------- layout ----------
   function nodeFor(id, { faceUp = true } = {}) {
@@ -246,6 +259,7 @@ export async function mountMatgo(ctx) {
     options = null;
     prompt = null;
     t.hint('');
+    if (room.active) return room.act(move);
     let res;
     try { res = await api.matgoAction(view.id, move); }
     catch (e) { t.toast(errorMessage(e)); await sync(); return; }
@@ -253,7 +267,7 @@ export async function mountMatgo(ctx) {
   }
 
   async function apply(res) {
-    t.setServerState(res.state);
+    if (res.state) t.setServerState(res.state);
     view = res.round;
     if (res.events?.length) await playEvents(res.events);
     model = toModel(view);
@@ -298,6 +312,13 @@ export async function mountMatgo(ctx) {
     try { res = await api.matgoStart(t.total, t.tier.floor); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    await begin(res);
+  }
+
+  // A fresh hand from the server, dealt in two passes like a real dealer, then whatever followed.
+  async function begin(res) {
+    if (room.active) { t.resetRound(); t.locked = true; t.root.classList.add('is-playing'); t.placeLocked('POINT', res.round.stake); t.refreshBet(); }
+    paintOpp(res.round);
     await t.syncBalance();
     zone.hidden = true;
     // Clear last game's cards, then deal: floor, me, opponent, in two passes like a real dealer.
@@ -331,7 +352,7 @@ export async function mountMatgo(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {
@@ -345,13 +366,14 @@ export async function mountMatgo(ctx) {
     if (prompt) { t.setActions(prompt); return; }
     const mine = view.actor === ME;
     t.setActions([
-      { label: options ? '취소' : mine ? '낼 패를 고르세요' : '상대 차례', ghost: true, disabled: !options, onClick: () => { options = null; selected = null; t.hint(''); refresh(); } },
+      ...(room.active && !mine ? [room.leaveAction()] : []),
+      { label: options ? '취소' : mine ? '낼 패를 고르세요' : `${oppName.textContent} 차례`, ghost: true, disabled: !options, onClick: () => { options = null; selected = null; t.hint(''); refresh(); } },
       { label: '내기', primary: true, disabled: !mine || !selected || Boolean(options), onClick: () => commit(selected) }
     ]);
   }
   function refresh() { if (model) layout(model, { duration: 160 }); refreshActions(); }
   t.refreshActions = refreshActions;
-  t.onBetChange = refreshActions;
+  t.onBetChange = () => { refreshActions(); room.onBetChange(); };
 
   t.onKey(e => {
     if (t.busy || e.target.closest('button,.hw')) return;
@@ -359,23 +381,45 @@ export async function mountMatgo(ctx) {
     if (a) { e.preventDefault(); t.run(a.onClick); }
   });
 
+  // A hand drawn as it stands: coming back to a solo game, or sitting down at a room mid-hand.
+  async function snapshot(v) {
+    await clearFelt();
+    if (v.status !== 'PLAYING') return;
+    view = v;
+    paintOpp(view);
+    if (room.active) t.locked = true; else t.lock();
+    t.root.classList.add('is-playing');
+    zone.hidden = true;
+    t.placeLocked('POINT', view.stake); t.refreshBet();
+    model = toModel(view);
+    await layout(model);
+    paintSeats(view);
+    if (view.phase === 'CHOOSE_FLIP' && view.actor === ME) { options = { kind: 'choose', ids: view.pending.options }; paintOptions(); }
+  }
+
+  // An empty blanket: no cards anywhere, the bet zone back for the next game.
+  async function clearFelt() {
+    view = null; selected = null; options = null; prompt = null;
+    t.resetRound();
+    zone.hidden = false;
+    paintOpp(null);
+    model = { hand: [], opp: 0, floor: [], pileCount: 48, captured: [[], []], ppeok: [] };
+    await layout(model, { duration: 0 });
+    paintSeats({ status: 'IDLE', actor: -1, scores: [{ base: 0 }, { base: 0 }] });
+  }
+
   // Resume a game left mid-way.
   try {
     const open = await api.matgoOpen();
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
-      view = open.round;
-      t.lock();
-      t.root.classList.add('is-playing');
-      zone.hidden = true;
-      t.placeLocked('POINT', view.stake); t.refreshBet();
-      model = toModel(view);
-      await layout(model);
-      paintSeats(view);
-      if (view.phase === 'CHOOSE_FLIP' && view.actor === ME) { options = { kind: 'choose', ids: view.pending.options }; paintOptions(); }
+      await snapshot(open.round);
       t.toast('하던 맞고 판을 이어서 해요');
     } else if (open.round) t.toast('다른 테이블에 진행 중인 맞고 판이 있어요');
+    else await room.resume();
   } catch {}
   refreshActions();
   void ms;
+  const destroy = t.destroy.bind(t);
+  t.destroy = () => { room.stop(); return destroy(); };
   return t;
 }

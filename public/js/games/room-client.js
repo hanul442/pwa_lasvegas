@@ -1,0 +1,336 @@
+// Friends' rooms for 섯다, 고스톱 and 맞고 on the solo felt: make a room and share its four-letter
+// code, or sit at a friend's. The server owns the table and turns every view so I sit in seat 0,
+// so each game draws a room hand with the same code as a solo one. This screen polls every 1.5 s
+// while it is visible and hands the game only the events it hasn't played yet.
+// The game passes hooks: begin(res) deals a new hand, apply(res) plays events on the current one,
+// snapshot(round) draws a hand as it stands, clear() empties the felt, refreshActions().
+import { api, errorMessage } from '../api.js';
+import { el, formatCH, sound } from '../fx.js';
+import { TIERS } from '../chips.js';
+
+const POLL_MS = 1500;
+const LIST_MS = 4000;
+const sleep = value => new Promise(resolve => setTimeout(resolve, value));
+const tierName = slug => TIERS[slug]?.name || slug;
+
+export function createRoomClient(t, game, hooks) {
+  const { label, word, sizes = null } = hooks; // word: what the stake is called (판돈, 점당)
+  let size = hooks.size ?? sizes?.at(-1) ?? null;
+  let room = null, code = null, cursor = null;
+  let active = false;
+  let pollTimer = null, listTimer = null, clockTimer = null;
+  let queue = Promise.resolve();
+
+  // ---------- lobby panel ----------
+  const panel = el('div', 'pk-lobby rm-lobby');
+  panel.hidden = true;
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+  panel.setAttribute('aria-labelledby', `rm-title-${game}`);
+  panel.innerHTML = `
+    <header class="pk-lobby-head"><h2 id="rm-title-${game}">친구와 ${label}</h2><button type="button" class="pk-lobby-close" data-close aria-label="닫기">×</button></header>
+    <section class="pk-lobby-block">
+      <h3>방 만들기</h3>
+      <p class="pk-lobby-note" data-create-note></p>
+      ${sizes ? `<div class="pk-opponents" role="radiogroup" aria-label="자리 수"><span>자리</span>${sizes.map(n => `<button type="button" role="radio" data-size="${n}" aria-checked="${n === size}">${n}</button>`).join('')}</div>` : ''}
+      <button type="button" class="pk-lobby-primary" data-create></button>
+    </section>
+    <section class="pk-lobby-block">
+      <h3><label for="rm-code-${game}">코드로 입장</label></h3>
+      <form class="pk-code" data-code-form>
+        <input id="rm-code-${game}" data-code inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="4" placeholder="ABCD">
+        <button type="submit">입장</button>
+      </form>
+    </section>
+    <section class="pk-lobby-block">
+      <h3>열린 방</h3>
+      <ul class="pk-rooms" data-rooms aria-live="polite"></ul>
+    </section>`;
+  t.felt.append(panel);
+  const createBtn = panel.querySelector('[data-create]'), createNote = panel.querySelector('[data-create-note]');
+  const codeInput = panel.querySelector('[data-code]'), list = panel.querySelector('[data-rooms]');
+  panel.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => {
+    size = Number(b.dataset.size);
+    panel.querySelectorAll('[data-size]').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+    sound.tick();
+  }));
+  panel.querySelector('[data-close]').addEventListener('click', () => close());
+  panel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
+  codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); });
+  panel.querySelector('[data-code-form]').addEventListener('submit', e => {
+    e.preventDefault();
+    if (codeInput.value.length !== 4) { t.toast('방 코드 4자리를 넣어 주세요'); codeInput.focus(); return; }
+    t.run(() => join(codeInput.value));
+  });
+  createBtn.addEventListener('click', () => t.run(create));
+
+  function paintCreate() {
+    const ready = t.betReady;
+    createBtn.disabled = !ready;
+    createBtn.textContent = ready ? `방 만들기 · ${word} ${formatCH(t.total)}` : '방 만들기';
+    createNote.textContent = ready
+      ? `방을 만들면 4자리 코드가 나와요. 친구들은 같은 ${word}로 앉고, 빈자리는 AI가 채워요.`
+      : `아래 칩으로 ${word}을 먼저 올려 주세요 (${formatCH(t.tier.min)} 이상).`;
+  }
+
+  async function loadList() {
+    let res;
+    try { res = await api.rooms(game); } catch { return; }
+    if (panel.hidden) return;
+    const rooms = res.rooms || [];
+    if (!rooms.length) {
+      list.replaceChildren(el('li', 'pk-rooms-empty', '지금 열린 방이 없어요. 방을 만들고 친구에게 코드를 알려 주세요.'));
+      return;
+    }
+    list.replaceChildren(...rooms.map(r => {
+      const li = el('li', 'pk-room-row');
+      li.innerHTML = '<div><b></b><span></span><small></small></div><button type="button"></button>';
+      li.querySelector('b').textContent = `${r.host}의 방`;
+      li.querySelector('span').textContent = `${r.people.join(', ')} · ${r.people.length}/${r.size}`;
+      li.querySelector('small').textContent = `${tierName(r.tier)} · ${word} ${formatCH(r.stake)} · ${r.started ? '게임 중' : '대기 중'} · ${r.code}`;
+      const go = li.querySelector('button');
+      go.textContent = r.mine ? '돌아가기' : '앉기';
+      go.addEventListener('click', () => t.run(() => (r.mine ? rejoin(r.code) : join(r.code))));
+      return li;
+    }));
+  }
+
+  function open() {
+    if (active || hooks.soloBusy()) return;
+    panel.hidden = false;
+    paintCreate();
+    loadList();
+    clearInterval(listTimer);
+    listTimer = setInterval(() => { if (!document.hidden) loadList(); }, LIST_MS);
+    panel.querySelector('[data-close]').focus({ preventScroll: true });
+  }
+  function close() {
+    panel.hidden = true;
+    clearInterval(listTimer);
+  }
+
+  // ---------- the bar over the felt: code, what we are waiting on, whose clock is running ----------
+  const bar = el('div', 'rm-bar');
+  bar.hidden = true;
+  bar.innerHTML = '<button type="button" class="pk-roomchip rm-chip"></button><span class="rm-status" aria-live="polite"></span><span class="rm-clock" aria-live="off"></span>';
+  t.felt.append(bar);
+  const chipEl = bar.querySelector('.rm-chip'), statusEl = bar.querySelector('.rm-status'), clockEl = bar.querySelector('.rm-clock');
+  chipEl.addEventListener('click', async () => {
+    const line = `VEGAS ${label} 방 코드 ${code} · ${label}에서 "친구와 함께"를 누르고 코드로 입장해 주세요.`;
+    try { await navigator.clipboard.writeText(line); t.toast('초대 문구를 복사했어요'); }
+    catch { t.toast(`방 코드 ${code}`); }
+  });
+  const tableName = t.root.querySelector('.table-name span');
+  const tableNameText = tableName.textContent;
+
+  // ---------- entering and leaving ----------
+  async function create() {
+    if (!t.betReady) return;
+    let res;
+    try { res = await api.roomCreate(game, t.total, t.tier.floor, size); }
+    catch (e) { t.toast(errorMessage(e)); return; }
+    await t.clearBet();
+    t.setServerState(res.state);
+    await enter(res.room);
+    t.toast(`방을 만들었어요. 코드 ${res.room.code}`);
+  }
+
+  async function join(roomCode) {
+    let res;
+    try { res = await api.roomJoin(roomCode); }
+    catch (e) { t.toast(errorMessage(e)); if (e.code === 'ROOM_NOT_FOUND') loadList(); return; }
+    if (t.total) await t.clearBet();
+    t.setServerState(res.state);
+    await enter(res.room);
+  }
+
+  async function rejoin(roomCode) {
+    let res;
+    try { res = await api.room(roomCode); } catch (e) { t.toast(errorMessage(e)); return; }
+    await enter(res.room);
+  }
+
+  // Back to a room this person is still sitting in (reload, came back later).
+  async function resume() {
+    const res = await api.rooms(game);
+    if (res.mine?.game !== game) return false;
+    const view = await api.room(res.mine.code);
+    await enter(view.room);
+    t.toast('앉아 있던 방으로 돌아왔어요');
+    return true;
+  }
+
+  async function enter(view) {
+    close();
+    active = true;
+    code = view.code;
+    cursor = null;
+    t.locked = true;
+    t.root.classList.add('is-room');
+    tableName.textContent = `${tierName(view.tier)} · 친구 방 · ${word} ${formatCH(view.stake)}`;
+    chipEl.innerHTML = `<span>방 코드</span><b>${view.code}</b>`;
+    chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 초대 문구 복사`);
+    bar.hidden = false;
+    await hooks.clear();
+    await applyView(view, null);
+    schedule(POLL_MS);
+  }
+
+  async function exit(message) {
+    stop();
+    active = false;
+    room = null;
+    code = null;
+    cursor = null;
+    bar.hidden = true;
+    t.root.classList.remove('is-room', 'is-playing');
+    tableName.textContent = tableNameText;
+    t.locked = false;
+    await hooks.clear();
+    t.resetRound();
+    try { t.setServerState(await api.state()); } catch {}
+    await t.syncBalance();
+    if (message) t.toast(message);
+    hooks.refreshActions();
+  }
+
+  async function leave() {
+    const midHand = room?.round?.status === 'PLAYING';
+    let res = null;
+    try { res = await api.roomLeave(code); }
+    catch (e) { if (e.code !== 'NOT_IN_ROOM' && e.code !== 'ROOM_NOT_FOUND') { t.toast(errorMessage(e)); return; } }
+    if (res) t.setServerState(res.state);
+    await exit(res?.result?.pending || midHand ? '방에서 나왔어요. 하던 판은 자동으로 마저 치고 정산해요.' : '방에서 나왔어요');
+  }
+
+  async function deal() {
+    try { await api.roomStart(code, cursor ?? { hand: 0, from: 0 }); }
+    catch (e) { t.toast(errorMessage(e)); return; }
+    schedule(50);
+  }
+
+  // ---------- polling ----------
+  function schedule(delay = POLL_MS) {
+    clearTimeout(pollTimer);
+    if (active) pollTimer = setTimeout(poll, delay);
+  }
+  async function poll() {
+    if (!active) return;
+    // Paused while hidden or while I'm sending a move; the move's reply carries the news.
+    if (document.hidden || t.busy) return schedule();
+    const sent = cursor && { ...cursor };
+    let res;
+    try { res = await api.room(code, sent); }
+    catch (e) {
+      if (e.code === 'ROOM_NOT_FOUND') { await exit('방이 닫혔어요'); return; }
+      return schedule(POLL_MS * 2);
+    }
+    if (typeof res.available === 'number') t.available = res.available;
+    enqueue(res.room, sent);
+    await queue;
+    schedule();
+  }
+  const onVisible = () => { if (active && !document.hidden) schedule(50); };
+  document.addEventListener('visibilitychange', onVisible);
+
+  // A poll's view plays out with the action row held, like the reply to my own move.
+  function enqueue(view, sent) {
+    queue = queue.then(async () => {
+      while (t.busy) await sleep(60);
+      if (!active) return;
+      t.busy = true;
+      t.actions.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try { await applyView(view, sent); } finally { t.busy = false; hooks.refreshActions(); }
+    }).catch(() => {});
+    return queue;
+  }
+
+  const older = (a, b) => a.hand < b.hand || (a.hand === b.hand && a.from < b.from);
+
+  // Bring the felt up to a room view: play what's new, or redraw when too far behind.
+  async function applyView(view, sent) {
+    if (!active || view.code !== code) return;
+    if (!view.seated) { await exit('테이블에서 일어났어요'); return; }
+    if (cursor && older(view.cursor, cursor)) return; // a reply older than what is on the felt
+    room = view;
+    let events = view.events;
+    // Another reply already played part of this (a poll and a move crossing on the wire).
+    if (events && sent && cursor && (sent.hand !== cursor.hand || sent.from !== cursor.from)) {
+      events = sent.hand === cursor.hand && view.cursor.hand === cursor.hand && cursor.from >= sent.from ? events.slice(cursor.from - sent.from) : null;
+    }
+    const res = { round: view.round, events: events || [], netPnl: view.netPnl };
+    if (!view.round) await hooks.clear();
+    else if (!cursor || events === null || events.length > 80) await hooks.snapshot(view.round);
+    else if (view.cursor.hand === cursor.hand) { if (events.length) await hooks.apply(res); }
+    else {
+      if (view.prev?.events.length) await hooks.apply(view.prev); // the end of the last hand first
+      await hooks.begin(res);
+    }
+    cursor = view.cursor;
+    t.locked = true;
+    paintStatus();
+  }
+
+  function paintStatus() {
+    const v = room;
+    if (!v) return;
+    const people = v.players.length;
+    let line = '';
+    if (!v.started) line = v.isHost ? `코드 ${v.code}를 친구에게 알려 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
+    else if (v.waiting) line = '다음 판부터 같이 해요';
+    else if (v.round?.status === 'SETTLED') line = '다음 판을 곧 돌려요';
+    statusEl.textContent = line;
+    clearInterval(clockTimer);
+    clockEl.textContent = '';
+    clockEl.classList.remove('is-mine', 'is-short');
+    const turn = v.turn;
+    if (!turn) return;
+    const deadline = Date.now() + (turn.deadline - v.serverNow);
+    const who = turn.seat === 0 ? '내 차례' : (v.round?.seats?.[turn.seat]?.name || '상대');
+    const paint = () => {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      clockEl.textContent = `${who} · ${left}초`;
+      clockEl.classList.toggle('is-mine', turn.seat === 0);
+      clockEl.classList.toggle('is-short', left <= 5);
+      if (!left) clearInterval(clockTimer);
+    };
+    paint();
+    clockTimer = setInterval(paint, 250);
+  }
+
+  // ---------- moves ----------
+  // Sends my move with the cursor of what this screen has played; the reply plays like a poll.
+  async function act(move) {
+    if (!room) return;
+    const sent = cursor && { ...cursor };
+    let res;
+    try { res = await api.roomAction(code, room.handNo, room.seq, move, sent); }
+    catch (e) { t.toast(errorMessage(e)); schedule(50); return; }
+    t.setServerState(res.state);
+    if (res.room) await applyView(res.room, sent);
+    schedule();
+  }
+
+  // The action row between hands, and the 나가기 button while others play.
+  const leaveAction = () => ({ label: '나가기', ghost: true, onClick: leave });
+  function idleActions() {
+    const list = [leaveAction()];
+    if (room?.isHost && !room.started) list.push({ label: '시작', key: '↵', primary: true, onClick: deal });
+    else list.push({ label: room?.started ? '다음 판 대기 중' : '방장이 시작해요', disabled: true });
+    return list;
+  }
+
+  function stop() {
+    clearTimeout(pollTimer);
+    clearInterval(listTimer);
+    clearInterval(clockTimer);
+  }
+
+  return {
+    get active() { return active; },
+    get view() { return room; },
+    open, resume, act, idleActions, leaveAction,
+    onBetChange: () => { if (!panel.hidden) paintCreate(); },
+    stop: () => { stop(); active = false; document.removeEventListener('visibilitychange', onVisible); }
+  };
+}

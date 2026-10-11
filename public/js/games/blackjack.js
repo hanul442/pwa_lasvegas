@@ -554,7 +554,11 @@ export async function mountBlackjack(ctx) {
           h.stake = e.stake;
         }
         if (e.card) { h.cards.push(e.card); await dealCard(cardsOf(w), e.card, shoe, { rotate: e.action === 'DOUBLE' }); updateHandTotal(w, e.seat === 0); }
-        if (e.status === 'BUST') { w.classList.add('is-bust'); if (e.seat === 0) voice.say('bust'); else await say(seatOf(e.seat), '버스트', 'lose'); }
+        if (e.status === 'BUST') {
+          w.classList.add('is-bust');
+          if (e.seat > 0) await say(seatOf(e.seat), '버스트', 'lose');
+          else voice.say('bust');
+        }
       } else if (e.type === 'split') {
         const hands = model[e.seat].hands, h = hands[e.hand];
         const sib = { id: e.id, cards: [h.cards.pop()], stake: e.stake };

@@ -10,7 +10,7 @@ import { voice, handLine } from '../voice.js';
 
 const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
-const BLINDS = { low: 5_000, mid: 50_000, high: 500_000, vip: 2_500_000 };
+const BLINDS = { low: 5_000, mid: 50_000, high: 500_000, vip: 10_000_000, royal: 100_000_000, vault: 1_000_000_000 };
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {

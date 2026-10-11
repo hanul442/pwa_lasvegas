@@ -14,6 +14,7 @@ const games = Object.fromEntries(await Promise.all(['blackjack', 'baccarat', 'ro
 globalThis.window = { matchMedia: () => ({ matches: false }) };
 const { formatCH } = await import('../public/js/fx.js');
 const { breakdown, TIERS } = await import('../public/js/chips.js');
+const { FLOORS, stakeTierFor } = await import('../lib/constants.mjs');
 
 test('shell keeps full-screen surfaces, virtual-only copy and no dialog popups', () => {
   for (const surface of ['lobby', 'games', 'ranking', 'profile', 'tiers', 'table']) assert.match(html, new RegExp(`data-surface="${surface}"`));
@@ -72,9 +73,15 @@ test('installable PWA never caches game or chip API responses', () => {
 });
 
 test('chip tiers match server floor limits', () => {
-  assert.deepEqual([TIERS.low.min, TIERS.mid.min, TIERS.high.min, TIERS.vip.min], [100_000, 1_000_000, 10_000_000, 50_000_000]);
-  assert.equal(TIERS.low.floor, 'downtown');
-  assert.equal(TIERS.mid.floor, 'strip');
+  assert.equal(TIERS.low.min, 10_000, 'the smallest bet is 1만 원');
+  assert.equal(TIERS.vault.max, 1_000_000_000_000, 'The Vault goes up to 1조');
+  // Every table's whole range must be accepted by its floor on the server.
+  for (const tier of Object.values(TIERS)) {
+    const floor = FLOORS.find(f => f.slug === tier.floor);
+    assert.ok(floor, tier.slug);
+    assert.ok(tier.min >= floor.minBet && tier.max <= floor.maxBet, tier.slug);
+    for (const stake of [tier.min, tier.max]) assert.ok(floor.stakeTiers.includes(stakeTierFor(stake)?.slug), `${tier.slug} ${stake}`);
+  }
   assert.deepEqual(breakdown(850_000, TIERS.low.chips), [500_000, 250_000, 100_000]);
 });
 
@@ -97,7 +104,7 @@ test('every table offers five chip denominations that fit under its limit', () =
   for (const tier of Object.values(TIERS)) {
     assert.equal(tier.chips.length, 5);
     assert.ok(tier.chips.every(c => c <= tier.max));
-    assert.ok(tier.chips[0] < tier.min, `${tier.slug} smallest chip builds bets in steps`);
+    assert.ok(tier.chips[0] <= tier.min, `${tier.slug} smallest chip builds bets in steps`);
   }
 });
 

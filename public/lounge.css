@@ -114,8 +114,8 @@
 
 /* ---------- higher floors dress their tables ---------- */
 .table-screen[data-tier="high"] .felt-print{border-color:#fff6dc38}
-.table-screen[data-tier="vip"] .felt-print{border-color:#fff6dc70;box-shadow:inset 0 0 0 5px transparent,inset 0 0 0 6px #fff6dc26}
-.table-screen[data-tier="vip"] .felt{box-shadow:0 0 0 1px #fff6dc40,inset 0 0 0 1px #000a,inset 0 0 90px #000b,0 24px 60px #000c}
+.table-screen:is([data-tier="vip"],[data-tier="royal"],[data-tier="vault"]) .felt-print{border-color:#fff6dc70;box-shadow:inset 0 0 0 5px transparent,inset 0 0 0 6px #fff6dc26}
+.table-screen:is([data-tier="vip"],[data-tier="royal"],[data-tier="vault"]) .felt{box-shadow:0 0 0 1px #fff6dc40,inset 0 0 0 1px #000a,inset 0 0 90px #000b,0 24px 60px #000c}
 
 /* ---------- big-win moment ---------- */
 .bigwin{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:24px;overflow:hidden;background:radial-gradient(55% 45% at 50% 46%,#262b33f0,#050607f5);opacity:0;transition:opacity .3s}

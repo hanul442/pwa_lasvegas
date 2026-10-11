@@ -28,6 +28,7 @@ export class Table {
     this.history = [];
     this.focus = null;
     this.passive = new Set();
+    this.sides = new Set();
     // Coming back to a table, the last bet is ready to repeat and the last chip is still picked.
     const saved = recall(memoryKey(game, this.tier.slug, 'lastbet'));
     this.lastBet = Array.isArray(saved) && saved.length ? new Map(saved) : null;
@@ -179,10 +180,12 @@ export class Table {
   // ---------- zones ----------
   // Every zone keeps its own chips. Single-bet games move the whole bet when another zone is
   // picked; multi-zone tables (blackjack boxes) keep a separate bet on each zone.
-  addZone(node, { passive = false } = {}) {
+  // A `side` zone (a side bet) is optional and has no table minimum.
+  addZone(node, { passive = false, side = false } = {}) {
     const id = node.dataset.zone;
     if (!node.querySelector('.bet-stack')) node.append(el('span', 'bet-stack'));
     this.zones.set(id, node);
+    if (side) this.sides.add(id);
     if (passive) { this.passive.add(id); return node; }
     node.addEventListener('click', () => {
       if (this.locked || this.busy) return;
@@ -291,7 +294,7 @@ export class Table {
     for (const zoneId of this.betZones) {
       const now = this.zoneTotal(zoneId);
       // Halving never drops a bet under the table minimum.
-      const target = Math.max(this.zoneMin ? Math.ceil(this.tier.min / step) * step : step, Math.floor(now / 2 / step) * step);
+      const target = Math.max(this.sides.has(zoneId) || !this.zoneMin ? step : Math.ceil(this.tier.min / step) * step, Math.floor(now / 2 / step) * step);
       if (target < now) { this.restack(zoneId, target); changed = true; }
     }
     if (!changed) return;
@@ -402,8 +405,10 @@ export class Table {
   refreshBet() {
     this.betEl.textContent = formatCH(this.total);
     const zones = this.betZones;
-    const short = this.zoneMin ? zones.some(z => this.zoneTotal(z) < this.tier.min) : this.total > 0 && this.total < this.tier.min;
-    this.hint(short ? `${this.multi && this.zoneMin && zones.length > 1 ? '박스마다 ' : this.zoneMin ? '' : '합계 '}최소 ${formatCH(this.tier.min)}` : '');
+    const main = zones.filter(z => !this.sides.has(z));
+    const mainTotal = main.reduce((n, z) => n + this.zoneTotal(z), 0);
+    const short = this.zoneMin ? main.some(z => this.zoneTotal(z) < this.tier.min) : mainTotal > 0 && mainTotal < this.tier.min;
+    this.hint(short ? `${this.multi && this.zoneMin && main.length > 1 ? '박스마다 ' : this.zoneMin ? '' : '합계 '}최소 ${formatCH(this.tier.min)}` : '');
     if (this.multi) this.zones.forEach((node, id) => {
       const tag = node.querySelector('.zone-amount');
       if (tag) tag.textContent = this.zoneTotal(id) ? formatCH(this.zoneTotal(id)) : '';
@@ -416,8 +421,9 @@ export class Table {
 
   get betReady() {
     const zones = this.betZones;
-    const enough = this.zoneMin ? zones.every(z => this.zoneTotal(z) >= this.tier.min) : this.total >= this.tier.min;
-    return zones.length > 0 && this.total <= this.available && enough && zones.every(z => this.zoneTotal(z) <= this.tier.max);
+    const main = zones.filter(z => !this.sides.has(z));
+    const enough = this.zoneMin ? main.every(z => this.zoneTotal(z) >= this.tier.min) : main.reduce((n, z) => n + this.zoneTotal(z), 0) >= this.tier.min;
+    return main.length > 0 && this.total <= this.available && enough && zones.every(z => this.zoneTotal(z) <= this.tier.max);
   }
 
   // Idle action row shared by every game: clear, rebet, and the primary deal/spin/roll.

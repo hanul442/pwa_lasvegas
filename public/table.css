@@ -188,6 +188,45 @@
 .bet-circle.is-focus{outline-color:#efe7d999}
 .zone-amount{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);font:600 12px var(--sans);font-variant-numeric:tabular-nums;color:var(--ivory);white-space:nowrap;pointer-events:none}
 .is-playing .bet-circle:not(.has-bet){opacity:.35}
+/* side bets: Perfect Pairs and 21+3 sit on the shoulders of each betting box */
+.bj-box{position:relative;display:flex;justify-content:center}
+.side-circle{--size:20px;position:absolute;top:-4px;left:-6px;z-index:2;width:32px;height:32px;padding:0;display:grid;place-items:center;border-radius:50%;border:1px dashed #efe7d980;background:#0000002e;color:#efe7d9;transition:border-color .2s,box-shadow .3s,opacity .2s}
+.side-label{font:650 9px var(--display);font-stretch:112%;letter-spacing:.02em;opacity:.62;pointer-events:none}
+.side-circle--t3{left:auto;right:-6px}
+.side-circle.has-bet .side-label{opacity:0}
+.side-circle.is-focus,.side-circle.is-hover{border-style:solid;border-color:var(--ivory)}
+.side-circle.is-won{border-style:solid;border-color:var(--star);box-shadow:0 0 0 3px #fff6dc2e,0 0 18px #fff6dc40}
+.side-circle.is-lost{opacity:.35}
+.is-playing .side-circle:not(.has-bet){opacity:.25}
+.side-tag{position:absolute;left:50%;top:-4px;transform:translate(-50%,-100%);padding:1px 7px;border-radius:999px;background:var(--star);color:var(--ink);font:700 13px var(--sans);white-space:nowrap;pointer-events:none;z-index:4}
+.side-tag:empty{display:none}
+/* AI players sit out along the printed arc, flanking the player's boxes: smaller hands, same shoe */
+.felt-arc{grid-row:2;grid-column:1}
+.bj-dealer{grid-row:1}.bj-insurance{grid-row:3}.bj-spots{grid-row:4}
+.bj-ai{grid-row:2;grid-column:1;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;width:100%;gap:4px;padding-top:4px}
+.bj-ai:empty{display:none}
+.bj-ai[data-count="1"]{justify-content:flex-end}
+.bj:has(.bj-ai[data-count="3"]) .felt-arc text{display:none}
+.bj:has(.bj-ai:not(:empty)) .felt-arc text{fill-opacity:.24}
+.bj-seat{--card-w:clamp(28px,8vw,44px);position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.bj-seat .hand-wrap{padding:3px;gap:0;border-radius:10px}
+.bj-seat .hand-total{position:absolute;top:-6px;right:-12px;z-index:3;font-size:13px;padding:0 6px;min-width:26px}
+.bj-seat .hand-result{font-size:13px;padding:2px 9px}
+.bj-seat-plate{display:flex;align-items:center;gap:5px;padding:2px 9px 2px 3px;border-radius:999px;background:#0a0b0d8c;border:1px solid #efe7d924;line-height:1.2;white-space:nowrap}
+.bj-seat-plate b{font:650 13px var(--display);font-stretch:112%;letter-spacing:.03em}
+.bj-seat-plate small{font-size:13px;color:var(--taupe)}
+.bj-seat-chips{position:relative;width:20px;height:20px;flex:none}
+.bj-seat-chips .chip{--size:20px;position:absolute;left:0;bottom:0;translate:0 calc(var(--i) * -2.5px)}
+.bj-seat-chips .chip-label{display:none}
+.bj-say{position:absolute;left:50%;top:0;z-index:6;transform:translate(-50%,-100%) scale(.6);opacity:0;padding:3px 10px;border-radius:999px;background:var(--white);color:var(--ink);font:650 13px var(--sans);white-space:nowrap;pointer-events:none;transition:transform .3s cubic-bezier(.2,1.6,.4,1),opacity .2s}
+.bj-say.is-shown{opacity:1;transform:translate(-50%,-100%) scale(1)}
+.bj-say.is-lose{background:#0a0b0de6;color:#d8cfc2;box-shadow:0 0 0 1px #efe7d933}
+/* basic-strategy hint: a warm star on the recommended move, and the running accuracy in the corner */
+.action.is-hint{position:relative;box-shadow:0 0 0 2px var(--star),0 0 18px #fff6dc4d}
+.action.is-hint::after{content:"";position:absolute;top:-6px;right:14px;width:11px;height:11px;background:var(--star);clip-path:var(--star-shape)}
+.bj-stat{position:absolute;left:calc(24px + var(--card-w) * .6);top:12px;z-index:2;display:flex;flex-direction:column;align-items:flex-start;font-size:13px;line-height:1.2;color:var(--taupe)}
+.bj-stat[hidden]{display:none}
+.bj-stat b{font:650 16px var(--display);color:var(--ivory);font-variant-numeric:tabular-nums}
 
 /* ================= BACCARAT ================= */
 .bac{display:grid;gap:16px;align-content:center;min-height:100%}
@@ -294,10 +333,23 @@
   .wheel{width:min(30dvw,46dvh)}
   .dome{width:min(28dvw,40dvh)}
   .rl,.sb{grid-template-columns:auto 1fr}
-  .bj{grid-template-columns:minmax(0,.7fr) minmax(0,1.6fr);grid-template-rows:1fr auto;align-items:center;gap:6px 12px}
+  .bj{grid-template-columns:minmax(0,.7fr) minmax(0,1.6fr);grid-template-rows:1fr auto auto;align-items:center;gap:3px 12px}
+  .bj-ai{padding-top:0}
+  .bj-seat{gap:2px}
+  .bj-seat .hand-wrap{padding:1px}
+  .bj:has(.bj-ai:not(:empty)) .bj-insurance{margin-bottom:4px}
   .bj-dealer{grid-row:1;grid-column:1;min-height:0}
-  .bj-insurance{grid-row:2;grid-column:1;align-self:end;min-width:0;width:100%;margin-bottom:16px}
-  .bj-spots{grid-row:1 / 3;grid-column:2;align-self:stretch;align-items:flex-end}
+  .bj-ai{grid-row:2;grid-column:1;justify-content:space-around}
+  .bj-seat{--card-w:clamp(22px,2.9vw,28px)}
+  .bj-seat-plate{padding:2px 8px 2px 3px}
+  .bj-seat-plate small{display:none}
+  .bj-insurance{grid-row:3;grid-column:1;align-self:end;min-width:0;width:100%;margin-bottom:16px}
+  .bj-spots{grid-row:1 / 4;grid-column:2;align-self:stretch;align-items:flex-end}
+  .side-circle{top:-6px;left:-14px;width:26px;height:26px;--size:16px}
+  .side-circle--t3{left:auto;right:-14px}
+  .bj-spots{gap:clamp(30px,5vw,48px)}
+  .side-label{font-size:8px}
+  .bj-stat{left:60px;top:8px}
   .bj-hands,.bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 10px)}
   .bj-spots{padding-bottom:16px}
   .bj .hand-wrap{padding:3px;gap:3px}
@@ -312,6 +364,18 @@
 }
 /* Short screens: drop the printed arc so all three boxes stay on the felt. */
 @media (max-height:760px){.bj .felt-arc{display:none}}
+/* Short portrait phones: AI seats lie flat (cards beside the name plate) and the felt tightens up. */
+@media (max-height:760px) and (orientation:portrait){
+  .bj{gap:4px;--card-w:clamp(40px,7dvh,56px)}
+  .bj-ai{padding-top:0}
+  .bj-seat{--card-w:26px;flex-direction:row;align-items:center;gap:6px}
+  .bj-seat-plate small{display:none}
+  .bj-seat-plate{padding:2px 9px;position:static}
+  /* the seat's chips sit in front of its cards instead of on the plate */
+  .bj-seat-chips{position:absolute;left:-2px;bottom:-2px;z-index:4}
+  .bj-insurance{height:28px}
+  .bj-spots{padding-bottom:12px}
+}
 /* Short portrait phones: a smaller dice dome keeps every Sic Bo bet on the felt without scrolling. */
 @media (max-height:760px) and (orientation:portrait){
   .dome{width:min(52vw,210px,25dvh)}

@@ -124,7 +124,8 @@ function done(button, text) {
 }
 
 // Renders into `root`; returns a cleanup that drops the listener.
-export function renderSettings(root, { compact = false } = {}) {
+// `game` is the table the quick sheet opened over, so game-specific rows show only there.
+export function renderSettings(root, { compact = false, game = null } = {}) {
   const parts = [];
   const add = part => { parts.push(part); return part.node; };
 
@@ -141,6 +142,9 @@ export function renderSettings(root, { compact = false } = {}) {
     canWakeLock() ? add(toggle('awake', '화면 켜두기', '테이블에 앉아 있는 동안 화면이 꺼지지 않아요')) : null
   ];
   const sections = [section('소리', audioRows), section('화면과 움직임', motionRows)];
+  if (!compact || game === 'blackjack') {
+    sections.push(section('게임', [add(toggle('bjHint', '블랙잭 정석 힌트', '내 차례에 기본 전략이 권하는 버튼을 밝혀 주고, 정석대로 친 비율을 테이블에 보여 줘요'))]));
+  }
 
   if (!compact) {
     const replay = el('button', 'pill-button', '처음부터 다시 보기');
@@ -181,7 +185,7 @@ export function attachQuickSettings(table) {
       // Close the rules sheet if it is up, so only one sheet covers the felt.
       table.root.querySelectorAll('.sheet.is-open').forEach(s => { if (s !== sheet) { s.classList.remove('is-open'); s.inert = true; } });
       cleanup?.();
-      cleanup = renderSettings(sheet.querySelector('.settings-body'), { compact: true });
+      cleanup = renderSettings(sheet.querySelector('.settings-body'), { compact: true, game: table.game });
       sheet.querySelector('[data-close]').focus({ preventScroll: true });
     } else { cleanup?.(); cleanup = null; }
   };

@@ -131,6 +131,19 @@ export const GUIDES = {
       </table><p>재경기와 같은 족보는 각자 건 돈을 돌려받아요.</p>`
   },
 
+  slots: {
+    id: 'slots', title: '슬롯',
+    steps: [
+      { target: '.slot-jackpot', title: '프로그레시브 잭팟', body: ['모든 플레이어의 스핀이 베팅의 2%씩 이 잭팟에 쌓여요.', '별 세 개가 가운데 줄에 서면 잭팟이에요. 테이블 최대 베팅이면 전부, 적게 걸면 그 비율만큼 받아요.'] },
+      ...betSteps({ zone: '[data-zone="LINE"]', zoneTitle: '베팅', zoneBody: '칩을 놓은 만큼이 한 번 스핀의 베팅이에요.', startLabel: '스핀' }),
+      { target: '[data-lever]', title: '레버', body: '오른쪽 레버를 당겨도 돌아가요. 릴은 하나씩 멈춰요.' },
+      { target: '.slot-pays', title: '배당', body: ['가운데 줄 세 칸만 봐요. 별은 아무 그림이나 대신하는 와일드예요.', '별 하나가 끼면 2배, 둘이면 3배로 불어나요.'] },
+      helpStep
+    ],
+    rules: `<h3>배당 (베팅 대비)</h3><table><tr><td>★ ★ ★</td><td>잭팟 + 500배</td></tr><tr><td>7 7 7</td><td>80배</td></tr><tr><td>트리플 바 3개</td><td>40배</td></tr><tr><td>더블 바 3개</td><td>20배</td></tr><tr><td>바 3개</td><td>10배</td></tr><tr><td>같은 무늬 3개</td><td>6배</td></tr><tr><td>바 아무거나 3개</td><td>4배</td></tr><tr><td>빨강 또는 검정 무늬 3개</td><td>2배</td></tr><tr><td>★ 두 개</td><td>10배</td></tr><tr><td>★ 한 개</td><td>본전</td></tr></table>
+      <p>★은 와일드예요. 별 한 개가 끼어 줄이 맞으면 2배, 두 개면 3배. 모든 스핀의 2%가 잭팟에 쌓이고, 별 세 개는 테이블 최대 베팅 대비 비율만큼 잭팟을 가져가요.</p>`
+  },
+
   poker: {
     id: 'poker', title: "Hold'em",
     steps: [

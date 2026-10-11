@@ -143,3 +143,38 @@
 .rl-dozens .zone{min-height:40px;--size:28px;padding:4px;border-radius:10px}
 .rl-dozens .zone strong{font-size:clamp(12px,3.4vw,15px);font-stretch:100%}
 .table-screen--roulette .zone-amount{display:none}
+
+/* ---------- slots: a black lacquer cabinet with three white reels ---------- */
+.felt--slots{--felt-a:#23262c;--felt-b:#15171b;--felt-c:#08090b}
+.slot{display:grid;justify-items:center;align-content:center;gap:14px;padding-bottom:8px}
+.slot-jackpot{display:grid;justify-items:center;gap:2px;padding:10px 22px 12px;border-radius:14px;background:#050607;box-shadow:inset 0 0 0 1px #fff6dc40,0 10px 30px #000a}
+.slot-jackpot span{color:var(--smoke);font:500 11px var(--sans);letter-spacing:.18em}
+.slot-jackpot strong{color:var(--star);font:600 clamp(24px,7.4vw,36px)/1.1 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.slot-cabinet{display:flex;align-items:center;gap:10px}
+.slot-window{--sym:clamp(58px,17vw,92px);position:relative;display:grid;grid-template-columns:repeat(3,var(--sym));gap:8px;padding:10px;border-radius:18px;background:linear-gradient(#111317,#050607);box-shadow:inset 0 0 0 1px #ffffff26,0 18px 40px #000b}
+.slot-reel{position:relative;height:calc(var(--sym) * 3);overflow:hidden;border-radius:10px;background:linear-gradient(#c9ced6,#f4f5f7 22%,#fff 50%,#f4f5f7 78%,#c9ced6)}
+.slot-reel::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(#0008,#0000 30%,#0000 70%,#0008)}
+.slot-strip{display:grid;will-change:transform}
+.slot-reel.is-spinning .slot-strip{filter:blur(1.2px)}
+.slot-sym{display:grid;place-items:center;height:var(--sym);color:#0a0b0d;font:700 calc(var(--sym) * .52)/1 var(--display);font-stretch:112%}
+.slot-sym--h,.slot-sym--d{color:#b3262c}
+.slot-sym--seven{color:#0a0b0d;font-size:calc(var(--sym) * .66);font-style:italic}
+.slot-sym--star i{width:62%;height:62%;background:#0a0b0d;clip-path:var(--star-shape)}
+.slot-sym--bar1,.slot-sym--bar2,.slot-sym--bar3{align-content:center;gap:3px}
+.slot-sym b{display:block;padding:1px 6px;border-radius:3px;background:#0a0b0d;color:#f4f5f7;font:700 calc(var(--sym) * .13)/1.25 var(--display);letter-spacing:.08em}
+.slot-payline{position:absolute;left:4px;right:4px;top:50%;height:2px;margin-top:-1px;background:var(--star);opacity:.75;pointer-events:none;box-shadow:0 0 10px #fff6dc}
+.slot-reel.is-hit{box-shadow:0 0 0 2px var(--star),0 0 22px #fff6dc66}
+.slot-lever{position:relative;width:34px;height:calc(var(--sym,72px) * 2.6);max-height:220px;padding:0;border:0;background:none;perspective:300px}
+.slot-lever:disabled{opacity:.45}
+.slot-lever-arm{position:absolute;left:50%;bottom:10%;width:6px;height:80%;margin-left:-3px;border-radius:3px;background:linear-gradient(90deg,#8d939b,#f4f5f7,#8d939b);transform-origin:50% 100%}
+.slot-lever-arm i{position:absolute;left:50%;top:-14px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#c9ced6 45%,#5d636b);box-shadow:0 6px 14px #000a}
+.slot-lever::after{content:"";position:absolute;left:50%;bottom:4%;width:22px;height:12%;margin-left:-11px;border-radius:6px;background:#1b1e22;box-shadow:inset 0 0 0 1px #ffffff26}
+.slot-result{min-height:26px;color:var(--star);font:600 20px var(--display);font-stretch:112%;letter-spacing:.02em;opacity:0;transition:opacity .25s}
+.slot-result.is-shown{opacity:1}
+.slot-coin{width:min(100%,280px)}
+.slot-pays{width:min(100%,420px);color:var(--smoke);font-size:14px}
+.slot-pays summary{cursor:pointer;text-align:center;padding:6px;color:var(--smoke)}
+.slot-pays table{width:100%;border-collapse:collapse;margin-top:4px}
+.slot-pays td{padding:6px 4px;border-bottom:1px solid var(--hair)}
+.slot-pays td:last-child{text-align:right;color:var(--white);font-variant-numeric:tabular-nums}
+.slot-pays p{margin:8px 0 0;font-size:13px;line-height:1.5}

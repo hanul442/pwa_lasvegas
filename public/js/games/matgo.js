@@ -3,7 +3,6 @@
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu, slap, hwatu, isBombCard, monthOf } from '../hwatu.js';
 import { animate, flyFrom, wait, sound, haptic, formatCH, el, ms } from '../fx.js';
-import { breakdown } from '../chips.js';
 import { Table } from '../table.js';
 
 const ME = 0, OPP = 1;
@@ -323,11 +322,7 @@ export async function mountMatgo(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions([
-        { label: '지우기', ghost: true, disabled: !t.total, onClick: () => t.clearBet() },
-        ...(t.lastBet ? [{ label: '다시 베팅', ghost: true, onClick: () => t.rebet() }] : []),
-        { label: t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', key: '↵', primary: true, disabled: !t.betReady, onClick: deal }
-      ]);
+      t.setActions(t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {
@@ -351,7 +346,8 @@ export async function mountMatgo(ctx) {
 
   t.onKey(e => {
     if (t.busy || e.target.closest('button,.hw')) return;
-    if (e.key === 'Enter' && (!view || view.status !== 'PLAYING') && t.betReady) { e.preventDefault(); t.run(deal); }
+    const a = e.key === 'Enter' && (!view || view.status !== 'PLAYING') && t.enterAction();
+    if (a) { e.preventDefault(); t.run(a.onClick); }
   });
 
   // Resume a game left mid-way.
@@ -362,8 +358,7 @@ export async function mountMatgo(ctx) {
       t.lock();
       t.root.classList.add('is-playing');
       zone.hidden = true;
-      t.bet = { zone: 'POINT', chips: breakdown(view.stake, t.tier.chips, 20) };
-      t.bet.chips.forEach(v => t.pushChip('POINT', v)); t.refreshBet();
+      t.placeLocked('POINT', view.stake); t.refreshBet();
       model = toModel(view);
       await layout(model);
       paintSeats(view);

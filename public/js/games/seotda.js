@@ -159,11 +159,7 @@ export async function mountSeotda(ctx) {
 
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions([
-        { label: '지우기', ghost: true, disabled: !t.total, onClick: () => t.clearBet() },
-        ...(t.lastBet ? [{ label: '다시 베팅', ghost: true, onClick: () => t.rebet() }] : []),
-        { label: '시작', key: '↵', primary: true, disabled: !t.betReady, onClick: deal }
-      ]);
+      t.setActions(t.idleActions('시작', deal));
       return;
     }
     if (view.turn !== ME) { t.setActions([{ label: 'AI 차례', ghost: true, disabled: true }]); return; }
@@ -188,15 +184,14 @@ export async function mountSeotda(ctx) {
     await apply(res);
   }
 
-  t.onKey(e => { if (!t.busy && e.key === 'Enter' && (!view || view.status !== 'PLAYING') && t.betReady && !e.target.closest('button')) { e.preventDefault(); t.run(deal); } });
+  t.onKey(e => { const a = !t.busy && e.key === 'Enter' && (!view || view.status !== 'PLAYING') && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
 
   try {
     const open = await api.seotdaOpen();
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
       view = open.round;
       t.lock();
-      t.bet = { zone: 'ANTE', chips: breakdown(view.contrib[ME], t.tier.chips, 12) };
-      t.bet.chips.forEach(v => t.pushChip('ANTE', v)); t.refreshBet();
+      t.placeLocked('ANTE', view.contrib[ME]); t.refreshBet();
       breakdown(view.contrib[OPP], t.tier.chips, 12).forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); oppStack().append(c); });
       view.hand.forEach(id => cardsOf(ME).append(createHwatu(id)));
       view.opponent.forEach(() => cardsOf(OPP).append(createHwatu(null, { faceUp: false })));

@@ -1,6 +1,7 @@
 // VEGAS client: floor navigation, lobby, rankings, profile, and mounting live tables.
 import { api, errorMessage, playerId } from './js/api.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
+import { music } from './js/music.js';
 import { createCard, flipCard } from './js/cards.js';
 import { TIERS, createChip } from './js/chips.js';
 import { mountBlackjack } from './js/games/blackjack.js';
@@ -31,7 +32,7 @@ let state = null;
 let lastLobbyTrigger = null;
 let selectedGame = null;
 let activeTable = null;
-let shownWallet = 0;
+let shownWallet = null;
 
 // ---------- navigation ----------
 function showSurface(name, { focus = false } = {}) {
@@ -55,7 +56,8 @@ function chooseGame(button) {
   if (!game || game.soon) return;
   lastLobbyTrigger = button;
   selectedGame = game;
-  document.querySelector('#tier-game-name').textContent = `${game.name} · ${game.blurb}`;
+  document.querySelector('#tiers-title').textContent = game.name;
+  document.querySelector('#tier-game-name').textContent = `${game.blurb} 앉을 테이블을 골라 주세요.`;
   renderTiers();
   history.pushState({ vegasSurface: 'tiers' }, '', `#tiers-${game.id}`);
   showSurface('tiers', { focus: true });
@@ -99,7 +101,9 @@ window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveT
 async function refresh() {
   try { state = await api.state(); } catch (e) { walletEl.textContent = '오프라인'; return; }
   const available = state.user.account.available;
-  rollNumber(walletEl, shownWallet, available, { format: formatCH });
+  // Show the balance as is on first load; only later changes roll.
+  if (shownWallet === null || shownWallet === available) walletEl.textContent = formatCH(available);
+  else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
   renderRecharge();
   if (document.querySelector('[data-surface="ranking"]').classList.contains('is-active')) renderRanking();
@@ -177,6 +181,7 @@ function renderTiers() {
     tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
     const status = locked ? `${tier.floorName} 층이 열리면 앉을 수 있어요 (${Math.round((floor?.progress || 0) * 100)}%)` : broke ? '칩이 부족해요' : `${tier.floorName} 층`;
     b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)} CH</span><small>${status}</small>`;
+    chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
     b.addEventListener('click', () => openTable(tier.slug));
     return b;
@@ -228,15 +233,38 @@ function renderProfile() {
     <div class="player-switch">${state.users.map(p => `<button type="button" class="pill-button${p.id === u.id ? ' is-active' : ''}" data-player="${p.id}">${p.nickname}</button>`).join('')}</div>`;
   root.querySelectorAll('[data-player]').forEach(b => b.addEventListener('click', () => {
     try { localStorage.setItem('vegas:player', b.dataset.player); } catch {}
-    shownWallet = 0;
+    shownWallet = null;
     refresh();
   }));
 }
 
-// ---------- sound toggle ----------
-const soundBtn = document.querySelector('[data-sound]');
-function paintSound() { soundBtn.setAttribute('aria-pressed', String(!isMuted())); soundBtn.setAttribute('aria-label', isMuted() ? '소리 켜기' : '소리 끄기'); soundBtn.classList.toggle('is-muted', isMuted()); }
-soundBtn.addEventListener('click', () => { setMuted(!isMuted()); paintSound(); if (!isMuted()) sound.chip(); });
+// ---------- sound and music ----------
+// One toggle (in the top bar and on every table) silences both effects and music.
+let audioUnlocked = false;
+function syncMusic() {
+  if (audioUnlocked && !isMuted() && !document.hidden) music.start();
+  else music.stop();
+}
+function paintSound() {
+  document.querySelectorAll('[data-sound]').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(!isMuted()));
+    btn.setAttribute('aria-label', isMuted() ? '소리 켜기' : '소리 끄기');
+    btn.classList.toggle('is-muted', isMuted());
+  });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-sound]')) return;
+  setMuted(!isMuted());
+  paintSound();
+  syncMusic();
+  if (!isMuted()) sound.chip();
+});
+// Browsers only let audio start after a tap or key press, so the music begins with the first one.
+for (const type of ['pointerdown', 'keydown']) {
+  addEventListener(type, () => { audioUnlocked = true; syncMusic(); }, { once: true, capture: true });
+}
+document.addEventListener('visibilitychange', syncMusic);
+new MutationObserver(paintSound).observe(document.querySelector('[data-surface="table"]') || document.body, { childList: true, subtree: true });
 paintSound();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});

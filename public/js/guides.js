@@ -24,15 +24,15 @@ export const GUIDES = {
     id: 'blackjack', title: '블랙잭',
     steps: [
       { target: '.felt', title: '블랙잭은 21 싸움', body: ['딜러보다 21에 가까우면 이겨요. 21을 넘기면 그 자리에서 져요(버스트).', '그림 카드는 10, A는 1 또는 11로 셉니다.'] },
-      ...betSteps({ zone: '[data-zone]', zoneTitle: '베팅 원에 칩 놓기', zoneBody: '가운데 원이 내 자리예요. 여기에 놓은 칩이 이번 판 베팅이에요.' }),
-      { target: '.bj-hands', title: '내 카드', body: '내 카드 두 장과 딜러 카드 한 장이 열려요. 합계는 카드 옆 숫자로 보여요.' },
+      ...betSteps({ zone: '.bj-spots', zoneTitle: '베팅 박스에 칩 놓기', zoneBody: '원 하나가 손 하나예요. 박스 세 개까지 따로 걸면 세 손을 동시에 칠 수 있어요.' }),
+      { target: '.bj-spots', title: '내 카드', body: ['박스마다 카드 두 장, 딜러는 한 장이 열려요. 합계는 카드 옆 숫자로 보여요.', '딜러가 A를 보이면 인슈어런스를 먼저 묻는데, 딜러가 블랙잭일 때 2배로 돌려받는 보험이에요.'] },
       { target: '[data-actions]', title: '히트 · 스탠드 · 더블', body: ['히트는 한 장 더, 스탠드는 여기서 멈추기예요.', '더블은 베팅을 두 배로 올리고 딱 한 장만 받아요. 같은 숫자 두 장이면 스플릿으로 두 손으로 나눌 수 있어요.'], do: '이번 판을 끝까지 해 보세요', ...finished },
       { target: '.felt', title: '정산', body: '이기면 건 만큼 받고, 처음 두 장이 21(블랙잭)이면 1.5배를 받아요. 딜러는 17 이상이면 멈춥니다.' },
       helpStep
     ],
     rules: `<h3>목표</h3><p>딜러보다 21에 가깝게. 21을 넘기면 버스트로 바로 집니다.</p>
       <h3>카드 값</h3><ul><li>2–10은 숫자 그대로, J·Q·K는 10</li><li>A는 1 또는 11 중 유리한 쪽</li></ul>
-      <h3>행동</h3><table><tr><td>히트</td><td>한 장 더</td></tr><tr><td>스탠드</td><td>멈추기</td></tr><tr><td>더블</td><td>베팅 2배, 한 장만</td></tr><tr><td>스플릿</td><td>같은 카드 두 장을 두 손으로</td></tr></table>
+      <h3>행동</h3><table><tr><td>히트</td><td>한 장 더</td></tr><tr><td>스탠드</td><td>멈추기</td></tr><tr><td>더블</td><td>베팅 2배, 한 장만</td></tr><tr><td>스플릿</td><td>같은 카드 두 장을 두 손으로</td></tr><tr><td>인슈어런스</td><td>딜러 A일 때 베팅의 절반, 2 : 1</td></tr></table><p>베팅 박스는 3개까지, 박스마다 따로 걸 수 있어요.</p>
       <h3>배당</h3><table><tr><td>승리</td><td>1 : 1</td></tr><tr><td>블랙잭</td><td>3 : 2</td></tr><tr><td>무승부</td><td>베팅 돌려받음</td></tr></table><p>딜러는 소프트 17 포함 17 이상에서 멈춥니다.</p>`
   },
 

@@ -81,7 +81,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       const k = pk.me >= 0 ? (i - pk.me + n) % n : i;
       const p = seatPoint(k, n);
       const side = i !== pk.me && Math.abs(p.x - 50) > 20; // left/right of the board, not top or bottom
-      const node = el('div', `pk-seat${i === pk.me ? ' pk-seat--hero' : ''}${side ? ' pk-seat--side' : ''}`);
+      const node = el('div', `pk-seat${i === pk.me ? ' pk-seat--hero' : ''}${side ? ` pk-seat--side pk-seat--${p.x < 50 ? 'l' : 'r'}` : ''}`);
       node.dataset.seat = i;
       node.style.setProperty('--x', p.x.toFixed(2));
       node.style.setProperty('--y', p.y.toFixed(2));
@@ -89,7 +89,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         <div class="hand pk-cards" data-cards></div>
         <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><em class="pk-tag" data-tag></em></div>`;
       const bet = el('div', `pk-bet${side ? ' pk-bet--side' : ''}`);
-      bet.style.setProperty('--x', (50 + (p.x - 50) * 0.55).toFixed(2));
+      bet.style.setProperty('--x', (50 + (p.x - 50) * (side ? 0.3 : 0.55)).toFixed(2));
       bet.style.setProperty('--y', (k === 0 && pk.me >= 0 ? 88 : 50 + (p.y - 50) * 0.56).toFixed(2));
       bet.innerHTML = '<span class="pk-bet-stack"></span><b></b>';
       seatsEl.append(node, bet);

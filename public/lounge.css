@@ -133,8 +133,13 @@
 .bigwin-actions{display:flex;gap:10px;margin-top:26px}
 
 /* ---------- hold'em bots talk ---------- */
-.pk-say{position:absolute;left:50%;bottom:calc(100% + 4px);z-index:5;max-width:150px;padding:6px 10px;border-radius:12px 12px 12px 4px;background:var(--white);color:var(--ink);font:500 12px/1.35 var(--sans);white-space:normal;text-align:left;transform:translateX(-30%);box-shadow:0 8px 20px #000a;animation:pk-say 2.2s ease both;pointer-events:none}
+.pk-say{position:absolute;left:50%;bottom:calc(100% + 4px);z-index:7;width:max-content;max-width:150px;padding:6px 10px;border-radius:12px 12px 12px 4px;background:var(--white);color:var(--ink);font:500 12px/1.35 var(--sans);white-space:normal;text-align:left;transform:translateX(-30%);box-shadow:0 8px 20px #000a;animation:pk-say 2.2s ease both;pointer-events:none}
 @keyframes pk-say{0%{opacity:0;transform:translate(-30%,6px) scale(.9)}10%,85%{opacity:1;transform:translate(-30%,0) scale(1)}100%{opacity:0}}
+/* Seats at the felt's edges open their bubble toward the middle so it never runs off the table. */
+.pk-seat--l .pk-say{left:0;transform:none;border-radius:12px 12px 12px 4px}
+.pk-seat--r .pk-say{left:auto;right:0;transform:none;border-radius:12px 12px 4px 12px}
+.pk-seat--l .pk-say,.pk-seat--r .pk-say{animation-name:pk-say-edge}
+@keyframes pk-say-edge{0%{opacity:0;transform:translateY(6px) scale(.9)}10%,85%{opacity:1;transform:none}100%{opacity:0}}
 
 /* ---------- roulette: spread bets, dozens and columns ---------- */
 .table-screen--roulette .rl-board{grid-template-columns:minmax(24px,.85fr) repeat(12,minmax(0,1fr)) minmax(28px,.95fr)}

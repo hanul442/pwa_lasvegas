@@ -200,5 +200,5 @@ export function attachQuickSettings(table) {
   };
   window.addEventListener('keydown', onKey, true);
   const destroy = table.destroy.bind(table);
-  table.destroy = () => { cleanup?.(); window.removeEventListener('keydown', onKey, true); destroy(); };
+  table.destroy = () => { cleanup?.(); window.removeEventListener('keydown', onKey, true); return destroy(); };
 }

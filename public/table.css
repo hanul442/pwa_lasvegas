@@ -435,7 +435,7 @@
 /* centre: deck, board, pot */
 .pk-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,420px);pointer-events:none}
 .pk-deck{position:relative;width:24px;height:34px;border-radius:4px;background:linear-gradient(160deg,#1e2126,#0a0b0d);box-shadow:inset 0 0 0 2px #f4f5f7,inset 0 0 0 3px #0a0b0d,0 1px 0 #0a0b0d,0 2px 0 #f4f5f7aa,0 3px 0 #0a0b0d,0 4px 0 #f4f5f788,0 8px 12px #0008}
-.pk-board{--card-w:clamp(40px,11.5vw,66px);display:flex;gap:clamp(3px,1vw,8px);min-height:calc(var(--card-w) * 1.4)}
+.pk-board{--card-w:clamp(38px,10.6vw,66px);display:flex;gap:clamp(3px,1vw,8px);min-height:calc(var(--card-w) * 1.4)}
 .pk-board .card{rotate:0deg}
 .pk-pot{display:flex;align-items:center;gap:10px;min-height:30px}
 .pk-pot[hidden]{display:flex;visibility:hidden}
@@ -448,7 +448,7 @@
 
 /* seats */
 .pk-seat{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:4;transition:opacity .3s}
-.pk-seat .pk-cards{--card-w:clamp(26px,7.5vw,40px);min-height:calc(var(--card-w) * 1.4);margin-bottom:-8px}
+.pk-seat .pk-cards{--card-w:clamp(26px,7.5vw,40px);min-height:calc(var(--card-w) * 1.4);margin-bottom:-14px}
 .pk-seat .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.42)}
 .pk-seat--hero{top:100%;transform:translate(-50%,6px);z-index:6}
 .pk-seat--hero .pk-cards{--card-w:clamp(58px,16vw,80px);margin-bottom:4px}
@@ -506,6 +506,19 @@
   .pk-ring{inset:30px 40px var(--ring-bottom)}
   .table-screen--holdem.is-seated .table-controls{grid-template-columns:auto minmax(260px,1fr) auto;grid-template-areas:"bet sizer act"}
   .pk-sizer{grid-template-columns:auto 1fr;align-items:center}
+}
+/* Short portrait phones: the oval shrinks to the felt and my cards sit beside my plate, so the
+   whole table (and my hand) stays visible without the board running into the side seats. */
+@media (max-height:760px) and (orientation:portrait){
+  .pk-oval{min-height:0;--ring-bottom:96px}
+  .pk-ring{inset:24px 6px var(--ring-bottom)}
+  .pk-seat--hero{flex-direction:row;align-items:center;gap:8px;transform:translate(-50%,6px)}
+  .pk-seat--hero .pk-cards{--card-w:clamp(50px,14.5vw,62px);margin-bottom:0}
+  .pk-plate small{display:none}
+  .pk-board{--card-w:clamp(32px,9.2vw,50px)}
+  /* side seats and their bets move up/down, away from the board's row */
+  .pk-seat--side{top:calc((50 + (var(--y) - 50) * 1.3) * 1%)}
+  .pk-bet--side{top:calc((50 + (var(--y) - 50) * 1.5) * 1%)}
 }
 @media (orientation:landscape) and (max-height:520px){
   /* the felt is barely 230px tall on its side: the oval fills it and my cards sit beside my plate */

@@ -95,10 +95,10 @@ async function openTable(tier) {
 function closeTable() {
   if (!activeTable) return;
   voice.hush();
-  activeTable.destroy();
+  const closing = activeTable.destroy();
   activeTable = null;
   tableMount.replaceChildren();
-  refresh();
+  Promise.resolve(closing).finally(refresh);
 }
 
 function restoreTrigger() { lastLobbyTrigger?.focus({ preventScroll: true }); }

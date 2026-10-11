@@ -92,14 +92,15 @@ export async function mountHoldem(ctx) {
     seatEls.length = 0;
     view.table.seats.forEach((s, i) => {
       const p = seatPoint(i, n);
-      const node = el('div', `pk-seat${i === 0 ? ' pk-seat--hero' : ''}`);
+      const side = i !== 0 && Math.abs(p.x - 50) > 20; // left/right of the board, not top or bottom
+      const node = el('div', `pk-seat${i === 0 ? ' pk-seat--hero' : ''}${side ? ' pk-seat--side' : ''}`);
       node.dataset.seat = i;
       node.style.setProperty('--x', p.x.toFixed(2));
       node.style.setProperty('--y', p.y.toFixed(2));
       node.innerHTML = `
         <div class="hand pk-cards" data-cards></div>
         <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><em class="pk-tag" data-tag></em></div>`;
-      const bet = el('div', 'pk-bet');
+      const bet = el('div', `pk-bet${side ? ' pk-bet--side' : ''}`);
       bet.style.setProperty('--x', (50 + (p.x - 50) * 0.55).toFixed(2));
       bet.style.setProperty('--y', (i === 0 ? 88 : 50 + (p.y - 50) * 0.56).toFixed(2));
       bet.innerHTML = '<span class="pk-bet-stack"></span><b></b>';
@@ -553,6 +554,17 @@ export async function mountHoldem(ctx) {
     await t.syncBalance();
   } catch {}
   refreshActions();
+  // Walking away from the table cashes the stack out, the way a player takes their chips to the
+  // cage; otherwise winnings sat locked at the table and never reached the wallet. A hand still in
+  // progress is folded first. The returned promise lets the lobby refresh after the cash-out lands.
+  const destroy = t.destroy.bind(t);
+  t.destroy = () => {
+    const open = session && session.status === 'SEATED' ? session.id : null;
+    destroy();
+    if (!open) return null;
+    session = null;
+    return api.holdemLeave(open).catch(() => null);
+  };
   return t;
 }
 

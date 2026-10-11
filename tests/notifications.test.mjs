@@ -5,7 +5,8 @@ import { defaultState } from '../lib/state.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { claimDaily } from '../lib/engagement.mjs';
 import { b64url, fromB64url, encryptPayload, generateVapidKeys, vapidAuthorization } from '../lib/webpush.mjs';
-import { messageFor, planPushes, runPushRound, subscribe, formatWon } from '../lib/notifications.mjs';
+import { messageFor, planPushes, runPushRound, subscribe, formatWon, ensureVapid } from '../lib/notifications.mjs';
+const ensureVapidFor = ensureVapid;
 
 const HOUR = 3_600_000, DAY = 24 * HOUR;
 // Seoul clock helpers: 2026-10-14 at hh:00 KST.
@@ -165,4 +166,48 @@ test('a cron round sends, then forgets devices the browser dropped', async () =>
   const out = await runPushRound(store, { now: kst(10), fetchFn });
   assert.deepEqual(out, { players: 1, sent: 1, gone: 1 });
   assert.equal(u.push.subs.length, 1);
+});
+
+test('big news reads per player: others see the jackpot, duels reach both sides', async () => {
+  const { newsFor } = await import('../lib/news.mjs');
+  const { pushFeed } = await import('../lib/engagement.mjs');
+  const { createChallenge } = await import('../lib/social-competition.mjs');
+  const state = defaultState();
+  const since = Date.now() - 1000;
+  pushFeed(state, { type: 'JACKPOT', actorId: 'min', game: 'Slots', amount: 250_000_000 });
+  pushFeed(state, { type: 'HOT_WIN', actorId: 'zero', game: 'Roulette', amount: 35_000_000, multiple: 35 });
+  createChallenge(state, 'min', 'hanseo', 'WINS');
+  const mine = newsFor(state, 'hanseo', since);
+  assert.deepEqual(mine.map(n => n.type).sort(), ['DUEL_IN', 'HOT_WIN', 'JACKPOT']);
+  assert.match(mine.find(n => n.type === 'JACKPOT').body, /MIN님이 슬롯 잭팟 2억 5천만 원/);
+  assert.equal(mine.find(n => n.type === 'HOT_WIN').push, false); // under 1억: banner only
+  // The jackpot winner doesn't get a banner about themselves.
+  assert.equal(newsFor(state, 'min', since).some(n => n.type === 'JACKPOT'), false);
+  assert.deepEqual(newsFor(state, 'hanseo', Date.now() + 1000), []);
+});
+
+test('a jackpot pushes to subscribed players right away, at most every two hours', async () => {
+  const { state, u } = subscribedPlayer(kst(8, -1));
+  const store = memoryStore(state);
+  await ensureVapidFor(state);
+  const seen = [];
+  const pushFetch = async (url, init) => { seen.push(init); return new Response(null, { status: 201 }); };
+  const realNow = Date.now;
+  let clock = kst(14);
+  Date.now = () => clock;
+  try {
+    const req = { method: 'POST', header: n => ({ 'x-player-id': 'min' })[n], body: async () => ({}) };
+    // The first change only starts the clock; the jackpot comes with the next one.
+    await handleApi(req, new URL('http://x/api/daily/claim'), store, { pushFetch });
+    const { pushFeed } = await import('../lib/engagement.mjs');
+    state.users.min.account.available = 0;
+    await store.mutate(s => pushFeed(s, { type: 'JACKPOT', actorId: 'min', game: 'Slots', amount: 300_000_000, createdAt: new Date(kst(14) + 1000).toISOString() }));
+    await handleApi(req, new URL('http://x/api/recharge/auto'), store, { pushFetch });
+    assert.equal(seen.length, 1);
+    assert.ok(u.push.sent.newsAt);
+    clock = kst(15);
+    await store.mutate(s => pushFeed(s, { type: 'JACKPOT', actorId: 'min', game: 'Slots', amount: 300_000_000, createdAt: new Date(kst(15) - 1000).toISOString() }));
+    await handleApi({ ...req, header: n => ({ 'x-player-id': 'zero' })[n] }, new URL('http://x/api/daily/claim'), store, { pushFetch });
+    assert.equal(seen.length, 1);
+  } finally { Date.now = realNow; }
 });

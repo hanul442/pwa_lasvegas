@@ -53,6 +53,7 @@ export const api = {
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
   state: () => request('/api/state'),
+  news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   pushKey: () => request('/api/push/key'),
   pushSubscribe: subscription => request('/api/push/subscribe', { method: 'POST', body: { subscription } }),
   pushUnsubscribe: endpoint => request('/api/push/unsubscribe', { method: 'POST', body: { endpoint } }),

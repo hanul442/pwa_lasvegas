@@ -22,6 +22,7 @@ import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels } from './js/social.js';
 import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
 import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
+import { startNews, stopNews } from './js/news.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -360,10 +361,12 @@ function signedIn(next) {
   shownWallet = null;
   applyState(next);
   startNotifications(inMenus);
+  startNews();
   renderTiers();
   showSurface('lobby');
 }
 function signedOut(notice) {
+  stopNews();
   clearSession();
   if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) showSurface('lobby');
   state = null;
@@ -429,6 +432,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 renderLobby();
 showSurface('lobby');
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) startNotifications(inMenus); });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus); startNews(); } });
 else openSignIn(signedIn);
 dealVignette();

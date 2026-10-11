@@ -8,7 +8,7 @@ const systemReduced = () => { try { return window.matchMedia('(prefers-reduced-m
 export const DEFAULTS = {
   sfx: 80,          // table sounds, 0–100
   music: 60,        // lounge music, 0–100
-  voice: true,      // dealer voice (read by the voice module when it ships)
+  voice: true,      // dealer call-outs (js/voice.js)
   voiceVolume: 80,
   pace: null,       // 'relaxed' | 'normal' | 'fast' | 'minimal'; null follows the system motion setting
   haptics: true,

@@ -3,6 +3,7 @@
 import { el, isMuted, sound, haptic } from './fx.js';
 import { settings, onSettings, pace, PACES } from './settings.js';
 import { resetGuides } from './guide.js';
+import { voice } from './voice.js';
 
 const canVibrate = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 const canWakeLock = () => typeof navigator !== 'undefined' && 'wakeLock' in navigator;
@@ -130,7 +131,9 @@ export function renderSettings(root, { compact = false } = {}) {
   const audioRows = [
     soundSwitch(),
     add(slider('sfx', '효과음', { onRelease: () => sound.chip() })),
-    add(slider('music', '음악'))
+    add(slider('music', '음악')),
+    add(toggle('voice', '딜러 음성', '"No more bets", "Your action" 같은 딜러 콜을 영어로 들려줘요', { onChange: on => on && voice.say('place-bets', { cut: true }) })),
+    add(slider('voiceVolume', '음성', { onRelease: () => voice.say('your-action', { cut: true }) }))
   ];
   const motionRows = [
     add(paceControl()),

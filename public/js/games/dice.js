@@ -3,6 +3,7 @@ import { api, errorMessage } from '../api.js';
 import { animate, sound, haptic, formatCH, wait, reducedMotion } from '../fx.js';
 import { Table } from '../table.js';
 import { seatCrowd } from '../npc.js';
+import { voice, sicboLine } from '../voice.js';
 
 const FACE_ROT = { 1: '', 2: 'rotateX(90deg)', 3: 'rotateY(-90deg)', 4: 'rotateY(90deg)', 5: 'rotateX(-90deg)', 6: 'rotateY(180deg)' };
 const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
@@ -119,7 +120,9 @@ export async function mountDice(ctx) {
     try { res = await api.sicbo(t.total, t.tier.floor, betType, target); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    voice.say('no-more-bets', { cut: true });
     await roll(res.round.dice);
+    voice.say(sicboLine(res.round.dice));
     await wait(200);
     const net = res.round.netPnl;
     await Promise.all([

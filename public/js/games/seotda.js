@@ -5,9 +5,11 @@ import { createHwatu, flipHwatu } from '../hwatu.js';
 import { animate, flyFrom, flyTo, wait, sound, haptic, formatCH, el } from '../fx.js';
 import { breakdown, createChip } from '../chips.js';
 import { Table } from '../table.js';
+import { voice } from '../voice.js';
 
 const ME = 0, OPP = 1;
 const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', HALF: '하프', CALL: '콜' };
+const LINE = { DIE: 'die', CHECK: 'check', HALF: 'half', CALL: 'call' };
 
 export async function mountSeotda(ctx) {
   const t = new Table({ ...ctx, game: 'seotda', title: '섯다', feltClass: 'felt--seotda' });
@@ -51,6 +53,7 @@ export async function mountSeotda(ctx) {
   function say(seat, action, cost) {
     const node = $(`[data-said="${seat}"]`);
     node.innerHTML = `<b>${LABEL[action]}</b>${cost ? ` ${formatCH(cost)}` : ''}`;
+    voice.say(LINE[action]);
     animate(node, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, fill: 'none' });
   }
 
@@ -119,6 +122,7 @@ export async function mountSeotda(ctx) {
       : r.reason === 'TIE' ? '무승부 · 판돈 돌려받음'
       : r.reason === 'FOLD' ? (r.winner === ME ? 'AI 다이 · 승리' : '다이')
       : `${r.winner === ME ? '승리' : '패배'} · ${r.hands[r.winner]}`;
+    if (net > 0) voice.say('you-win');
     if (names.length === 2) t.toast(`나 ${r.hands[ME]} · AI ${r.hands[OPP]}`);
     t.banner(`${label}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
     if (net > 0) { sound.win(); haptic([20, 60, 30]); t.glow(); } else if (net < 0) { sound.lose(); haptic(30); } else sound.push();
@@ -160,12 +164,15 @@ export async function mountSeotda(ctx) {
     if (view.status === 'SETTLED') await finish(view, res.netPnl || 0);
   }
 
+  let prompted = ''; // the betting turn "Your action" was last called for
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
       t.setActions(t.idleActions('시작', deal));
       return;
     }
     if (view.turn !== ME) { t.setActions([{ label: 'AI 차례', ghost: true, disabled: true }]); return; }
+    const turn = `${view.id}:${view.street}:${view.pot}`;
+    if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
     const opts = view.options;
     t.hint(view.street === 1 ? '첫 장을 보고 베팅해요' : '마지막 베팅이에요');
     t.setActions(opts.map(o => ({

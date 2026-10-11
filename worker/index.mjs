@@ -59,7 +59,7 @@ export class VegasFloor extends DurableObject {
       }
     };
     const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
-    const { status, data } = await handleApi(req, url, store, { NODE_ENV: 'production', SOURCE_COMMIT: this.env.SOURCE_COMMIT, SOURCE_BRANCH: 'main' });
+    const { status, data } = await handleApi(req, url, store, { NODE_ENV: 'production', AUTH_REQUIRED: true, SOURCE_COMMIT: this.env.SOURCE_COMMIT, SOURCE_BRANCH: 'main' });
     return Response.json(data, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
   }
 }
@@ -71,7 +71,7 @@ function cors(request, env) {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
-    'access-control-allow-headers': 'content-type, x-player-id, x-idempotency-key',
+    'access-control-allow-headers': 'content-type, authorization, x-idempotency-key',
     'access-control-max-age': '86400',
     vary: 'origin'
   };

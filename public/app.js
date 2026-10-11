@@ -4,6 +4,7 @@ import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
 import { music } from './js/music.js';
+import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { createCard, flipCard } from './js/cards.js';
 import { TIERS, createChip } from './js/chips.js';
 import { mountBlackjack } from './js/games/blackjack.js';
@@ -11,6 +12,7 @@ import { mountBaccarat } from './js/games/baccarat.js';
 import { mountRoulette } from './js/games/roulette.js';
 import { mountDice } from './js/games/dice.js';
 import { mountMatgo } from './js/games/matgo.js';
+import { mountGostop } from './js/games/gostop.js';
 import { mountSeotda } from './js/games/seotda.js';
 import { attachGuide } from './js/guide.js';
 import { mountHoldem } from './js/games/holdem.js';
@@ -28,6 +30,7 @@ const GAMES = [
   { id: 'baccarat', name: 'Baccarat', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
   { id: 'dice', name: 'Sic Bo', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
   { id: 'matgo', name: '맞고', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
+  { id: 'gostop', name: '고스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
   { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
   { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
   { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots }
@@ -81,14 +84,17 @@ async function openTable(tier) {
   history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
   showSurface('table');
   closeTable();
+  voice.preload(selectedGame.id);
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
   attachGuide(activeTable, selectedGame.id);
   attachQuickSettings(activeTable);
+  if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
 
 function closeTable() {
   if (!activeTable) return;
+  voice.hush();
   activeTable.destroy();
   activeTable = null;
   tableMount.replaceChildren();
@@ -401,7 +407,8 @@ document.addEventListener('click', e => {
   setMuted(!isMuted());
   paintSound();
   syncMusic();
-  if (!isMuted()) sound.chip();
+  if (isMuted()) voice.hush();
+  else sound.chip();
 });
 // Browsers only let audio start after a tap or key press, so the music begins with the first one.
 for (const type of ['pointerdown', 'keydown']) {

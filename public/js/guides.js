@@ -17,6 +17,8 @@ function betSteps({ zone, zoneTitle, zoneBody, startLabel = '딜' }) {
     { target: '[data-actions]', title: `${startLabel} 누르기`, body: '최소 베팅을 넘기면 버튼이 켜져요. 같은 금액으로 다시 하려면 판이 끝난 뒤 다시 베팅을 누르면 돼요.', do: `${startLabel}를 눌러 시작해 보세요`, ...started }
   ];
 }
+// The AI regulars on the rail at baccarat, roulette and sic bo.
+const crowdStep = { target: '.crowd', title: '함께 앉은 손님', body: ['NOVA, REX, LUNA 같은 AI 플레이어들도 같은 판에 자기 칩을 걸어요. 가끔 한마디씩 하기도 해요.', '그들의 칩은 테이블 분위기를 위한 연출이라 내 베팅과 보유 칩에는 영향이 없어요. 결과가 나오면 나와 똑같은 규칙으로 지급되거나 걷혀요.'] };
 const helpStep = { target: '.table-help', title: '언제든 다시 보기', body: '? 버튼에 규칙표와 이 가이드가 있어요. 가이드는 처음 앉을 때 한 번만 저절로 열려요.' };
 
 export const GUIDES = {
@@ -41,13 +43,17 @@ export const GUIDES = {
     steps: [
       { target: '.bac-sides', title: '어느 쪽이 9에 가까울까', body: ['플레이어와 뱅커 중 끝자리가 9에 가까운 쪽이 이겨요. 카드는 딜러가 규칙대로 돌리니 나는 고르기만 하면 돼요.', '10·J·Q·K는 0, A는 1. 합이 15면 5로 봐요.'] },
       ...betSteps({ zone: '.bac-zones', zoneTitle: '어디에 걸까', zoneBody: 'Player, Tie, Banker 가운데 한 곳에 걸어요. 다른 칸을 탭하면 칩이 그쪽으로 옮겨 가요.' }),
+      { target: '.bac-pairs', title: '페어 사이드 베팅', body: ['P Pair는 플레이어, B Pair는 뱅커의 처음 두 장이 같은 숫자(K·K, 7·7)면 11배를 받아요. 승패와 상관없이 따로 정산돼요.', '메인 베팅과 함께 원하는 만큼 얹을 수 있어요.'] },
       { target: '.bac-sides', title: '카드 쪼기', body: '내가 건 쪽 카드는 천천히 쪼여서 열려요. 필요하면 세 번째 카드가 옆으로 눕혀져 나와요.' },
       { target: '.road', title: '지난 결과', body: '최근 결과가 점으로 쌓여요. P는 플레이어, B는 뱅커, T는 타이예요.' },
+      crowdStep,
       helpStep
     ],
     rules: `<h3>점수</h3><p>카드 합의 끝자리. 10·J·Q·K는 0, A는 1. 처음 두 장이 8이나 9면 내추럴로 바로 끝나요.</p>
-      <h3>배당</h3><table><tr><td>Player</td><td>1 : 1</td></tr><tr><td>Banker</td><td>0.95 : 1</td></tr><tr><td>Tie</td><td>8 : 1</td></tr></table>
-      <p>타이가 나오면 Player·Banker에 건 칩은 돌려받아요. 세 번째 카드는 정해진 표대로 자동으로 나와요.</p>`
+      <h3>배당</h3><table><tr><td>Player</td><td>1 : 1</td></tr><tr><td>Banker</td><td>0.95 : 1</td></tr><tr><td>Tie</td><td>8 : 1</td></tr><tr><td>P Pair / B Pair</td><td>11 : 1</td></tr></table>
+      <p>타이가 나오면 Player·Banker에 건 칩은 돌려받아요. 세 번째 카드는 정해진 표대로 자동으로 나와요.</p>
+      <p>페어는 그쪽 처음 두 장이 같은 숫자일 때만 이겨요(세 번째 카드는 세지 않아요). Player·Banker·Tie 중 한 곳에 메인 베팅이 있어야 걸 수 있어요.</p>
+      <p>같은 테이블의 AI 플레이어 칩은 연출이에요. 내 칩과 정산에는 영향이 없어요.</p>`
   },
 
   roulette: {
@@ -56,9 +62,10 @@ export const GUIDES = {
       { target: '.wheel', title: '공이 멈출 칸 맞히기', body: '0부터 36까지 37칸짜리 유럽식 휠이에요. 공이 멈춘 숫자로 승패가 정해져요.' },
       ...betSteps({ zone: '.rl-layout', zoneTitle: '숫자 판에 걸기', zoneBody: '여러 곳에 한꺼번에 걸 수 있어요. 숫자 하나는 35배, 12개 묶음과 2:1 열은 2배, 빨강·검정, 홀·짝, 1–18·19–36은 1배예요.', startLabel: '스핀' }),
       { target: '.rl-history', title: '최근 숫자', body: '방금 나온 숫자가 맨 앞에 쌓여요. 휠에는 기억이 없으니 다음 판은 언제나 새 판이에요.' },
+      crowdStep,
       helpStep
     ],
-    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>12개 묶음 / 열 (2:1)</td><td>2 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>한 판에 여러 곳에 동시에 걸 수 있고, 각 자리는 따로 정산돼요. 0이 나오면 바깥쪽 베팅은 모두 집니다.</p>`
+    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>12개 묶음 / 열 (2:1)</td><td>2 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>한 판에 여러 곳에 동시에 걸 수 있고, 각 자리는 따로 정산돼요. 0이 나오면 바깥쪽 베팅은 모두 집니다.</p><p>숫자 칸 모서리의 작은 칩은 AI 플레이어들의 베팅이에요. 연출일 뿐 내 칩과 정산에는 영향이 없어요.</p>`
   },
 
   dice: {
@@ -67,9 +74,10 @@ export const GUIDES = {
       { target: '.dome', title: '주사위 세 개', body: '유리 돔 안에서 주사위 세 개가 굴러요. 세 눈의 합과 모양을 맞혀요.' },
       ...betSteps({ zone: '.sb-main', zoneTitle: '어디에 걸까', zoneBody: 'Small은 합 4–10, Big은 11–17이에요. 아래 숫자 칸은 합 하나를 맞히는 대신 배당이 커요.', startLabel: '굴리기' }),
       { target: '.sb-totals', title: '합 맞히기', body: '4나 17처럼 잘 안 나오는 합일수록 배당이 커요. 칸 아래 숫자가 배당이에요.' },
+      crowdStep,
       helpStep
     ],
-    rules: `<h3>배당</h3><table><tr><td>Small (4–10) / Big (11–17)</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>아무 트리플</td><td>24 : 1</td></tr><tr><td>합 4 · 17</td><td>50 : 1</td></tr><tr><td>합 10 · 11</td><td>6 : 1</td></tr></table><p>세 개가 같은 눈(트리플)이면 Small·Big·홀짝은 집니다.</p>`
+    rules: `<h3>배당</h3><table><tr><td>Small (4–10) / Big (11–17)</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>아무 트리플</td><td>24 : 1</td></tr><tr><td>합 4 · 17</td><td>50 : 1</td></tr><tr><td>합 10 · 11</td><td>6 : 1</td></tr></table><p>세 개가 같은 눈(트리플)이면 Small·Big·홀짝은 집니다.</p><p>함께 앉은 AI 플레이어들의 칩은 연출이에요. 내 칩과 정산에는 영향이 없어요.</p>`
   },
 
   matgo: {
@@ -101,19 +109,39 @@ export const GUIDES = {
       <h3>칩</h3><p>이긴 점수 × 점당을 받고 지면 그만큼 내요. 시작할 때 10점치를 보증금으로 잡아요.</p>`
   },
 
+  gostop: {
+    id: 'gostop', title: '고스톱',
+    steps: [
+      { target: '.felt', title: '셋이서 치는 고스톱', body: ['나와 AI 둘이 돌아가며 패를 내요. 같은 달끼리 짝을 맞춰 가져오는 건 맞고와 같아요.', '맞고와 달리 3점만 나면 고 또는 스톱을 외칠 수 있어요.'] },
+      { target: '[data-zone="POINT"]', title: '점당 정하기', body: ['칩으로 점당 금액을 정해요. 이기면 진 두 사람에게 각자 점수 × 점당을 받아요.', '시작할 때 10점치를 보증금으로 잡아 두고, 끝나면 정산해요.'], do: '칩을 탭해 점당을 올려 보세요', until: t => t.total > 0 },
+      { target: '[data-actions]', title: '패 받기', body: '시작을 누르면 바닥 6장, 세 사람에게 7장씩 돌아가요.', do: '시작을 눌러 보세요', until: t => t.gs?.view?.status === 'PLAYING' || t.locked },
+      { target: '.gs-opp', title: 'AI 두 명', body: ['위쪽(가로 화면에서는 양옆) 두 자리가 AI예요. 남은 패 수, 먹은 패, 점수가 보여요.', 'AI 차례에는 이름이 불리고, AI가 낸 패와 고·스톱이 그대로 보여요.'] },
+      { target: '.mg-hand', title: '내기', body: '흰 점이 있는 카드는 바닥에 같은 달이 있어요. 한 번 탭하면 들리고, 한 번 더 탭하면 내요.', do: '패 한 장을 내 보세요', enter: (t, s) => { s.p = t.gs?.plays ?? 0; }, until: (t, s) => (t.gs?.plays ?? 0) > s.p },
+      { target: '.mg-board', title: '피는 두 사람에게서', body: ['쪽 · 따닥 · 쓸 · 뻑 먹기 · 폭탄을 하면 두 AI에게서 피를 한 장씩 뺏어 와요.', 'AI가 하면 내 피도 한 장 나가요.'] },
+      { target: '[data-actions]', title: '고 또는 스톱', body: ['3점이 나면 고(1고 +1, 2고 +2, 3고부터 2배씩) 또는 스톱.', '고를 불렀다가 다른 사람이 먼저 나면 고박: 두 사람 몫을 혼자 물어요.'] },
+      helpStep
+    ],
+    rules: `<h3>흐름</h3><ol><li>바닥 6장, 세 사람에게 7장씩. 남은 21장이 더미예요.</li><li>차례대로 한 장 내고, 더미 맨 위를 뒤집어 짝을 찾아요.</li><li>3점이 나면 고 또는 스톱. 아무도 스톱 못 하고 패가 떨어지면 나가리예요.</li></ol>
+      <h3>점수</h3><p>맞고와 같아요: 광 3장 3점(비광 끼면 2점), 고도리 5점, 홍단·청단·초단 3점, 끗·띠 5장부터, 피 10장부터 1점씩.</p>
+      <h3>두 배가 되는 경우</h3><table><tr><td>3고 이상</td><td>3고 2배, 4고 4배…</td></tr><tr><td>흔들기 · 폭탄</td><td>2배</td></tr><tr><td>멍따</td><td>끗 7장 이상</td></tr><tr><td>피박 (진 사람마다)</td><td>피로 났는데 그 사람 피 1–5장</td></tr><tr><td>광박 (진 사람마다)</td><td>광으로 났는데 그 사람 광 0장</td></tr></table>
+      <h3>고박</h3><p>고를 불렀던 사람이 지면 다른 진 사람 몫까지 혼자 내요.</p>
+      <h3>칩</h3><p>이긴 사람이 진 사람마다 점수 × 점당을 받아요. 내가 이기면 두 사람 몫을, 지면 내 몫을 내요. 시작할 때 10점치를 보증금으로 잡고, 그보다 크게 지면 보유 칩에서 나머지를 내요.</p>`
+  },
+
   seotda: {
     id: 'seotda', title: '섯다',
     steps: [
-      { target: '.felt', title: '섯다는 두 장 족보 싸움', body: ['1월부터 10월까지 화투 스무 장만 써요. 두 장의 조합(족보)이 더 높은 쪽이 판돈을 가져가요.'] },
-      { target: '[data-zone="ANTE"]', title: '판돈 걸기', body: '칩으로 기본 판돈을 정해요. 나와 AI가 똑같이 걸고 시작해요.', do: '칩을 탭해 판돈을 놓아 보세요', until: t => t.total > 0 },
-      { target: '[data-actions]', title: '패 받기', body: '시작을 누르면 한 장씩 받아요. 내 카드만 보이고 AI 카드는 뒷면이에요.', do: '시작을 눌러 보세요', ...started },
-      { target: '[data-actions]', title: '첫 베팅', body: ['체크는 넘기기, 삥은 판돈만큼, 하프는 판의 절반을 더 걸어요.', '상대가 걸면 콜(따라가기), 하프(더 올리기), 다이(포기) 중에 골라요.'], do: '첫 베팅을 해 보세요', until: t => !t.sd?.view || t.sd.view.street === 2 || t.sd.view.status !== 'PLAYING' },
+      { target: '.felt', title: '섯다는 두 장 족보 싸움', body: ['1월부터 10월까지 화투 스무 장만 써요. 끝까지 남은 사람 중 두 장의 조합(족보)이 가장 높은 사람이 판을 모두 가져가요.'] },
+      { target: '.sd-count', title: '상대 수 고르기', body: '시작 전에 상대를 1명에서 4명까지 고를 수 있어요. 많을수록 판이 커지고 이기기는 어려워져요.' },
+      { target: '[data-zone="ANTE"]', title: '판돈 걸기', body: '칩으로 기본 판돈을 정해요. 테이블의 모두가 똑같이 걸고 시작해요.', do: '칩을 탭해 판돈을 놓아 보세요', until: t => t.total > 0 },
+      { target: '[data-actions]', title: '패 받기', body: '시작을 누르면 한 장씩 받아요. 내 카드만 보이고 상대 카드는 끝날 때까지 뒷면이에요.', do: '시작을 눌러 보세요', ...started },
+      { target: '[data-actions]', title: '첫 베팅', body: ['체크는 넘기기, 삥은 판돈만큼, 하프는 판의 절반을 더 걸어요.', '누가 걸면 콜(따라가기), 하프(더 올리기), 다이(포기) 중에 골라요. 순서대로 돌아가며 모두 같은 금액을 걸면 다음 장이에요.'], do: '첫 베팅을 해 보세요', until: t => !t.sd?.view || t.sd.view.street === 2 || t.sd.view.status !== 'PLAYING' },
       { target: '[data-cards="0"]', title: '두 번째 장 쪼기', body: '두 번째 장은 천천히 쪼여서 열려요. 내 족보가 카드 위에 나와요.' },
-      { target: '.table-help', title: '족보 순서', body: ['38광땡 › 13·18광땡 › 장땡(10땡) › 9땡 … 1땡 › 알리(1·2) › 독사(1·4) › 구삥 › 장삥 › 장사 › 세륙 › 갑오(9끗) … 망통(0끗).', '땡잡이(3광·7)는 1~9땡을, 암행어사(4·7 열끗)는 13·18광땡을 잡아요. 구사(4·9)는 상대가 알리 이하면 재경기예요.'] },
+      { target: '.table-help', title: '족보 순서', body: ['38광땡 › 13·18광땡 › 장땡(10땡) › 9땡 … 1땡 › 알리(1·2) › 독사(1·4) › 구삥 › 장삥 › 장사 › 세륙 › 갑오(9끗) … 망통(0끗).', '땡잡이(3광·7)는 판에서 가장 높은 패가 1~9땡일 때, 암행어사(4·7 열끗)는 13·18광땡일 때만 잡아요. 구사(4·9)는 남은 상대가 모두 알리 이하면 재경기예요.'] },
       helpStep
     ],
-    rules: `<h3>흐름</h3><ol><li>나와 AI가 판돈을 똑같이 걸어요.</li><li>한 장씩 받고 베팅, 한 장 더 받고 마지막 베팅.</li><li>패를 까서 족보가 높은 쪽이 판을 가져가요. 다이하면 그 판은 상대 것.</li></ol>
-      <h3>베팅</h3><table><tr><td>체크</td><td>넘기기</td></tr><tr><td>삥</td><td>판돈만큼</td></tr><tr><td>하프</td><td>판의 절반 더</td></tr><tr><td>콜</td><td>상대만큼 따라가기</td></tr><tr><td>다이</td><td>포기</td></tr></table><p>한 번의 베팅에서 올리기는 두 번까지예요.</p>
+    rules: `<h3>흐름</h3><ol><li>나와 상대 1~4명이 판돈을 똑같이 걸어요.</li><li>한 장씩 받고 차례대로 베팅, 한 장 더 받고 마지막 베팅.</li><li>끝까지 남은 사람끼리 패를 까서 족보가 가장 높은 사람이 판을 모두 가져가요. 다이하면 그때까지 건 돈은 판에 남아요.</li></ol>
+      <h3>베팅</h3><table><tr><td>체크</td><td>넘기기</td></tr><tr><td>삥</td><td>판돈만큼</td></tr><tr><td>하프</td><td>판의 절반 더</td></tr><tr><td>콜</td><td>가장 많이 건 사람만큼 따라가기</td></tr><tr><td>다이</td><td>포기</td></tr></table><p>한 번의 베팅에서 올리기는 두 번까지예요.</p>
       <h3>족보 (높은 순)</h3><table>
         <tr><td>${hw('03-1', '08-1')} 38광땡</td><td>최고</td></tr>
         <tr><td>${hw('01-1', '03-1')} ${hw('01-1', '08-1')} 13 · 18광땡</td><td></td></tr>
@@ -124,11 +152,11 @@ export const GUIDES = {
         <tr><td>갑오 › 8끗 … 1끗 › 망통</td><td>두 장 합의 끝자리</td></tr>
       </table>
       <h3>특수패</h3><table>
-        <tr><td>${hw('03-1', '07-1')} 땡잡이</td><td>1~9땡을 잡음, 아니면 망통</td></tr>
-        <tr><td>${hw('04-1', '07-1')} 암행어사</td><td>13·18광땡을 잡음, 아니면 1끗</td></tr>
-        <tr><td>${hw('04-3', '09-3')} 구사</td><td>상대가 알리 이하면 재경기</td></tr>
-        <tr><td>${hw('04-1', '09-1')} 멍텅구리구사</td><td>상대가 9땡 이하면 재경기</td></tr>
-      </table><p>재경기와 같은 족보는 각자 건 돈을 돌려받아요.</p>`
+        <tr><td>${hw('03-1', '07-1')} 땡잡이</td><td>판의 최고가 1~9땡이면 잡음, 아니면 망통</td></tr>
+        <tr><td>${hw('04-1', '07-1')} 암행어사</td><td>판의 최고가 13·18광땡이면 잡음, 아니면 1끗</td></tr>
+        <tr><td>${hw('04-3', '09-3')} 구사</td><td>남은 상대가 모두 알리 이하면 재경기</td></tr>
+        <tr><td>${hw('04-1', '09-1')} 멍텅구리구사</td><td>남은 상대가 모두 9땡 이하면 재경기</td></tr>
+      </table><p>재경기는 판돈을 그대로 두고 남은 사람끼리 새로 받아요. 같은 족보로 이기면 판을 똑같이 나눠요. 하우스는 수수료를 떼지 않아요.</p>`
   },
 
   slots: {

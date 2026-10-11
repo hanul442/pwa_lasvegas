@@ -64,7 +64,8 @@ export const api = {
   // stakes: one amount per betting box in play, left to right.
   blackjackStart: (stakes, floor) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor } }),
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
-  baccarat: (stake, floor, betType) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType } }),
+  // sideBets: { PLAYER_PAIR?: stake, BANKER_PAIR?: stake } riding alongside the main bet.
+  baccarat: (stake, floor, betType, sideBets) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType, sideBets } }),
   // bets: [{ betType, target?, stake }], one per spot on the layout.
   rouletteSpin: (bets, floor) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
@@ -73,8 +74,11 @@ export const api = {
   matgoOpen: () => request('/api/matgo/open'),
   matgoStart: (stake, floor) => request('/api/matgo/start', { method: 'POST', body: { stake, floor } }),
   matgoAction: (roundId, move) => request('/api/matgo/action', { method: 'POST', body: { roundId, ...move } }),
+  gostopOpen: () => request('/api/gostop/open'),
+  gostopStart: (stake, floor) => request('/api/gostop/start', { method: 'POST', body: { stake, floor } }),
+  gostopAction: (roundId, move) => request('/api/gostop/action', { method: 'POST', body: { roundId, ...move } }),
   seotdaOpen: () => request('/api/seotda/open'),
-  seotdaStart: (stake, floor) => request('/api/seotda/start', { method: 'POST', body: { stake, floor } }),
+  seotdaStart: (stake, floor, players) => request('/api/seotda/start', { method: 'POST', body: { stake, floor, players } }),
   seotdaAction: (roundId, action) => request('/api/seotda/action', { method: 'POST', body: { roundId, action } }),
   holdemOpen: () => request('/api/holdem/open'),
   holdemSit: (buyIn, floor, opponents) => request('/api/holdem/sit', { method: 'POST', body: { buyIn, floor, opponents } }),
@@ -110,7 +114,9 @@ const MESSAGES = {
   INSURANCE_DECISION_REQUIRED: '먼저 인슈어런스를 걸지 정해 주세요.',
   RECHARGE_NOT_AVAILABLE: '지금은 충전할 수 없어요.',
   OPEN_MATGO_ROUND: '진행 중인 맞고 판이 있어요. 이어서 플레이해 주세요.',
+  OPEN_GOSTOP_ROUND: '진행 중인 고스톱 판이 있어요. 이어서 플레이해 주세요.',
   OPEN_SEOTDA_ROUND: '진행 중인 섯다 판이 있어요. 이어서 플레이해 주세요.',
+  INVALID_PLAYERS: '섯다 인원은 2명에서 5명까지예요.',
   NOT_YOUR_TURN: '지금은 상대 차례예요.',
   TARGET_REQUIRED: '바닥에서 가져올 패를 골라 주세요.',
   ROUND_NOT_ACTIONABLE: '이미 끝난 판이에요.',

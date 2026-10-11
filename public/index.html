@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="table.css">
   <link rel="stylesheet" href="hwatu.css">
+  <link rel="stylesheet" href="lounge.css">
 </head>
 <body>
   <div class="app-shell">
@@ -46,6 +47,7 @@
             <ul class="game-menu" data-game-grid></ul>
           </div>
         </div>
+        <div class="lounge" data-lounge aria-label="오늘의 라운지"></div>
       </section>
 
       <section class="surface" data-surface="games" aria-labelledby="games-title">
@@ -56,6 +58,8 @@
 
       <section class="surface" data-surface="ranking" aria-labelledby="ranking-title">
         <h1 id="ranking-title">랭킹</h1>
+        <div class="segmented segmented--two" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
+        <div class="season-head" data-season-head></div>
         <div class="tabs" role="tablist" data-rank-tabs></div>
         <ol class="rank-list" data-rank-list></ol>
       </section>

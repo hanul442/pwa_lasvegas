@@ -14,6 +14,7 @@ import { attachGuide } from './js/guide.js';
 import { mountHoldem } from './js/games/holdem.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
+import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -48,6 +49,7 @@ function showSurface(name, { focus = false } = {}) {
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
+  if (name === 'lobby' && state) { celebrateFloors(state); maybeOpenDaily(state, applyState); }
   if (name === 'profile') renderProfile();
   if (name === 'settings') openSettings(); else closeSettings();
   syncWakeLock();
@@ -106,15 +108,26 @@ window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveT
 
 // ---------- state ----------
 async function refresh() {
-  try { state = await api.state(); } catch (e) { walletEl.textContent = '오프라인'; return; }
+  let next;
+  try { next = await api.state(); } catch (e) { walletEl.textContent = '오프라인'; return; }
+  applyState(next);
+}
+
+const isActive = name => document.querySelector(`[data-surface="${name}"]`).classList.contains('is-active');
+
+// Every fresh server state lands here: wallet, lobby lounge, ranking and profile.
+function applyState(next) {
+  state = next;
   const available = state.user.account.available;
   // Show the balance as is on first load; only later changes roll.
   if (shownWallet === null || shownWallet === available) walletEl.textContent = formatCH(available);
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
   renderRecharge();
-  if (document.querySelector('[data-surface="ranking"]').classList.contains('is-active')) renderRanking();
-  if (document.querySelector('[data-surface="profile"]').classList.contains('is-active')) renderProfile();
+  renderLounge(document.querySelector('[data-lounge]'), state, applyState);
+  if (isActive('ranking')) renderRanking();
+  if (isActive('profile')) renderProfile();
+  if (isActive('lobby')) { celebrateFloors(state); maybeOpenDaily(state, applyState); }
 }
 
 // The lobby offers to sit back down at the last table played on this device.
@@ -130,6 +143,8 @@ function renderRecharge() {
   const slot = document.querySelector('[data-recharge-slot]');
   const r = state?.recharge;
   slot.replaceChildren();
+  const daily = dailyButton(state, applyState);
+  if (daily) slot.append(daily);
   const last = lastTable();
   if (last) {
     const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
@@ -224,11 +239,41 @@ function renderTiers() {
 }
 
 // ---------- ranking ----------
-const RANK_TABS = [['wealth', '자산'], ['profit', '수익'], ['highRoller', '베팅량']];
-let rankTab = 'wealth';
+// "이번 주" is the weekly season (resets Monday 00:00 KST, top three get prizes); "전체" is all time.
+const RANK_TABS = {
+  season: [['profit', '수익'], ['wins', '승리'], ['highRoller', '베팅량']],
+  allTime: [['wealth', '자산'], ['profit', '수익'], ['highRoller', '베팅량']]
+};
+let rankPeriod = 'season';
+let rankTab = 'profit';
+function timeLeft(iso) {
+  const ms = Math.max(0, Date.parse(iso) - Date.now());
+  const d = Math.floor(ms / 86_400_000), h = Math.floor(ms / 3_600_000) % 24, m = Math.floor(ms / 60_000) % 60;
+  return d > 0 ? `${d}일 ${h}시간` : h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+}
 function renderRanking() {
+  const season = state?.rankings?.season;
+  if (!season) rankPeriod = 'allTime';
+  const period = document.querySelector('[data-rank-period]');
+  period.replaceChildren(...[['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
+    const b = el('button', 'segment', label);
+    b.type = 'button';
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(key === rankPeriod));
+    b.disabled = key === 'season' && !season;
+    b.addEventListener('click', () => { rankPeriod = key; rankTab = RANK_TABS[key][0][0]; renderRanking(); });
+    return b;
+  }));
+  const head = document.querySelector('[data-season-head]');
+  head.replaceChildren();
+  if (rankPeriod === 'season' && season) {
+    const last = state.engagement?.lastSeason;
+    head.innerHTML = `<div class="season-card"><div><strong>${season.name}</strong><small>${timeLeft(season.endsAt)} 남음 · 월요일 0시에 새로 시작</small></div><ol class="season-prizes"><li><b>1위</b> 50M</li><li><b>2위</b> 30M</li><li><b>3위</b> 15M</li></ol></div>`
+      + (last?.podium?.length ? `<p class="season-last">지난 시즌 ${last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '');
+  }
+  if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
-  tabs.replaceChildren(...RANK_TABS.map(([key, label]) => {
+  tabs.replaceChildren(...RANK_TABS[rankPeriod].map(([key, label]) => {
     const b = el('button', `tab${key === rankTab ? ' is-active' : ''}`, label);
     b.type = 'button';
     b.setAttribute('role', 'tab');
@@ -236,17 +281,18 @@ function renderRanking() {
     b.addEventListener('click', () => { rankTab = key; renderRanking(); });
     return b;
   }));
-  const rows = state?.rankings?.allTime?.[rankTab] || [];
+  const rows = (rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
   const me = playerId();
+  const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
   document.querySelector('[data-rank-list]').replaceChildren(...rows.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}${r.rank <= 3 ? ` is-top is-top-${r.rank}` : ''}`);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}</span><span class="rank-value">${formatCH(r.value)}</span>`;
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}</span><span class="rank-value">${value(r)}</span>`;
     return li;
   }));
 }
 
 // ---------- profile ----------
-const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급' };
+const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', DAILY_BONUS: '출석 보너스', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟' };
 function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }
@@ -255,8 +301,16 @@ function renderProfile() {
   // One line per finished round: chip locks are skipped and a round shows its win or loss, not the chips handed back.
   const ledger = state.ledger.filter(x => x.type !== 'BET_LOCK').slice(0, 15).map(x => {
     const amount = x.type.startsWith('GAME_') && Number.isFinite(x.rawPnlDelta) ? x.rawPnlDelta : x.amount;
-    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${x.metadata.game}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
+    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${gameName(x.metadata.game)}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
   }).join('');
+  const eng = state.engagement || {};
+  const badges = (eng.badges || []).map(b => `<li class="badge badge--${b.rank}"><span class="badge-star" aria-hidden="true"></span><b>${b.rank}위</b><small>${b.name}</small></li>`).join('');
+  // Per-game record: win rate, biggest win and net, most played first.
+  const games = Object.entries(u.stats || {}).sort((x, y) => y[1].rounds - x[1].rounds).map(([g, s]) => {
+    const rate = s.rounds ? Math.round((s.wins / s.rounds) * 100) : 0;
+    return `<tr><th scope="row">${gameName(g)}</th><td>${s.rounds}</td><td>${rate}%</td><td>${formatCH(s.biggestWin)}</td><td class="${s.pnl > 0 ? 'pos' : s.pnl < 0 ? 'neg' : ''}">${s.pnl > 0 ? '+' : ''}${formatCH(s.pnl)}</td></tr>`;
+  }).join('');
+  const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
       <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)} CH</small></div>
@@ -265,7 +319,13 @@ function renderProfile() {
       <div><dt>총 손익</dt><dd class="${a.qualifiedPnl >= 0 ? 'pos' : 'neg'}">${a.qualifiedPnl >= 0 ? '+' : ''}${formatCH(a.qualifiedPnl)}</dd></div>
       <div><dt>총 베팅</dt><dd>${formatCH(a.totalWagered)}</dd></div>
       <div><dt>최고 자산</dt><dd>${formatCH(a.peakBankroll)}</dd></div>
+      <div><dt>승률</dt><dd>${totals.rounds ? Math.round((totals.wins / totals.rounds) * 100) : 0}%</dd></div>
+      <div><dt>최대 승리</dt><dd>${formatCH(totals.best)}</dd></div>
+      <div><dt>최장 연승</dt><dd>${eng.streak?.best || 0}연승${eng.streak?.current > 1 ? ` <small>지금 ${eng.streak.current}</small>` : ''}</dd></div>
     </dl>
+    ${badges ? `<h2 class="sub-head">시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
+    <h2 class="sub-head">게임별 기록</h2>
+    ${games ? `<div class="game-stats-wrap"><table class="game-stats"><thead><tr><th scope="col">게임</th><th scope="col">판</th><th scope="col">승률</th><th scope="col">최대 승리</th><th scope="col">손익</th></tr></thead><tbody>${games}</tbody></table></div>` : '<p class="lounge-note">아직 플레이한 게임이 없어요.</p>'}
     <h2 class="sub-head">층</h2><ul class="floor-rows">${floors}</ul>
     <h2 class="sub-head">최근 기록</h2><ul class="ledger">${ledger || '<li><span>아직 기록이 없어요</span></li>'}</ul>
     <h2 class="sub-head">플레이어 바꾸기 <small>데모</small></h2>

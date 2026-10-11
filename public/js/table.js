@@ -32,6 +32,7 @@ export class Table {
     this.listeners = [];
 
     const root = el('div', `table-screen table-screen--${game}`);
+    root.dataset.tier = this.tier.slug;
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>

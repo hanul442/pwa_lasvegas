@@ -32,6 +32,9 @@ async function request(path, { method = 'GET', body } = {}) {
 export const api = {
   state: () => request('/api/state'),
   recharge: () => request('/api/recharge/auto', { method: 'POST' }),
+  dailyClaim: () => request('/api/daily/claim', { method: 'POST' }),
+  missionClaim: missionId => request('/api/missions/claim', { method: 'POST', body: { missionId } }),
+  rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
   blackjackStart: (stakes, floor) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor } }),
@@ -77,7 +80,11 @@ const MESSAGES = {
   STALE_ACTION: '테이블 상황이 바뀌었어요. 다시 맞췄어요.',
   INVALID_RAISE: '레이즈 금액을 다시 골라 주세요.',
   CANNOT_CHECK: '지금은 체크할 수 없어요.',
-  SESSION_CLOSED: '이미 끝난 테이블이에요.'
+  SESSION_CLOSED: '이미 끝난 테이블이에요.',
+  DAILY_ALREADY_CLAIMED: '오늘 출석 보너스는 이미 받았어요.',
+  MISSION_NOT_DONE: '아직 미션을 끝내지 않았어요.',
+  MISSION_ALREADY_CLAIMED: '이미 받은 보상이에요.',
+  RESCUE_NOT_AVAILABLE: '지금은 럭키 카드를 뽑을 수 없어요.'
 };
 
 export function errorMessage(err) {

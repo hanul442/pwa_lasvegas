@@ -98,3 +98,24 @@ test('roulette result always 0..36',()=>{
 test('sic bo always rolls three dice and totals 3..18',()=>{
   for(let i=0;i<100;i++){const r=playSicBo(1_000_000,'BIG');assert.equal(r.dice.length,3);assert.ok(r.total>=3&&r.total<=18);}
 });
+
+test('roulette takes chips on many spots in one spin and pays each on its own', async () => {
+  const { playRouletteBets } = await import('../lib/games.mjs');
+  const bets = [
+    { betType: 'NUMBER', target: 17, stake: 100 },
+    { betType: 'RED', stake: 200 },
+    { betType: 'DOZEN', target: 2, stake: 300 },
+    { betType: 'COLUMN', target: 2, stake: 400 },
+    { betType: 'ODD', stake: 50 }
+  ];
+  // 17 is black, odd, second dozen, second column.
+  const r = playRouletteBets(bets, 17);
+  assert.equal(r.stake, 1050);
+  assert.deepEqual(r.bets.map(b => b.netPnl), [3500, -200, 600, 800, 50]);
+  assert.equal(r.netPnl, 3500 - 200 + 600 + 800 + 50);
+  // Zero loses every outside bet.
+  assert.equal(playRouletteBets([{ betType: 'EVEN', stake: 10 }, { betType: 'LOW', stake: 10 }, { betType: 'COLUMN', target: 3, stake: 10 }], 0).netPnl, -30);
+  assert.throws(() => playRouletteBets([{ betType: 'RED', stake: 1 }, { betType: 'RED', stake: 1 }]), /DUPLICATE_BET/);
+  assert.throws(() => playRouletteBets([{ betType: 'DOZEN', target: 4, stake: 1 }]), /INVALID_TARGET/);
+  assert.throws(() => playRouletteBets([]), /INVALID_BETS/);
+});

@@ -122,6 +122,9 @@ export async function mountSeotda(ctx) {
     if (names.length === 2) t.toast(`나 ${r.hands[ME]} · AI ${r.hands[OPP]}`);
     t.banner(`${label}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
     if (net > 0) { sound.win(); haptic([20, 60, 30]); t.glow(); } else if (net < 0) { sound.lose(); haptic(30); } else sound.push();
+    // 광땡 and 장땡 are the hands people remember.
+    const myHand = r.hands[ME] || '';
+    if (net > 0 && r.winner === ME && /광땡|장땡/.test(myHand)) await t.bigWin(net, { title: myHand, subtitle: '섯다' });
     await wait(900);
     // The whole pot slides to whoever took it; a split sends each stack home.
     const mine = [...(t.stackOf('ANTE')?.children || [])];

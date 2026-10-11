@@ -54,11 +54,11 @@ export const GUIDES = {
     id: 'roulette', title: '룰렛',
     steps: [
       { target: '.wheel', title: '공이 멈출 칸 맞히기', body: '0부터 36까지 37칸짜리 유럽식 휠이에요. 공이 멈춘 숫자로 승패가 정해져요.' },
-      ...betSteps({ zone: '.rl-layout', zoneTitle: '숫자 판에 걸기', zoneBody: '숫자 하나에 걸면 35배, 아래 빨강·검정, 홀·짝, 1–18·19–36은 1배예요.', startLabel: '스핀' }),
+      ...betSteps({ zone: '.rl-layout', zoneTitle: '숫자 판에 걸기', zoneBody: '여러 곳에 한꺼번에 걸 수 있어요. 숫자 하나는 35배, 12개 묶음과 2:1 열은 2배, 빨강·검정, 홀·짝, 1–18·19–36은 1배예요.', startLabel: '스핀' }),
       { target: '.rl-history', title: '최근 숫자', body: '방금 나온 숫자가 맨 앞에 쌓여요. 휠에는 기억이 없으니 다음 판은 언제나 새 판이에요.' },
       helpStep
     ],
-    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>0이 나오면 바깥쪽 베팅은 모두 집니다.</p>`
+    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>12개 묶음 / 열 (2:1)</td><td>2 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>한 판에 여러 곳에 동시에 걸 수 있고, 각 자리는 따로 정산돼요. 0이 나오면 바깥쪽 베팅은 모두 집니다.</p>`
   },
 
   dice: {

@@ -38,9 +38,16 @@ function boardMarkup() {
     const n = col * 3 + (3 - row);
     cells.push(`<button type="button" class="num num--${colorOf(n)}" data-zone="N${n}" style="grid-column:${col + 2};grid-row:${row + 1}" aria-label="${n}번">${n}</button>`);
   }
+  // "2 to 1" at the end of each row covers that column: top row is column 3.
+  for (let row = 0; row < 3; row++) cells.push(`<button type="button" class="num num--col" data-zone="C${3 - row}" style="grid-column:14;grid-row:${row + 1}" aria-label="${3 - row}열, 2배">2:1</button>`);
   return `<div class="rl-board">
     <button type="button" class="num num--green num--zero" data-zone="N0" aria-label="0번">0</button>
     ${cells.join('')}
+  </div>
+  <div class="rl-dozens">
+    <button type="button" class="zone" data-zone="D1"><strong>1st 12</strong></button>
+    <button type="button" class="zone" data-zone="D2"><strong>2nd 12</strong></button>
+    <button type="button" class="zone" data-zone="D3"><strong>3rd 12</strong></button>
   </div>
   <div class="rl-outside">
     <button type="button" class="zone" data-zone="LOW"><strong>1–18</strong></button>
@@ -52,8 +59,16 @@ function boardMarkup() {
   </div>`;
 }
 
+function zoneBet(zone) {
+  if (zone.startsWith('N')) return { betType: 'NUMBER', target: Number(zone.slice(1)) };
+  if (/^D\d$/.test(zone)) return { betType: 'DOZEN', target: Number(zone.slice(1)) };
+  if (/^C\d$/.test(zone)) return { betType: 'COLUMN', target: Number(zone.slice(1)) };
+  return { betType: zone };
+}
+
 export async function mountRoulette(ctx) {
-  const t = new Table({ ...ctx, game: 'roulette', title: 'Roulette', feltClass: 'felt--roulette' });
+  // Chips go on as many spots as you like before the spin, like a real layout.
+  const t = new Table({ ...ctx, game: 'roulette', title: 'Roulette', feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당' });
   t.body.innerHTML = `
     <div class="rl">
       <div class="rl-top">
@@ -66,7 +81,7 @@ export async function mountRoulette(ctx) {
         <ol class="rl-history" data-history aria-label="최근 번호"></ol>
       </div>
       <div class="rl-layout">${boardMarkup()}</div>
-      <p class="rl-payouts" aria-hidden="true">숫자 하나 35:1 · 색/홀짝/구간 1:1</p>
+      <p class="rl-payouts" aria-hidden="true">여러 곳에 함께 걸 수 있어요 · 숫자 35:1 · 12개/열 2:1 · 색/홀짝/구간 1:1</p>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
   const rotor = t.body.querySelector('.wheel-rotor');
@@ -140,18 +155,19 @@ export async function mountRoulette(ctx) {
 
   async function spin() {
     if (!t.betReady) return;
-    const zone = t.bet.zone;
-    const betType = zone.startsWith('N') ? 'NUMBER' : zone;
-    const target = zone.startsWith('N') ? Number(zone.slice(1)) : undefined;
+    const bets = t.betZones.map(zone => ({ zone, ...zoneBet(zone), stake: t.zoneTotal(zone) }));
     t.lock();
     let res;
-    try { res = await api.roulette(t.total, t.tier.floor, betType, target); }
+    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     await spinTo(res.round.number);
     await wait(250);
     const net = res.round.netPnl;
-    await t.settle(net, { label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` });
+    // Each spot is paid or raked on its own.
+    const zones = new Map(res.round.bets.map((b, i) => [bets[i].zone, b.netPnl]));
+    const hits = res.round.bets.filter(b => b.won).length;
+    await t.settle(net, { zones, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
     await t.syncBalance();
   }
 

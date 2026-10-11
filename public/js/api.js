@@ -2,9 +2,20 @@
 import { API_BASE } from './config.js';
 
 const PLAYER_KEY = 'vegas:player';
+const SESSION_KEY = 'vegas:session';
 
+// The signed-in player's id, for marking "me" in lists and keying per-player local notes.
 export function playerId() {
-  try { return localStorage.getItem(PLAYER_KEY) || 'hanseo'; } catch { return 'hanseo'; }
+  try { return localStorage.getItem(PLAYER_KEY) || ''; } catch { return ''; }
+}
+export function sessionToken() {
+  try { return localStorage.getItem(SESSION_KEY) || ''; } catch { return ''; }
+}
+export function saveSession(token, userId) {
+  try { localStorage.setItem(SESSION_KEY, token); localStorage.setItem(PLAYER_KEY, userId); } catch {}
+}
+export function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch {}
 }
 
 function key() {
@@ -16,7 +27,9 @@ export class ApiError extends Error {
 }
 
 async function request(path, { method = 'GET', body } = {}) {
-  const headers = { 'x-player-id': playerId() };
+  const headers = {};
+  const token = sessionToken();
+  if (token) headers.authorization = `Bearer ${token}`;
   if (method !== 'GET') { headers['content-type'] = 'application/json'; headers['x-idempotency-key'] = key(); }
   let res;
   try {
@@ -25,11 +38,20 @@ async function request(path, { method = 'GET', body } = {}) {
     throw new ApiError('NETWORK', 0);
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.error || 'BAD_REQUEST', res.status);
+  if (!res.ok) {
+    // A missing or expired session sends the player back to the sign-in screen.
+    if (data.error === 'AUTH_REQUIRED') { clearSession(); dispatchEvent(new CustomEvent('vegas:signed-out')); }
+    throw new ApiError(data.error || 'BAD_REQUEST', res.status);
+  }
   return data;
 }
 
 export const api = {
+  authOptions: () => request('/api/auth/options'),
+  signup: (username, password, claimId) => request('/api/auth/signup', { method: 'POST', body: { username, password, claimId } }),
+  login: (username, password) => request('/api/auth/login', { method: 'POST', body: { username, password } }),
+  logout: () => request('/api/auth/logout', { method: 'POST' }),
+  adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
   state: () => request('/api/state'),
   recharge: () => request('/api/recharge/auto', { method: 'POST' }),
   dailyClaim: () => request('/api/daily/claim', { method: 'POST' }),
@@ -66,6 +88,16 @@ export const api = {
 };
 
 const MESSAGES = {
+  AUTH_REQUIRED: '다시 로그인해 주세요.',
+  BAD_CREDENTIALS: '이름이나 비밀번호가 맞지 않아요.',
+  ACCOUNT_LOCKED: '비밀번호를 여러 번 틀렸어요. 10분 뒤에 다시 시도해 주세요.',
+  USERNAME_TAKEN: '이미 쓰고 있는 이름이에요. 다른 이름을 골라 주세요.',
+  INVALID_USERNAME: '이름은 한글·영문·숫자 2~12자로 정해 주세요.',
+  INVALID_PASSWORD: '비밀번호는 6자 이상으로 정해 주세요.',
+  PROFILE_NOT_CLAIMABLE: '이미 다른 계정이 이어받은 기록이에요.',
+  INVALID_AMOUNT: '금액을 다시 확인해 주세요.',
+  FORBIDDEN: '운영자만 할 수 있어요.',
+  SIGNUPS_CLOSED: '지금은 새 계정을 만들 수 없어요.',
   NETWORK: '서버에 연결할 수 없어요. 연결을 확인하고 다시 시도해 주세요.',
   INSUFFICIENT_BANKROLL: '칩이 부족해요. 베팅을 줄이거나 충전해 주세요.',
   FLOOR_LOCKED: '아직 잠긴 층이에요. 플레이 수익으로 열 수 있어요.',

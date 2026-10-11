@@ -16,7 +16,7 @@ function error(res,status,message){
 }
 async function readBody(req){let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>100_000)throw new Error('PAYLOAD_TOO_LARGE');}return raw?JSON.parse(raw):{};}
 async function api(req,res,url){
-  const {status,data}=await handleApi({method:req.method,header:name=>req.headers[name],body:()=>readBody(req)},url,store,process.env);
+  const {status,data}=await handleApi({method:req.method,header:name=>req.headers[name],body:()=>readBody(req)},url,store,{...process.env,AUTH_REQUIRED:true});
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
   res.end(JSON.stringify(data));
 }

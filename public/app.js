@@ -1,5 +1,7 @@
 // VEGAS client: floor navigation, lobby, rankings, profile, and mounting live tables.
-import { api, errorMessage, playerId } from './js/api.js';
+import { api, errorMessage, sessionToken, clearSession } from './js/api.js';
+import { openSignIn } from './js/auth.js';
+import { renderAdmin } from './js/admin.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
@@ -118,7 +120,8 @@ window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveT
 // ---------- state ----------
 async function refresh() {
   let next;
-  try { next = await api.state(); } catch (e) { walletEl.textContent = '오프라인'; return; }
+  if (!sessionToken()) return;
+  try { next = await api.state(); } catch (e) { if (e.code !== 'AUTH_REQUIRED') walletEl.textContent = '오프라인'; return; }
   applyState(next);
 }
 
@@ -291,7 +294,7 @@ function renderRanking() {
     return b;
   }));
   const rows = (rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
-  const me = playerId();
+  const me = state?.user?.id;
   const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
   document.querySelector('[data-rank-list]').replaceChildren(...rows.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}${r.rank <= 3 ? ` is-top is-top-${r.rank}` : ''}`);
@@ -302,7 +305,7 @@ function renderRanking() {
 }
 
 // ---------- profile ----------
-const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', DAILY_BONUS: '출석 보너스', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟' };
+const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '출석 보너스', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟' };
 function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }
@@ -338,14 +341,32 @@ function renderProfile() {
     ${games ? `<div class="game-stats-wrap"><table class="game-stats"><thead><tr><th scope="col">게임</th><th scope="col">판</th><th scope="col">승률</th><th scope="col">최대 승리</th><th scope="col">손익</th></tr></thead><tbody>${games}</tbody></table></div>` : '<p class="lounge-note">아직 플레이한 게임이 없어요.</p>'}
     <h2 class="sub-head">층</h2><ul class="floor-rows">${floors}</ul>
     <h2 class="sub-head">최근 기록</h2><ul class="ledger">${ledger || '<li><span>아직 기록이 없어요</span></li>'}</ul>
-    <h2 class="sub-head">플레이어 바꾸기 <small>데모</small></h2>
-    <div class="player-switch">${state.users.map(p => `<button type="button" class="pill-button${p.id === u.id ? ' is-active' : ''}" data-player="${p.id}">${p.nickname}</button>`).join('')}</div>`;
-  root.querySelectorAll('[data-player]').forEach(b => b.addEventListener('click', () => {
-    try { localStorage.setItem('vegas:player', b.dataset.player); } catch {}
-    shownWallet = null;
-    refresh();
-  }));
+    <h2 class="sub-head">계정</h2>
+    <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
+  renderAdmin(root, state, applyState);
+  root.querySelector('[data-sign-out]').addEventListener('click', async () => {
+    await api.logout().catch(() => {});
+    signedOut();
+  });
 }
+
+// ---------- account ----------
+function signedIn(next) {
+  shownWallet = null;
+  applyState(next);
+  renderTiers();
+  showSurface('lobby');
+}
+function signedOut(notice) {
+  clearSession();
+  if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) showSurface('lobby');
+  state = null;
+  shownWallet = null;
+  walletEl.textContent = '—';
+  openSignIn(signedIn, { notice });
+}
+// The API saw a missing or expired session.
+addEventListener('vegas:signed-out', () => signedOut('로그인이 끝났어요. 다시 로그인해 주세요.'));
 
 // ---------- settings ----------
 let settingsCleanup = null;
@@ -402,5 +423,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 renderLobby();
 showSurface('lobby');
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-refresh().then(() => renderTiers());
+if (sessionToken()) refresh().then(() => renderTiers());
+else openSignIn(signedIn);
 dealVignette();

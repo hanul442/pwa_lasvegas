@@ -2,16 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FLOORS, STAKE_TIERS, stakeTierFor } from '../lib/constants.mjs';
 
-test('stake tiers are contiguous for approved chip bands', () => {
-  assert.equal(STAKE_TIERS.length, 4);
-  assert.equal(stakeTierFor(100_000)?.slug, 'low');
+test('stake tiers run from 1만 to 1조 with no gaps', () => {
+  assert.equal(STAKE_TIERS.length, 6);
+  assert.equal(stakeTierFor(9_999), null);
+  assert.equal(stakeTierFor(10_000)?.slug, 'low');
   assert.equal(stakeTierFor(999_999)?.slug, 'low');
   assert.equal(stakeTierFor(1_000_000)?.slug, 'mid');
-  assert.equal(stakeTierFor(9_999_999)?.slug, 'mid');
-  assert.equal(stakeTierFor(10_000_000)?.slug, 'high');
-  assert.equal(stakeTierFor(49_999_999)?.slug, 'high');
-  assert.equal(stakeTierFor(50_000_000)?.slug, 'vip');
-  assert.equal(stakeTierFor(10_000_000_000)?.slug, 'vip');
+  assert.equal(stakeTierFor(99_999_999)?.slug, 'high');
+  assert.equal(stakeTierFor(100_000_000)?.slug, 'vip');
+  assert.equal(stakeTierFor(1_000_000_000)?.slug, 'royal');
+  assert.equal(stakeTierFor(10_000_000_000)?.slug, 'vault');
+  assert.equal(stakeTierFor(1_000_000_000_000)?.slug, 'vault');
+  assert.equal(stakeTierFor(1_000_000_000_001), null);
+  for (let i = 1; i < STAKE_TIERS.length; i++) assert.equal(STAKE_TIERS[i].minBet, STAKE_TIERS[i - 1].maxBet + 1);
+  assert.equal(FLOORS.at(-1).maxBet, 1_000_000_000_000);
 });
 
 test('every floor exposes at least one valid stake tier', () => {

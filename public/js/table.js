@@ -44,7 +44,7 @@ export class Table {
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
-        <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)}원</span></div>
+        <div class="table-name"><strong>${title}</strong><span>${this.tier.name} · ${formatCH(this.tier.min)}–${formatCH(this.tier.max)}원</span></div>
         <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
         <div class="table-tools">
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>

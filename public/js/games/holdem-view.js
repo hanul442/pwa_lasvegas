@@ -9,7 +9,7 @@ import { voice, handLine } from '../voice.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
-export const BLINDS = { low: 5_000, mid: 50_000, high: 500_000, vip: 2_500_000 };
+export const BLINDS = { low: 5_000, mid: 50_000, high: 500_000, vip: 10_000_000, royal: 100_000_000, vault: 1_000_000_000 };
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {
@@ -81,7 +81,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       const k = pk.me >= 0 ? (i - pk.me + n) % n : i;
       const p = seatPoint(k, n);
       const side = i !== pk.me && Math.abs(p.x - 50) > 20; // left/right of the board, not top or bottom
-      const node = el('div', `pk-seat${i === pk.me ? ' pk-seat--hero' : ''}${side ? ' pk-seat--side' : ''}`);
+      const node = el('div', `pk-seat${i === pk.me ? ' pk-seat--hero' : ''}${side ? ` pk-seat--side pk-seat--${p.x < 50 ? 'l' : 'r'}` : ''}`);
       node.dataset.seat = i;
       node.style.setProperty('--x', p.x.toFixed(2));
       node.style.setProperty('--y', p.y.toFixed(2));
@@ -89,7 +89,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         <div class="hand pk-cards" data-cards></div>
         <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><em class="pk-tag" data-tag></em></div>`;
       const bet = el('div', `pk-bet${side ? ' pk-bet--side' : ''}`);
-      bet.style.setProperty('--x', (50 + (p.x - 50) * 0.55).toFixed(2));
+      bet.style.setProperty('--x', (50 + (p.x - 50) * (side ? 0.3 : 0.55)).toFixed(2));
       bet.style.setProperty('--y', (k === 0 && pk.me >= 0 ? 88 : 50 + (p.y - 50) * 0.56).toFixed(2));
       bet.innerHTML = '<span class="pk-bet-stack"></span><b></b>';
       seatsEl.append(node, bet);

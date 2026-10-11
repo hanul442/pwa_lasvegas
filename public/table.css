@@ -455,9 +455,9 @@
 .pk-seat--hero .pk-cards{--card-w:clamp(58px,16vw,80px);margin-bottom:4px}
 .pk-seat--hero .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.2)}
 .pk-plate{position:relative;display:grid;justify-items:center;min-width:78px;padding:5px 10px 6px;border-radius:12px;background:#0a0b0deb;box-shadow:0 0 0 1px #ffffff1f,0 8px 18px #0009;line-height:1.15;transition:box-shadow .25s,background .25s,color .25s;z-index:2}
-.pk-plate b{font:650 13px var(--display);font-stretch:112%;letter-spacing:.02em}
+.pk-plate b{font:650 14px var(--display);font-stretch:112%;letter-spacing:.02em}
 .pk-plate span{font:600 14px var(--sans);font-variant-numeric:tabular-nums}
-.pk-plate small{font-size:11px;color:var(--smoke)}
+.pk-plate small{font-size:12px;color:var(--smoke)}
 .pk-plate small:empty{display:none}
 .pk-seat.is-turn .pk-plate{box-shadow:0 0 0 1.5px var(--white),0 8px 18px #0009}
 .pk-seat.is-thinking .pk-plate{animation:pk-think 1s ease-in-out infinite}
@@ -470,14 +470,14 @@
 .pk-tag.is-shown{opacity:1;transform:translate(-50%,0) scale(1)}
 .pk-tag.is-aggr,.pk-tag.is-win{background:var(--white);color:var(--ink);border-color:var(--white)}
 .pk-tag.is-fold{color:var(--smoke)}
-.pk-seat--hero .pk-tag{top:auto;bottom:calc(100% + 6px);left:calc(100% + 6px);transform:none}
+.pk-seat--hero .pk-tag{top:50%;bottom:auto;left:calc(100% + 8px);transform:translateY(-50%)}
 .pk-handname{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);padding:2px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:650 11px var(--sans);white-space:nowrap;box-shadow:0 6px 14px #0008;z-index:3}
 
 /* bets in front of each seat */
 .pk-bet{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;visibility:hidden;z-index:3;pointer-events:none}
 .pk-bet.is-shown{visibility:visible}
 .pk-bet-stack{position:relative;width:26px;height:26px}
-.pk-bet b{font:650 13px var(--sans);font-variant-numeric:tabular-nums;padding:1px 6px;border-radius:999px;background:#0000004d}
+.pk-bet b{font:650 14px var(--sans);font-variant-numeric:tabular-nums;padding:2px 8px;border-radius:999px;background:#000000b3;box-shadow:0 0 0 1px #ffffff1f;white-space:nowrap}
 .pk-button{position:absolute;left:calc(var(--x,50) * 1%);top:calc(var(--y,50) * 1%);width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;display:grid;place-items:center;background:var(--white);color:var(--ink);font:800 11px var(--display);box-shadow:0 2px 0 #9aa0a8,0 6px 10px #0008;opacity:0;transition:left .5s var(--ease-out),top .5s var(--ease-out),opacity .3s;z-index:5;pointer-events:none}
 .pk-button.is-shown{opacity:1}
 .pk-flying{--size:30px;position:fixed;z-index:100;margin:-15px 0 0 -15px;pointer-events:none}

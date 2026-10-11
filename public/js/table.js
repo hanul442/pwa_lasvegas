@@ -1,6 +1,7 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, TIERS } from './chips.js';
+import { bigWin, isBigWin } from './bigwin.js';
 
 // Narrow phones show the balance as 12.5M so the top bar keeps room for its buttons.
 const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
@@ -11,12 +12,18 @@ function recall(key) { try { return JSON.parse(localStorage.getItem(key) || 'nul
 function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
 
 export class Table {
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false }) {
+  // multi: separate bets per zone. zoneMin: every zone must meet the table minimum (blackjack
+  // boxes) rather than the total (chips spread over a roulette layout).
+  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당' }) {
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
+    this.nickname = state?.user?.nickname ?? '';
+    this.title = title;
     this.shownBalance = this.available;
     this.multi = multi;
+    this.zoneMin = zoneMin;
+    this.zoneWord = zoneWord;
     this.bets = new Map();
     this.history = [];
     this.focus = null;
@@ -201,7 +208,7 @@ export class Table {
     if (this.locked || this.busy) return;
     if (!this.multi) { const held = this.bet.zone; if (held && held !== zoneId) await this.moveBet(held, zoneId); }
     this.setFocus(zoneId);
-    if (this.zoneTotal(zoneId) + value > this.tier.max) return this.reject(`${this.multi ? '박스당' : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
+    if (this.zoneTotal(zoneId) + value > this.tier.max) return this.reject(`${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
     if (this.total + value > this.available) return this.reject('칩이 부족해요');
     this.record(zoneId, value);
     const chip = this.pushChip(zoneId, value);
@@ -284,7 +291,7 @@ export class Table {
     for (const zoneId of this.betZones) {
       const now = this.zoneTotal(zoneId);
       // Halving never drops a bet under the table minimum.
-      const target = Math.max(Math.ceil(this.tier.min / step) * step, Math.floor(now / 2 / step) * step);
+      const target = Math.max(this.zoneMin ? Math.ceil(this.tier.min / step) * step : step, Math.floor(now / 2 / step) * step);
       if (target < now) { this.restack(zoneId, target); changed = true; }
     }
     if (!changed) return;
@@ -300,7 +307,7 @@ export class Table {
       const now = this.zoneTotal(zoneId);
       const room = Math.min(this.tier.max - now, this.available - this.total);
       const want = Math.min(now, room);
-      if (want < now) blocked = room === this.tier.max - now ? `${this.multi ? '박스당' : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요';
+      if (want < now) blocked = room === this.tier.max - now ? `${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요';
       let sum = 0;
       for (const v of breakdown(want, this.tier.chips, 20)) {
         if (sum + v > want) break;
@@ -320,7 +327,7 @@ export class Table {
   // The zone the 최대 button fills: the focused zone, the bet already down, or the only zone.
   get maxZone() {
     const open = [...this.zones.keys()].filter(z => !this.passive.has(z));
-    if (this.multi) return this.focus || open[0] || null;
+    if (this.multi) return this.focus || (this.zoneMin ? open[0] : null) || null;
     return this.bet.zone || (open.length === 1 ? open[0] : null);
   }
 
@@ -395,8 +402,8 @@ export class Table {
   refreshBet() {
     this.betEl.textContent = formatCH(this.total);
     const zones = this.betZones;
-    const short = zones.some(z => this.zoneTotal(z) < this.tier.min);
-    this.hint(short ? `${this.multi && zones.length > 1 ? '박스마다 ' : ''}최소 ${formatCH(this.tier.min)}` : '');
+    const short = this.zoneMin ? zones.some(z => this.zoneTotal(z) < this.tier.min) : this.total > 0 && this.total < this.tier.min;
+    this.hint(short ? `${this.multi && this.zoneMin && zones.length > 1 ? '박스마다 ' : this.zoneMin ? '' : '합계 '}최소 ${formatCH(this.tier.min)}` : '');
     if (this.multi) this.zones.forEach((node, id) => {
       const tag = node.querySelector('.zone-amount');
       if (tag) tag.textContent = this.zoneTotal(id) ? formatCH(this.zoneTotal(id)) : '';
@@ -409,7 +416,8 @@ export class Table {
 
   get betReady() {
     const zones = this.betZones;
-    return zones.length > 0 && this.total <= this.available && zones.every(z => this.zoneTotal(z) >= this.tier.min && this.zoneTotal(z) <= this.tier.max);
+    const enough = this.zoneMin ? zones.every(z => this.zoneTotal(z) >= this.tier.min) : this.total >= this.tier.min;
+    return zones.length > 0 && this.total <= this.available && enough && zones.every(z => this.zoneTotal(z) <= this.tier.max);
   }
 
   // Idle action row shared by every game: clear, rebet, and the primary deal/spin/roll.
@@ -447,7 +455,10 @@ export class Table {
 
   // Resolve the bets on the felt: winnings slide in from the rack, losses get raked away.
   // `zones` maps zone id to its own net; without it the whole net belongs to the one bet.
-  async settle(net, { label, kind, zones } = {}) {
+  // `big` names a moment worth stopping the table for ({ title, subtitle }); any win of five
+  // times the stake or more gets one anyway.
+  async settle(net, { label, kind, zones, big } = {}) {
+    const staked = this.total;
     const held = [...this.bets.keys()].filter(z => this.chipsOf(z).length);
     const nets = zones || new Map([[held[0], net]]);
     const rack = this.rack.getBoundingClientRect();
@@ -467,6 +478,7 @@ export class Table {
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
+    if (net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: `${Math.floor(net / staked)}×` });
     await wait(net > 0 ? 900 : 650);
     const moves = [];
     const balance = this.balanceEl.getBoundingClientRect();
@@ -524,6 +536,10 @@ export class Table {
     node.classList.add('is-shown');
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => node.classList.remove('is-shown'), 2600);
+  }
+
+  bigWin(amount, { title, subtitle } = {}) {
+    return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname });
   }
 
   glow() {

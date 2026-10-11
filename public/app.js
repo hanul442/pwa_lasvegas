@@ -15,6 +15,7 @@ import { mountHoldem } from './js/games/holdem.js';
 import { mountSlots } from './js/games/slots.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
+import { renderDuels } from './js/social.js';
 import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
@@ -291,6 +292,7 @@ function renderRanking() {
     li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}</span><span class="rank-value">${value(r)}</span>`;
     return li;
   }));
+  renderDuels(document.querySelector('[data-duels]'), state, applyState);
 }
 
 // ---------- profile ----------

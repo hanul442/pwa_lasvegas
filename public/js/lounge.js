@@ -3,6 +3,7 @@
 import { api, errorMessage, playerId } from './api.js';
 import { el, formatCH, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip } from './chips.js';
+import { duelInviteBlock, watchBlock } from './social.js';
 
 const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯' };
 export const gameName = g => GAME_KO[g] || g || '';
@@ -245,7 +246,12 @@ export function renderLounge(root, state, onChanged) {
   if (!state?.engagement) { root.replaceChildren(); return; }
   const blocks = [];
   if (state.engagement.rescue?.eligible) blocks.push(rescueBlock(state, onChanged));
-  blocks.push(missionsBlock(state, onChanged), feedBlock(state), floorBlock(state));
+  const invites = duelInviteBlock(state, onChanged);
+  if (invites) blocks.push(invites);
+  blocks.push(missionsBlock(state, onChanged));
+  const watch = watchBlock(state);
+  if (watch) blocks.push(watch);
+  blocks.push(feedBlock(state), floorBlock(state));
   root.replaceChildren(...blocks);
 }
 

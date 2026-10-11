@@ -34,6 +34,9 @@ export const api = {
   recharge: () => request('/api/recharge/auto', { method: 'POST' }),
   dailyClaim: () => request('/api/daily/claim', { method: 'POST' }),
   missionClaim: missionId => request('/api/missions/claim', { method: 'POST', body: { missionId } }),
+  challenge: (opponentId, metric) => request('/api/social/challenges', { method: 'POST', body: { opponentId, metric } }),
+  challengeAccept: id => request(`/api/social/challenges/${encodeURIComponent(id)}/accept`, { method: 'POST' }),
+  challengeCancel: id => request(`/api/social/challenges/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
@@ -87,7 +90,11 @@ const MESSAGES = {
   DAILY_ALREADY_CLAIMED: '오늘 출석 보너스는 이미 받았어요.',
   MISSION_NOT_DONE: '아직 미션을 끝내지 않았어요.',
   MISSION_ALREADY_CLAIMED: '이미 받은 보상이에요.',
-  RESCUE_NOT_AVAILABLE: '지금은 럭키 카드를 뽑을 수 없어요.'
+  RESCUE_NOT_AVAILABLE: '지금은 럭키 카드를 뽑을 수 없어요.',
+  CHALLENGE_ALREADY_OPEN: '이 친구와 같은 대결이 이미 진행 중이에요.',
+  CHALLENGE_NOT_PENDING: '이미 답한 대결 신청이에요.',
+  CHALLENGE_NOT_OPEN: '이미 끝난 대결이에요.',
+  CHALLENGE_NOT_FOUND: '대결을 찾을 수 없어요.'
 };
 
 export function errorMessage(err) {

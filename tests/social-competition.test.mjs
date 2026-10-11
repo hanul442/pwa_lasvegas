@@ -107,3 +107,33 @@ test('social lifecycle fails closed on invalid targets and metrics', () => {
   assert.throws(() => createChallenge(state, 'hanseo', 'hanseo', 'WINS'), { message: 'INVALID_SOCIAL_TARGET' });
   assert.throws(() => createChallenge(state, 'hanseo', 'zero', 'TOTAL_WAGERED'), { message: 'INVALID_CHALLENGE_METRIC' });
 });
+
+test('a duel runs a week, scores table results only, and pays its winner once', async () => {
+  const { settleChallenges, CHALLENGE_PRIZE } = await import('../lib/social-competition.mjs');
+  const state = defaultState();
+  createChallenge(state, 'hanseo', 'zero', 'WINS', { now: '2026-10-12T00:00:00.000Z', challengeId: 'duel' });
+  const accepted = acceptChallenge(state, 'zero', 'duel', { now: '2026-10-12T01:00:00.000Z' });
+  assert.equal(accepted.endsAt, '2026-10-19T01:00:00.000Z');
+  const tx = (userId, pnl, at) => state.ledger.push({ id: `t${state.ledger.length}`, userId, type: pnl > 0 ? 'GAME_WIN' : 'GAME_LOSS', amount: pnl, qualifiedPnlDelta: pnl, rawPnlDelta: pnl, createdAt: at, metadata: { game: 'Baccarat', stake: 1 } });
+  tx('hanseo', 100, '2026-10-12T02:00:00.000Z');
+  tx('hanseo', 100, '2026-10-13T02:00:00.000Z');
+  tx('zero', 900, '2026-10-12T03:00:00.000Z');
+  tx('zero', 900, '2026-10-11T03:00:00.000Z'); // before the duel: does not count
+  const live = buildSocialCompetitionSnapshot(state, 'hanseo').challenges[0];
+  assert.deepEqual(live.score, { me: 2, them: 1 });
+  const before = state.users.hanseo.account.available;
+  assert.deepEqual(settleChallenges(state, Date.parse('2026-10-18T00:00:00.000Z')), []);
+  assert.deepEqual(settleChallenges(state, Date.parse('2026-10-19T02:00:00.000Z')), ['duel']);
+  assert.equal(state.users.hanseo.account.available, before + CHALLENGE_PRIZE);
+  assert.equal(buildSocialCompetitionSnapshot(state, 'zero').challenges[0].winner, 'THEM');
+  assert.deepEqual(settleChallenges(state, Date.parse('2026-10-20T00:00:00.000Z')), []);
+  assert.equal(state.users.hanseo.account.available, before + CHALLENGE_PRIZE);
+});
+
+test('unanswered invitations lapse after three days', async () => {
+  const { settleChallenges } = await import('../lib/social-competition.mjs');
+  const state = defaultState();
+  createChallenge(state, 'hanseo', 'zero', 'QUALIFIED_PROFIT', { now: '2026-10-12T00:00:00.000Z', challengeId: 'old' });
+  settleChallenges(state, Date.parse('2026-10-15T00:00:01.000Z'));
+  assert.equal(buildSocialCompetitionSnapshot(state, 'hanseo').challenges[0].status, 'EXPIRED');
+});

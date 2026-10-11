@@ -2,7 +2,8 @@ import { assessDeployment } from '../lib/deployment-provenance.mjs';
 
 const base = (process.env.DEPLOY_URL || '').replace(/\/$/, '');
 const expectedCommit = process.env.EXPECTED_COMMIT || process.env.GITHUB_SHA || '';
-const playerId = process.env.SMOKE_PLAYER_ID || 'hanseo';
+// /api/state needs a signed-in player: pass a session token from a test account.
+const token = process.env.SMOKE_TOKEN || '';
 
 if (!base) {
   console.error('DEPLOY_URL is required');
@@ -33,7 +34,7 @@ try {
   const [health, version, state] = await Promise.all([
     get('/api/health'),
     get('/api/version'),
-    get('/api/state', { 'x-player-id': playerId })
+    get('/api/state', token ? { authorization: `Bearer ${token}` } : {})
   ]);
   const result = assessDeployment({ expectedCommit, version, health, state });
   console.log(JSON.stringify(result, null, 2));

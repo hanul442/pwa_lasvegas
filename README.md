@@ -4,20 +4,17 @@ A fictional-chip social table-game project. **CH has no real-world monetary valu
 
 ## Live preview
 
-- Site: https://hanul442.github.io/pwa_lasvegas/ (GitHub Pages)
-- API: https://vegas-api.kimwriter222.workers.dev (Cloudflare Worker, see `worker/` and `wrangler.toml`)
+- Site and API: https://pwa-lasvegas.kimwriter222.workers.dev (one Cloudflare Worker, see `worker/` and `wrangler.toml`)
 - GitHub: https://github.com/hanul442/pwa_lasvegas
 - Current deployment is a **preview build**. There is no login yet, so do not treat demo player switching as real identity.
 
 ## Deploy
 
-Every push to `main` runs `.github/workflows/deploy.yml`, the same setup as gnomon_analytics:
+Cloudflare Workers Builds is connected to this repository: a push to `main` deploys to production and other branches get preview builds.
 
-- `public/` is published to GitHub Pages. Asset paths are relative, so it works under `/pwa_lasvegas/`.
-- The game API (`lib/api.mjs`) runs in a Cloudflare Worker. One Durable Object (`VegasFloor`) keeps the floor's state and applies bets one at a time.
-- `public/js/config.js` points the Pages site at the Worker. Locally the API is the same origin (`npm run dev`).
-
-One-time setup: add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and set Settings → Pages → Source to **GitHub Actions**. Run the Worker locally with `npx wrangler dev`.
+- `public/` is served as the Worker's static assets, and `/api/*` runs the game API (`lib/api.mjs`).
+- One Durable Object (`VegasFloor`) keeps the floor's state and applies bets one at a time.
+- Locally, `npm run dev` runs the same API on Node with a JSON file store, and `npx wrangler dev` runs the Worker.
 
 ## PWA readiness
 

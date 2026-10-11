@@ -1,12 +1,17 @@
-# Game API on Cloudflare Workers. Deployed by .github/workflows/deploy.yml on every push to main.
-name = "vegas-api"
+# The whole app on Cloudflare: public/ is served as static assets and /api/* runs the game Worker.
+# Cloudflare Workers Builds deploys it from GitHub (main to production, other branches as previews).
+name = "pwa-lasvegas"
 main = "worker/index.mjs"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+[assets]
+directory = "./public"
+
 [vars]
-ALLOW_ORIGINS = "https://hanul442.github.io,http://localhost:3000,http://localhost:3100,http://localhost:8787"
+# Only needed when a page on another origin calls the API, e.g. the local Node dev server.
+ALLOW_ORIGINS = "http://localhost:3000,http://localhost:3100"
 
 [[durable_objects.bindings]]
 name = "FLOOR"

@@ -58,7 +58,7 @@ class Coach {
     const s = this.step();
     s.enter?.(this.table, this.state);
     const body = (Array.isArray(s.body) ? s.body : [s.body]).map(p => `<p>${p}</p>`).join('');
-    this.root.querySelector('[data-copy]').innerHTML = `<h3>${s.title}</h3>${body}${s.do ? `<div class="coach-do" data-do>${s.do}</div>` : ''}`;
+    this.root.querySelector('[data-copy]').innerHTML = `<h3>${s.title}</h3>${body}${s.eg ? `<p class="coach-eg">${s.eg}</p>` : ''}${s.do ? `<div class="coach-do" data-do>${s.do}</div>` : ''}`;
     this.root.querySelector('[data-count]').textContent = `${this.index + 1} / ${this.def.steps.length}`;
     this.root.querySelector('[data-prev]').disabled = this.index === 0;
     const next = this.root.querySelector('[data-next]');

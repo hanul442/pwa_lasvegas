@@ -1,0 +1,63 @@
+// Big news as a banner that drops in from the top of the screen: someone's jackpot, a huge
+// win, the season winner, a duel aimed at you (lib/news.mjs decides what counts). Polls
+// quietly while the app is open; news from while you were away shows on your return.
+import { api, playerId } from './api.js';
+import { el, haptic } from './fx.js';
+
+const POLL = 20_000;
+const SHOW = 5200;
+const BACKLOG = 3; // at most this many banners for what happened while you were away
+const keyFor = () => `vegas:news-at:${playerId()}`;
+
+let timer = null, queue = [], showing = false, busy = false;
+
+function cursor() {
+  try { return Number(localStorage.getItem(keyFor())) || 0; } catch { return 0; }
+}
+function setCursor(ms) { try { localStorage.setItem(keyFor(), String(ms)); } catch {} }
+
+async function poll() {
+  if (busy || document.hidden) return;
+  busy = true;
+  try {
+    // First time on this device: start from ten minutes ago rather than replaying history.
+    const since = cursor() || Date.now() - 10 * 60_000;
+    const out = await api.news(since);
+    setCursor(out.now);
+    const fresh = out.items.filter(n => !queue.some(q => q.id === n.id)).slice(0, BACKLOG).reverse();
+    queue.push(...fresh);
+    next();
+  } catch {} finally { busy = false; }
+}
+
+function next() {
+  if (showing || !queue.length) return;
+  showing = true;
+  const n = queue.shift();
+  const banner = el('div', `news-banner news-banner--${n.type.toLowerCase().replace(/_/g, '-')}`);
+  banner.setAttribute('role', 'status');
+  banner.innerHTML = '<i class="news-star" aria-hidden="true"></i><div class="news-text"><b></b><span></span></div>';
+  banner.querySelector('b').textContent = n.title;
+  banner.querySelector('span').textContent = n.body;
+  document.body.append(banner);
+  requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('is-open')));
+  if (n.push) haptic(25);
+  let gone = false;
+  const close = () => {
+    if (gone) return;
+    gone = true;
+    banner.classList.remove('is-open');
+    setTimeout(() => { banner.remove(); showing = false; next(); }, 300);
+  };
+  banner.addEventListener('click', close);
+  setTimeout(close, SHOW);
+}
+
+export function startNews() {
+  clearInterval(timer);
+  timer = setInterval(poll, POLL);
+  setTimeout(poll, 2500);
+}
+export function stopNews() { clearInterval(timer); timer = null; queue = []; }
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden && timer) poll(); });

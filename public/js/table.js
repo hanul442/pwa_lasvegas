@@ -1,7 +1,7 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, TIERS } from './chips.js';
-import { bigWin, isBigWin } from './bigwin.js';
+import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
 
 // Narrow phones show the balance as 12억 5천만 so the top bar keeps room for its buttons.
 const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
@@ -486,7 +486,7 @@ export class Table {
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
-    if (net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: `${Math.floor(net / staked)}×` });
+    if (net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: staked > 0 && net >= staked * BIG_WIN_MULTIPLE ? `${Math.floor(net / staked)}×` : '대박' });
     await wait(net > 0 ? 900 : 650);
     const moves = [];
     const balance = this.balanceEl.getBoundingClientRect();

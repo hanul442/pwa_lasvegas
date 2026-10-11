@@ -481,6 +481,8 @@
 .pk-button.is-shown{opacity:1}
 .pk-flying{--size:30px;position:fixed;z-index:100;margin:-15px 0 0 -15px;pointer-events:none}
 .pk-flying .chip-label{display:none}
+.chip-flyer{position:fixed;z-index:100;margin:0;pointer-events:none;translate:none;rotate:none}
+.chip-flyer .chip-label{display:none}
 
 /* sit down: buy-in circle and table size */
 .pk-sitdown{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:grid;justify-items:center;gap:12px}

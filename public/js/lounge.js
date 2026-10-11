@@ -238,7 +238,7 @@ function floorBlock(state) {
   if (!next) { box.innerHTML = `<header class="lounge-head"><h2>${top?.name}</h2><small>가장 높은 층에 있어요</small></header>`; return box; }
   box.innerHTML = `<header class="lounge-head"><h2>다음 층 ${next.name}</h2><small>지금 ${top?.name || ''}</small></header>
     <span class="mission-bar mission-bar--floor"><i style="width:${Math.round(next.progress * 100)}%"></i></span>
-    <p class="lounge-note">누적 수익을 ${formatCH(next.remaining)} 더 쌓으면 올라가요.</p>`;
+    <p class="lounge-note">보유 칩이 ${formatCH(next.remaining)} 더 모이면 올라가요.</p>`;
   return box;
 }
 

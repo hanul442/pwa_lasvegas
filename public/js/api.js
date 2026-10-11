@@ -123,7 +123,7 @@ const MESSAGES = {
   SIGNUPS_CLOSED: '지금은 새 계정을 만들 수 없어요.',
   NETWORK: '서버에 연결할 수 없어요. 연결을 확인하고 다시 시도해 주세요.',
   INSUFFICIENT_BANKROLL: '칩이 부족해요. 베팅을 줄이거나 충전해 주세요.',
-  FLOOR_LOCKED: '아직 잠긴 층이에요. 플레이 수익으로 열 수 있어요.',
+  FLOOR_LOCKED: '아직 잠긴 층이에요. 보유 칩을 늘리면 열려요.',
   BET_OUTSIDE_TABLE_LIMIT: '이 테이블의 베팅 한도를 벗어났어요.',
   STAKE_TIER_NOT_ALLOWED: '이 테이블에서 쓸 수 없는 베팅 금액이에요.',
   OPEN_BLACKJACK_ROUND: '진행 중인 블랙잭 판이 있어요. 이어서 플레이해 주세요.',

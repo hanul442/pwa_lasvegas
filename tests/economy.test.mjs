@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../lib/store.mjs';
-import { autoRecharge, lockBet, settleHouseGame, settleLockedHouseGame, requestRecharge, reviewRecharge } from '../lib/economy.mjs';
+import { addLedger, autoRecharge, lockBet, settleHouseGame, settleLockedHouseGame, requestRecharge, reviewRecharge } from '../lib/economy.mjs';
 
 function fresh(){return defaultState()}
 
@@ -62,10 +62,21 @@ test('auto recharge only tops up to 5억',()=>{
   assert.equal(u.recharge.total,380_000_000);
 });
 
-test('qualified profit unlocks High Limit at 100억 progression',()=>{
+test('holding 100억 opens High Limit, and it stays open after losing it',()=>{
   const s=fresh(),u=s.users.hanseo;
-  u.account.available=20_000_000_000;
-  settleHouseGame(s,u,{game:'Baccarat',stake:9_000_000_000,netPnl:9_000_000_000,roundId:'bigwin'});
-  assert.equal(u.account.progressionValue,10_000_000_000);
+  u.account.available=1_000_000_000;
+  settleHouseGame(s,u,{game:'Baccarat',stake:1_000_000_000,netPnl:9_000_000_000,roundId:'bigwin'});
+  assert.equal(u.account.progressionValue,u.account.available+u.account.locked);
+  assert.ok(u.account.progressionValue>=10_000_000_000);
+  assert.ok(u.account.unlockedFloors.includes('high-limit'));
+  settleHouseGame(s,u,{game:'Baccarat',stake:6_000_000_000,netPnl:-6_000_000_000,roundId:'bigloss'});
+  assert.ok(u.account.progressionValue<10_000_000_000);
+  assert.ok(u.account.unlockedFloors.includes('high-limit'));
+});
+
+test('chips from any source count toward the next floor',()=>{
+  const s=fresh(),u=s.users.hanseo;
+  addLedger(s,u,{type:'ADMIN_GRANT',amount:9_000_000_000,referenceType:'TEST'});
+  assert.equal(u.account.progressionValue,u.account.available+u.account.locked);
   assert.ok(u.account.unlockedFloors.includes('high-limit'));
 });

@@ -1,7 +1,7 @@
 // Offline app shell. Game and chip API responses are never cached: the server stays authoritative.
-const CACHE = 'vegas-shell-v6';
+const CACHE = 'vegas-shell-v7';
 const SHELL = [
-  './', 'index.html', 'styles.css', 'table.css', 'app.js', 'icon.svg', 'manifest.webmanifest',
+  './', 'index.html', 'styles.css', 'table.css', 'app.js', 'icon.svg', 'logo.svg', 'manifest.webmanifest',
   'js/config.js', 'js/music.js', 'js/api.js', 'js/fx.js', 'js/cards.js', 'js/chips.js', 'js/table.js',
   'js/games/blackjack.js', 'js/games/baccarat.js', 'js/games/roulette.js', 'js/games/dice.js'
 ];

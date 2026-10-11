@@ -211,7 +211,11 @@ function renderProfile() {
   if (!state) { root.textContent = '불러오는 중…'; return; }
   const u = state.user, a = u.account;
   const floors = state.floors.map(f => `<li class="floor-row${f.unlocked ? ' is-open' : ''}"><span>${f.name}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
-  const ledger = state.ledger.slice(0, 15).map(x => `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${x.metadata.game}` : ''}</span><b class="${x.amount > 0 ? 'pos' : x.amount < 0 ? 'neg' : ''}">${x.amount > 0 ? '+' : ''}${formatCH(x.amount)}</b></li>`).join('');
+  // One line per finished round: chip locks are skipped and a round shows its win or loss, not the chips handed back.
+  const ledger = state.ledger.filter(x => x.type !== 'BET_LOCK').slice(0, 15).map(x => {
+    const amount = x.type.startsWith('GAME_') && Number.isFinite(x.rawPnlDelta) ? x.rawPnlDelta : x.amount;
+    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${x.metadata.game}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
+  }).join('');
   root.innerHTML = `
     <div class="profile-card">
       <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)} CH</small></div>

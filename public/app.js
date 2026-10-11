@@ -21,6 +21,7 @@ import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels } from './js/social.js';
 import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
+import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -57,7 +58,7 @@ function showSurface(name, { focus = false } = {}) {
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
-  if (name === 'lobby' && state) { celebrateFloors(state); maybeOpenDaily(state, applyState); }
+  if (name === 'lobby' && state) { celebrateFloors(state); maybeOpenDaily(state, applyState); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'settings') openSettings(); else closeSettings();
   syncWakeLock();
@@ -345,15 +346,20 @@ function renderProfile() {
     <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
   renderAdmin(root, state, applyState);
   root.querySelector('[data-sign-out]').addEventListener('click', async () => {
+    await forgetDevice();
     await api.logout().catch(() => {});
     signedOut();
   });
 }
 
+// The notification sheet only interrupts the menus, never a hand in progress.
+const inMenus = () => !document.body.classList.contains('game-mode') && !document.body.classList.contains('tier-mode');
+
 // ---------- account ----------
 function signedIn(next) {
   shownWallet = null;
   applyState(next);
+  startNotifications(inMenus);
   renderTiers();
   showSurface('lobby');
 }
@@ -423,6 +429,6 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 renderLobby();
 showSurface('lobby');
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-if (sessionToken()) refresh().then(() => renderTiers());
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) startNotifications(inMenus); });
 else openSignIn(signedIn);
 dealVignette();

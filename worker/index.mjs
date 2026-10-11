@@ -3,6 +3,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
+import { runPushRound } from '../lib/notifications.mjs';
 
 const CHUNK = 256 * 1024; // stay well under the per-value storage limit as the ledger grows
 
@@ -47,6 +48,12 @@ export class VegasFloor extends DurableObject {
     return task;
   }
 
+  // Hourly cron: send whatever reminders are due. Only the scheduled() handler below can reach this.
+  async pushRound() {
+    const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
+    return runPushRound(store, { subject: this.env.VAPID_SUBJECT });
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     const req = {
@@ -88,5 +95,10 @@ export default {
     const out = new Response(res.body, res);
     for (const [k, v] of Object.entries(headers)) out.headers.set(k, v);
     return out;
+  },
+
+  async scheduled(event, env, ctx) {
+    const floor = env.FLOOR.get(env.FLOOR.idFromName('main'));
+    ctx.waitUntil(floor.pushRound().then(r => console.log('push round', JSON.stringify(r))));
   }
 };

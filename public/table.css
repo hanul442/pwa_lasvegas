@@ -626,3 +626,6 @@
   .side-label{font-size:10px;opacity:.85;white-space:nowrap;letter-spacing:-.02em}
   .toast{font-size:14px}
 }
+/* "친구와 함께" at the blackjack table, out of the way of the boxes */
+.bj-friends{position:absolute;left:12px;bottom:12px;z-index:6}
+.bj-seat.is-friend .bj-seat-plate b{color:var(--white)}

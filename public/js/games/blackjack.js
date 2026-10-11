@@ -1,5 +1,7 @@
 // Blackjack: up to three betting boxes with Perfect Pairs and 21+3 side bets, AI players at the
 // same table, cards out of one shoe, insurance when the dealer shows an ace, hole card turned at the end.
+// "친구와 함께" seats friends in the AI chairs against the same dealer (room-client.js); in a room
+// I play one box at the room's stake and every seat's moves play out as they happen.
 import { api, errorMessage } from '../api.js';
 import { dealCard, flipCard, placeCards, sweepCards, parseCard } from '../cards.js';
 import { createChip, breakdown } from '../chips.js';
@@ -8,6 +10,7 @@ import { settings, onSettings } from '../settings.js';
 import { basicStrategy } from '../bj-strategy.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
+import { createRoomClient } from './room-client.js';
 
 function value(texts) {
   let total = 0, aces = 0;
@@ -57,7 +60,8 @@ export async function mountBlackjack(ctx) {
         <text class="arc-sub" font-size="9"><textPath href="#bj-arc2" startOffset="50%" text-anchor="middle">DEALER MUST STAND ON ALL 17</textPath></text>
       </svg>
       <div class="bj-insurance" data-zone="ins" aria-hidden="true"><span>INSURANCE PAYS 2 TO 1</span></div>
-      <div class="bj-ai" data-ai aria-label="같은 테이블의 AI 플레이어"></div>
+      <div class="bj-ai" data-ai aria-label="같은 테이블의 다른 플레이어"></div>
+      <button type="button" class="pk-friends-open bj-friends" data-friends-open>친구와 함께</button>
       <div class="bj-spots">
         ${BOXES.map((b, i) => `
         <div class="bj-spot">
@@ -284,6 +288,7 @@ export async function mountBlackjack(ctx) {
   }
 
   function refreshActions() {
+    if (room.active) return roomActions();
     bj.classList.toggle('is-insurance', round?.status === 'INSURANCE');
     if (!round || round.status === 'SETTLED') {
       t.setActions(t.idleActions('딜', deal));
@@ -312,7 +317,7 @@ export async function mountBlackjack(ctx) {
     }
   }
   t.refreshActions = refreshActions;
-  t.onBetChange = refreshActions;
+  t.onBetChange = () => { refreshActions(); room.onBetChange(); };
   const offSettings = onSettings(key => { if (key === 'bjHint' || key === null) { paintStat(); refreshActions(); } });
   const destroy = t.destroy.bind(t);
   t.destroy = () => { offSettings(); destroy(); };
@@ -488,14 +493,188 @@ export async function mountBlackjack(ctx) {
   t.onKey(e => {
     if (t.busy) return;
     const k = e.key.toLowerCase();
-    const live = round && (round.status === 'PLAYER' || round.status === 'INSURANCE');
+    const live = room.active ? rv?.status === 'PLAYING' && rv.turn === 0 : round && (round.status === 'PLAYER' || round.status === 'INSURANCE');
     const keys = round?.status === 'INSURANCE' ? ['i', 'n'] : live ? ['h', 's', 'd', 'p'] : [];
     if (keys.includes(k)) { const a = t.actionList.find(x => x.key === k.toUpperCase()); if (a && !a.disabled) { e.preventDefault(); t.run(a.onClick); } }
     else if (!live && e.key === 'Enter' && !e.target.closest('button')) { const a = t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } }
   });
 
+  // ---------- friends' room ----------
+  // The server turns the room so I sit in seat 0; the other seats (friends and house players)
+  // sit in the row above my box. `model` is what the felt shows while events play out.
+  const MY_BOX = 'b2';
+  const myHands = () => t.body.querySelector(`[data-hands="${MY_BOX}"]`);
+  let rv = null, model = null;
+  const others = () => [...aiRow.children];
+  const seatOf = s => others()[s - 1];
+  const fromView = v => v.seats.map((x, i) => ({ hands: x.hands.map(h => ({ id: h.id, cards: [...h.cards], stake: h.stake })), shown: i ? x.active : 0 }));
+
+  function roomSeats(v) {
+    const nodes = seatAll(v.seats.slice(1).map(x => ({ name: x.name, temper: x.temper, stake: v.stake })));
+    v.seats.slice(1).forEach((x, i) => { if (x.kind !== 'ai') nodes[i].querySelector('small').textContent = '친구'; nodes[i].classList.toggle('is-friend', x.kind !== 'ai'); });
+    return nodes;
+  }
+  function myWrap(id) {
+    const w = handWrap({ id });
+    if (!w.isConnected) myHands().append(w);
+    return w;
+  }
+  // Another seat shows one hand at a time: the one it is playing, or its first.
+  function showSeatHand(s, idx) {
+    const node = seatOf(s); if (!node) return null;
+    const w = seatWrap(node);
+    if (model[s].shown !== idx) { model[s].shown = idx; placeCards(cardsOf(w), model[s].hands[idx].cards); updateHandTotal(w, false); }
+    return w;
+  }
+  function roomMark(seat, hand) {
+    others().forEach((n, i) => seatWrap(n).classList.toggle('is-active', i + 1 === seat));
+    model?.[0].hands.forEach((h, i) => wraps.get(h.id)?.classList.toggle('is-active', seat === 0 && i === hand && model[0].hands.length > 1));
+  }
+
+  async function roomEvents(events) {
+    for (const e of events) {
+      if (e.type === 'deal') {
+        if (e.seat < 0) { await dealCard(dealerHand, e.card, shoe, { faceUp: e.card !== 'HIDDEN' }); updateDealerTotal(false); continue; }
+        const h = model[e.seat].hands[e.hand];
+        h.cards.push(e.card);
+        const w = e.seat === 0 ? myWrap(h.id) : seatWrap(seatOf(e.seat));
+        await dealCard(cardsOf(w), e.card, shoe);
+        updateHandTotal(w, e.seat === 0);
+      } else if (e.type === 'turn') {
+        if (e.seat > 0) showSeatHand(e.seat, e.hand);
+        roomMark(e.seat, e.hand);
+        if (e.seat !== 0) await wait(240);
+      } else if (e.type === 'act') {
+        const h = model[e.seat].hands[e.hand];
+        const w = e.seat === 0 ? myWrap(h.id) : showSeatHand(e.seat, e.hand);
+        if (e.seat > 0) await say(seatOf(e.seat), SAY[e.action] || e.action);
+        else if (e.action === 'STAND') sound.tick();
+        if (e.action === 'DOUBLE') {
+          if (e.seat === 0) { await t.addFromTray(MY_BOX, h.stake); t.syncBalance(); } else { seatChips(seatOf(e.seat), e.stake); sound.chip(); }
+          h.stake = e.stake;
+        }
+        if (e.card) { h.cards.push(e.card); await dealCard(cardsOf(w), e.card, shoe, { rotate: e.action === 'DOUBLE' }); updateHandTotal(w, e.seat === 0); }
+        if (e.status === 'BUST') { w.classList.add('is-bust'); if (e.seat === 0) voice.say('bust'); else await say(seatOf(e.seat), '버스트', 'lose'); }
+      } else if (e.type === 'split') {
+        const hands = model[e.seat].hands, h = hands[e.hand];
+        const sib = { id: e.id, cards: [h.cards.pop()], stake: e.stake };
+        hands.splice(e.hand + 1, 0, sib);
+        if (e.seat === 0) {
+          await t.addFromTray(MY_BOX, e.stake); t.syncBalance();
+          const src = myWrap(h.id), sw = handWrap({ id: sib.id });
+          src.after(sw);
+          const moving = cardsOf(src).lastElementChild, rect = moving.getBoundingClientRect();
+          cardsOf(sw).append(moving);
+          await flyFrom(moving, rect, { duration: 360, lift: 24 });
+          crowd({ hands });
+          for (const [x, w, c] of [[h, src, e.cards[0]], [sib, sw, e.cards[1]]]) { x.cards.push(c); await dealCard(cardsOf(w), c, shoe); updateHandTotal(w); }
+        } else {
+          h.cards.push(e.cards[0]); sib.cards.push(e.cards[1]);
+          await say(seatOf(e.seat), '스플릿');
+          model[e.seat].shown = -1;
+          showSeatHand(e.seat, e.hand);
+        }
+      } else if (e.type === 'reveal') {
+        roomMark(-1, -1);
+        const hole = dealerHand.children[1];
+        await wait(250);
+        if (hole) await flipCard(hole, e.card, { duration: 420 });
+        updateDealerTotal(true);
+      } else if (e.type === 'draw') {
+        await wait(380);
+        await dealCard(dealerHand, e.card, shoe);
+        updateDealerTotal(true);
+      } else if (e.type === 'end') await roomEnd(e);
+    }
+  }
+
+  // Every hand gets its result; the other seats' chips go home or to the rack, then mine.
+  async function roomEnd(e) {
+    await wait(250);
+    e.hands[0].forEach(r => {
+      const tag = wraps.get(r.id)?.querySelector('.hand-result');
+      const [label, kind] = RESULT[r.result] || ['', 'push'];
+      if (tag) { tag.textContent = label; tag.className = `hand-result is-${kind} is-shown`; }
+    });
+    await settleSeats({ ai: e.hands.slice(1).map((hs, i) => ({ result: { result: hs.length === 1 ? hs[0].result : e.nets[i + 1] > 0 ? 'WIN' : e.nets[i + 1] < 0 ? 'LOSS' : 'PUSH', netPnl: e.nets[i + 1] } })) });
+    const net = e.nets[0];
+    const top = e.hands[0].map(r => r.result);
+    const dealerBust = e.total > 21;
+    voice.say(top.includes('BLACKJACK') && net > 0 ? 'blackjack' : dealerBust && net > 0 ? 'dealer-busts' : net > 0 ? 'you-win' : net < 0 ? (top.every(r => r === 'BUST') ? null : 'dealer-wins') : 'push');
+    const headline = top.includes('BLACKJACK') && net > 0 ? 'Blackjack' : net > 0 ? 'You win' : net < 0 ? (top.every(r => r === 'BUST') ? 'Bust' : 'Dealer wins') : 'Push';
+    await t.settle(net, { label: `${headline}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
+    t.locked = true;
+    await t.syncBalance();
+  }
+
+  async function roomBegin(res) {
+    await clearFelt();
+    t.resetRound(); t.locked = true; t.root.classList.add('is-playing');
+    rv = res.round;
+    t.placeLocked(MY_BOX, rv.stake); t.refreshBet();
+    roomSeats(rv);
+    model = rv.seats.map(x => ({ hands: [{ id: x.hands[0].id, cards: [], stake: rv.stake }], shown: 0 }));
+    await roomEvents(res.events);
+    model = fromView(rv);
+    roomMark(rv.status === 'PLAYING' ? rv.turn : -1, rv.seats[0].active);
+  }
+  async function roomApply(res) {
+    if (!model) return roomSnapshot(res.round);
+    await roomEvents(res.events);
+    rv = res.round;
+    model = fromView(rv);
+    roomMark(rv.status === 'PLAYING' ? rv.turn : -1, rv.seats[0].active);
+  }
+  async function roomSnapshot(v) {
+    await roomClear();
+    if (v.status !== 'PLAYING') return;
+    rv = v;
+    model = fromView(v);
+    t.locked = true; t.root.classList.add('is-playing');
+    t.placeLocked(MY_BOX, v.seats[0].hands.reduce((a, h) => a + h.stake, 0)); t.refreshBet();
+    crowd({ hands: v.seats[0].hands });
+    v.seats[0].hands.forEach(h => { const w = myWrap(h.id); placeCards(cardsOf(w), h.cards); updateHandTotal(w); if (h.status === 'BUST') w.classList.add('is-bust'); });
+    roomSeats(v).forEach((n, i) => { const x = v.seats[i + 1], w = seatWrap(n); placeCards(cardsOf(w), x.hands[x.active]?.cards || []); updateHandTotal(w, false); });
+    placeCards(dealerHand, v.dealer); updateDealerTotal(false);
+    roomMark(v.turn, v.seats[0].active);
+  }
+  async function roomClear() {
+    rv = null; model = null;
+    await clearFelt();
+    t.resetRound();
+    seatAll([]);
+  }
+
+  function roomActions() {
+    bj.classList.remove('is-insurance');
+    if (!rv || rv.status !== 'PLAYING') { t.setActions(room.idleActions()); return; }
+    if (rv.turn !== 0 || !rv.options) {
+      t.setActions([room.leaveAction(), { label: `${rv.seats[rv.turn]?.name || '다른 사람'} 차례`, ghost: true, disabled: true }]);
+      return;
+    }
+    const o = rv.options, short = t.available < o.stake;
+    const send = action => room.act({ action });
+    t.setActions([
+      { label: '히트', key: 'H', primary: true, onClick: () => send('HIT') },
+      { label: '스탠드', key: 'S', onClick: () => send('STAND') },
+      { label: '더블', key: 'D', disabled: !o.canDouble || short, onClick: () => send('DOUBLE') },
+      { label: '스플릿', key: 'P', disabled: !o.canSplit || short, onClick: () => send('SPLIT') }
+    ]);
+  }
+
+  const room = createRoomClient(t, 'blackjack', {
+    label: '블랙잭', word: '베팅', sizes: [2, 3, 4], size: 4,
+    soloBusy: () => Boolean(round && round.status !== 'SETTLED'),
+    begin: roomBegin, apply: roomApply, snapshot: roomSnapshot, refreshActions,
+    clear: async () => { await roomClear(); }
+  });
+  t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
+  const destroyRoom = t.destroy.bind(t);
+  t.destroy = () => { room.stop(); return destroyRoom(); };
+
   refreshActions();
   await resume();
+  if (!round) await room.resume().catch(() => false);
   refreshActions();
   return t;
 }

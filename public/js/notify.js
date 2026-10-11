@@ -4,13 +4,12 @@
 // subscription is kept on the server so the hourly reminders can reach it.
 import { api } from './api.js';
 import { el } from './fx.js';
+import { isIOS, standalone, openInstallGuide } from './install.js';
 
 const NAG_EVERY = 3 * 60 * 1000;
 const NAG_GAP = 45 * 1000; // never twice in a row right after closing it
 const COUNT_KEY = 'vegas:push-nags';
 
-const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const canPush = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 // 'on' | 'ask' | 'blocked' | 'install' (iPhone Safari: only a home-screen app gets push) | 'none'
@@ -88,7 +87,7 @@ function content(state) {
     };
   }
   if (state === 'install') {
-    return { eyebrow: '알림', title: '아이폰은 홈 화면에 추가해야 알림이 와요', note: 'Safari 아래쪽 공유 버튼 → 홈 화면에 추가를 누른 다음, 홈 화면의 VEGAS로 열어 주세요.', action: null };
+    return { eyebrow: '알림', title: '아이폰은 홈 화면에 추가해야 알림이 와요', note: '앱스토어 없이 10초면 끝나요. 홈 화면에 추가한 VEGAS로 열면 알림 켜기 버튼이 나와요.', action: '추가하는 법 보기', later: '나중에' };
   }
   const n = nagCount();
   return { eyebrow: '알림', ...ASKS[Math.min(n, ASKS.length - 1)], action: '알림 켜기', later: LATER[Math.min(n, LATER.length - 1)] };
@@ -127,6 +126,7 @@ function open(state) {
     actions.append(go);
     go.addEventListener('click', async () => {
       go.disabled = true;
+      if (state === 'install') { bumpNag(); close(); setTimeout(() => openInstallGuide(), 340); return; }
       const on = state === 'blocked' ? pushState() === 'on' && (await syncDevice().then(() => true, () => true)) : await enablePush();
       if (on) { close(); return; }
       go.disabled = false;
@@ -184,7 +184,7 @@ export function notifyRow(row) {
   const paint = () => {
     const s = pushState();
     r.querySelector('.set-note').textContent = notes[s];
-    button.textContent = { on: '테스트 알림', ask: '알림 켜기', blocked: '여는 방법', install: '여는 방법', none: '지원 안 함' }[s];
+    button.textContent = { on: '테스트 알림', ask: '알림 켜기', blocked: '여는 방법', install: '추가하는 법', none: '지원 안 함' }[s];
     button.disabled = s === 'none';
   };
   paint();
@@ -195,6 +195,7 @@ export function notifyRow(row) {
       try { await syncDevice(); await api.pushTest(); button.textContent = '보냈어요'; } catch { button.textContent = '다시 눌러 주세요'; }
       setTimeout(() => { button.disabled = false; paint(); }, 1600);
     } else if (s === 'ask') { await enablePush(); paint(); }
+    else if (s === 'install') openInstallGuide(button);
     else maybeAsk({ force: true });
   });
   return r;

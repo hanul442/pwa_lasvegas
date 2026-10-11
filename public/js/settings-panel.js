@@ -5,6 +5,7 @@ import { settings, onSettings, pace, PACES } from './settings.js';
 import { resetGuides } from './guide.js';
 import { voice } from './voice.js';
 import { notifyRow } from './notify.js';
+import { installRow } from './install.js';
 
 const canVibrate = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 const canWakeLock = () => typeof navigator !== 'undefined' && 'wakeLock' in navigator;
@@ -157,6 +158,7 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
       row('본 가이드 기록', '모든 게임의 가이드를 처음 앉을 때처럼 다시 보여 줘요', replay)
     ]));
     sections.push(section('이 기기', [
+      installRow(row),
       row('설정 되돌리기', '소리·속도·진동을 처음 값으로 돌려요. 칩과 기록은 그대로예요',
         confirmButton('되돌리기', '한 번 더 누르면 되돌려요', b => { settings.reset(); done(b, '되돌렸어요'); }))
     ]));

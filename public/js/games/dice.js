@@ -1,6 +1,6 @@
 // Sic Bo: three dice shaken under the dome, tumbling to the server's roll.
 import { api, errorMessage } from '../api.js';
-import { animate, sound, haptic, formatCH, wait, reducedMotion } from '../fx.js';
+import { animate, sound, haptic, wait, reducedMotion } from '../fx.js';
 import { Table } from '../table.js';
 import { seatCrowd } from '../npc.js';
 import { voice, sicboLine } from '../voice.js';
@@ -126,7 +126,7 @@ export async function mountDice(ctx) {
     await wait(200);
     const net = res.round.netPnl;
     await Promise.all([
-      t.settle(net, { label: `${res.round.dice.join(' · ')}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` }),
+      t.settle(net, { label: `${res.round.dice.join(' · ')}` }),
       crowd.settle((zone, stake) => betNet(zone, stake, res.round.dice))
     ]);
     await t.syncBalance();

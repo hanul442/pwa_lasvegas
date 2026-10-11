@@ -463,7 +463,7 @@ export async function mountBlackjack(ctx) {
     for (const h of round.hands) zones.set(boxOf(h), (zones.get(boxOf(h)) || 0) + (h.result?.netPnl || 0));
     if (round.insurance?.taken) zones.set('ins', round.insurance.netPnl);
     for (const b of round.sideBets || []) if (b.netPnl > 0) zones.set(sideZone(b), 0);
-    await t.settle(net, { label: `${headline}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, zones, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
+    await t.settle(net, { label: `${headline}`, zones, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     await t.syncBalance();
     refreshActions();
   }
@@ -606,7 +606,7 @@ export async function mountBlackjack(ctx) {
     const dealerBust = e.total > 21;
     voice.say(top.includes('BLACKJACK') && net > 0 ? 'blackjack' : dealerBust && net > 0 ? 'dealer-busts' : net > 0 ? 'you-win' : net < 0 ? (top.every(r => r === 'BUST') ? null : 'dealer-wins') : 'push');
     const headline = top.includes('BLACKJACK') && net > 0 ? 'Blackjack' : net > 0 ? 'You win' : net < 0 ? (top.every(r => r === 'BUST') ? 'Bust' : 'Dealer wins') : 'Push';
-    await t.settle(net, { label: `${headline}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
+    await t.settle(net, { label: `${headline}`, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     t.locked = true;
     await t.syncBalance();
   }

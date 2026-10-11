@@ -44,6 +44,7 @@ export const api = {
   rouletteSpin: (bets, floor) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
   sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } }),
+  slots: (stake, floor) => request('/api/slots/spin', { method: 'POST', body: { stake, floor } }),
   matgoOpen: () => request('/api/matgo/open'),
   matgoStart: (stake, floor) => request('/api/matgo/start', { method: 'POST', body: { stake, floor } }),
   matgoAction: (roundId, move) => request('/api/matgo/action', { method: 'POST', body: { roundId, ...move } }),

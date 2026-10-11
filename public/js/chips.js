@@ -2,7 +2,7 @@
 import { el, formatCH } from './fx.js';
 
 export const CHIP_COLORS = {
-  25_000: 'ivory', 50_000: 'teal', 100_000: 'white', 250_000: 'red', 500_000: 'green',
+  5_000: 'blue', 25_000: 'ivory', 50_000: 'teal', 100_000: 'white', 250_000: 'red', 500_000: 'green',
   1_000_000: 'black', 2_500_000: 'purple', 5_000_000: 'orange',
   10_000_000: 'blue', 25_000_000: 'pink', 50_000_000: 'gold', 100_000_000: 'wine'
 };

@@ -502,6 +502,47 @@
 .pk-slider{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:10px}
 .pk-slider input{width:100%;accent-color:var(--white)}
 .table-screen--holdem:not(.is-seated) .pk-sizer{display:none}
+/* friends' rooms */
+.pk-friends-open{min-height:40px;padding:0 18px;border-radius:999px;border:1px solid var(--hair-strong);background:#0000002e;color:var(--white);font:600 13px var(--sans)}
+.pk-lobby{position:absolute;inset:0;z-index:20;display:grid;align-content:start;gap:4px;padding:14px 16px 18px;border-radius:18px;background:#0a0b0df7;box-shadow:0 0 0 1px var(--hair);overflow:auto;overscroll-behavior:contain}
+.pk-lobby[hidden]{display:none}
+.pk-lobby-head{display:flex;align-items:center;justify-content:space-between}
+.pk-lobby-head h2{margin:0;font:700 20px var(--display);font-stretch:112%;letter-spacing:-.01em}
+.pk-lobby-close{width:44px;height:44px;margin-right:-10px;border:0;border-radius:50%;background:none;color:var(--white);font-size:24px}
+.pk-lobby-block{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--hair)}
+.pk-lobby-block h3{margin:0;font:600 13px var(--sans);color:var(--smoke);letter-spacing:.02em}
+.pk-lobby-note{margin:0;font-size:13px;line-height:1.5;color:var(--smoke)}
+.pk-lobby-primary{min-height:48px;border-radius:999px;border:0;background:var(--white);color:var(--ink);font:650 15px var(--sans)}
+.pk-lobby-primary:disabled{background:#ffffff1f;color:var(--smoke)}
+.pk-code{display:grid;grid-template-columns:1fr auto;gap:8px}
+.pk-code input{min-width:0;height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--hair-strong);background:#ffffff0a;color:var(--white);font:700 20px var(--display);font-stretch:112%;letter-spacing:.35em;text-transform:uppercase}
+.pk-code input::placeholder{color:#ffffff40}
+.pk-code input:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.pk-code button{min-width:84px;height:48px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--white);font:600 14px var(--sans)}
+.pk-rooms{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.pk-room-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:#ffffff08;box-shadow:inset 0 0 0 1px var(--hair)}
+.pk-room-row div{display:grid;flex:1;min-width:0;line-height:1.35}
+.pk-room-row b{font:650 14px var(--sans)}
+.pk-room-row span,.pk-room-row small{font-size:13px;color:var(--smoke);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pk-room-row button{flex:none;min-width:72px;height:40px;border-radius:999px;border:0;background:var(--white);color:var(--ink);font:650 13px var(--sans)}
+.pk-rooms-empty{padding:12px 0;font-size:13px;line-height:1.5;color:var(--smoke)}
+.pk-roomchip{position:absolute;left:8px;top:6px;z-index:8;display:flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--hair-strong);background:#0a0b0dcc;color:var(--white);font:500 12px var(--sans)}
+.pk-roomchip[hidden]{display:none}
+.pk-roomchip b{font:700 13px var(--display);font-stretch:112%;letter-spacing:.18em}
+.pk-seat.is-empty .pk-plate{background:none;box-shadow:inset 0 0 0 1px #ffffff2e;color:var(--smoke)}
+.pk-seat.is-empty{opacity:.6}
+.pk-seat.is-human [data-name]::before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--star);clip-path:var(--star-shape);vertical-align:1px}
+.pk-seat.is-human .pk-plate small{color:var(--star)}
+.pk-clock{position:absolute;right:-13px;top:-13px;z-index:6;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#0a0b0d}
+.pk-clock svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.pk-clock circle{fill:none;stroke:#ffffff26;stroke-width:3}
+.pk-clock .pk-clock-run{stroke:var(--white);stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.pk-clock b{position:relative;font:700 11px var(--display);font-variant-numeric:tabular-nums}
+.pk-clock.is-low .pk-clock-run{stroke:var(--star)}
+.pk-clock.is-low b{color:var(--star)}
+.table-screen--holdem.is-room .pk-hint{max-width:260px}
+.table-screen--holdem.is-room .bet-readout small{color:var(--smoke)}
+.pk-seat.is-human [data-name]{white-space:nowrap}
 .table-screen--holdem.is-seated .table-controls{grid-template-areas:"bet bet" "sizer sizer" "act act"}
 .table-screen--holdem.is-seated .chip-tray,.table-screen--holdem.is-seated .bet-tools{display:none}
 @media (min-width:760px){

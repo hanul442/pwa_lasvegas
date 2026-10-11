@@ -31,7 +31,9 @@ export class Table {
     this.sides = new Set();
     // Coming back to a table, the last bet is ready to repeat and the last chip is still picked.
     const saved = recall(memoryKey(game, this.tier.slug, 'lastbet'));
-    this.lastBet = Array.isArray(saved) && saved.length ? new Map(saved) : null;
+    // Chips saved before the bet scale changed are dropped rather than replayed.
+    const kept = Array.isArray(saved) ? saved.filter(([, chips]) => Array.isArray(chips) && chips.length && chips.every(v => this.tier.chips.includes(v))) : [];
+    this.lastBet = kept.length ? new Map(kept) : null;
     const chip = recall(memoryKey(game, this.tier.slug, 'chip'));
     this.selected = this.tier.chips.includes(chip) ? chip : this.tier.chips[0];
     this.zones = new Map();

@@ -26,6 +26,17 @@ export class ApiError extends Error {
   constructor(code, status, where = null) { super(code); this.code = code; this.status = status; this.where = where; }
 }
 
+// The bet scale this build was made for (lib/economy-upgrade.mjs). A page left open across a
+// rescale would keep offering the old chips and every bet would bounce off the table limits, so
+// it reloads once to pick up the new build.
+export const ECONOMY = 2;
+function checkEconomy(server) {
+  if (!server || server === ECONOMY) return;
+  const mark = `vegas:reloaded-for-economy:${server}`;
+  try { if (sessionStorage.getItem(mark)) return; sessionStorage.setItem(mark, '1'); } catch { return; }
+  location.reload();
+}
+
 async function request(path, { method = 'GET', body } = {}) {
   const headers = {};
   const token = sessionToken();
@@ -38,6 +49,7 @@ async function request(path, { method = 'GET', body } = {}) {
     throw new ApiError('NETWORK', 0);
   }
   const data = await res.json().catch(() => ({}));
+  checkEconomy(data.economy ?? data.state?.economy);
   if (!res.ok) {
     // A missing or expired session sends the player back to the sign-in screen.
     if (data.error === 'AUTH_REQUIRED') { clearSession(); dispatchEvent(new CustomEvent('vegas:signed-out')); }

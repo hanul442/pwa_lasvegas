@@ -273,3 +273,21 @@
 }
 @media (prefers-reduced-motion:reduce){ .gs-opp{transition:none} }
 @media (max-width:519px){.mg-cap>span{font-size:13px}}
+
+/* Friends' rooms (섯다·고스톱·맞고): the "친구와 함께" button, and the bar over the felt with
+   the room code, what the table is waiting on and whose clock is running. */
+.mg-friends{align-self:center}
+.table-screen.is-playing [data-friends-open],.table-screen.is-room [data-friends-open]{display:none}
+.table-screen.is-room .chip-tray,.table-screen.is-room .bet-tools{display:none}
+.table-screen--seotda.is-room .sd-count{display:none}
+.sd-seat.is-friend .sd-who{color:var(--white);font-weight:650}
+.rm-bar{position:absolute;left:8px;right:8px;top:6px;z-index:8;display:flex;align-items:center;gap:8px;pointer-events:none}
+.rm-bar[hidden]{display:none}
+.rm-bar .rm-chip{position:static;flex:none;pointer-events:auto}
+.rm-status{flex:1;min-width:0;font-size:12px;color:var(--smoke);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-clock{flex:none;display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;background:#0a0b0dcc;box-shadow:inset 0 0 0 1px var(--hair);font:600 12px var(--sans);font-variant-numeric:tabular-nums}
+.rm-clock:empty{display:none}
+.rm-clock.is-mine{background:var(--white);color:var(--ink)}
+.rm-clock.is-short{color:#ff9585}
+.rm-clock.is-mine.is-short{background:#ff9585;color:var(--ink)}
+.table-screen.is-room .dealer-rack{visibility:hidden}

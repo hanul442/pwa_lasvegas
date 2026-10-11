@@ -4,7 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 
 const pub = path => new URL(`../public/${path}`, import.meta.url);
 globalThis.window = { matchMedia: () => ({ matches: false }) };
-const { handLine, sicboLine, goLine, rouletteLine, OPENS_WITH_BETS } = await import('../public/js/voice.js');
+const { handLine, sicboLine, goLine, rouletteLine, betLine, amountWords, OPENS_WITH_BETS } = await import('../public/js/voice.js');
 const { HAND_NAMES } = await import('../lib/holdem.mjs');
 
 const files = new Set((await readdir(pub('voice'))).filter(f => f.endsWith('.mp3')).map(f => f.slice(0, -4)));
@@ -15,7 +15,7 @@ test('every recorded line is listed for offline caching, and every listed line e
 });
 
 test('every call-out the tables ask for has a recording', async () => {
-  const sources = await Promise.all(['app.js', 'js/voice.js', ...['blackjack', 'baccarat', 'roulette', 'dice', 'holdem', 'matgo', 'seotda'].map(g => `js/games/${g}.js`)].map(p => readFile(pub(p), 'utf8')));
+  const sources = await Promise.all(['app.js', 'js/voice.js', ...['blackjack', 'baccarat', 'roulette', 'dice', 'holdem', 'holdem-view', 'holdem-room', 'matgo', 'seotda'].map(g => `js/games/${g}.js`)].map(p => readFile(pub(p), 'utf8')));
   const asked = new Set();
   // Every quoted id on a line that speaks, picks a line, or lists a table's lines.
   for (const [i, src] of sources.entries()) for (const row of src.split('\n')) {
@@ -38,4 +38,19 @@ test('generated line ids cover every outcome', () => {
   for (let n = 1; n <= 5; n++) assert.ok(files.has(goLine(n)));
   assert.equal(goLine(6), null);
   assert.ok(OPENS_WITH_BETS.has('roulette') && !OPENS_WITH_BETS.has('poker'));
+});
+
+test('bet amounts are spoken in words from recorded pieces', () => {
+  assert.deepEqual(amountWords(250_000), ['two', 'hundred', 'fifty', 'thousand']);
+  assert.deepEqual(amountWords(1_250_000), ['one', 'million', 'two', 'hundred', 'fifty', 'thousand']);
+  assert.deepEqual(amountWords(17_500), ['seventeen', 'thousand', 'five', 'hundred']);
+  assert.deepEqual(amountWords(1e12), ['one', 'trillion']);
+  assert.deepEqual(amountWords(0), []);
+  assert.deepEqual(betLine('CALL', 50_000), ['lead-call', 'n-fifty', 'n-thousand-end']);
+  assert.deepEqual(betLine('RAISE', 2_000_000), ['lead-raise', 'n-two', 'n-million-end']);
+  assert.equal(betLine('FOLD', 100), null);
+  // Every amount a table can produce, up to the vault's limits, resolves to recorded pieces.
+  for (const n of [1, 19, 20, 99, 101, 999, 5_000, 12_345, 999_999, 1_000_001, 987_654_321, 123_456_789_012, 999_999_999_999_999]) {
+    for (const action of ['CALL', 'RAISE', 'BET', 'ALL_IN']) for (const id of betLine(action, n)) assert.ok(files.has(id), `${n}: missing ${id}`);
+  }
 });

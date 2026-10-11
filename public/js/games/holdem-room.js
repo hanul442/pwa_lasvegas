@@ -387,7 +387,7 @@ export function createFriends(t, pk, bar, hooks) {
       }
       pre = null;
       t.hint('내 차례예요');
-      if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
+      if (prompted !== turn) { prompted = turn; voice.say('your-action', { next: true }); }
       return;
     }
     sizer.hidden = true;

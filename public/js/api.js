@@ -53,6 +53,7 @@ export const api = {
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
   state: () => request('/api/state'),
+  news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   pushKey: () => request('/api/push/key'),
   pushSubscribe: subscription => request('/api/push/subscribe', { method: 'POST', body: { subscription } }),
   pushUnsubscribe: endpoint => request('/api/push/unsubscribe', { method: 'POST', body: { endpoint } }),
@@ -97,7 +98,15 @@ export const api = {
   holdemRoomJoin: code => request('/api/holdem/rooms/join', { method: 'POST', body: { code } }),
   holdemRoomStart: (code, cursor) => request('/api/holdem/rooms/start', { method: 'POST', body: { code, cursor } }),
   holdemRoomAction: (code, handNo, seq, action, amount, cursor) => request('/api/holdem/rooms/action', { method: 'POST', body: { code, handNo, seq, action, amount, cursor } }),
-  holdemRoomLeave: code => request('/api/holdem/rooms/leave', { method: 'POST', body: { code } })
+  holdemRoomLeave: code => request('/api/holdem/rooms/leave', { method: 'POST', body: { code } }),
+  // Friends' rooms for 섯다, 고스톱 and 맞고: the same shape, one route set for all three.
+  rooms: game => request(`/api/rooms${game ? `?game=${game}` : ''}`),
+  room: (code, cursor) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),
+  roomCreate: (game, stake, floor, size) => request('/api/rooms', { method: 'POST', body: { game, stake, floor, size } }),
+  roomJoin: code => request('/api/rooms/join', { method: 'POST', body: { code } }),
+  roomStart: (code, cursor) => request('/api/rooms/start', { method: 'POST', body: { code, cursor } }),
+  roomAction: (code, handNo, seq, move, cursor) => request('/api/rooms/action', { method: 'POST', body: { code, handNo, seq, ...move, cursor } }),
+  roomLeave: code => request('/api/rooms/leave', { method: 'POST', body: { code } })
 };
 
 const MESSAGES = {
@@ -143,6 +152,7 @@ const MESSAGES = {
   ALREADY_IN_ROOM: '이미 다른 방에 앉아 있어요.',
   NOT_IN_ROOM: '이 방에서 이미 일어났어요.',
   NOT_HOST: '딜은 방장이 시작해요.',
+  OPEN_SOLO_ROUND: '혼자 하던 판을 먼저 끝내 주세요.',
   HAND_IN_PROGRESS: '이미 게임이 시작됐어요.',
   DAILY_ALREADY_CLAIMED: '오늘 출석 보너스는 이미 받았어요.',
   MISSION_NOT_DONE: '아직 미션을 끝내지 않았어요.',

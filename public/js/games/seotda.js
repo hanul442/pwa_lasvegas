@@ -1,12 +1,14 @@
 // 섯다 at a table of AI players: everyone antes, one card each, a betting round round the table,
 // a second card squeezed open, a last round, then the hands still in are turned over one by one.
 // Each AI bets from its own cards only; the pot slides to whoever holds the best 족보.
+// "친구와 함께" seats friends in the same chairs (room-client.js); the server turns the room so I sit in seat 0.
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu } from '../hwatu.js';
 import { animate, flyFrom, flyTo, flyOut, wait, sound, haptic, formatCH, el } from '../fx.js';
 import { breakdown, createChip } from '../chips.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
+import { createRoomClient } from './room-client.js';
 
 const ME = 0;
 const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', HALF: '하프', CALL: '콜' };
@@ -28,6 +30,7 @@ export async function mountSeotda(ctx) {
         <div class="sd-count" role="radiogroup" aria-label="상대 수">
           <span>상대</span>${[1, 2, 3, 4].map(n => `<button type="button" role="radio" data-opp="${n}" aria-checked="${n === players - 1}">${n}</button>`).join('')}
         </div>
+        <button type="button" class="pk-friends-open" data-friends-open>친구와 함께</button>
       </div>
       <section class="sd-seat sd-seat--me" data-seat="0">
         <span class="sd-hand-name" data-name="0"></span>
@@ -47,16 +50,26 @@ export async function mountSeotda(ctx) {
   let view = null, mine = 0; // what I have in the pot while events play out
   t.sd = { get view() { return view; } };
 
+  const room = createRoomClient(t, 'seotda', {
+    label: '섯다', word: '판돈', sizes: [2, 3, 4, 5], size: 4,
+    soloBusy: () => Boolean(view && view.status === 'PLAYING'),
+    begin, apply, snapshot, refreshActions,
+    clear: () => clearFelt()
+  });
+  t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
+  t.onBetChange = () => { refreshActions(); room.onBetChange(); };
+
   // Opponent seats across the top of the felt, outer ones lower so the row reads as an arc.
   function buildSeats(list) {
     ring.dataset.count = list.length;
     ring.replaceChildren(...list.map((p, i) => {
-      const s = el('section', 'sd-seat sd-seat--opp');
+      const s = el('section', `sd-seat sd-seat--opp${p.kind === 'human' ? ' is-friend' : ''}`);
       s.dataset.seat = i + 1;
       s.innerHTML = `<span class="sd-bubble" data-said="${i + 1}"></span>
         <div class="sd-cards sd-cards--opp" data-cards="${i + 1}"></div>
-        <div class="sd-plate"><span class="sd-who">${p.name || 'AI'}</span><b data-put="${i + 1}"></b></div>
+        <div class="sd-plate"><span class="sd-who"></span><b data-put="${i + 1}"></b></div>
         <span class="sd-hand-name" data-name="${i + 1}"></span>`;
+      s.querySelector('.sd-who').textContent = p.name || 'AI';
       return s;
     }));
   }
@@ -208,7 +221,7 @@ export async function mountSeotda(ctx) {
   }
 
   async function apply(res) {
-    t.setServerState(res.state);
+    if (res.state) t.setServerState(res.state);
     view = res.round;
     await playEvents(res.events || []);
     paintPot(view);
@@ -254,8 +267,14 @@ export async function mountSeotda(ctx) {
     try { res = await api.seotdaStart(t.total, t.tier.floor, players); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    await begin(res);
+  }
+
+  // A fresh hand from the server: seats, everyone's ante, then the first cards.
+  async function begin(res) {
     view = res.round;
     mine = view.stake;
+    if (room.active) { t.resetRound(); t.locked = true; t.root.classList.add('is-playing'); t.placeLocked('ANTE', view.stake); t.refreshBet(); }
     buildSeats(view.players.slice(1));
     cardsOf(ME).replaceChildren();
     seatEl(ME).classList.remove('is-winner', 'is-folded');
@@ -275,10 +294,14 @@ export async function mountSeotda(ctx) {
   let prompted = ''; // the betting turn "Your action" was last called for
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(t.idleActions('시작', deal));
+      t.setActions(room.active ? room.idleActions() : t.idleActions('시작', deal));
       return;
     }
-    if (view.turn !== ME) { t.setActions([{ label: '상대 차례', ghost: true, disabled: true }]); return; }
+    if (view.turn !== ME) {
+      const waiting = { label: `${view.players[view.turn]?.name || '상대'} 차례`, ghost: true, disabled: true };
+      t.setActions(room.active ? [room.leaveAction(), waiting] : [waiting]);
+      return;
+    }
     const turn = `${view.id}:${view.street}:${view.pot}`;
     if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
     const opts = view.options;
@@ -292,10 +315,10 @@ export async function mountSeotda(ctx) {
     })));
   }
   t.refreshActions = refreshActions;
-  t.onBetChange = refreshActions;
 
   async function act(action) {
     t.hint('');
+    if (room.active) return room.act({ action });
     let res;
     try { res = await api.seotdaAction(view.id, action); }
     catch (e) { t.toast(errorMessage(e)); return; }
@@ -304,26 +327,48 @@ export async function mountSeotda(ctx) {
 
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && (!view || view.status !== 'PLAYING') && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
 
+  // A hand drawn as it stands: coming back to a solo hand, or sitting down at a room mid-hand.
+  function snapshot(v) {
+    clearFelt();
+    if (v.status !== 'PLAYING') return;
+    view = v;
+    mine = view.contrib[ME];
+    if (room.active) { t.locked = true; t.root.classList.add('is-playing'); } else t.lock();
+    buildSeats(view.players.slice(1));
+    t.placeLocked('ANTE', view.contrib[ME]); t.refreshBet();
+    const others = view.contrib.reduce((a, c, s) => a + (s === ME ? 0 : c), 0);
+    breakdown(others, t.tier.chips, 12).forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); potStack().append(c); });
+    view.players.forEach((p, s) => p.cards.forEach(id => cardsOf(s).append(s === ME ? createHwatu(id) : createHwatu(null, { faceUp: false }))));
+    view.players.forEach((p, s) => p.last && p.last.street === view.street && say(s, p.last.action, p.last.cost));
+    if (view.street === 2) t.body.dataset.street2 = '1';
+    paintPot(view);
+    paintSeats(view);
+    paintNames(view);
+  }
+
+  // Nothing on the felt: no cards, no pot, the empty chairs of the solo table.
+  function clearFelt() {
+    view = null;
+    t.resetRound();
+    cardsOf(ME).replaceChildren();
+    seatEl(ME).classList.remove('is-winner', 'is-folded');
+    potStack().replaceChildren();
+    hush(); paintNames(null); paintPot(null); delete t.body.dataset.street2;
+    preview();
+  }
+
+
   preview();
   try {
     const open = await api.seotdaOpen();
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
-      view = open.round;
-      mine = view.contrib[ME];
-      t.lock();
-      buildSeats(view.players.slice(1));
-      t.placeLocked('ANTE', view.contrib[ME]); t.refreshBet();
-      const others = view.contrib.reduce((a, c, s) => a + (s === ME ? 0 : c), 0);
-      breakdown(others, t.tier.chips, 12).forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); potStack().append(c); });
-      view.players.forEach((p, s) => p.cards.forEach(id => cardsOf(s).append(s === ME ? createHwatu(id) : createHwatu(null, { faceUp: false }))));
-      view.players.forEach((p, s) => p.last && p.last.street === view.street && say(s, p.last.action, p.last.cost));
-      if (view.street === 2) t.body.dataset.street2 = '1';
-      paintPot(view);
-      paintSeats(view);
-      paintNames(view);
+      snapshot(open.round);
       t.toast('하던 섯다 판을 이어서 해요');
     } else if (open.round) t.toast('다른 테이블에 진행 중인 섯다 판이 있어요');
+    else await room.resume();
   } catch {}
   refreshActions();
+  const destroy = t.destroy.bind(t);
+  t.destroy = () => { room.stop(); return destroy(); };
   return t;
 }

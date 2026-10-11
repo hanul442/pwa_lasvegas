@@ -156,6 +156,7 @@ export async function mountHoldem(ctx) {
 
   function legal() { return session && session.status === 'SEATED' && !session.table.handOver && session.table.toAct === 0 ? session.table.legal : null; }
   bar.legal = () => (friends.active ? friends.legal() : legal());
+  bar.street = () => (friends.active ? friends.street() : session?.table.street);
   bar.refresh = () => refreshActions();
 
   function refreshActions() {

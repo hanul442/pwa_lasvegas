@@ -344,24 +344,69 @@ export function createFriends(t, pk, bar, hooks) {
     await enqueue(res.room, sent ?? { hand: 0, from: 0 }, Date.now());
   }
 
+  // Pre-actions: while others act I can queue my answer (check/fold, check, call X), as on a poker app.
+  // It is kept only for the street it was picked on, and dropped when a bet makes it mean something else.
+  let pre = null;
+  function waitingTurn() {
+    const tb = room?.table;
+    if (!tb || tb.handOver || room.me < 0 || tb.toAct < 0 || tb.toAct === room.me) return null;
+    const me = tb.seats[room.me];
+    if (!me?.inHand || me.folded || me.allIn) return null;
+    const top = Math.max(...tb.seats.map(s => s.bet || 0));
+    return { street: `${tb.handNo}:${tb.street}`, toCall: Math.min(top - me.bet, me.stack) };
+  }
+  let preTimer = 0;
+  function preMove(l) {
+    const p = pre;
+    if (!p || p.street !== `${room.table.handNo}:${room.table.street}`) return null;
+    if (l.canCheck) return 'CHECK';
+    if (p.kind === 'checkfold') return 'FOLD';
+    if (p.kind === 'call' && l.toCall <= p.amount) return 'CALL';
+    return null;
+  }
+
   function refreshActions() {
     const { sizer } = bar;
     const me = room?.table.seats[room.me];
     t.betEl.textContent = formatCH(me?.stack ?? 0);
     const l = legal();
     if (l && !pk.animating) {
-      t.hint('내 차례예요');
       const turn = `${room.table.handNo}:${room.table.seq}`;
-      if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
+      const queued = preMove(l);
       t.setActions(bar.actions(l, act));
+      clearTimeout(preTimer);
+      if (queued) {
+        t.hint(queued === 'FOLD' ? '미리 고른 대로 폴드해요' : queued === 'CALL' ? '미리 고른 대로 콜해요' : '미리 고른 대로 체크해요');
+        // The table may still be replaying the moves before mine; the next refresh after that tries again.
+        preTimer = setTimeout(() => {
+          if (!legal() || t.busy || `${room.table.handNo}:${room.table.seq}` !== turn) return;
+          pre = null;
+          t.run(() => act(queued));
+        }, 350);
+        return;
+      }
+      pre = null;
+      t.hint('내 차례예요');
+      if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
       return;
     }
     sizer.hidden = true;
     const tb = room?.table;
     const turnSeat = tb && tb.toAct >= 0 ? tb.seats[tb.toAct] : null;
     t.hint(!room ? '' : turnSeat ? (tb.toAct === room.me ? '내 차례예요' : `${turnSeat.name} 차례`) : room.started ? '다음 핸드를 곧 돌려요' : '');
+    const wait = waitingTurn();
+    const street = tb && !tb.handOver ? `${tb.handNo}:${tb.street}` : null;
+    if (pre && (pre.street !== street || (wait && ((pre.kind === 'check' && wait.toCall > 0) || (pre.kind === 'call' && wait.toCall > pre.amount))))) pre = null;
+    const toggle = (kind, label, amount = 0) => ({
+      label, pressed: pre?.kind === kind, disabled: pk.animating,
+      onClick: () => { pre = pre?.kind === kind ? null : { kind, amount, street: wait.street }; }
+    });
+    const queue = !wait ? [] : wait.toCall === 0
+      ? [toggle('checkfold', '체크/폴드'), toggle('check', '체크')]
+      : [toggle('checkfold', '폴드'), toggle('call', `콜 ${formatCH(wait.toCall)}`, wait.toCall)];
     t.setActions([
       { label: '나가기', ghost: true, disabled: pk.animating, onClick: leave },
+      ...queue,
       ...(room && room.isHost && !room.started ? [{ label: '딜 시작', key: '↵', primary: true, disabled: pk.animating, onClick: deal }] : [])
     ]);
   }
@@ -383,7 +428,7 @@ export function createFriends(t, pk, bar, hooks) {
 
   return {
     get active() { return active; },
-    legal, refreshActions, open, resume,
+    legal, refreshActions, open, resume, street: () => room?.table.street,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },
     stop: () => { stop(); active = false; document.removeEventListener('visibilitychange', onVisible); }
   };

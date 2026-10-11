@@ -145,6 +145,11 @@
 .action--primary{background:var(--white);color:var(--ink);border-color:var(--white);font-weight:650}
 .action--primary:not(:disabled):hover{background:#fff}
 .action--ghost{flex:.7;border-color:transparent;color:var(--smoke)}
+.action>span{white-space:nowrap}
+@media (max-width:519px){.table-screen--holdem .action{font-size:15px;padding:0 8px;min-width:0}}
+.action[aria-pressed]{font-size:15px}
+.action[aria-pressed="true"]{background:#f4f5f71f;border-color:var(--white);font-weight:650}
+.action[aria-pressed="true"]>span::before{content:"✓ "}
 .action kbd{display:none;font:400 11px var(--sans);padding:1px 5px;border-radius:4px;border:1px solid currentColor;opacity:.5}
 @media (hover:hover) and (pointer:fine){.action kbd{display:inline-block}}
 
@@ -461,7 +466,7 @@
 .pk-seat{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:4;transition:opacity .3s}
 .pk-seat .pk-cards{--card-w:clamp(26px,7.5vw,40px);min-height:calc(var(--card-w) * 1.4);margin-bottom:-14px}
 .pk-seat .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.42)}
-.pk-seat--hero{top:100%;transform:translate(-50%,6px);z-index:6}
+.pk-seat--hero{top:100%;transform:translate(-50%,-12px);z-index:6}
 .pk-seat--hero .pk-cards{--card-w:clamp(58px,16vw,80px);margin-bottom:4px}
 .pk-seat--hero .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.2)}
 .pk-plate{position:relative;display:grid;justify-items:center;min-width:78px;padding:5px 10px 6px;border-radius:12px;background:#0a0b0deb;box-shadow:0 0 0 1px #ffffff1f,0 8px 18px #0009;line-height:1.15;transition:box-shadow .25s,background .25s,color .25s;z-index:2}
@@ -507,7 +512,8 @@
 /* controls while seated: raise sizer replaces the chip tray */
 .pk-sizer{grid-area:sizer;display:grid;gap:8px}
 .pk-sizer[hidden]{display:none}
-.pk-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pk-presets{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px}
+.pk-presets button[aria-pressed="true"]{background:var(--ivory);color:var(--ink);border-color:var(--ivory);font-weight:650}
 .pk-presets button,.pk-slider button{height:38px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px}
 .pk-slider{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:10px}
 .pk-slider input{width:100%;accent-color:var(--white)}
@@ -544,6 +550,7 @@
 .pk-seat.is-human [data-name]::before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--star);clip-path:var(--star-shape);vertical-align:1px}
 .pk-seat.is-human .pk-plate small{color:var(--star)}
 .pk-clock{position:absolute;right:-20px;top:-18px;z-index:6;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#0a0b0d}
+.pk-seat--r .pk-clock{right:auto;left:-20px}
 .pk-clock svg{position:absolute;inset:0;transform:rotate(-90deg)}
 .pk-clock circle{fill:none;stroke:#ffffff26;stroke-width:3}
 .pk-clock .pk-clock-run{stroke:var(--white);stroke-linecap:round;transition:stroke-dashoffset .25s linear}

@@ -393,30 +393,41 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
 export function createActionBar(t, pk) {
   const sizer = el('div', 'pk-sizer');
   sizer.innerHTML = `
-    <div class="pk-presets" role="group" aria-label="레이즈 크기">
-      <button type="button" data-preset="0.5">½ 팟</button><button type="button" data-preset="0.75">¾ 팟</button>
-      <button type="button" data-preset="1">팟</button><button type="button" data-preset="all">올인</button>
-    </div>
+    <div class="pk-presets" role="group" aria-label="레이즈 크기" data-presets></div>
     <div class="pk-slider"><button type="button" data-step="-1" aria-label="줄이기">−</button><input type="range" data-range aria-label="레이즈 금액"><button type="button" data-step="1" aria-label="늘리기">+</button></div>`;
   t.root.querySelector('.table-controls').prepend(sizer);
-  const range = sizer.querySelector('[data-range]');
-  let raiseTo = 0;
-  const bar = { sizer, legal: () => null, refresh: () => {} };
+  const range = sizer.querySelector('[data-range]'), presetsEl = sizer.querySelector('[data-presets]');
+  let raiseTo = 0, shown = [];
+  const bar = { sizer, legal: () => null, street: () => null, refresh: () => {} };
+
+  const clampRaise = (l, value) => {
+    const step = pk.bb / 2;
+    return value >= l.maxRaiseTo ? l.maxRaiseTo : Math.max(l.minRaiseTo, Math.min(l.maxRaiseTo, Math.round(value / step) * step));
+  };
+  // Opening a pot before the flop sizes in big blinds; after that, or facing a raise, in pot fractions.
+  function presetsFor(l) {
+    const pot = f => l.currentBet + (l.pot + l.toCall) * f;
+    const list = bar.street() === 'PREFLOP' && l.currentBet <= pk.bb
+      ? [['2.5BB', 2.5 * pk.bb], ['3BB', 3 * pk.bb], ['4BB', 4 * pk.bb]]
+      : [['⅓ 팟', pot(1 / 3)], ['½ 팟', pot(0.5)], ['¾ 팟', pot(0.75)], ['팟', pot(1)]];
+    return [...list.map(([label, v]) => [label, clampRaise(l, v)]).filter(([, v]) => v < l.maxRaiseTo), ['올인', l.maxRaiseTo]];
+  }
+  function paintPresets() {
+    presetsEl.style.setProperty('--n', shown.length);
+    presetsEl.innerHTML = shown.map(([label, v], k) => `<button type="button" data-preset="${k}" aria-pressed="${v === raiseTo}">${label}</button>`).join('');
+  }
 
   function setRaise(value) {
     const l = bar.legal(); if (!l) return;
-    const step = pk.bb / 2;
-    raiseTo = Math.max(l.minRaiseTo, Math.min(l.maxRaiseTo, Math.round(value / step) * step));
-    if (value >= l.maxRaiseTo) raiseTo = l.maxRaiseTo;
+    raiseTo = clampRaise(l, value);
     range.value = raiseTo;
     bar.refresh();
   }
-  sizer.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
-    const l = bar.legal(); if (!l) return;
+  presetsEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-preset]'); if (!b) return;
     sound.tick();
-    if (b.dataset.preset === 'all') return setRaise(l.maxRaiseTo);
-    setRaise(l.currentBet + (l.pot + l.toCall) * Number(b.dataset.preset));
-  }));
+    setRaise(shown[Number(b.dataset.preset)]?.[1] ?? raiseTo);
+  });
   sizer.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => { sound.tick(); setRaise(raiseTo + Number(b.dataset.step) * pk.bb); }));
   range.addEventListener('input', () => setRaise(Number(range.value)));
 
@@ -427,6 +438,8 @@ export function createActionBar(t, pk) {
       range.min = l.minRaiseTo; range.max = l.maxRaiseTo; range.step = pk.bb / 2;
       if (raiseTo < l.minRaiseTo || raiseTo > l.maxRaiseTo) raiseTo = l.minRaiseTo;
       range.value = raiseTo;
+      shown = presetsFor(l);
+      paintPresets();
     }
     const allIn = raiseTo >= l.maxRaiseTo;
     return [

@@ -21,7 +21,7 @@ const RESULT = {
 };
 
 export async function mountBlackjack(ctx) {
-  const t = new Table({ ...ctx, game: 'blackjack', title: 'BLACKJACK' });
+  const t = new Table({ ...ctx, game: 'blackjack', title: 'Blackjack' });
   t.body.innerHTML = `
     <div class="bj">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
@@ -185,7 +185,7 @@ export async function mountBlackjack(ctx) {
     }
     const net = res.netPnl ?? round.netPnl ?? 0;
     const top = round.hands.map(h => h.result?.result);
-    const headline = top.includes('BLACKJACK') && net > 0 ? 'BLACKJACK!' : net > 0 ? 'YOU WIN' : net < 0 ? (top.every(r => r === 'BUST') ? 'BUST' : 'DEALER WINS') : 'PUSH';
+    const headline = top.includes('BLACKJACK') && net > 0 ? 'Blackjack' : net > 0 ? 'You win' : net < 0 ? (top.every(r => r === 'BUST') ? 'Bust' : 'Dealer wins') : 'Push';
     await t.settle(net, { label: `${headline}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` });
     await t.syncBalance();
     refreshActions();

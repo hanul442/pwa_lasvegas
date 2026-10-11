@@ -45,7 +45,8 @@ test('motion honours reduced-motion and never blocks input', () => {
   assert.match(styles, /@media \(prefers-reduced-motion:reduce\)/);
   assert.match(table, /@media \(prefers-reduced-motion:reduce\)/);
   assert.match(table, /\.dealer-rack\{[^}]*pointer-events:none/);
-  assert.match(table, /\.burst\{[^}]*pointer-events:none/);
+  assert.match(table, /\.felt-print\{[^}]*pointer-events:none/);
+  assert.match(table, /\.bet-stack\{[^}]*pointer-events:none/);
   assert.match(table, /\.chip-ghost\{[^}]*pointer-events:none/);
 });
 
@@ -77,4 +78,12 @@ test('chip amounts format compactly without "1000K" style overflow', () => {
   assert.equal(formatCH(2_500_000), '2.5M');
   assert.equal(formatCH(-350_000), '-350K');
   assert.equal(formatCH(100_000_000), '100M');
+});
+
+test('every table offers five chip denominations that fit under its limit', () => {
+  for (const tier of Object.values(TIERS)) {
+    assert.equal(tier.chips.length, 5);
+    assert.ok(tier.chips.every(c => c <= tier.max));
+    assert.ok(tier.chips[0] < tier.min, `${tier.slug} smallest chip builds bets in steps`);
+  }
 });

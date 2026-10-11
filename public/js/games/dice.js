@@ -14,17 +14,17 @@ function cube() {
 const pose = n => `rotateX(-22deg) rotateY(28deg) ${FACE_ROT[n]}`;
 
 export async function mountDice(ctx) {
-  const t = new Table({ ...ctx, game: 'dice', title: 'SIC BO', feltClass: 'felt--red' });
+  const t = new Table({ ...ctx, game: 'dice', title: 'Sic Bo', feltClass: 'felt--red' });
   const totals = Object.entries(TOTAL_PAY).map(([n, p]) => `<button type="button" class="zone zone--total" data-zone="T${n}"><strong>${n}</strong><small>${p}:1</small></button>`).join('');
   t.body.innerHTML = `
     <div class="sb">
       <div class="dome" data-dome><div class="dome-floor">${cube()}${cube()}${cube()}</div><div class="dome-glass" aria-hidden="true"></div><div class="dome-total" data-total aria-live="polite"></div></div>
       <div class="sb-main">
-        <button type="button" class="zone zone--big-small" data-zone="SMALL"><strong>SMALL</strong><small>4–10 · 1:1</small></button>
-        <button type="button" class="zone" data-zone="ODD"><strong>ODD</strong><small>1:1</small></button>
-        <button type="button" class="zone zone--triple" data-zone="ANY_TRIPLE"><strong>ANY TRIPLE</strong><small>24:1</small></button>
-        <button type="button" class="zone" data-zone="EVEN"><strong>EVEN</strong><small>1:1</small></button>
-        <button type="button" class="zone zone--big-small" data-zone="BIG"><strong>BIG</strong><small>11–17 · 1:1</small></button>
+        <button type="button" class="zone zone--big-small" data-zone="SMALL"><strong>Small</strong><small>4–10 · 1:1</small></button>
+        <button type="button" class="zone" data-zone="ODD"><strong>Odd</strong><small>1:1</small></button>
+        <button type="button" class="zone zone--triple" data-zone="ANY_TRIPLE"><strong>Any triple</strong><small>24:1</small></button>
+        <button type="button" class="zone" data-zone="EVEN"><strong>Even</strong><small>1:1</small></button>
+        <button type="button" class="zone zone--big-small" data-zone="BIG"><strong>Big</strong><small>11–17 · 1:1</small></button>
       </div>
       <div class="sb-totals">${totals}</div>
     </div>`;
@@ -66,7 +66,7 @@ export async function mountDice(ctx) {
     values.forEach((v, i) => { last[i] = v; });
     sound.chip();
     const total = values.reduce((a, b) => a + b, 0);
-    totalEl.textContent = values[0] === values[1] && values[1] === values[2] ? `TRIPLE ${values[0]}` : `${total} · ${total <= 10 ? 'SMALL' : 'BIG'}`;
+    totalEl.textContent = values[0] === values[1] && values[1] === values[2] ? `Triple ${values[0]}` : `${total}, ${total <= 10 ? 'Small' : 'Big'}`;
     totalEl.classList.add('is-shown');
     const hits = [`T${total}`];
     const triple = values[0] === values[1] && values[1] === values[2];

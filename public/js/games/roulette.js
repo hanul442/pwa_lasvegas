@@ -13,21 +13,21 @@ function wheelSvg() {
     const a0 = ((i - 0.5) * STEP - 90) * Math.PI / 180, a1 = ((i + 0.5) * STEP - 90) * Math.PI / 180;
     const R = 86, r = 60;
     const p = (rad, ang) => `${(rad * Math.cos(ang)).toFixed(2)},${(rad * Math.sin(ang)).toFixed(2)}`;
-    const fill = { green: '#0f7a43', red: '#b3201c', black: '#141210' }[colorOf(n)];
+    const fill = { green: '#2e5e45', red: '#8a2626', black: '#1a1714' }[colorOf(n)];
     const label = `<text transform="rotate(${i * STEP}) translate(0,-76)" text-anchor="middle" dominant-baseline="middle">${n}</text>`;
     return `<path d="M${p(R, a0)} A${R},${R} 0 0 1 ${p(R, a1)} L${p(r, a1)} A${r},${r} 0 0 0 ${p(r, a0)} Z" fill="${fill}"/>${label}`;
   }).join('');
   const frets = ORDER.map((_, i) => `<line x1="0" y1="-60" x2="0" y2="-86" transform="rotate(${(i + 0.5) * STEP})"/>`).join('');
   return `<svg class="wheel-rotor" viewBox="-100 -100 200 200" aria-hidden="true">
     <defs>
-      <radialGradient id="cone" cx="40%" cy="35%"><stop offset="0" stop-color="#d9b46a"/><stop offset=".55" stop-color="#7a4f1f"/><stop offset="1" stop-color="#3a220c"/></radialGradient>
-      <radialGradient id="hub" cx="40%" cy="35%"><stop offset="0" stop-color="#fff3c8"/><stop offset="1" stop-color="#a67a2e"/></radialGradient>
+      <radialGradient id="cone" cx="40%" cy="35%"><stop offset="0" stop-color="#6b5038"/><stop offset=".55" stop-color="#3a2a1e"/><stop offset="1" stop-color="#1a120c"/></radialGradient>
+      <radialGradient id="hub" cx="40%" cy="35%"><stop offset="0" stop-color="#efe2c4"/><stop offset="1" stop-color="#8c7448"/></radialGradient>
     </defs>
-    <circle r="88" fill="#1b130b"/>
+    <circle r="88" fill="#120c08"/>
     <g class="pockets">${pockets}</g>
     <g class="frets">${frets}</g>
     <circle r="60" fill="url(#cone)"/>
-    <circle r="56" fill="none" stroke="#e8c87d" stroke-opacity=".5" stroke-width=".8"/>
+    <circle r="56" fill="none" stroke="#bfa476" stroke-opacity=".4" stroke-width=".8"/>
     <g class="turret">${[0, 90, 180, 270].map(a => `<rect x="-2.5" y="-40" width="5" height="34" rx="2.5" transform="rotate(${a})" fill="url(#hub)"/>`).join('')}<circle r="10" fill="url(#hub)"/></g>
   </svg>`;
 }
@@ -44,16 +44,16 @@ function boardMarkup() {
   </div>
   <div class="rl-outside">
     <button type="button" class="zone" data-zone="LOW"><strong>1–18</strong></button>
-    <button type="button" class="zone" data-zone="EVEN"><strong>EVEN</strong></button>
-    <button type="button" class="zone zone--red" data-zone="RED"><strong>RED</strong></button>
-    <button type="button" class="zone zone--black" data-zone="BLACK"><strong>BLACK</strong></button>
-    <button type="button" class="zone" data-zone="ODD"><strong>ODD</strong></button>
+    <button type="button" class="zone" data-zone="EVEN"><strong>Even</strong></button>
+    <button type="button" class="zone zone--red" data-zone="RED"><strong>Red</strong></button>
+    <button type="button" class="zone zone--black" data-zone="BLACK"><strong>Black</strong></button>
+    <button type="button" class="zone" data-zone="ODD"><strong>Odd</strong></button>
     <button type="button" class="zone" data-zone="HIGH"><strong>19–36</strong></button>
   </div>`;
 }
 
 export async function mountRoulette(ctx) {
-  const t = new Table({ ...ctx, game: 'roulette', title: 'ROULETTE', feltClass: 'felt--roulette' });
+  const t = new Table({ ...ctx, game: 'roulette', title: 'Roulette', feltClass: 'felt--roulette' });
   t.body.innerHTML = `
     <div class="rl">
       <div class="rl-top">
@@ -155,7 +155,7 @@ export async function mountRoulette(ctx) {
     await spinTo(res.round.number);
     await wait(250);
     const net = res.round.netPnl;
-    await t.settle(net, { label: `${res.round.number} ${res.round.color}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` });
+    await t.settle(net, { label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` });
     await t.syncBalance();
   }
 

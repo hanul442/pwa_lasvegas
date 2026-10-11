@@ -7,19 +7,19 @@ import { Table } from '../table.js';
 const point = texts => texts.reduce((s, t) => { const c = parseCard(t); if (!c) return s; return s + (c.rank === 'A' ? 1 : ['10', 'J', 'Q', 'K'].includes(c.rank) ? 0 : Number(c.rank)); }, 0) % 10;
 
 export async function mountBaccarat(ctx) {
-  const t = new Table({ ...ctx, game: 'baccarat', title: 'BACCARAT', feltClass: 'felt--blue' });
+  const t = new Table({ ...ctx, game: 'baccarat', title: 'Baccarat', feltClass: 'felt--blue' });
   t.body.innerHTML = `
     <div class="bac">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
       <div class="discard" data-discard aria-hidden="true"></div>
       <div class="bac-sides">
-        <section class="bac-side bac-side--player" data-side="PLAYER"><h3>PLAYER</h3><div class="hand" data-hand></div><span class="bac-score" data-score>–</span></section>
-        <section class="bac-side bac-side--banker" data-side="BANKER"><h3>BANKER</h3><div class="hand" data-hand></div><span class="bac-score" data-score>–</span></section>
+        <section class="bac-side bac-side--player" data-side="PLAYER"><h3>Player</h3><div class="hand" data-hand></div><span class="bac-score" data-score>–</span></section>
+        <section class="bac-side bac-side--banker" data-side="BANKER"><h3>Banker</h3><div class="hand" data-hand></div><span class="bac-score" data-score>–</span></section>
       </div>
       <div class="bac-zones">
-        <button type="button" class="zone zone--player" data-zone="PLAYER"><strong>PLAYER</strong><small>1 : 1</small></button>
-        <button type="button" class="zone zone--tie" data-zone="TIE"><strong>TIE</strong><small>8 : 1</small></button>
-        <button type="button" class="zone zone--banker" data-zone="BANKER"><strong>BANKER</strong><small>0.95 : 1</small></button>
+        <button type="button" class="zone zone--player" data-zone="PLAYER"><strong>Player</strong><small>1 : 1</small></button>
+        <button type="button" class="zone zone--tie" data-zone="TIE"><strong>Tie</strong><small>8 : 1</small></button>
+        <button type="button" class="zone zone--banker" data-zone="BANKER"><strong>Banker</strong><small>0.95 : 1</small></button>
       </div>
       <ol class="road" data-road aria-label="최근 결과"></ol>
     </div>`;
@@ -88,7 +88,7 @@ export async function mountBaccarat(ctx) {
     road.prepend(dot);
     while (road.children.length > 14) road.lastElementChild.remove();
     const net = r.netPnl;
-    const label = `${r.winner === 'TIE' ? 'TIE' : `${r.winner} WINS`}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`;
+    const label = `${r.winner === 'TIE' ? 'Tie' : `${r.winner === 'PLAYER' ? 'Player' : 'Banker'} wins`}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`;
     await t.settle(net, { label });
     await t.syncBalance();
   }

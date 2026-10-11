@@ -20,8 +20,8 @@ export class Table {
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
-        <div class="table-name"><strong>${title}</strong><span>${this.tier.name} · ${this.tier.floorName} · ${formatCH(this.tier.min)}–${formatCH(this.tier.max)}</span></div>
-        <div class="table-balance"><span>내 칩</span><strong data-balance>${formatFull(this.available)}</strong></div>
+        <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)} CH</span></div>
+        <div class="table-balance"><span>보유 칩</span><strong data-balance>${formatFull(this.available)}</strong></div>
       </header>
       <div class="felt ${feltClass}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
@@ -32,6 +32,11 @@ export class Table {
       </div>
       <div class="table-controls">
         <div class="bet-readout"><span>베팅</span><strong data-bet>0</strong><small data-hint></small></div>
+        <div class="bet-tools" role="group" aria-label="베팅 조절">
+          <button class="bet-tool" type="button" data-tool="undo" aria-label="마지막 칩 되돌리기">되돌리기</button>
+          <button class="bet-tool" type="button" data-tool="half" aria-label="베팅 절반으로">½</button>
+          <button class="bet-tool" type="button" data-tool="double" aria-label="베팅 두 배로">×2</button>
+        </div>
         <div class="chip-tray" data-tray role="group" aria-label="칩 선택"></div>
         <div class="action-row" data-actions></div>
       </div>`;
@@ -46,6 +51,10 @@ export class Table {
     this.betEl = root.querySelector('[data-bet]');
     this.hintEl = root.querySelector('[data-hint]');
     root.querySelector('.table-back').addEventListener('click', () => onLeave?.());
+    this.tools = root.querySelectorAll('[data-tool]');
+    root.querySelector('[data-tool="undo"]').addEventListener('click', () => this.undo());
+    root.querySelector('[data-tool="half"]').addEventListener('click', () => this.half());
+    root.querySelector('[data-tool="double"]').addEventListener('click', () => this.double());
     this.renderTray();
     this.renderRack();
   }
@@ -190,6 +199,46 @@ export class Table {
     this.refreshBet();
   }
 
+  // ---------- fine bet adjustments ----------
+  async undo() {
+    if (this.locked || this.busy || !this.bet.chips.length) return;
+    this.bet.chips.pop();
+    const chip = this.stackOf(this.bet.zone)?.lastElementChild;
+    sound.chip();
+    if (chip) await flyTo(chip, this.tray.getBoundingClientRect(), { duration: 300, fade: true }).then(() => chip.remove());
+    if (!this.bet.chips.length) { this.bet.zone = null; this.zones.forEach(z => z.classList.remove('has-bet')); }
+    this.refreshBet();
+  }
+
+  async half() {
+    if (this.locked || this.busy || !this.bet.chips.length) return;
+    const step = Math.min(...this.tier.chips);
+    const target = Math.max(step, Math.floor(this.total / 2 / step) * step);
+    if (target >= this.total) return;
+    const zone = this.bet.zone;
+    await this.clearBet();
+    this.bet.zone = zone;
+    for (const v of breakdown(target, this.tier.chips, 20)) { this.bet.chips.push(v); this.pushChip(zone, v); }
+    sound.chips(2);
+    this.refreshBet();
+  }
+
+  async double() {
+    if (this.locked || this.busy || !this.bet.chips.length) return;
+    const room = Math.min(this.tier.max, this.available) - this.total;
+    const values = breakdown(Math.min(this.total, room), this.tier.chips, 20).filter((v, i, all) => all.slice(0, i + 1).reduce((a, b) => a + b, 0) <= room);
+    if (!values.length) return this.reject(this.total * 2 > this.tier.max ? `이 테이블 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요');
+    const tray = this.tray.getBoundingClientRect();
+    for (const v of values) {
+      this.bet.chips.push(v);
+      const chip = this.pushChip(this.bet.zone, v);
+      sound.chip();
+      flyFrom(chip, tray, { duration: 320, lift: 40 });
+      await wait(60);
+    }
+    this.refreshBet();
+  }
+
   async rebet() {
     if (!this.lastBet) return;
     await this.clearBet({ animateBack: false });
@@ -217,6 +266,8 @@ export class Table {
     const short = this.total > 0 && this.total < this.tier.min;
     this.hint(short ? `최소 ${formatCH(this.tier.min)}` : '');
     if (!this.locked) this.setBalance(this.available - this.total, { roll: false });
+    const empty = !this.bet.chips.length;
+    this.tools.forEach(b => { b.disabled = empty; });
     this.onBetChange?.();
   }
 
@@ -254,7 +305,7 @@ export class Table {
       }));
     }
     if (label) this.banner(label, kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'));
-    if (net > 0) { sound.win(); haptic([20, 60, 30]); this.burst(); }
+    if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
     await wait(net > 0 ? 900 : 650);
@@ -305,23 +356,10 @@ export class Table {
     this.toastTimer = setTimeout(() => node.classList.remove('is-shown'), 2600);
   }
 
-  burst() {
-    const box = this.felt.getBoundingClientRect();
-    const layer = el('div', 'burst');
-    this.felt.append(layer);
-    const pieces = Array.from({ length: 26 }, (_, i) => {
-      const p = el('i');
-      p.style.setProperty('--h', `${(i * 47) % 360}`);
-      layer.append(p);
-      const angle = (Math.PI * 2 * i) / 26 + Math.random() * 0.3;
-      const dist = Math.min(box.width, box.height) * (0.25 + Math.random() * 0.3);
-      return animate(p, [
-        { transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 },
-        { transform: `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px)) scale(1) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.6 },
-        { transform: `translate(calc(-50% + ${Math.cos(angle) * dist * 1.1}px), calc(-50% + ${Math.sin(angle) * dist * 1.1 + 60}px)) scale(.8) rotate(${Math.random() * 720}deg)`, opacity: 0 }
-      ], { duration: 1300, easing: 'cubic-bezier(.2,.7,.3,1)' });
-    });
-    Promise.all(pieces).then(() => layer.remove());
+  glow() {
+    this.felt.classList.remove('is-glow');
+    void this.felt.offsetWidth;
+    this.felt.classList.add('is-glow');
   }
 
   // ---------- actions ----------

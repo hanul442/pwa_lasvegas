@@ -6,6 +6,7 @@ import { createCard, flipCard, setCardFace } from '../cards.js';
 import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../fx.js';
 import { createChip, breakdown } from '../chips.js';
 import { Table } from '../table.js';
+import { voice, handLine } from '../voice.js';
 
 const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
@@ -69,6 +70,9 @@ export async function mountHoldem(ctx) {
   let session = null; // last server view
   let raiseTo = 0;
   let animating = false;
+  let prompted = ''; // the hand and turn "Your action" was last called for
+  let calledHand = false; // the winning hand is called once, even when side pots pay out again
+  const shown = new Map(); // seat -> cards turned up at showdown
   let potLeft = 0; // what is still in the middle while pots are being pushed out
 
   // ---------- seats ----------
@@ -183,6 +187,7 @@ export async function mountHoldem(ctx) {
         markTurn(-1);
         seatEls.forEach((s, i) => { s.node.classList.remove('is-folded', 'is-allin', 'is-winner'); s.node.classList.toggle('is-out', !ev.seats.includes(i)); paintBet(i, 0); s.node.querySelector('[data-hand-name]')?.remove(); });
         moveButton(ev.button);
+        shown.clear(); calledHand = false;
         sound.tick();
         await wait(220);
         break;
@@ -211,6 +216,8 @@ export async function mountHoldem(ctx) {
         if (ev.seat !== 0) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(420 + Math.random() * 380); seatEls[ev.seat].node.classList.remove('is-thinking'); }
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
+        if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
+        else if (ev.action === 'RAISE') voice.say('raise');
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));
@@ -240,6 +247,7 @@ export async function mountHoldem(ctx) {
         break;
       }
       case 'street': {
+        voice.say(ev.street.toLowerCase());
         await wait(260);
         for (const text of ev.cards) {
           const card = createCard(text, { faceUp: false });
@@ -253,6 +261,7 @@ export async function mountHoldem(ctx) {
       case 'show': {
         const box = seatEls[ev.seat].cards;
         if (ev.seat !== 0) for (const [k, node] of [...box.children].entries()) await flipCard(node, ev.cards[k], { duration: 320 });
+        shown.set(ev.seat, ev.cards);
         const name = el('span', 'pk-handname', ev.hand);
         name.dataset.handName = '';
         seatEls[ev.seat].node.append(name);
@@ -262,6 +271,10 @@ export async function mountHoldem(ctx) {
       case 'win': {
         const target = seatEls[ev.seat];
         target.node.classList.add('is-winner');
+        if (ev.hand && !calledHand) {
+          calledHand = true;
+          voice.say(handLine(ev.hand, [...(shown.get(ev.seat) || view.table.seats[ev.seat].cards || []), ...view.table.board]));
+        }
         const pay = breakdown(ev.amount, chipSet, 8);
         const from = rectOf(potStack);
         paintPot(Math.max(0, potLeft - ev.amount));
@@ -290,6 +303,7 @@ export async function mountHoldem(ctx) {
           const winners = (res?.winners || []).map(i => (i === 0 ? '나' : view.table.seats[i].name));
           const label = net > 0 ? `You win +${formatCH(net)}` : winners.length ? `${winners.join(', ')} wins` : '';
           if (label) t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
+          if (net > 0) voice.say('you-win');
           if (net < 0) sound.lose();
         }
         await wait(500);
@@ -471,6 +485,8 @@ export async function mountHoldem(ctx) {
       ]);
       markTurn(0);
       hintLine.hidden = true;
+      const turn = `${session.table.handNo}:${session.table.seq}`;
+      if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
       return;
     }
     sizer.hidden = true;

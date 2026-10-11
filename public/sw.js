@@ -1,15 +1,24 @@
 // Offline app shell. Game and chip API responses are never cached: the server stays authoritative.
-const CACHE = 'vegas-shell-v9';
+const CACHE = 'vegas-shell-v10';
 const SHELL = [
   './', 'index.html', 'styles.css', 'table.css', 'hwatu.css', 'app.js', 'icon.svg', 'logo.svg', 'manifest.webmanifest',
   'js/config.js', 'js/music.js', 'js/api.js', 'js/fx.js', 'js/cards.js', 'js/chips.js', 'js/table.js',
   'js/games/blackjack.js', 'js/games/baccarat.js', 'js/games/roulette.js', 'js/games/dice.js', 'js/games/holdem.js',
-  'js/hwatu.js', 'js/guide.js', 'js/guides.js', 'js/games/matgo.js', 'js/games/seotda.js'
+  'js/hwatu.js', 'js/guide.js', 'js/guides.js', 'js/games/matgo.js', 'js/games/seotda.js', 'js/voice.js'
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL).then(() => cacheVoice(cache))).then(() => self.skipWaiting()));
 });
+
+// The dealer's call-outs (under 1 MB) so he still speaks offline. Best effort: a miss here only
+// means that line is fetched the first time it is needed.
+function cacheVoice(cache) {
+  return fetch('voice/lines.json')
+    .then(res => res.json())
+    .then(ids => cache.addAll(ids.map(id => `voice/${id}.mp3`)))
+    .catch(() => {});
+}
 
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));

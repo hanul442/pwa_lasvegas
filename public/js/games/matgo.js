@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu, slap, hwatu, isBombCard, monthOf } from '../hwatu.js';
 import { animate, flyFrom, wait, sound, haptic, formatCH, el, ms } from '../fx.js';
 import { Table } from '../table.js';
+import { voice, goLine } from '../voice.js';
 
 const ME = 0, OPP = 1;
 const GROUPS = [['gwang', '광'], ['yeol', '끗'], ['tti', '띠'], ['pi', '피']];
@@ -134,6 +135,9 @@ export async function mountMatgo(ctx) {
 
   async function say(text, seat) {
     callout.textContent = text;
+    // 고 and 스톱 are called in the English the table already uses: "Two go", "Stop".
+    const go = /^(\d+)고$/.exec(text);
+    voice.say(go ? goLine(Number(go[1])) : text === '스톱' ? 'stop' : null);
     callout.className = `callout callout--${seat === ME ? 'me' : 'opp'}`;
     sound.chip();
     haptic(12);
@@ -276,6 +280,7 @@ export async function mountMatgo(ctx) {
       const extras = r.multipliers.map(x => x.label).join(' ');
       label = `${r.winner === ME ? '승리' : '패배'} ${r.points}점${extras ? ` (${extras})` : ''}`;
     }
+    if (r.winner === ME) voice.say('you-win');
     t.toast(r.winner === null ? '아무도 스톱하지 못했어요. 판돈은 그대로예요.' : r.lines?.map(l => `${l.label} ${l.points}`).join(' · ') || '');
     await t.settle(net || 0, { label: `${label}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` });
     zone.hidden = false;
@@ -317,6 +322,7 @@ export async function mountMatgo(ctx) {
     await layout(model, { duration: 200 });
     paintSeats(view);
     if (view.status === 'SETTLED') await finish(view, res.netPnl);
+    else if (view.actor === ME) voice.say('your-turn');
   }
 
   // ---------- actions ----------

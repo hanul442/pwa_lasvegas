@@ -2,6 +2,7 @@
 import { api, errorMessage, playerId } from './js/api.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
 import { music } from './js/music.js';
+import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { createCard, flipCard } from './js/cards.js';
 import { TIERS, createChip } from './js/chips.js';
 import { mountBlackjack } from './js/games/blackjack.js';
@@ -69,13 +70,16 @@ async function openTable(tier) {
   history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
   showSurface('table');
   closeTable();
+  voice.preload(selectedGame.id);
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
   attachGuide(activeTable, selectedGame.id);
+  if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
 
 function closeTable() {
   if (!activeTable) return;
+  voice.hush();
   activeTable.destroy();
   activeTable = null;
   tableMount.replaceChildren();
@@ -262,7 +266,8 @@ document.addEventListener('click', e => {
   setMuted(!isMuted());
   paintSound();
   syncMusic();
-  if (!isMuted()) sound.chip();
+  if (isMuted()) voice.hush();
+  else sound.chip();
 });
 // Browsers only let audio start after a tap or key press, so the music begins with the first one.
 for (const type of ['pointerdown', 'keydown']) {

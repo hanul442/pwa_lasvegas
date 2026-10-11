@@ -19,7 +19,7 @@ const FORM = [
 
 const hz = midi => 440 * Math.pow(2, (midi - 69) / 12);
 
-let ac = null, bus = null, timer = null, nextBar = 0, bar = 0, playing = false;
+let ac = null, bus = null, duckGain = null, timer = null, nextBar = 0, bar = 0, playing = false;
 
 function impulse(seconds = 2.8) {
   const len = Math.floor(ac.sampleRate * seconds);
@@ -43,7 +43,9 @@ function build() {
   verb.buffer = impulse();
   const wet = ac.createGain();
   wet.gain.value = 0.32;
-  bus.connect(tone);
+  // The dealer's voice dips the band through its own stage so it never fights the fade in or out.
+  duckGain = ac.createGain();
+  bus.connect(duckGain).connect(tone);
   tone.connect(ac.destination);
   tone.connect(verb).connect(wet).connect(ac.destination);
   return true;
@@ -172,5 +174,12 @@ export const music = {
     bus.gain.cancelScheduledValues(ac.currentTime);
     bus.gain.setValueAtTime(Math.max(bus.gain.value, 0.0001), ac.currentTime);
     bus.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.8);
+  },
+  duck(on) {
+    if (!duckGain) return;
+    const now = ac.currentTime;
+    duckGain.gain.cancelScheduledValues(now);
+    duckGain.gain.setValueAtTime(duckGain.gain.value, now);
+    duckGain.gain.linearRampToValueAtTime(on ? 0.4 : 1, now + (on ? 0.12 : 0.6));
   }
 };

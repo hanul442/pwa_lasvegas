@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api.js';
 import { dealCard, flipCard, placeCards, sweepCards, parseCard } from '../cards.js';
 import { el, wait, formatCH, flyFrom, sound } from '../fx.js';
 import { Table } from '../table.js';
+import { voice } from '../voice.js';
 
 function value(texts) {
   let total = 0, aces = 0;
@@ -163,7 +164,7 @@ export async function mountBlackjack(ctx) {
     for (const [i, h] of round.hands.entries()) { await dealCard(cardsOf(ws[i]), h.cards[1], shoe); updateHandTotal(ws[i]); }
     await dealCard(dealerHand, 'HIDDEN', shoe, { faceUp: false });
     if (round.status === 'SETTLED') await finish(res);
-    else { markActive(round); if (round.status === 'INSURANCE') { t.banner('Insurance?', 'push'); sound.tick(); } }
+    else { markActive(round); if (round.status === 'INSURANCE') { t.banner('Insurance?', 'push'); sound.tick(); voice.say('insurance'); } }
   }
 
   async function act(action) {
@@ -209,7 +210,7 @@ export async function mountBlackjack(ctx) {
         await dealCard(cardsOf(w), h.cards[k], shoe, { rotate: h.doubled && k === 2 });
         updateHandTotal(w);
       }
-      if (h.status === 'BUST') w.classList.add('is-bust');
+      if (h.status === 'BUST' && !w.classList.contains('is-bust')) { w.classList.add('is-bust'); voice.say('bust'); }
     }
     round = next;
     markActive(round);
@@ -238,6 +239,10 @@ export async function mountBlackjack(ctx) {
     const net = res.netPnl ?? round.netPnl ?? 0;
     const top = round.hands.map(h => h.result?.result);
     const insured = round.insurance?.taken && round.insurance.result === 'WIN';
+    const dealerBust = value(round.dealer).total > 21;
+    // Busted boxes were already called as they went over.
+    const line = insured ? 'you-win' : top.includes('BLACKJACK') && net > 0 ? 'blackjack' : dealerBust && net > 0 ? 'dealer-busts' : net > 0 ? 'you-win' : net < 0 ? (top.every(r => r === 'BUST') ? null : 'dealer-wins') : 'push';
+    voice.say(line);
     const headline = insured ? 'Insurance pays' : top.includes('BLACKJACK') && net > 0 ? 'Blackjack' : net > 0 ? 'You win' : net < 0 ? (top.every(r => r === 'BUST') ? 'Bust' : 'Dealer wins') : 'Push';
     // Each box settles on its own; the insurance line pays or loses separately.
     const zones = new Map();

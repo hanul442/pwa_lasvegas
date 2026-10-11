@@ -37,6 +37,7 @@ Implemented now:
 - Bankruptcy event + fictional price-comparison card data
 - Live, playable tables in the web client for Blackjack, Baccarat, Roulette and Sic Bo, wired to the server API
 - Physical table feel: cards dealt from the shoe with 3D flips and baccarat squeeze, chips tapped or dragged onto the felt, a roulette rotor and ball that land on the server's number, dice that tumble to the server's roll, payouts and rakes animated on the felt, synthesized table sounds and haptics (all respect reduced-motion)
+- A dealer who calls the game in a deep English voice ("No more bets", "Your action", "All in", "Straight", "Two go"): 96 short recordings in `public/voice/`, rendered offline by `scripts/voice/generate.py`, cached for offline play and silenced by the same ♪ toggle
 - Responsive Vegas-inspired lobby, rankings and profile ledger (client code in `public/js/`, no build step)
 - Production Supabase foundation migration with RLS-first read access
 

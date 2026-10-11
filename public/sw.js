@@ -1,9 +1,10 @@
 // Offline app shell. Game and chip API responses are never cached: the server stays authoritative.
-const CACHE = 'vegas-shell-v3';
+const CACHE = 'vegas-shell-v4';
 const SHELL = [
-  './', 'index.html', 'styles.css', 'table.css', 'app.js', 'icon.svg', 'manifest.webmanifest',
+  './', 'index.html', 'styles.css', 'table.css', 'hwatu.css', 'app.js', 'icon.svg', 'manifest.webmanifest',
   'js/config.js', 'js/api.js', 'js/fx.js', 'js/cards.js', 'js/chips.js', 'js/table.js',
-  'js/games/blackjack.js', 'js/games/baccarat.js', 'js/games/roulette.js', 'js/games/dice.js'
+  'js/games/blackjack.js', 'js/games/baccarat.js', 'js/games/roulette.js', 'js/games/dice.js',
+  'js/hwatu.js', 'js/guide.js', 'js/guides.js', 'js/games/matgo.js', 'js/games/seotda.js'
 ];
 
 self.addEventListener('install', event => {

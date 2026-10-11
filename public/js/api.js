@@ -37,7 +37,13 @@ export const api = {
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
   baccarat: (stake, floor, betType) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
-  sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } })
+  sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } }),
+  matgoOpen: () => request('/api/matgo/open'),
+  matgoStart: (stake, floor) => request('/api/matgo/start', { method: 'POST', body: { stake, floor } }),
+  matgoAction: (roundId, move) => request('/api/matgo/action', { method: 'POST', body: { roundId, ...move } }),
+  seotdaOpen: () => request('/api/seotda/open'),
+  seotdaStart: (stake, floor) => request('/api/seotda/start', { method: 'POST', body: { stake, floor } }),
+  seotdaAction: (roundId, action) => request('/api/seotda/action', { method: 'POST', body: { roundId, action } })
 };
 
 const MESSAGES = {
@@ -52,7 +58,12 @@ const MESSAGES = {
   DOUBLE_NOT_ALLOWED: '지금은 더블다운할 수 없어요.',
   SPLIT_NOT_ALLOWED: '같은 카드 두 장일 때만 스플릿할 수 있어요.',
   HAND_LIMIT_REACHED: '더 이상 스플릿할 수 없어요.',
-  RECHARGE_NOT_AVAILABLE: '지금은 충전할 수 없어요.'
+  RECHARGE_NOT_AVAILABLE: '지금은 충전할 수 없어요.',
+  OPEN_MATGO_ROUND: '진행 중인 맞고 판이 있어요. 이어서 플레이해 주세요.',
+  OPEN_SEOTDA_ROUND: '진행 중인 섯다 판이 있어요. 이어서 플레이해 주세요.',
+  NOT_YOUR_TURN: '지금은 상대 차례예요.',
+  TARGET_REQUIRED: '바닥에서 가져올 패를 골라 주세요.',
+  ROUND_NOT_ACTIONABLE: '이미 끝난 판이에요.'
 };
 
 export function errorMessage(err) {

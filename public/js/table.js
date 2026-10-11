@@ -313,13 +313,18 @@ export class Table {
     const target = net < 0 ? this.rack.getBoundingClientRect() : this.balanceEl.getBoundingClientRect();
     if (chips.length) sound.chips(3);
     await Promise.all(chips.map((c, i) => flyTo(c, target, { duration: 420, delay: i * 30, lift: net < 0 ? 0 : 50, fade: true })));
+    this.resetRound();
+    void stake;
+  }
+
+  // Clears the felt and unlocks betting; games that move their own chips call this directly.
+  resetRound() {
     this.zones.forEach(z => { z.querySelectorAll('.bet-stack--payout').forEach(s => s.remove()); z.classList.remove('has-bet'); });
-    stack?.replaceChildren();
+    if (this.bet.zone) this.stackOf(this.bet.zone)?.replaceChildren();
     this.bet = { zone: null, chips: [] };
     this.betEl.textContent = '0';
     this.locked = false;
     this.root.classList.remove('is-playing');
-    void stake;
   }
 
   setServerState(state) {

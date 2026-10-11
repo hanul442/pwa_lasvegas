@@ -40,7 +40,8 @@ Implemented now:
 - Responsive Vegas-inspired lobby, rankings and profile ledger (client code in `public/js/`, no build step)
 - Production Supabase foundation migration with RLS-first read access
 
-Card Room UI/contracts for Hold'em, 섯다 and 맞고 are present as the next build boundary; the full PvP engines from Sprint 4/5 are intentionally not faked in this executable build.
+- Card Room: 맞고 (two-player Go-Stop) and 섯다 against a house AI, with server-side engines (`lib/matgo.mjs`, `lib/seotda.mjs`), a drawn 48-card hwatu deck, and seats that a second human can take once friends play lands
+- Interactive table guides: a coach that highlights the real table step by step and waits for the player to try each action, plus a rules sheet behind the "?" button for every game (`public/js/guide.js`, `public/js/guides.js`)
 
 ## Run
 

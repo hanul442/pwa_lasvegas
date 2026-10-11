@@ -133,11 +133,7 @@ export async function mountRoulette(ctx) {
   }
 
   function refreshActions() {
-    t.setActions([
-      { label: '지우기', ghost: true, disabled: !t.total, onClick: () => t.clearBet() },
-      ...(t.lastBet ? [{ label: '다시 베팅', ghost: true, onClick: () => t.rebet() }] : []),
-      { label: '스핀', key: '↵', primary: true, disabled: !t.betReady, onClick: spin }
-    ]);
+    t.setActions(t.idleActions('스핀', spin));
   }
   t.refreshActions = refreshActions;
   t.onBetChange = refreshActions;
@@ -159,7 +155,7 @@ export async function mountRoulette(ctx) {
     await t.syncBalance();
   }
 
-  t.onKey(e => { if (!t.busy && e.key === 'Enter' && t.betReady && !e.target.closest('button')) { e.preventDefault(); t.run(spin); } });
+  t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
   refreshActions();
   return t;
 }

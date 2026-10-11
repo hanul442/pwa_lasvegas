@@ -40,7 +40,7 @@
 .feed-item small{flex:none;color:var(--dim);font-size:12px}
 .feed-empty{color:var(--smoke)}
 .feed-item--hot-win span,.feed-item--jackpot span,.feed-item--season-winner span{color:var(--white)}
-.feed-item--jackpot span::before,.feed-item--season-winner span::before{content:"";display:inline-block;width:9px;height:9px;margin-right:7px;background:var(--star);clip-path:var(--star-shape)}
+.feed-item--jackpot span::before,.feed-item--season-winner span::before,.feed-item--hot-win span::before{content:"";display:inline-block;width:9px;height:9px;margin-right:7px;background:var(--star);clip-path:var(--star-shape)}
 
 /* lucky card rescue */
 .rescue-cards{display:flex;gap:14px;justify-content:center;margin-top:16px;perspective:900px}
@@ -130,7 +130,7 @@
 .bigwin-title{margin:0;max-width:92vw;white-space:nowrap;font:600 clamp(34px,11vw,110px)/1 var(--display);font-stretch:125%;letter-spacing:-.03em}
 .bigwin-amount{margin-top:10px;color:var(--star);font:600 clamp(28px,8vw,48px) var(--display);font-stretch:112%;font-variant-numeric:tabular-nums}
 .bigwin-amount small{font-size:.5em;color:var(--smoke)}
-.bigwin-actions{display:flex;gap:10px;margin-top:26px}
+.bigwin-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px}
 
 /* ---------- hold'em bots talk ---------- */
 .pk-say{position:absolute;left:50%;bottom:calc(100% + 4px);z-index:7;width:max-content;max-width:150px;padding:6px 10px;border-radius:12px 12px 12px 4px;background:var(--white);color:var(--ink);font:500 12px/1.35 var(--sans);white-space:normal;text-align:left;transform:translateX(-30%);box-shadow:0 8px 20px #000a;animation:pk-say 2.2s ease both;pointer-events:none}

@@ -201,7 +201,7 @@ function ago(iso) {
 export function feedText(f) {
   const who = f.nickname || '누군가';
   switch (f.type) {
-    case 'HOT_WIN': return f.multiple >= 5 ? `${who}님이 ${gameName(f.game)}에서 ${f.multiple}배 적중! +${formatCH(f.amount)}` : `${who}님이 ${gameName(f.game)}에서 +${formatCH(f.amount)}`;
+    case 'HOT_WIN': return f.multiple >= 5 ? `${who}님 대박! ${gameName(f.game)}에서 ${f.multiple}배 적중, +${formatCH(f.amount)}` : `${who}님 대박! ${gameName(f.game)}에서 +${formatCH(f.amount)}`;
     case 'JACKPOT': return `${who}님이 잭팟을 터뜨렸어요! +${formatCH(f.amount)}`;
     case 'DAILY_STREAK': return `${who}님이 7일 출석으로 금고를 열었어요`;
     case 'SEASON_WINNER': return `${who}님이 ${f.season} 1위를 차지했어요`;

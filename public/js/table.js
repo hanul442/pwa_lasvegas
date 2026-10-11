@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, TIERS } from './chips.js';
 import { bigWin, isBigWin } from './bigwin.js';
 
@@ -474,7 +474,9 @@ export class Table {
       if (!(n > 0) || !stack) return;
       const payStack = el('span', 'bet-stack bet-stack--payout');
       stack.after(payStack);
-      breakdown(n, this.tier.chips, 12).forEach((v, i) => {
+      // Pay in smaller chips so a win lands as a handful, not a single disc.
+      const small = this.tier.chips.filter(v => v <= n / 4);
+      breakdown(n, small.length ? small : this.tier.chips, 12).forEach((v, i) => {
         const c = createChip(v); c.style.setProperty('--i', i); payStack.append(c);
         pays.push(flyFrom(c, rack, { duration: 460, delay: i * 70, lift: 40 }));
       });
@@ -492,7 +494,9 @@ export class Table {
       const node = this.zones.get(zoneId);
       if (!node) return;
       const lost = (nets.get(zoneId) ?? 0) < 0;
-      node.querySelectorAll('.bet-stack .chip').forEach(c => moves.push(flyTo(c, lost ? rack : balance, { duration: 420, delay: moves.length * 30, lift: lost ? 0 : 50, fade: true })));
+      node.querySelectorAll('.bet-stack .chip').forEach(c => moves.push(lost
+        ? flyTo(c, rack, { duration: 420, delay: moves.length * 30, fade: true })
+        : flyOut(c, balance, { duration: 520, delay: moves.length * 40, lift: 60, onLand: () => this.catchChips() })));
     });
     if (moves.length) sound.chips(3);
     await Promise.all(moves);
@@ -523,6 +527,13 @@ export class Table {
       setTimeout(() => this.balanceEl.parentElement.classList.remove('is-up', 'is-down'), ms(600));
     } else this.balanceEl.textContent = balanceText(value);
     this.balanceEl.parentElement.title = `${formatFull(value)}원`;
+  }
+
+  // The wallet answers each chip that lands in it: a small bounce, and the count starts rolling up.
+  catchChips() {
+    const box = this.balanceEl.parentElement;
+    animate(box, [{ transform: 'scale(1)' }, { transform: 'scale(1.1)', offset: 0.35 }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' });
+    if (!this.catching) { this.catching = true; this.syncBalance().finally(() => { this.catching = false; }); }
   }
 
   syncBalance() { return this.setBalance(this.available - (this.locked ? 0 : this.total)); }

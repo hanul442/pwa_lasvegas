@@ -85,7 +85,15 @@ export const api = {
   holdemSit: (buyIn, floor, opponents) => request('/api/holdem/sit', { method: 'POST', body: { buyIn, floor, opponents } }),
   holdemAction: (sessionId, handNo, seq, action, amount) => request('/api/holdem/action', { method: 'POST', body: { sessionId, handNo, seq, action, amount } }),
   holdemNext: (sessionId, handNo) => request('/api/holdem/next', { method: 'POST', body: { sessionId, handNo } }),
-  holdemLeave: sessionId => request('/api/holdem/leave', { method: 'POST', body: { sessionId } })
+  holdemLeave: sessionId => request('/api/holdem/leave', { method: 'POST', body: { sessionId } }),
+  // Friends' rooms. cursor { hand, from } asks for the events after what this screen has played.
+  holdemRooms: () => request('/api/holdem/rooms'),
+  holdemRoom: (code, cursor) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),
+  holdemRoomCreate: (buyIn, floor, size) => request('/api/holdem/rooms', { method: 'POST', body: { buyIn, floor, size } }),
+  holdemRoomJoin: code => request('/api/holdem/rooms/join', { method: 'POST', body: { code } }),
+  holdemRoomStart: (code, cursor) => request('/api/holdem/rooms/start', { method: 'POST', body: { code, cursor } }),
+  holdemRoomAction: (code, handNo, seq, action, amount, cursor) => request('/api/holdem/rooms/action', { method: 'POST', body: { code, handNo, seq, action, amount, cursor } }),
+  holdemRoomLeave: code => request('/api/holdem/rooms/leave', { method: 'POST', body: { code } })
 };
 
 const MESSAGES = {
@@ -126,6 +134,12 @@ const MESSAGES = {
   INVALID_RAISE: '레이즈 금액을 다시 골라 주세요.',
   CANNOT_CHECK: '지금은 체크할 수 없어요.',
   SESSION_CLOSED: '이미 끝난 테이블이에요.',
+  ROOM_NOT_FOUND: '그 코드의 방을 찾지 못했어요. 코드를 다시 확인해 주세요.',
+  ROOM_FULL: '방이 꽉 찼어요. 다른 방을 골라 주세요.',
+  ALREADY_IN_ROOM: '이미 다른 방에 앉아 있어요.',
+  NOT_IN_ROOM: '이 방에서 이미 일어났어요.',
+  NOT_HOST: '딜은 방장이 시작해요.',
+  HAND_IN_PROGRESS: '이미 게임이 시작됐어요.',
   DAILY_ALREADY_CLAIMED: '오늘 출석 보너스는 이미 받았어요.',
   MISSION_NOT_DONE: '아직 미션을 끝내지 않았어요.',
   MISSION_ALREADY_CLAIMED: '이미 받은 보상이에요.',

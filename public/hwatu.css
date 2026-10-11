@@ -22,11 +22,11 @@
 .mg{--hw-w:clamp(28px,8vw,52px);display:grid;grid-template-rows:auto auto 1fr auto auto auto;gap:8px;min-height:100%}
 .mg-seat{display:flex;align-items:center;gap:10px;min-height:28px}
 .mg-seat--opp{justify-content:space-between}
-.mg-name{display:flex;align-items:baseline;gap:8px;font:650 14px var(--display);font-stretch:112%;letter-spacing:-.01em;white-space:nowrap}
-.mg-name small{font:500 12px var(--sans);color:var(--smoke)}
+.mg-name{display:flex;align-items:baseline;gap:8px;font:650 15px var(--display);font-stretch:112%;letter-spacing:-.01em;white-space:nowrap}
+.mg-name small{font:500 13px var(--sans);color:var(--smoke)}
 .mg-seat.is-turn .mg-name::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--signal);align-self:center}
 .mg-score{display:inline-flex;align-items:baseline;gap:4px;padding:3px 10px;border-radius:999px;background:#0006;border:1px solid var(--hair);font:700 15px var(--display);font-variant-numeric:tabular-nums}
-.mg-score small{font:500 11px var(--sans);color:var(--smoke)}
+.mg-score small{font:500 12px var(--sans);color:var(--smoke)}
 .mg-score.is-hot{background:var(--white);color:var(--ink);border-color:var(--white)}
 .mg-score.is-hot small{color:#0009}
 .mg-opp-hand{display:flex;--hw-w:clamp(18px,5vw,28px)}
@@ -34,7 +34,7 @@
 
 .mg-caps{display:grid;grid-template-columns:repeat(4,auto);justify-content:space-between;gap:6px;min-height:calc(var(--cap-w) * 1.6 + 16px);--cap-w:clamp(15px,4vw,26px)}
 .mg-cap{display:flex;flex-direction:column;gap:3px;min-width:0}
-.mg-cap>span{font-size:10px;color:var(--smoke);letter-spacing:.02em}
+.mg-cap>span{font-size:12px;color:var(--smoke)}
 .mg-cap>span b{color:var(--white);font-weight:650;margin-left:3px}
 .mg-cap-cards{display:flex;min-height:calc(var(--cap-w) * 1.6);--hw-w:var(--cap-w)}
 .mg-cap-cards .hw{rotate:0deg}
@@ -44,7 +44,7 @@
 .mg-board{--hw-w:clamp(32px,10.4vw,62px);position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:12px 8px;padding:10px 4px;min-height:calc(var(--hw-w) * 3.6)}
 .mg-pile{position:relative;width:var(--hw-w);height:calc(var(--hw-w) * 1.6);margin:0 6px}
 .mg-pile .hw{position:absolute;inset:0;rotate:0deg}
-.mg-pile-count{position:absolute;right:-8px;bottom:-8px;z-index:3;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--ink);border:1px solid var(--hair-strong);font:600 11px/18px var(--sans);text-align:center}
+.mg-pile-count{position:absolute;right:-8px;bottom:-8px;z-index:3;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--ink);border:1px solid var(--hair-strong);font:600 12px/20px var(--sans);text-align:center}
 .mg-slot{display:flex;min-width:var(--hw-w)}
 .mg-slot .hw+.hw{margin-left:calc(var(--hw-w) * -.55)}
 .mg-slot.has-option .hw+.hw{margin-left:6px}
@@ -72,7 +72,7 @@
 .sd-meta{display:flex;align-items:center;gap:8px;min-height:26px}
 .sd-hand-name{padding:3px 12px;border-radius:999px;background:var(--white);color:var(--ink);font:700 15px var(--display);font-stretch:112%;letter-spacing:-.02em;white-space:nowrap}
 .sd-hand-name:empty{display:none}
-.sd-said{font-size:13px;color:var(--smoke);min-height:18px}
+.sd-said{font-size:14px;color:var(--smoke);min-height:18px}
 .sd-said b{color:var(--white);font-weight:650}
 .sd-pot{position:relative;display:grid;justify-items:center;align-content:center;gap:6px}
 .sd-pot .zone{--size:42px;width:min(66%,260px);min-height:84px;border-radius:999px}
@@ -116,8 +116,8 @@
 .sd .callout--opp{top:30%}
 
 /* ---------- rules sheet & coach ---------- */
-.sheet{position:absolute;left:0;right:0;bottom:0;z-index:40;max-height:78%;overflow:auto;overscroll-behavior:contain;padding:18px 18px calc(20px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:#0f1113;box-shadow:0 -1px 0 var(--hair-strong),0 -20px 50px #000c;transform:translateY(102%);transition:transform .32s var(--ease-out,ease)}
-.sheet.is-open{transform:none}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:40;max-height:78%;overflow:auto;overscroll-behavior:contain;padding:18px 18px calc(20px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:#0f1113;box-shadow:0 -1px 0 var(--hair-strong),0 -20px 50px #000c;transform:translateY(102%);visibility:hidden;transition:transform .32s var(--ease-out,ease),visibility 0s .32s}
+.sheet.is-open{transform:none;visibility:visible;transition:transform .32s var(--ease-out,ease)}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .sheet-head h2{margin:0;font:700 20px var(--display);font-stretch:112%;letter-spacing:-.02em}
 .sheet-close{min-width:44px;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--hair);background:none;color:var(--white)}
@@ -149,6 +149,26 @@
 .coach-foot button:disabled{opacity:.35}
 .coach-foot button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 
+/* Portrait phones: the 맞고 hand wraps to two rows so each card is big enough to read and tap. */
+@media (max-width:759px) and (orientation:portrait){
+  .mg-hand{flex-wrap:wrap;row-gap:10px;align-content:flex-start;--hw-w:clamp(34px,calc((100vw - 80px) / 5.4),62px)}
+  .mg-hand .hw{margin:0 2px}
+  .mg-caps{--cap-w:clamp(18px,5.4vw,30px)}
+  .mg-board{--hw-w:clamp(34px,10.8vw,62px)}
+}
+/* Short phones: two rows of hand cards don't fit under the board, so the hand fans out in one
+   row the way it's held, each card overlapping the next with its left edge (and month) showing. */
+@media (max-width:759px) and (orientation:portrait) and (max-height:760px){
+  .table-screen--matgo .felt-body{padding-top:16px}
+  .table-screen--matgo .dealer-rack{display:none}
+  .mg{gap:6px;grid-template-columns:minmax(0,1fr)}
+  .mg-board{--hw-w:clamp(30px,min(10.8vw,5.8dvh),62px);gap:10px 8px;padding:6px 4px}
+  .mg-caps{--cap-w:clamp(15px,min(5.4vw,2.8dvh),30px)}
+  .mg-hand{flex-wrap:nowrap;justify-content:center;--hw-w:clamp(40px,min(16vw,8.4dvh),62px)}
+  .mg-hand .hw{flex:0 1 var(--hw-w);min-width:0;margin:0}
+  .mg-hand .hw:last-child{flex-shrink:0}
+  .mg-hand .hw-inner{inset:auto;left:0;top:0;width:var(--hw-w);height:calc(var(--hw-w) * 1.6)}
+}
 @media (min-width:760px){
   .mg{--hw-w:clamp(36px,min(4.6vw,7dvh),60px)}
   .mg-board{--hw-w:clamp(38px,min(4.8vw,8dvh),64px);min-height:calc(var(--hw-w) * 2.2)}
@@ -160,9 +180,23 @@
   .sheet.is-open{transform:translate(-50%,0)}
 }
 @media (orientation:landscape) and (max-height:520px){
-  .mg{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto;--hw-w:clamp(26px,4vw,40px)}
-  .mg-board{grid-column:1 / -1;min-height:0}
-  .mg-hand{--hw-w:clamp(28px,4.4vw,44px)}
+  /* Phone on its side: the opponent across the top, the board in the middle, my captures on the
+     left and my hand on the right, so all of it fits in the short felt. */
+  .table-screen--matgo .felt-body{padding:10px 10px 8px}
+  .table-screen--matgo .dealer-rack{display:none}
+  .mg{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;grid-template-areas:"opp ocaps" "board board" "me hand" "mcaps hand";gap:4px 14px;--hw-w:clamp(26px,4vw,40px)}
+  .mg>:nth-child(1){grid-area:opp}
+  .mg>:nth-child(2){grid-area:ocaps}
+  .mg>:nth-child(3){grid-area:board}
+  .mg>:nth-child(4){grid-area:mcaps}
+  .mg>:nth-child(5){grid-area:me}
+  .mg>:nth-child(6){grid-area:hand}
+  .mg-caps{--cap-w:clamp(14px,2.4vw,22px)}
+  .mg-board{--hw-w:clamp(28px,min(4.6vw,10dvh),44px);min-height:0;padding:2px 4px;gap:6px}
+  .mg-hand{align-self:end;flex-wrap:nowrap;padding-top:12px;--hw-w:clamp(34px,min(6vw,13dvh),52px)}
+  .mg-hand .hw{flex:0 1 var(--hw-w);min-width:0;margin:0}
+  .mg-hand .hw:last-child{flex-shrink:0}
+  .mg-hand .hw-inner{inset:auto;left:0;top:0;width:var(--hw-w);height:calc(var(--hw-w) * 1.6)}
   .sd{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;align-items:center;gap:6px}
   .sd-ring{grid-column:1 / -1;padding-top:14px;min-height:0;--opp-w:clamp(22px,min(4vw,7.5dvh),32px);padding-inline:8%}
   .sd-ring .sd-seat:is(:first-child,:last-child){translate:none!important}

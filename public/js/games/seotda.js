@@ -3,7 +3,7 @@
 // Each AI bets from its own cards only; the pot slides to whoever holds the best 족보.
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu } from '../hwatu.js';
-import { animate, flyFrom, flyTo, wait, sound, haptic, formatCH, el } from '../fx.js';
+import { animate, flyFrom, flyTo, flyOut, wait, sound, haptic, formatCH, el } from '../fx.js';
 import { breakdown, createChip } from '../chips.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
@@ -237,7 +237,10 @@ export async function mountSeotda(ctx) {
     const dest = s => (s === ME ? t.balanceEl : cardsOf(s)).getBoundingClientRect();
     const spots = r.winners.map(dest);
     sound.chips(3);
-    await Promise.all(chips.map((c, i) => flyTo(c, spots[i % spots.length], { duration: 460, delay: i * 22, lift: 40, fade: true })));
+    const meIdx = r.winners.indexOf(ME);
+    await Promise.all(chips.map((c, i) => (i % spots.length === meIdx
+      ? flyOut(c, spots[meIdx], { duration: 520, delay: i * 26, lift: 60, onLand: () => t.catchChips() })
+      : flyTo(c, spots[i % spots.length], { duration: 460, delay: i * 22, lift: 40, fade: true }))));
     paintPot(null);
     t.resetRound();
     await t.syncBalance();

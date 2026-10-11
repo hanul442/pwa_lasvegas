@@ -158,7 +158,7 @@ export function attachGuide(table, gameId) {
   };
   window.addEventListener('keydown', onKey, true);
   const destroy = table.destroy.bind(table);
-  table.destroy = () => { if (coach.active) coach.stop({ remember: false }); window.removeEventListener('keydown', onKey, true); destroy(); };
+  table.destroy = () => { if (coach.active) coach.stop({ remember: false }); window.removeEventListener('keydown', onKey, true); return destroy(); };
   table.guide = coach;
   if (settings.get('guides') && !seen(def.id)) setTimeout(() => { if (table.root.isConnected && !coach.active) coach.start(); }, 700);
   return coach;

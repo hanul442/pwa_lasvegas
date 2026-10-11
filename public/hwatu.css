@@ -272,3 +272,4 @@
   .gs-hand{--hw-w:clamp(26px,4.6vw,42px);align-self:end;padding-top:10px}
 }
 @media (prefers-reduced-motion:reduce){ .gs-opp{transition:none} }
+@media (max-width:519px){.mg-cap>span{font-size:13px}}

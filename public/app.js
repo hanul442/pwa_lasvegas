@@ -22,6 +22,7 @@ import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels } from './js/social.js';
 import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
 import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
+import { mountInstallButton } from './js/install.js';
 import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
 
@@ -436,6 +437,7 @@ document.addEventListener('visibilitychange', syncMusic);
 new MutationObserver(paintSound).observe(document.querySelector('[data-surface="table"]') || document.body, { childList: true, subtree: true });
 paintSound();
 
+mountInstallButton(document.querySelector('[data-install]'));
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 renderLobby();

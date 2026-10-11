@@ -180,7 +180,12 @@ test('big news reads per player: others see the jackpot, duels reach both sides'
   const mine = newsFor(state, 'hanseo', since);
   assert.deepEqual(mine.map(n => n.type).sort(), ['DUEL_IN', 'HOT_WIN', 'JACKPOT']);
   assert.match(mine.find(n => n.type === 'JACKPOT').body, /MIN님이 슬롯 잭팟 2억 5천만 원/);
-  assert.equal(mine.find(n => n.type === 'HOT_WIN').push, false); // under 1억: banner only
+  assert.equal(mine.find(n => n.type === 'HOT_WIN').push, true); // 35x: big enough for phones
+  pushFeed(state, { type: 'HOT_WIN', actorId: 'june', game: 'Baccarat', amount: 20_000_000, multiple: 1 });
+  pushFeed(state, { type: 'BANKRUPTCY', actorId: 'june' });
+  const later = newsFor(state, 'hanseo', since);
+  assert.equal(later.find(n => n.type === 'HOT_WIN' && n.body.includes('바카라')).push, false); // 2천만 at 1x: banner only
+  assert.equal(later.find(n => n.type === 'BANKRUPTCY').push, true);
   // The jackpot winner doesn't get a banner about themselves.
   assert.equal(newsFor(state, 'min', since).some(n => n.type === 'JACKPOT'), false);
   assert.deepEqual(newsFor(state, 'hanseo', Date.now() + 1000), []);

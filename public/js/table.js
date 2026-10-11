@@ -454,6 +454,11 @@ export class Table {
     });
     if (moves.length) sound.chips(3);
     await Promise.all(moves);
+    this.resetRound();
+  }
+
+  // Clears the felt and unlocks betting; games that move their own chips call this directly.
+  resetRound() {
     this.zones.forEach(z => z.querySelectorAll('.bet-stack--payout').forEach(s => s.remove()));
     [...this.zones.keys()].forEach(z => this.emptyZone(z));
     this.history = [];

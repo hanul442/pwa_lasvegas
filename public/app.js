@@ -8,6 +8,9 @@ import { mountBlackjack } from './js/games/blackjack.js';
 import { mountBaccarat } from './js/games/baccarat.js';
 import { mountRoulette } from './js/games/roulette.js';
 import { mountDice } from './js/games/dice.js';
+import { mountMatgo } from './js/games/matgo.js';
+import { mountSeotda } from './js/games/seotda.js';
+import { attachGuide } from './js/guide.js';
 import { mountHoldem } from './js/games/holdem.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
@@ -17,6 +20,8 @@ const GAMES = [
   { id: 'roulette', name: 'Roulette', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
   { id: 'baccarat', name: 'Baccarat', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
   { id: 'dice', name: 'Sic Bo', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
+  { id: 'matgo', name: '맞고', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
+  { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
   { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem }
 ];
 
@@ -65,6 +70,7 @@ async function openTable(tier) {
   showSurface('table');
   closeTable();
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
+  attachGuide(activeTable, selectedGame.id);
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
 

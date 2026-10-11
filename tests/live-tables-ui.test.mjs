@@ -92,3 +92,29 @@ test('every table offers five chip denominations that fit under its limit', () =
     assert.ok(tier.chips[0] < tier.min, `${tier.slug} smallest chip builds bets in steps`);
   }
 });
+
+test('맞고 and 섯다 tables are in the lobby and play through the server API', async () => {
+  const matgo = await read('js/games/matgo.js');
+  const seotda = await read('js/games/seotda.js');
+  assert.match(app, /id: 'matgo'/);
+  assert.match(app, /id: 'seotda'/);
+  assert.match(matgo, /api\.matgoStart\(/);
+  assert.match(matgo, /api\.matgoAction\(/);
+  assert.match(matgo, /api\.matgoOpen\(\)/, 'unfinished 맞고 games must be resumable');
+  assert.match(seotda, /api\.seotdaStart\(/);
+  assert.match(seotda, /api\.seotdaAction\(/);
+  assert.match(seotda, /api\.seotdaOpen\(\)/);
+  assert.match(html, /hwatu\.css/);
+  for (const file of ['hwatu.css', 'js/hwatu.js', 'js/guide.js', 'js/guides.js', 'js/games/matgo.js', 'js/games/seotda.js']) assert.match(sw, new RegExp(file.replace('.', '\\.')), file);
+});
+
+test('every lobby game has an interactive guide and a rules sheet', async () => {
+  const guides = await read('js/guides.js');
+  assert.match(app, /attachGuide\(activeTable, selectedGame\.id\)/);
+  for (const id of ['blackjack', 'baccarat', 'roulette', 'dice', 'matgo', 'seotda']) {
+    assert.match(guides, new RegExp(`\\n  ${id}: \\{\\n    id: '${id}'`), id);
+  }
+  const guide = await read('js/guide.js');
+  assert.match(guide, /until/, 'hands-on steps wait for the player');
+  assert.match(guide, /stopImmediatePropagation/, 'Escape closes the guide before leaving the table');
+});

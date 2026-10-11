@@ -63,7 +63,7 @@
 .lounge-sheet-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 .daily-strip{list-style:none;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:18px 0 0;padding:0}
 .daily-day{display:grid;justify-items:center;gap:2px;padding:10px 0 8px;border:1px solid var(--hair);border-radius:12px;color:var(--smoke);font-size:12px}
-.daily-day b{color:var(--white);font:600 13px var(--sans);font-variant-numeric:tabular-nums}
+.daily-day b{color:var(--white);font:600 13px var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.02em}
 .daily-day.is-done{background:#ffffff0d;color:var(--dim)}
 .daily-day.is-done b{color:var(--dim);text-decoration:line-through}
 .daily-day.is-today{border-color:var(--star);box-shadow:0 0 0 1px var(--star) inset}

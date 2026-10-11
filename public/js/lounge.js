@@ -273,7 +273,7 @@ export function celebrateFloors(state) {
 function floorMoment(floor) {
   const node = el('div', 'floor-moment');
   node.setAttribute('role', 'status');
-  node.innerHTML = `<div class="floor-moment-inner"><span class="floor-star" aria-hidden="true"></span><p>새 층이 열렸어요</p><h2>${floor.name}</h2><small>${formatCH(floor.minBet)} – ${formatCH(floor.maxBet)} CH 테이블</small><button type="button" class="pill-button pill-button--solid">입장하기</button></div>`;
+  node.innerHTML = `<div class="floor-moment-inner"><span class="floor-star" aria-hidden="true"></span><p>새 층이 열렸어요</p><h2>${floor.name}</h2><small>${formatCH(floor.minBet)} – ${formatCH(floor.maxBet)}원 테이블</small><button type="button" class="pill-button pill-button--solid">입장하기</button></div>`;
   document.body.append(node);
   sound.win(); haptic([30, 60, 30, 60, 60]);
   requestAnimationFrame(() => node.classList.add('is-open'));

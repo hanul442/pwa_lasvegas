@@ -78,6 +78,7 @@
   box-shadow:inset 0 0 0 calc(var(--size) * .035) #00000030,0 calc(var(--size) * .045) 0 color-mix(in srgb,var(--rim) 55%,#000),0 calc(var(--size) * .1) calc(var(--size) * .18) #0008;color:var(--ink)}
 .chip::before{content:"";position:absolute;inset:21%;border-radius:50%;border:max(1px,calc(var(--size) * .022)) solid color-mix(in srgb,var(--ink) 35%,transparent)}
 .chip-label{position:relative;white-space:nowrap;font:700 calc(var(--size) * .22)/1 var(--sans);letter-spacing:-.03em}
+.chip-label--long{font-size:calc(var(--size) * .17)}
 .chip--ivory{--c:#ece6d9;--edge:#ffffff;--rim:#9a8f7e;--ink:#3a332b}
 .chip--teal{--c:#2f6b6a;--edge:#efe7d9;--rim:#2f6b6a;--ink:#f6f1e7}
 .chip--white{--c:#e9e3d6;--edge:#ffffff;--rim:#2b4a7a;--ink:#1f2d45}

@@ -3,7 +3,7 @@ import { animate, flyFrom, flyTo, sound, haptic, formatCH, formatFull, rollNumbe
 import { createChip, breakdown, TIERS } from './chips.js';
 import { bigWin, isBigWin } from './bigwin.js';
 
-// Narrow phones show the balance as 12.5M so the top bar keeps room for its buttons.
+// Narrow phones show the balance as 12억 5천만 so the top bar keeps room for its buttons.
 const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
 
 // Per-device memory of the chip last picked and the last bet placed, per game and table.
@@ -44,7 +44,7 @@ export class Table {
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
-        <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)} CH</span></div>
+        <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)}원</span></div>
         <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
         <div class="table-tools">
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
@@ -522,7 +522,7 @@ export class Table {
       await rollNumber(this.balanceEl, from, value, { format: balanceText });
       setTimeout(() => this.balanceEl.parentElement.classList.remove('is-up', 'is-down'), ms(600));
     } else this.balanceEl.textContent = balanceText(value);
-    this.balanceEl.parentElement.title = `${formatFull(value)} CH`;
+    this.balanceEl.parentElement.title = `${formatFull(value)}원`;
   }
 
   syncBalance() { return this.setBalance(this.available - (this.locked ? 0 : this.total)); }

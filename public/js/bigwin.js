@@ -23,14 +23,14 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '' 
   return new Promise(resolve => {
     const node = el('div', 'bigwin');
     node.setAttribute('role', 'dialog');
-    node.setAttribute('aria-label', `${title} +${formatFull(amount)} CH`);
+    node.setAttribute('aria-label', `${title} +${formatFull(amount)}원`);
     node.innerHTML = `
       <div class="bigwin-rain" aria-hidden="true"></div>
       <div class="bigwin-inner">
         <span class="bigwin-star" aria-hidden="true"></span>
         <p class="bigwin-sub">${subtitle || 'BIG WIN'}</p>
         <h2 class="bigwin-title">${title}</h2>
-        <strong class="bigwin-amount">+<span data-amount>0</span> <small>CH</small></strong>
+        <strong class="bigwin-amount">+<span data-amount>0</span> <small>원</small></strong>
         <div class="bigwin-actions">
           <button type="button" class="pill-button" data-share>공유</button>
           <button type="button" class="pill-button pill-button--solid" data-close>계속</button>
@@ -125,7 +125,7 @@ export async function winCard({ title, amount, game, nickname = '' }) {
   ctx.fillText(title, W / 2, 800);
   ctx.fillStyle = '#fff6dc';
   ctx.font = '600 96px Archivo, sans-serif';
-  ctx.fillText(`+${formatCH(amount)} CH`, W / 2, 940);
+  ctx.fillText(`+${formatCH(amount)}원`, W / 2, 940);
   ctx.fillStyle = '#7d838b';
   ctx.font = '400 32px "Noto Sans KR", sans-serif';
   const date = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -139,7 +139,7 @@ export async function shareWin({ title, amount, game, nickname = '' }) {
   if (!blob) return;
   const file = new File([blob], 'vegas-big-win.png', { type: 'image/png' });
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'VEGAS', text: `${title} +${formatCH(amount)} CH` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
+    try { await navigator.share({ files: [file], title: 'VEGAS', text: `${title} +${formatCH(amount)}원` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

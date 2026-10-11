@@ -78,11 +78,19 @@ test('chip tiers match server floor limits', () => {
   assert.deepEqual(breakdown(850_000, TIERS.low.chips), [500_000, 250_000, 100_000]);
 });
 
-test('chip amounts format compactly without "1000K" style overflow', () => {
-  assert.equal(formatCH(999_999), '1M');
-  assert.equal(formatCH(2_500_000), '2.5M');
-  assert.equal(formatCH(-350_000), '-350K');
-  assert.equal(formatCH(100_000_000), '100M');
+test('chip amounts read as Korean money and never overflow a unit', () => {
+  assert.equal(formatCH(5_000), '5,000');
+  assert.equal(formatCH(25_000), '2.5만');
+  assert.equal(formatCH(999_999), '100만');
+  assert.equal(formatCH(2_500_000), '250만');
+  assert.equal(formatCH(-350_000), '-35만');
+  assert.equal(formatCH(50_000_000), '5천만');
+  assert.equal(formatCH(99_999_999), '1억');
+  assert.equal(formatCH(100_000_000), '1억');
+  assert.equal(formatCH(382_000_000), '3억 8200만');
+  assert.equal(formatCH(1_240_000_000), '12억 4천만');
+  assert.equal(formatCH(25_000_000_000), '250억');
+  assert.equal(formatCH(2_500_000_000_000), '2.5조');
 });
 
 test('every table offers five chip denominations that fit under its limit', () => {

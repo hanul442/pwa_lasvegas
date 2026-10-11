@@ -62,7 +62,8 @@ export const api = {
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
-  blackjackStart: (stakes, floor) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor } }),
+  // sides: optional { pairs, trips }, the Perfect Pairs and 21+3 stake per box.
+  blackjackStart: (stakes, floor, sides = {}) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor, ...sides } }),
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
   // sideBets: { PLAYER_PAIR?: stake, BANKER_PAIR?: stake } riding alongside the main bet.
   baccarat: (stake, floor, betType, sideBets) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType, sideBets } }),

@@ -13,7 +13,8 @@ export const DEFAULTS = {
   pace: null,       // 'relaxed' | 'normal' | 'fast' | 'minimal'; null follows the system motion setting
   haptics: true,
   guides: true,     // start the table coach the first time someone sits at a game
-  awake: false      // keep the screen on while sitting at a table
+  awake: false,     // keep the screen on while sitting at a table
+  bjHint: false     // blackjack: light up the basic-strategy move on the player's turn
 };
 
 // How much each pace stretches or shrinks every animation and pause.

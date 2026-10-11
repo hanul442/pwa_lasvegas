@@ -1,8 +1,11 @@
-// Blackjack: up to three betting boxes, cards out of the shoe, insurance when the dealer shows an ace,
-// hole card turned at the end.
+// Blackjack: up to three betting boxes with Perfect Pairs and 21+3 side bets, AI players at the
+// same table, cards out of one shoe, insurance when the dealer shows an ace, hole card turned at the end.
 import { api, errorMessage } from '../api.js';
 import { dealCard, flipCard, placeCards, sweepCards, parseCard } from '../cards.js';
-import { el, wait, formatCH, flyFrom, sound } from '../fx.js';
+import { createChip, breakdown } from '../chips.js';
+import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../fx.js';
+import { settings, onSettings } from '../settings.js';
+import { basicStrategy } from '../bj-strategy.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
 
@@ -22,6 +25,18 @@ const RESULT = {
   LOSS: ['패배', 'lose'], BUST: ['버스트', 'lose'], DEALER_BLACKJACK: ['딜러 블랙잭', 'lose']
 };
 const BOXES = ['b1', 'b2', 'b3'];
+const SIDE_NAMES = {
+  PERFECT: 'Perfect Pair', COLOURED: 'Coloured Pair', MIXED: 'Mixed Pair',
+  SUITED_TRIPS: 'Suited Trips', STRAIGHT_FLUSH: 'Straight Flush', TRIPS: 'Three of a Kind', STRAIGHT: 'Straight', FLUSH: 'Flush'
+};
+const TEMPER = { steady: '정석파', cautious: '신중파', reckless: '승부사' };
+const SAY = { HIT: '히트', STAND: '스탠드', DOUBLE: '더블' };
+const ACTIONS = ['HIT', 'STAND', 'DOUBLE', 'SPLIT'];
+
+// Per-device record of how often the player's move matched basic strategy.
+const HINT_KEY = 'vegas:bj-strategy';
+function hintRecord() { try { const r = JSON.parse(localStorage.getItem(HINT_KEY) || 'null'); return r && r.total >= 0 ? r : { right: 0, total: 0 }; } catch { return { right: 0, total: 0 }; } }
+function saveHint(r) { try { localStorage.setItem(HINT_KEY, JSON.stringify(r)); } catch {} }
 
 export async function mountBlackjack(ctx) {
   const t = new Table({ ...ctx, game: 'blackjack', title: 'Blackjack', multi: true });
@@ -29,6 +44,7 @@ export async function mountBlackjack(ctx) {
     <div class="bj">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
       <div class="discard" data-discard aria-hidden="true"></div>
+      <div class="bj-stat" data-stat hidden></div>
       <div class="bj-dealer">
         <div class="hand" data-dealer></div>
         <span class="hand-total" data-dealer-total hidden></span>
@@ -41,11 +57,16 @@ export async function mountBlackjack(ctx) {
         <text class="arc-sub" font-size="9"><textPath href="#bj-arc2" startOffset="50%" text-anchor="middle">DEALER MUST STAND ON ALL 17</textPath></text>
       </svg>
       <div class="bj-insurance" data-zone="ins" aria-hidden="true"><span>INSURANCE PAYS 2 TO 1</span></div>
+      <div class="bj-ai" data-ai aria-label="같은 테이블의 AI 플레이어"></div>
       <div class="bj-spots">
         ${BOXES.map((b, i) => `
         <div class="bj-spot">
           <div class="bj-hands" data-hands="${b}"></div>
-          <button class="bet-circle" type="button" data-zone="${b}" aria-label="베팅 박스 ${i + 1}"><span class="bet-circle-label">${i + 1}</span><span class="zone-amount"></span></button>
+          <div class="bj-box">
+            <button class="side-circle" type="button" data-zone="pp-${b}" aria-label="박스 ${i + 1} 퍼펙트 페어"><span class="side-label">PP</span><span class="side-tag"></span></button>
+            <button class="bet-circle" type="button" data-zone="${b}" aria-label="베팅 박스 ${i + 1}"><span class="bet-circle-label">${i + 1}</span><span class="zone-amount"></span></button>
+            <button class="side-circle side-circle--t3" type="button" data-zone="t3-${b}" aria-label="박스 ${i + 1} 21+3"><span class="side-label">21+3</span><span class="side-tag"></span></button>
+          </div>
         </div>`).join('')}
       </div>
     </div>`;
@@ -53,8 +74,11 @@ export async function mountBlackjack(ctx) {
   const discard = t.body.querySelector('[data-discard]');
   const dealerHand = t.body.querySelector('[data-dealer]');
   const dealerTotal = t.body.querySelector('[data-dealer-total]');
+  const aiRow = t.body.querySelector('[data-ai]');
+  const stat = t.body.querySelector('[data-stat]');
   const bj = t.body.querySelector('.bj');
   BOXES.forEach(b => t.addZone(t.body.querySelector(`[data-zone="${b}"]`)));
+  BOXES.forEach(b => ['pp', 't3'].forEach(k => t.addZone(t.body.querySelector(`[data-zone="${k}-${b}"]`), { side: true })));
   t.addZone(t.body.querySelector('[data-zone="ins"]'), { passive: true });
   t.setFocus('b2');
 
@@ -62,6 +86,7 @@ export async function mountBlackjack(ctx) {
   // Server hands carry spot 1..n for the boxes in play; this maps each spot back to its box.
   let spotBox = [];
   const boxOf = hand => spotBox[hand.spot - 1] || BOXES[hand.spot - 1];
+  const sideZone = bet => `${bet.kind === 'PP' ? 'pp' : 't3'}-${boxOf(bet)}`;
   const handsIn = hand => t.body.querySelector(`[data-hands="${boxOf(hand)}"]`);
   const allHands = () => t.body.querySelectorAll('[data-hands]');
   // Shrink the cards as splits add hands so every box still fits across a phone.
@@ -93,13 +118,13 @@ export async function mountBlackjack(ctx) {
     return w;
   }
   const cardsOf = w => w.querySelector('.hand');
-  function updateHandTotal(w) {
+  function updateHandTotal(w, refitRow = true) {
     const texts = [...cardsOf(w).querySelectorAll('.card')].map(c => c.dataset.card);
     const tag = w.querySelector('.hand-total');
     tag.textContent = texts.length ? totalText(texts) : '';
     tag.classList.toggle('is-bust', value(texts).total > 21);
     tag.classList.toggle('is-21', value(texts).total === 21);
-    fit();
+    if (refitRow) fit();
   }
   function updateDealerTotal(reveal) {
     const texts = [...dealerHand.querySelectorAll('.card')].map(c => c.dataset.card).filter(x => x !== 'HIDDEN');
@@ -109,6 +134,153 @@ export async function mountBlackjack(ctx) {
   }
   function markActive(r) {
     r.hands.forEach(h => wraps.get(h.id)?.classList.toggle('is-active', Boolean(h.active) && r.hands.length > 1));
+  }
+
+  // ---------- AI players ----------
+  // Seats stay on the felt between rounds; the server decides who sits down each deal.
+  const seats = new Map();
+  function seatNode(ai) {
+    let s = seats.get(ai.name);
+    if (!s) {
+      s = el('div', 'bj-seat');
+      s.innerHTML = `<div class="hand-wrap bj-seat-hand"><div class="hand"></div><span class="hand-total"></span><span class="hand-result"></span><span class="bj-say" aria-live="polite"></span></div>
+        <div class="bj-seat-plate"><span class="bj-seat-chips"></span><b></b><small></small></div>`;
+      s.querySelector('b').textContent = ai.name;
+      seats.set(ai.name, s);
+      animate(s, [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 420 });
+    }
+    s.dataset.temper = ai.temper;
+    s.querySelector('small').textContent = TEMPER[ai.temper] || '';
+    return s;
+  }
+  const seatWrap = s => s.querySelector('.bj-seat-hand');
+  function seatChips(s, amount) {
+    const box = s.querySelector('.bj-seat-chips');
+    box.replaceChildren(...breakdown(amount, t.tier.chips, 5).map((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); return c; }));
+  }
+  function seatAll(list = []) {
+    const nodes = list.map(seatNode);
+    for (const [name, s] of seats) if (!list.some(a => a.name === name)) { seats.delete(name); s.remove(); }
+    aiRow.replaceChildren(...nodes);
+    aiRow.dataset.count = String(nodes.length);
+    list.forEach((a, i) => { seatChips(nodes[i], a.stake); clearSeat(nodes[i]); });
+    return nodes;
+  }
+  function clearSeat(s) {
+    const w = seatWrap(s);
+    w.classList.remove('is-active', 'is-bust');
+    w.querySelector('.hand-result').className = 'hand-result';
+    w.querySelector('.bj-say').classList.remove('is-shown');
+  }
+  async function say(s, text, kind = '') {
+    const bubble = s.querySelector('.bj-say');
+    bubble.textContent = text;
+    bubble.className = `bj-say is-shown${kind ? ` is-${kind}` : ''}`;
+    await wait(420);
+  }
+  // Replay what the AI seats did, in seat order, after the player and before the dealer.
+  async function playSeats(r) {
+    const nodes = [...aiRow.children];
+    for (const [i, ai] of (r.ai || []).entries()) {
+      const s = nodes[i]; if (!s || !ai.log.length) continue;
+      const w = seatWrap(s);
+      w.classList.add('is-active');
+      await wait(260);
+      for (const step of ai.log) {
+        await say(s, SAY[step.action] || step.action);
+        if (step.action === 'DOUBLE') { seatChips(s, ai.stake); sound.chip(); }
+        if (step.card) { await dealCard(cardsOf(w), step.card, shoe, { rotate: step.action === 'DOUBLE' }); updateHandTotal(w, false); }
+        if (step.total > 21) { w.classList.add('is-bust'); await say(s, '버스트', 'lose'); }
+      }
+      await wait(200);
+      w.classList.remove('is-active');
+      s.querySelector('.bj-say').classList.remove('is-shown');
+    }
+  }
+  // The AI seats' own chips: paid from the rack or raked, for show only.
+  async function settleSeats(r) {
+    const nodes = [...aiRow.children];
+    const rack = t.rack.getBoundingClientRect();
+    const moves = [];
+    (r.ai || []).forEach((ai, i) => {
+      const s = nodes[i]; if (!s || !ai.result) return;
+      const [label, kind] = RESULT[ai.result.result] || ['', 'push'];
+      const tag = seatWrap(s).querySelector('.hand-result');
+      tag.textContent = label; tag.className = `hand-result is-${kind} is-shown`;
+      const box = s.querySelector('.bj-seat-chips');
+      if (ai.result.netPnl < 0) moves.push(...[...box.children].map((c, k) => flyTo(c, rack, { duration: 420, delay: k * 30, fade: true }).then(() => c.remove())));
+      else if (ai.result.netPnl > 0) breakdown(ai.result.netPnl, t.tier.chips, 5).forEach((v, k) => {
+        const c = createChip(v); c.style.setProperty('--i', box.children.length); box.append(c);
+        moves.push(flyFrom(c, rack, { duration: 420, delay: k * 60, lift: 30 }));
+      });
+    });
+    await Promise.all(moves);
+  }
+
+  // ---------- side bets ----------
+  function paySide(zoneId, amount, { animated = true } = {}) {
+    const node = t.zones.get(zoneId);
+    const stack = t.stackOf(zoneId);
+    if (!node || !stack) return [];
+    const pay = el('span', 'bet-stack bet-stack--payout');
+    stack.after(pay);
+    const rack = t.rack.getBoundingClientRect();
+    return breakdown(amount, t.tier.chips, 8).map((v, i) => {
+      const c = createChip(v); c.style.setProperty('--i', i); pay.append(c);
+      return animated ? flyFrom(c, rack, { duration: 460, delay: i * 70, lift: 40 }) : null;
+    }).filter(Boolean);
+  }
+  function markSide(bet) {
+    const node = t.zones.get(sideZone(bet));
+    if (!node) return;
+    node.classList.add(bet.netPnl > 0 ? 'is-won' : 'is-lost');
+    node.querySelector('.side-tag').textContent = bet.netPnl > 0 ? `${bet.pays}:1` : '';
+  }
+  // Side bets are decided by the first two cards and the dealer's up card, right after the deal.
+  async function sideMoment(r) {
+    const bets = r.sideBets || [];
+    if (!bets.length) return;
+    await wait(250);
+    bets.forEach(markSide);
+    const winners = bets.filter(b => b.netPnl > 0).sort((a, b) => b.pays - a.pays);
+    if (winners.length) {
+      const best = winners[0];
+      t.banner(`${best.kind === 'PP' ? '' : '21+3 '}${SIDE_NAMES[best.result]} ${best.pays}:1`, 'win');
+      sound.win(); haptic([20, 60, 30]); t.glow();
+      const pays = winners.flatMap(b => paySide(sideZone(b), b.netPnl));
+      sound.chips(Math.min(pays.length, 6));
+      await Promise.all(pays);
+    }
+    const losers = bets.filter(b => b.netPnl < 0).map(sideZone);
+    if (losers.length) { await wait(winners.length ? 500 : 150); await Promise.all(losers.map(z => t.rakeZone(z))); }
+    await wait(winners.length ? 700 : 150);
+  }
+  function clearSides() {
+    t.body.querySelectorAll('.side-circle').forEach(n => { n.classList.remove('is-won', 'is-lost'); n.querySelector('.side-tag').textContent = ''; });
+  }
+
+  // ---------- basic-strategy hint ----------
+  function recommend(r = round) {
+    if (r?.status !== 'PLAYER') return null;
+    const hand = r.hands[r.activeHand];
+    if (!hand) return null;
+    const afford = t.available >= hand.stake;
+    return basicStrategy(hand.cards, r.dealer[0], { canDouble: hand.canDouble && afford, canSplit: hand.canSplit && afford });
+  }
+  function paintStat() {
+    const on = Boolean(settings.get('bjHint'));
+    stat.hidden = !on;
+    if (!on) return;
+    const r = hintRecord();
+    stat.innerHTML = r.total ? `<span>정석</span><b>${Math.round(r.right / r.total * 100)}%</b><small>${r.total}수</small>` : '<span>정석</span><small>힌트</small>';
+    stat.title = r.total ? `기본 전략대로 친 비율 ${r.right}/${r.total}` : '기본 전략이 권하는 버튼이 표시돼요';
+  }
+  function tally(action, rec) {
+    if (!rec) return;
+    const r = hintRecord();
+    r.total++; if (action === rec) r.right++;
+    saveHint(r);
+    paintStat();
   }
 
   function refreshActions() {
@@ -132,37 +304,68 @@ export async function mountBlackjack(ctx) {
       { label: '더블', key: 'D', disabled: !hand?.canDouble || t.available < hand.stake, onClick: () => act('DOUBLE') },
       { label: '스플릿', key: 'P', disabled: !hand?.canSplit || t.available < hand.stake, onClick: () => act('SPLIT') }
     ]);
+    const rec = settings.get('bjHint') && !t.busy ? recommend() : null;
+    if (rec) {
+      const b = t.actions.children[ACTIONS.indexOf(rec)];
+      b?.classList.add('is-hint');
+      b?.setAttribute('aria-description', '기본 전략 추천');
+    }
   }
   t.refreshActions = refreshActions;
   t.onBetChange = refreshActions;
+  const offSettings = onSettings(key => { if (key === 'bjHint' || key === null) { paintStat(); refreshActions(); } });
+  const destroy = t.destroy.bind(t);
+  t.destroy = () => { offSettings(); destroy(); };
+  paintStat();
 
   async function clearFelt() {
-    const containers = [dealerHand, ...[...wraps.values()].map(cardsOf)];
+    const containers = [dealerHand, ...[...wraps.values()].map(cardsOf), ...[...seats.values()].map(s => cardsOf(seatWrap(s)))];
     if (containers.some(c => c.children.length)) await sweepCards(containers, discard);
     allHands().forEach(h => h.replaceChildren()); wraps.clear();
+    [...seats.values()].forEach(s => { clearSeat(s); updateHandTotal(seatWrap(s), false); });
     dealerTotal.hidden = true;
+    clearSides();
     crowd(null);
     bj.style.removeProperty('--card-w');
   }
 
+  // A side bet needs a main bet on its box, and can't be bigger than it.
+  function sideProblem() {
+    for (const b of BOXES) for (const k of ['pp', 't3']) {
+      const side = t.zoneTotal(`${k}-${b}`);
+      if (!side) continue;
+      if (!t.zoneTotal(b)) return '사이드 베팅은 메인 베팅이 있는 박스에만 걸 수 있어요';
+      if (side > t.zoneTotal(b)) return '사이드 베팅은 그 박스 베팅 금액까지만 걸 수 있어요';
+    }
+    return '';
+  }
+
   async function deal() {
     if (!t.betReady) return;
+    const problem = sideProblem();
+    if (problem) return t.reject(problem);
     const boxes = BOXES.filter(b => t.zoneTotal(b) > 0);
     const stakes = boxes.map(b => t.zoneTotal(b));
+    const pairs = boxes.map(b => t.zoneTotal(`pp-${b}`)), trips = boxes.map(b => t.zoneTotal(`t3-${b}`));
+    const sides = pairs.some(Boolean) || trips.some(Boolean) ? { pairs, trips } : {};
     t.lock();
     await clearFelt();
     let res;
-    try { res = await api.blackjackStart(stakes, t.tier.floor); }
+    try { res = await api.blackjackStart(stakes, t.tier.floor, sides); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     spotBox = boxes;
     round = res.round;
     const ws = round.hands.map(h => { const w = handWrap(h); handsIn(h).append(w); return w; });
-    // Real dealing order: one card to every box, the dealer up card, a second card to every box, then the hole card.
+    const sw = seatAll(round.ai).map(seatWrap);
+    // Real dealing order: one card to every box, then each AI seat, the dealer up card, a second card all round, then the hole card.
     for (const [i, h] of round.hands.entries()) { await dealCard(cardsOf(ws[i]), h.cards[0], shoe); updateHandTotal(ws[i]); }
+    for (const [i, a] of round.ai.entries()) { await dealCard(cardsOf(sw[i]), a.cards[0], shoe); updateHandTotal(sw[i], false); }
     await dealCard(dealerHand, round.dealer[0], shoe); updateDealerTotal(false);
     for (const [i, h] of round.hands.entries()) { await dealCard(cardsOf(ws[i]), h.cards[1], shoe); updateHandTotal(ws[i]); }
+    for (const [i, a] of round.ai.entries()) { await dealCard(cardsOf(sw[i]), a.cards[1], shoe); updateHandTotal(sw[i], false); }
     await dealCard(dealerHand, 'HIDDEN', shoe, { faceUp: false });
+    await sideMoment(round);
     if (round.status === 'SETTLED') await finish(res);
     else { markActive(round); if (round.status === 'INSURANCE') { t.banner('Insurance?', 'push'); sound.tick(); voice.say('insurance'); } }
   }
@@ -170,10 +373,12 @@ export async function mountBlackjack(ctx) {
   async function act(action) {
     const prev = round;
     const hand = prev.hands[prev.activeHand];
+    const rec = recommend(prev);
     let res;
     try { res = await api.blackjackAction(prev.id, action, prev.activeHand); }
     catch (e) { t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    if (!res.replayed) tally(action, rec);
     const next = res.round;
     if (action === 'INSURANCE' || action === 'NO_INSURANCE') {
       round = next;
@@ -220,6 +425,7 @@ export async function mountBlackjack(ctx) {
   async function finish(res) {
     round = res.round;
     markActive({ hands: [] });
+    await playSeats(round);
     const hole = dealerHand.children[1];
     await wait(250);
     if (hole) await flipCard(hole, round.dealer[1], { duration: 420 });
@@ -236,18 +442,22 @@ export async function mountBlackjack(ctx) {
       const tag = w?.querySelector('.hand-result');
       if (tag) { tag.textContent = label; tag.className = `hand-result is-${kind} is-shown`; }
     }
+    await settleSeats(round);
     const net = res.netPnl ?? round.netPnl ?? 0;
     const top = round.hands.map(h => h.result?.result);
+    const handNet = round.hands.reduce((a, h) => a + (h.result?.netPnl || 0), 0);
     const insured = round.insurance?.taken && round.insurance.result === 'WIN';
     const dealerBust = value(round.dealer).total > 21;
     // Busted boxes were already called as they went over.
-    const line = insured ? 'you-win' : top.includes('BLACKJACK') && net > 0 ? 'blackjack' : dealerBust && net > 0 ? 'dealer-busts' : net > 0 ? 'you-win' : net < 0 ? (top.every(r => r === 'BUST') ? null : 'dealer-wins') : 'push';
+    const line = insured ? 'you-win' : top.includes('BLACKJACK') && handNet > 0 ? 'blackjack' : dealerBust && net > 0 ? 'dealer-busts' : net > 0 ? 'you-win' : net < 0 ? (top.every(r => r === 'BUST') ? null : 'dealer-wins') : 'push';
     voice.say(line);
-    const headline = insured ? 'Insurance pays' : top.includes('BLACKJACK') && net > 0 ? 'Blackjack' : net > 0 ? 'You win' : net < 0 ? (top.every(r => r === 'BUST') ? 'Bust' : 'Dealer wins') : 'Push';
-    // Each box settles on its own; the insurance line pays or loses separately.
+    const headline = insured ? 'Insurance pays' : top.includes('BLACKJACK') && handNet > 0 ? 'Blackjack' : net > 0 ? 'You win' : net < 0 ? (top.every(r => r === 'BUST') ? 'Bust' : 'Dealer wins') : 'Push';
+    // Each box settles on its own; the insurance line pays or loses separately. Side bets were
+    // paid at the deal, so their chips just go home with the rest.
     const zones = new Map();
     for (const h of round.hands) zones.set(boxOf(h), (zones.get(boxOf(h)) || 0) + (h.result?.netPnl || 0));
     if (round.insurance?.taken) zones.set('ins', round.insurance.netPnl);
+    for (const b of round.sideBets || []) if (b.netPnl > 0) zones.set(sideZone(b), 0);
     await t.settle(net, { label: `${headline}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, zones, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     await t.syncBalance();
     refreshActions();
@@ -259,14 +469,17 @@ export async function mountBlackjack(ctx) {
     try { open = await api.blackjackOpen(); } catch { return; }
     t.setServerState(open.state);
     await t.syncBalance();
-    if (!open.round) return;
+    if (!open.round) { seatAll(open.seats || []); return; }
     round = open.round;
     spotBox = BOXES.slice(0, round.spots || 1);
     for (const h of round.hands) t.placeLocked(boxOf(h), h.stake);
+    // Side bets already settled at the deal: winners sit with their payout, losers are gone.
+    for (const b of round.sideBets || []) if (b.netPnl > 0) { t.placeLocked(sideZone(b), b.stake); paySide(sideZone(b), b.netPnl, { animated: false }); markSide(b); }
     t.refreshBet();
     t.lock();
     crowd(round);
     for (const h of round.hands) { const w = handWrap(h); handsIn(h).append(w); placeCards(cardsOf(w), h.cards); updateHandTotal(w); }
+    seatAll(round.ai).forEach((s, i) => { const w = seatWrap(s); placeCards(cardsOf(w), round.ai[i].cards); updateHandTotal(w, false); });
     placeCards(dealerHand, round.dealer); updateDealerTotal(false);
     markActive(round);
     t.toast('진행 중이던 판을 이어서 해요');

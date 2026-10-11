@@ -27,7 +27,9 @@ Implemented now:
 - European Roulette (red/black, odd/even, low/high, straight 17 demo)
 - Sic Bo (big/small, odd/even, total 10 demo, any triple)
 - Bankruptcy event + fictional price-comparison card data
-- Responsive Vegas-inspired lobby, cashier, profile ledger, rankings and admin control room
+- Live, playable tables in the web client for Blackjack, Baccarat, Roulette and Sic Bo, wired to the server API
+- Physical table feel: cards dealt from the shoe with 3D flips and baccarat squeeze, chips tapped or dragged onto the felt, a roulette rotor and ball that land on the server's number, dice that tumble to the server's roll, payouts and rakes animated on the felt, synthesized table sounds and haptics (all respect reduced-motion)
+- Responsive Vegas-inspired lobby, rankings and profile ledger (client code in `public/js/`, no build step)
 - Production Supabase foundation migration with RLS-first read access
 
 Card Room UI/contracts for Hold'em, 섯다 and 맞고 are present as the next build boundary; the full PvP engines from Sprint 4/5 are intentionally not faked in this executable build.

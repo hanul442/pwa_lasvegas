@@ -65,6 +65,21 @@ export async function mountBlackjack(ctx) {
   const allHands = () => t.body.querySelectorAll('[data-hands]');
   // Shrink the cards as splits add hands so every box still fits across a phone.
   const crowd = r => { const n = r?.hands.length || 0; bj.classList.toggle('is-crowded', n > 3); bj.classList.toggle('is-packed', n > 4); };
+  // Hits widen the hands; when the boxes no longer fit across the felt, shrink the cards
+  // instead of letting the row spill off the side of the screen.
+  const spotsRow = t.body.querySelector('.bj-spots');
+  function fit() {
+    for (let i = 0; i < 6; i++) {
+      const need = spotsRow.scrollWidth, room = spotsRow.clientWidth;
+      const card = spotsRow.querySelector('.card');
+      if (need <= room + 1 || !card) return;
+      const w = card.offsetWidth;
+      bj.style.setProperty('--card-w', `${Math.max(22, Math.floor(w * room / need) - 1)}px`);
+    }
+  }
+  const refit = () => { bj.style.removeProperty('--card-w'); fit(); };
+  window.addEventListener('resize', refit);
+  t.listeners.push(['resize', refit]);
   const wraps = new Map();
 
   function handWrap(hand) {
@@ -83,6 +98,7 @@ export async function mountBlackjack(ctx) {
     tag.textContent = texts.length ? totalText(texts) : '';
     tag.classList.toggle('is-bust', value(texts).total > 21);
     tag.classList.toggle('is-21', value(texts).total === 21);
+    fit();
   }
   function updateDealerTotal(reveal) {
     const texts = [...dealerHand.querySelectorAll('.card')].map(c => c.dataset.card).filter(x => x !== 'HIDDEN');
@@ -125,6 +141,7 @@ export async function mountBlackjack(ctx) {
     allHands().forEach(h => h.replaceChildren()); wraps.clear();
     dealerTotal.hidden = true;
     crowd(null);
+    bj.style.removeProperty('--card-w');
   }
 
   async function deal() {

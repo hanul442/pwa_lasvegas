@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="198 370 1132 240" role="img" aria-label="VEGAS">
+  <!-- VEGAS wordmark: square-ended geometric strokes, a four-point star in place of the A's crossbar. -->
+  <g fill="none" stroke="#f4f5f7" stroke-width="18" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M218 391 L326 575 L438 391"/>
+    <path d="M490 392 H638 M490 482 H592 M490 570 H638 M490 392 V570"/>
+    <path d="M854 429 C829 401 795 390 759 390 C692 390 644 431 644 486 C644 545 688 582 755 582 C801 582 833 566 853 542"/>
+    <path d="M778 489 H861 V551"/>
+    <path d="M900 575 L997 391 L1098 575"/>
+    <path d="M1308 407 C1279 392 1237 389 1204 395 C1164 402 1140 424 1140 451 C1140 481 1170 492 1221 502 C1277 513 1309 527 1309 553 C1309 582 1270 592 1224 592 C1185 592 1153 584 1128 568"/>
+  </g>
+  <path transform="translate(997 505)" fill="#fff6dc" d="M0 -42 C3 -13 8 -5 35 0 C8 5 3 13 0 42 C-3 13 -8 5 -35 0 C-8 -5 -3 -13 0 -42Z"/>
+</svg>

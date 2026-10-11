@@ -59,7 +59,49 @@
   .bac-bets{gap:6px}
   .zone--pair{min-height:32px;padding:2px 6px}
   .bac-zones .zone{min-height:40px}
-  .has-crowd .wheel{width:min(30dvw,46dvh)}
-  .has-crowd .dome{width:min(28dvw,40dvh)}
+  .has-crowd .wheel{width:min(26dvw,36dvh)}
+  .has-crowd .felt-body{padding-top:40px;padding-bottom:10px}
+  .has-crowd .rl-board{grid-template-rows:repeat(3,minmax(28px,auto))}
+  .has-crowd .rl-outside .zone,.has-crowd .rl-dozens .zone{min-height:34px;padding:2px 4px}
+  .has-crowd .rl-payouts{display:none}
+  .has-crowd .sb-main{align-self:end}
+  .has-crowd .sb-totals{align-self:start}
+  .has-crowd .dome{width:min(26dvw,38dvh)}
+  .has-crowd .bac-bets{gap:4px;grid-column:2;grid-row:1 / span 2}
+  .has-crowd .bac-sides{grid-column:1;grid-row:1}
+  .has-crowd .bac .road{grid-column:1;grid-row:2}
+  .has-crowd .bac-zones .zone{min-height:36px}
+  .has-crowd .zone--pair{min-height:30px}
 }
 @media (prefers-reduced-motion:reduce){.crowd-bubble{transition:opacity .01ms}}
+/* Upright phones: the regulars sit along the top edge where the dealer's rack was, instead of a
+   rail across the bottom that covered the last row of bets. Their remarks drop below them. The
+   rack stays as an invisible point chips fly from and to. */
+@media (max-width:759px) and (orientation:portrait){
+  .has-crowd .dealer-rack{visibility:hidden}
+  .crowd{position:absolute;top:8px;bottom:auto;left:12px;right:12px;margin:0;padding:0;border:0;background:none;z-index:3}
+  .table-screen--baccarat.has-crowd .shoe,.table-screen--baccarat.has-crowd .discard{top:46px}
+  .crowd-avatar{width:26px;height:26px}
+  .crowd-meta b,.crowd-meta span{font-size:12px}
+  .crowd-bubble{bottom:auto;top:calc(100% + 6px);border-radius:3px 12px 12px 12px;transform-origin:0 0}
+  .crowd-seat:last-child:not(:first-child) .crowd-bubble{left:auto;right:-2px;border-radius:12px 3px 12px 12px;transform-origin:100% 0}
+  .crowd-seat:nth-child(2):not(:last-child) .crowd-bubble{left:50%;translate:-50% 0}
+  .has-crowd .bac-side{--card-w:clamp(38px,11vw,70px);min-height:calc(var(--card-w) * 1.4 + 60px);padding:6px 4px 8px;gap:4px}
+  .has-crowd .bac-side h3{font-size:15px}
+  .has-crowd .bac-score{font-size:30px}
+}
+@media (max-width:759px) and (max-height:760px) and (orientation:portrait){
+  .has-crowd .wheel{width:min(46vw,190px,18dvh)}
+  .has-crowd .rl{gap:6px}
+}
+/* Small phones on their side (about 360px tall): every bet row gets a little shorter. */
+@media (orientation:landscape) and (max-height:380px){
+  .has-crowd .sb{min-height:0;align-content:center}
+  .has-crowd .sb-main .zone{min-height:46px}
+  .has-crowd .zone--total{min-height:38px}
+  .has-crowd .dome{width:min(24dvw,34dvh)}
+  .has-crowd .wheel{width:min(24dvw,34dvh)}
+  .has-crowd .rl-board{grid-template-rows:repeat(3,26px)}
+  .has-crowd .rl-outside .zone,.has-crowd .rl-dozens .zone{min-height:30px}
+  .has-crowd .rl-layout{gap:4px}
+}

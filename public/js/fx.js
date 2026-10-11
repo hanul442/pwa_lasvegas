@@ -46,6 +46,21 @@ export function flyTo(el, toRect, { duration = 420, delay = 0, lift = 0, fade = 
   return animate(el, frames, { duration, delay, easing: 'cubic-bezier(.5,0,.3,1)' });
 }
 
+// Like flyTo, but for chips leaving the felt: the felt clips its overflow, so a chip headed for the
+// wallet in the top bar would vanish at the felt's edge. A fixed-position copy makes the trip
+// instead, landing on top of everything, and the original is hidden for the ride.
+export function flyOut(el, toRect, opts = {}) {
+  const r = el.getBoundingClientRect();
+  if (!r.width) return Promise.resolve();
+  const c = el.cloneNode(true);
+  c.classList.add('chip-flyer');
+  Object.assign(c.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+  c.style.setProperty('--size', `${r.width}px`);
+  document.body.append(c);
+  el.style.visibility = 'hidden';
+  return flyTo(c, toRect, opts).then(() => { c.remove(); opts.onLand?.(); });
+}
+
 // ---------- sound ----------
 let ctx = null;
 let muted = false;

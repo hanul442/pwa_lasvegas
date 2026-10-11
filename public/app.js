@@ -8,6 +8,7 @@ import { mountBlackjack } from './js/games/blackjack.js';
 import { mountBaccarat } from './js/games/baccarat.js';
 import { mountRoulette } from './js/games/roulette.js';
 import { mountDice } from './js/games/dice.js';
+import { mountHoldem } from './js/games/holdem.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -16,7 +17,7 @@ const GAMES = [
   { id: 'roulette', name: 'Roulette', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
   { id: 'baccarat', name: 'Baccarat', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
   { id: 'dice', name: 'Sic Bo', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
-  { id: 'poker', name: "Hold'em", blurb: '친구와 같은 테이블에서 겨뤄요. 곧 열려요.', soon: true }
+  { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem }
 ];
 
 const surfaces = [...document.querySelectorAll('[data-surface]')];

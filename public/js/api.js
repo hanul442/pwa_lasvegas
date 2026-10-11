@@ -38,7 +38,12 @@ export const api = {
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
   baccarat: (stake, floor, betType) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
-  sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } })
+  sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } }),
+  holdemOpen: () => request('/api/holdem/open'),
+  holdemSit: (buyIn, floor, opponents) => request('/api/holdem/sit', { method: 'POST', body: { buyIn, floor, opponents } }),
+  holdemAction: (sessionId, handNo, seq, action, amount) => request('/api/holdem/action', { method: 'POST', body: { sessionId, handNo, seq, action, amount } }),
+  holdemNext: (sessionId, handNo) => request('/api/holdem/next', { method: 'POST', body: { sessionId, handNo } }),
+  holdemLeave: sessionId => request('/api/holdem/leave', { method: 'POST', body: { sessionId } })
 };
 
 const MESSAGES = {
@@ -56,7 +61,12 @@ const MESSAGES = {
   INVALID_SPOTS: '베팅 박스는 3개까지 쓸 수 있어요.',
   INSURANCE_NOT_OFFERED: '지금은 인슈어런스를 걸 수 없어요.',
   INSURANCE_DECISION_REQUIRED: '먼저 인슈어런스를 걸지 정해 주세요.',
-  RECHARGE_NOT_AVAILABLE: '지금은 충전할 수 없어요.'
+  RECHARGE_NOT_AVAILABLE: '지금은 충전할 수 없어요.',
+  OPEN_HOLDEM_SESSION: '이미 앉아 있는 홀덤 테이블이 있어요.',
+  STALE_ACTION: '테이블 상황이 바뀌었어요. 다시 맞췄어요.',
+  INVALID_RAISE: '레이즈 금액을 다시 골라 주세요.',
+  CANNOT_CHECK: '지금은 체크할 수 없어요.',
+  SESSION_CLOSED: '이미 끝난 테이블이에요.'
 };
 
 export function errorMessage(err) {

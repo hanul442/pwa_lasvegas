@@ -23,6 +23,7 @@ import { renderDuels } from './js/social.js';
 import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
 import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
 import { startNews, stopNews } from './js/news.js';
+import { maybeBust } from './js/bust.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -138,6 +139,7 @@ function applyState(next) {
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
   renderRecharge();
+  maybeBust(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();

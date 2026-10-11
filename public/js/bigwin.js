@@ -80,7 +80,7 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '' 
 
 // ---------- share card ----------
 let logoImage = null;
-function loadLogo() {
+export function loadLogo() {
   if (logoImage) return logoImage;
   logoImage = new Promise(resolve => {
     const img = new Image();

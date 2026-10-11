@@ -277,3 +277,12 @@
 .news-text span{font-size:14px;line-height:1.45;color:var(--smoke)}
 .news-banner--bankruptcy .news-star,.news-banner--big-loss .news-star{background:#ff4f4f}
 @media (prefers-reduced-motion:reduce){.news-banner{transition:opacity .2s}}
+
+/* going bust (js/bust.js): the big-win stage, lights off */
+.bust{background:radial-gradient(55% 45% at 50% 46%,#2a1416f0,#050607f7)}
+.bust-mark{width:16px;height:16px;margin-bottom:18px;border-radius:50%;background:#ff4f4f;box-shadow:0 0 0 10px #ff4f4f22}
+.bust-amount{color:#ff4f4f}
+.bust-note{margin:14px 0 0;max-width:34ch;color:var(--smoke);font-size:15px;line-height:1.5}
+.bust-roast{margin:10px 0 0;color:var(--white);font-size:17px;font-weight:600}
+.bust .bigwin-actions{flex-wrap:wrap;justify-content:center}
+.feed-item--bankruptcy span::before{content:"";display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:#ff4f4f}

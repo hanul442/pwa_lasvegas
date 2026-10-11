@@ -49,7 +49,7 @@ test('dev reset is closed in production and unknown routes 404', async () => {
 });
 
 test('worker-bound modules never touch node:fs', async () => {
-  for (const file of ['lib/api.mjs', 'lib/state.mjs', 'lib/games.mjs', 'lib/economy.mjs', 'lib/blackjack-v2.mjs', 'worker/index.mjs']) {
+  for (const file of ['lib/api.mjs', 'lib/state.mjs', 'lib/games.mjs', 'lib/economy.mjs', 'lib/blackjack-v2.mjs', 'lib/holdem.mjs', 'lib/holdem-bot.mjs', 'lib/holdem-session.mjs', 'worker/index.mjs']) {
     assert.doesNotMatch(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'), /node:fs|node:path/, file);
   }
 });

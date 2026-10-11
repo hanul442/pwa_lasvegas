@@ -9,7 +9,7 @@ const styles = await read('styles.css');
 const table = await read('table.css');
 const sw = await read('sw.js');
 const manifest = JSON.parse(await read('manifest.webmanifest'));
-const games = Object.fromEntries(await Promise.all(['blackjack', 'baccarat', 'roulette', 'dice'].map(async g => [g, await read(`js/games/${g}.js`)])));
+const games = Object.fromEntries(await Promise.all(['blackjack', 'baccarat', 'roulette', 'dice', 'holdem'].map(async g => [g, await read(`js/games/${g}.js`)])));
 
 globalThis.window = { matchMedia: () => ({ matches: false }) };
 const { formatCH } = await import('../public/js/fx.js');
@@ -38,6 +38,9 @@ test('every live table plays through the server-authoritative API', () => {
   assert.match(games.baccarat, /api\.baccarat\(/);
   assert.match(games.roulette, /api\.roulette\(/);
   assert.match(games.dice, /api\.sicbo\(/);
+  assert.match(games.holdem, /api\.holdemSit\(/);
+  assert.match(games.holdem, /api\.holdemAction\(/);
+  assert.match(games.holdem, /api\.holdemOpen\(\)/, 'an open seat must be resumable');
   for (const src of Object.values(games)) assert.doesNotMatch(src, /Math\.random\(\)\s*[*<>]\s*\d+\s*\)\s*;?\s*\/\/\s*outcome/);
 });
 

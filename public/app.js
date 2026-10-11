@@ -11,6 +11,7 @@ import { mountDice } from './js/games/dice.js';
 import { mountMatgo } from './js/games/matgo.js';
 import { mountSeotda } from './js/games/seotda.js';
 import { attachGuide } from './js/guide.js';
+import { mountHoldem } from './js/games/holdem.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -21,7 +22,7 @@ const GAMES = [
   { id: 'dice', name: 'Sic Bo', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
   { id: 'matgo', name: '맞고', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
   { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
-  { id: 'poker', name: "Hold'em", blurb: '친구와 같은 테이블에서 겨뤄요. 곧 열려요.', soon: true }
+  { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem }
 ];
 
 const surfaces = [...document.querySelectorAll('[data-surface]')];
@@ -217,7 +218,11 @@ function renderProfile() {
   if (!state) { root.textContent = '불러오는 중…'; return; }
   const u = state.user, a = u.account;
   const floors = state.floors.map(f => `<li class="floor-row${f.unlocked ? ' is-open' : ''}"><span>${f.name}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
-  const ledger = state.ledger.slice(0, 15).map(x => `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${x.metadata.game}` : ''}</span><b class="${x.amount > 0 ? 'pos' : x.amount < 0 ? 'neg' : ''}">${x.amount > 0 ? '+' : ''}${formatCH(x.amount)}</b></li>`).join('');
+  // One line per finished round: chip locks are skipped and a round shows its win or loss, not the chips handed back.
+  const ledger = state.ledger.filter(x => x.type !== 'BET_LOCK').slice(0, 15).map(x => {
+    const amount = x.type.startsWith('GAME_') && Number.isFinite(x.rawPnlDelta) ? x.rawPnlDelta : x.amount;
+    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${x.metadata.game}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
+  }).join('');
   root.innerHTML = `
     <div class="profile-card">
       <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)} CH</small></div>

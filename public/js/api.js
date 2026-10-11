@@ -44,7 +44,12 @@ export const api = {
   matgoAction: (roundId, move) => request('/api/matgo/action', { method: 'POST', body: { roundId, ...move } }),
   seotdaOpen: () => request('/api/seotda/open'),
   seotdaStart: (stake, floor) => request('/api/seotda/start', { method: 'POST', body: { stake, floor } }),
-  seotdaAction: (roundId, action) => request('/api/seotda/action', { method: 'POST', body: { roundId, action } })
+  seotdaAction: (roundId, action) => request('/api/seotda/action', { method: 'POST', body: { roundId, action } }),
+  holdemOpen: () => request('/api/holdem/open'),
+  holdemSit: (buyIn, floor, opponents) => request('/api/holdem/sit', { method: 'POST', body: { buyIn, floor, opponents } }),
+  holdemAction: (sessionId, handNo, seq, action, amount) => request('/api/holdem/action', { method: 'POST', body: { sessionId, handNo, seq, action, amount } }),
+  holdemNext: (sessionId, handNo) => request('/api/holdem/next', { method: 'POST', body: { sessionId, handNo } }),
+  holdemLeave: sessionId => request('/api/holdem/leave', { method: 'POST', body: { sessionId } })
 };
 
 const MESSAGES = {
@@ -67,7 +72,12 @@ const MESSAGES = {
   OPEN_SEOTDA_ROUND: '진행 중인 섯다 판이 있어요. 이어서 플레이해 주세요.',
   NOT_YOUR_TURN: '지금은 상대 차례예요.',
   TARGET_REQUIRED: '바닥에서 가져올 패를 골라 주세요.',
-  ROUND_NOT_ACTIONABLE: '이미 끝난 판이에요.'
+  ROUND_NOT_ACTIONABLE: '이미 끝난 판이에요.',
+  OPEN_HOLDEM_SESSION: '이미 앉아 있는 홀덤 테이블이 있어요.',
+  STALE_ACTION: '테이블 상황이 바뀌었어요. 다시 맞췄어요.',
+  INVALID_RAISE: '레이즈 금액을 다시 골라 주세요.',
+  CANNOT_CHECK: '지금은 체크할 수 없어요.',
+  SESSION_CLOSED: '이미 끝난 테이블이에요.'
 };
 
 export function errorMessage(err) {

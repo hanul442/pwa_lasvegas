@@ -1,6 +1,6 @@
 /* ================= TABLE SCREEN ================= */
 .table-screen{--card-w:clamp(54px,15.5vw,92px);--chip:46px;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);background:radial-gradient(90% 60% at 50% 0,#1c2026 0,var(--ink) 70%)}
-.table-bar{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:10px 16px}
+.table-bar{display:grid;grid-template-columns:44px 1fr auto 36px;align-items:center;gap:12px;padding:10px 16px}
 .table-back{width:44px;height:44px;border-radius:50%;border:1px solid var(--hair);background:none;color:var(--ivory);font-size:17px}
 .table-name{min-width:0}
 .table-name strong{display:block;font:700 22px/1.1 var(--display);font-stretch:118%;letter-spacing:-.035em}
@@ -68,7 +68,7 @@
   background:radial-gradient(circle,var(--c) 0 58%,transparent 59%),repeating-conic-gradient(var(--edge) 0 10deg,var(--rim) 10deg 45deg);
   box-shadow:inset 0 0 0 calc(var(--size) * .035) #00000030,0 calc(var(--size) * .045) 0 color-mix(in srgb,var(--rim) 55%,#000),0 calc(var(--size) * .1) calc(var(--size) * .18) #0008;color:var(--ink)}
 .chip::before{content:"";position:absolute;inset:21%;border-radius:50%;border:max(1px,calc(var(--size) * .022)) solid color-mix(in srgb,var(--ink) 35%,transparent)}
-.chip-label{position:relative;font:700 calc(var(--size) * .22)/1 var(--sans);letter-spacing:-.03em}
+.chip-label{position:relative;white-space:nowrap;font:700 calc(var(--size) * .22)/1 var(--sans);letter-spacing:-.03em}
 .chip--ivory{--c:#ece6d9;--edge:#ffffff;--rim:#9a8f7e;--ink:#3a332b}
 .chip--teal{--c:#2f6b6a;--edge:#efe7d9;--rim:#2f6b6a;--ink:#f6f1e7}
 .chip--white{--c:#e9e3d6;--edge:#ffffff;--rim:#2b4a7a;--ink:#1f2d45}
@@ -102,10 +102,12 @@
 .table-controls{display:grid;grid-template-columns:1fr auto;grid-template-areas:"bet tools" "tray tray" "act act";gap:8px 12px;align-items:center;padding:2px 16px calc(12px + env(safe-area-inset-bottom))}
 .bet-readout{grid-area:bet;display:flex;align-items:baseline;gap:10px;min-width:0}
 .bet-readout span{font-size:12px;color:var(--taupe)}
+.bet-readout span,.bet-readout strong,.bet-readout small{white-space:nowrap}
+.bet-readout small{overflow:hidden;text-overflow:ellipsis}
 .bet-readout strong{font:700 24px var(--display);letter-spacing:-.03em;font-variant-numeric:lining-nums tabular-nums}
 .bet-readout small{font-size:12px;color:#ff7b72}
 .bet-tools{grid-area:tools;display:flex;gap:6px}
-.bet-tool{min-width:44px;height:34px;padding:0 10px;border-radius:999px;border:1px solid var(--hair);background:none;color:var(--ivory);font-size:13px}
+.bet-tool{min-width:40px;height:34px;padding:0 9px;border-radius:999px;border:1px solid var(--hair);background:none;color:var(--ivory);font-size:13px}
 .bet-tool:disabled{opacity:.3}
 .chip-tray{grid-area:tray;display:flex;justify-content:space-between;gap:6px;padding:8px 2px 4px;transition:opacity .25s}
 .chip-tray .chip{--size:clamp(44px,13vw,54px);transition:transform .18s var(--ease-out);touch-action:none}
@@ -136,7 +138,11 @@
 @keyframes felt-glow{0%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}30%{box-shadow:0 0 0 1px #0008,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffffaa,inset 0 0 120px #ffffff1a,0 24px 60px #000c,0 0 50px #ffffff22}100%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}}
 
 /* ================= BLACKJACK ================= */
-.bj{display:grid;grid-template-rows:auto auto 1fr auto;justify-items:center;gap:8px;min-height:100%}
+.bj{display:grid;grid-template-rows:auto auto auto 1fr;justify-items:center;gap:8px;min-height:100%}
+.bj.is-crowded{--card-w:clamp(36px,10vw,72px)}
+.bj.is-packed{--card-w:clamp(30px,8vw,60px)}
+.bj.is-crowded .bj-spots{gap:4px}
+.bj.is-crowded .hand-total{font-size:12px;padding:1px 7px;min-width:28px}
 .bj-dealer{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:calc(var(--card-w) * 1.4 + 30px)}
 .hand-total{display:inline-flex;min-width:34px;justify-content:center;padding:2px 10px;border-radius:999px;background:#0000004d;border:1px solid #efe7d933;font:650 14px var(--sans);font-variant-numeric:tabular-nums;transition:background .2s}
 .hand-total:empty{visibility:hidden}
@@ -146,7 +152,15 @@
 .felt-arc text{fill:#efe7d9;fill-opacity:.42;font-family:var(--display);font-weight:600;font-stretch:125%;letter-spacing:.1em}
 .felt-arc .arc-sub{fill-opacity:.3;letter-spacing:.12em}
 .felt-arc path.arc-line{fill:none;stroke:#efe7d9;stroke-opacity:.18;stroke-width:.8}
-.bj-hands{display:flex;justify-content:center;align-items:flex-end;gap:calc(var(--card-w) * .45);flex-wrap:wrap;min-height:calc(var(--card-w) * 1.4 + 34px)}
+.bj-spots{display:flex;justify-content:center;align-items:flex-end;gap:clamp(4px,3vw,32px);width:100%;align-self:end;padding-bottom:18px}
+.bj-spot{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 1 auto;min-width:0}
+.bj-hands{display:flex;justify-content:center;align-items:flex-end;gap:calc(var(--card-w) * .2);min-height:calc(var(--card-w) * 1.4 + 34px)}
+.bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 34px)}
+.bj-insurance{--size:30px;position:relative;display:flex;align-items:center;justify-content:center;min-width:min(240px,70%);height:34px;padding:0 16px;border-radius:999px;border:1px solid #efe7d91f;transition:border-color .3s,background .3s}
+.bj-insurance>span:first-child{font:600 10px var(--display);font-stretch:125%;letter-spacing:.14em;color:#efe7d9;opacity:.38;transition:opacity .2s}
+.bj-insurance.has-bet>span:first-child{opacity:.12}
+.bj.is-insurance .bj-insurance{border-color:var(--ivory);background:#efe7d90f}
+.bj.is-insurance .bj-insurance>span:first-child{opacity:.85}
 .hand-wrap{position:relative;display:flex;flex-direction:column-reverse;align-items:center;gap:6px;padding:6px;border-radius:16px;transition:background .3s,box-shadow .3s}
 .hand-wrap.is-active{box-shadow:0 0 0 1px #efe7d999}
 .hand-wrap.is-bust .hand{filter:grayscale(.5) brightness(.8)}
@@ -155,11 +169,14 @@
 .hand-result.is-win{background:var(--ivory);color:var(--walnut)}
 .hand-result.is-lose{background:#0a0b0de6;color:#d8cfc2;border:1px solid #efe7d933}
 .hand-result.is-push{background:#0a0b0de6;color:var(--ivory);border:1px solid #efe7d966}
-.bet-circle{--size:46px;position:relative;width:104px;height:104px;border-radius:50%;border:1px solid #efe7d980;outline:1px solid #efe7d926;outline-offset:6px;background:radial-gradient(circle,#00000033,#0000 70%);color:#fff;margin:6px 0 4px;transition:border-color .2s,box-shadow .2s}
+.bet-circle{--size:46px;position:relative;flex:none;width:clamp(76px,23vw,104px);height:clamp(76px,23vw,104px);border-radius:50%;border:1px solid #efe7d980;outline:1px solid #efe7d926;outline-offset:6px;background:radial-gradient(circle,#00000033,#0000 70%);color:#fff;margin:6px 0 4px;transition:border-color .2s,box-shadow .2s}
 .bet-circle-label{font:650 13px var(--display);font-stretch:125%;letter-spacing:.08em;color:#efe7d9;opacity:.45}
 .bet-circle.has-bet{border-color:var(--ivory)}
 .bet-circle.has-bet .bet-circle-label{opacity:0}
 .bet-circle.is-hover{border-color:var(--ivory);background:#efe7d90f}
+.bet-circle.is-focus{outline-color:#efe7d999}
+.zone-amount{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);font:600 12px var(--sans);font-variant-numeric:tabular-nums;color:var(--ivory);white-space:nowrap;pointer-events:none}
+.is-playing .bet-circle:not(.has-bet){opacity:.35}
 
 /* ================= BACCARAT ================= */
 .bac{display:grid;gap:16px;align-content:center;min-height:100%}
@@ -240,6 +257,8 @@
 
 /* ================= responsive ================= */
 @media (min-width:760px){
+  .table-screen--blackjack{--card-w:clamp(54px,9.5dvh,92px)}
+  .bj .felt-arc{width:min(100%,380px)}
   .table-controls{grid-template-columns:auto auto 1fr auto;grid-template-areas:"bet tools tray act";max-width:1100px;width:100%;margin:0 auto}
   .chip-tray{justify-content:center;gap:12px}
   .action-row{min-width:320px}
@@ -261,11 +280,24 @@
   .wheel{width:min(30dvw,46dvh)}
   .dome{width:min(28dvw,40dvh)}
   .rl,.sb{grid-template-columns:auto 1fr}
-  .bj{grid-template-columns:1fr 1fr auto;grid-template-rows:1fr;align-items:center;gap:12px}
-  .bj-dealer,.bj-hands{min-height:0}
-  .bet-circle{width:84px;height:84px;--size:40px}
+  .bj{grid-template-columns:minmax(0,.7fr) 1.6fr;grid-template-rows:1fr auto;align-items:center;gap:6px 12px}
+  .bj-dealer{grid-row:1;grid-column:1;min-height:0}
+  .bj-insurance{grid-row:2;grid-column:1;align-self:end;min-width:0;width:100%;margin-bottom:16px}
+  .bj-spots{grid-row:1 / 3;grid-column:2;align-self:stretch;align-items:flex-end}
+  .bj-hands,.bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 10px)}
+  .bj-spots{padding-bottom:16px}
+  .bj .hand-wrap{padding:3px;gap:3px}
+  .bj{--card-w:clamp(32px,5vw,46px)}
+  .bj.is-crowded{--card-w:clamp(30px,4.6vw,44px)}
+  .bj.is-packed{--card-w:clamp(26px,3.8vw,38px)}
+  .bj-insurance{height:26px;padding:0 8px}
+  .bj-insurance>span:first-child{font-size:8px;letter-spacing:.1em}
+  .bet-circle{width:60px;height:60px;--size:30px;margin:2px 0}
+  .zone-amount{top:calc(100% + 4px);font-size:11px}
   .shoe{width:40px;height:40px;top:8px}.discard{width:30px;height:42px;top:8px}
 }
+/* Short screens: drop the printed arc so all three boxes stay on the felt. */
+@media (max-height:760px){.bj .felt-arc{display:none}}
 @media (prefers-reduced-motion:reduce){
   .banner,.toast,.hand-result,.wheel-result,.dome-total{transition:opacity .01ms}
 }

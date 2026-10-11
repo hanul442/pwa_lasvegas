@@ -252,3 +252,7 @@
   .slot-window{--sym:clamp(44px,min(17vw,9dvh),92px)}
   .slot-result{min-height:22px}
 }
+/* Friends' row scrolls sideways on phones: fade its right edge so the cut-off name reads as "more". */
+@media (max-width:519px){
+  .duel-people{padding-right:28px;-webkit-mask-image:linear-gradient(90deg,#000 82%,#0000);mask-image:linear-gradient(90deg,#000 82%,#0000)}
+}

@@ -544,3 +544,32 @@
   .pk-button,.pk-tag{transition:opacity .01ms}
   .pk-seat.is-thinking .pk-plate{animation:none}
 }
+/* Short desktop windows and tablets: with AI players at the table the felt runs out of height,
+   so cards, boxes and seats scale with the window height and the boxes stay on the felt. */
+@media (min-width:760px) and (max-height:900px){
+  .table-screen--blackjack .felt-body{padding-top:46px}
+  .bj{--card-w:clamp(36px,7dvh,62px)}
+  .bj .bet-circle{width:clamp(64px,11dvh,104px);height:clamp(64px,11dvh,104px)}
+  .bj-seat{--card-w:clamp(22px,4dvh,40px)}
+  .bj-spots{padding-bottom:10px}
+  .bj-insurance{height:28px}
+}
+/* Narrow phones: each box keeps its two side bets inside its own width so neighbours don't touch. */
+@media (max-width:519px){
+  .side-circle{width:28px;height:28px;top:-12px;left:-2px}
+  .side-circle--t3{left:auto;right:-2px}
+}
+@media (max-width:759px) and (max-height:760px) and (orientation:portrait){
+  .bj{--card-w:clamp(44px,min(13.5vw,7.4dvh),80px);gap:4px}
+  .table-screen--blackjack .felt-body{padding-top:40px}
+  .bj-hands,.bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 26px)}
+  .bj .bet-circle{width:clamp(62px,18vw,96px);height:clamp(62px,18vw,96px)}
+  .bj-spots{padding-bottom:12px}
+  .bj .hand-wrap{padding:3px;gap:3px}
+  .table-screen--blackjack .felt-body{padding-bottom:14px}
+  .bj-insurance{height:26px}
+}
+@media (max-width:759px) and (orientation:portrait){
+  .bj{gap:4px}
+  .bj .hand-wrap{padding:3px;gap:3px}
+}

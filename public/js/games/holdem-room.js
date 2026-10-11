@@ -352,7 +352,7 @@ export function createFriends(t, pk, bar, hooks) {
     if (l && !pk.animating) {
       t.hint('내 차례예요');
       const turn = `${room.table.handNo}:${room.table.seq}`;
-      if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
+      if (prompted !== turn) { prompted = turn; voice.say('your-action', { next: true }); }
       t.setActions(bar.actions(l, act));
       return;
     }

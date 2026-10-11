@@ -174,7 +174,7 @@ export async function mountHoldem(ctx) {
       pk.markTurn(0);
       hintLine.hidden = true;
       const turn = `${session.table.handNo}:${session.table.seq}`;
-      if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
+      if (prompted !== turn) { prompted = turn; voice.say('your-action', { next: true }); }
       return;
     }
     sizer.hidden = true;

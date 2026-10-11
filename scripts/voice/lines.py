@@ -66,3 +66,18 @@ PLURAL = ['', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
 for n in range(1, 7):
     LINES[f'triple-{n}'] = (f'Triple {PLURAL[n]}.', 'en-us')
 LINES['roulette-6'] = 'Six. Black.'  # with a comma the S came out voiced ("zix")
+
+# Pieces the player strings together for bet amounts: "Raise to" + "two" "hundred" "fifty" "thousand".
+# Each number word comes twice, mid-phrase (held, rising) and phrase-final (falling), so the
+# joined phrase still lands like one sentence. Rendered tight, with no tail of silence.
+PIECES = {
+    'lead-call': 'Call,',
+    'lead-raise': 'Raise to',
+    'lead-bet': 'The bet is',
+    'lead-all-in': 'All in,',
+}
+NUMBER_WORDS = ONES[1:] + ['twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety',
+                           'hundred', 'thousand', 'million', 'billion', 'trillion']
+for word in NUMBER_WORDS:
+    PIECES[f'n-{word}'] = f'{word},'
+    PIECES[f'n-{word}-end'] = f'{word}.'

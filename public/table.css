@@ -533,7 +533,7 @@
 .pk-seat.is-empty{opacity:.6}
 .pk-seat.is-human [data-name]::before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--star);clip-path:var(--star-shape);vertical-align:1px}
 .pk-seat.is-human .pk-plate small{color:var(--star)}
-.pk-clock{position:absolute;right:-13px;top:-13px;z-index:6;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#0a0b0d}
+.pk-clock{position:absolute;right:-20px;top:-18px;z-index:6;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#0a0b0d}
 .pk-clock svg{position:absolute;inset:0;transform:rotate(-90deg)}
 .pk-clock circle{fill:none;stroke:#ffffff26;stroke-width:3}
 .pk-clock .pk-clock-run{stroke:var(--white);stroke-linecap:round;transition:stroke-dashoffset .25s linear}

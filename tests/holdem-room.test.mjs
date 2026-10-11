@@ -186,6 +186,12 @@ test('people join a running table: a free chair at once, otherwise at the next d
   assert.equal(room.table.seats.filter(s => s.kind !== 'empty').length, 6);
 });
 
+test('the room module stays runtime-neutral (no file system, runs in the Worker)', async () => {
+  const fs = await import('node:fs/promises');
+  const src = await fs.readFile(new URL('../lib/holdem-room.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /from 'node:(fs|path)/);
+});
+
 // ---------- API ----------
 function memoryStore() {
   let state = defaultState();

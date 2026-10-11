@@ -3,12 +3,16 @@ import { animate, flyFrom, flyTo, sound, haptic, formatCH, formatFull, rollNumbe
 import { createChip, breakdown, TIERS } from './chips.js';
 
 export class Table {
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '' }) {
+  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false }) {
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
     this.shownBalance = this.available;
-    this.bet = { zone: null, chips: [] };
+    this.multi = multi;
+    this.bets = new Map();
+    this.history = [];
+    this.focus = null;
+    this.passive = new Set();
     this.lastBet = null;
     this.selected = this.tier.chips[0];
     this.zones = new Map();
@@ -22,6 +26,7 @@ export class Table {
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
         <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)} CH</span></div>
         <div class="table-balance"><span>보유 칩</span><strong data-balance>${formatFull(this.available)}</strong></div>
+        <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
       </header>
       <div class="felt ${feltClass}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
@@ -36,6 +41,7 @@ export class Table {
           <button class="bet-tool" type="button" data-tool="undo" aria-label="마지막 칩 되돌리기">되돌리기</button>
           <button class="bet-tool" type="button" data-tool="half" aria-label="베팅 절반으로">½</button>
           <button class="bet-tool" type="button" data-tool="double" aria-label="베팅 두 배로">×2</button>
+          <button class="bet-tool" type="button" data-tool="max" aria-label="최대 베팅">최대</button>
         </div>
         <div class="chip-tray" data-tray role="group" aria-label="칩 선택"></div>
         <div class="action-row" data-actions></div>
@@ -55,6 +61,7 @@ export class Table {
     root.querySelector('[data-tool="undo"]').addEventListener('click', () => this.undo());
     root.querySelector('[data-tool="half"]').addEventListener('click', () => this.half());
     root.querySelector('[data-tool="double"]').addEventListener('click', () => this.double());
+    root.querySelector('[data-tool="max"]').addEventListener('click', () => this.max());
     this.renderTray();
     this.renderRack();
   }
@@ -123,7 +130,7 @@ export class Table {
   zoneAt(x, y) {
     const hit = document.elementsFromPoint(x, y).find(n => n.closest?.('[data-zone]'));
     const zone = hit?.closest('[data-zone]');
-    return zone && this.zones.has(zone.dataset.zone) && !zone.disabled ? zone : null;
+    return zone && this.zones.has(zone.dataset.zone) && !this.passive.has(zone.dataset.zone) && !zone.disabled ? zone : null;
   }
 
   select(value) {
@@ -134,16 +141,19 @@ export class Table {
   tapChip(value, chip) {
     if (this.locked || this.busy) return;
     this.select(value);
-    const target = this.bet.zone || (this.zones.size === 1 ? [...this.zones.keys()][0] : null);
+    const target = this.maxZone;
     if (target) this.addChip(target, value, chip.getBoundingClientRect());
     else { sound.tick(); this.hint('베팅할 곳을 탭하세요'); this.zones.forEach(z => animate(z, [{ boxShadow: '0 0 0 0 rgba(255,215,120,0)' }, { boxShadow: '0 0 0 4px rgba(255,215,120,.55)' }, { boxShadow: '0 0 0 0 rgba(255,215,120,0)' }], { duration: 700, fill: 'none' })); }
   }
 
   // ---------- zones ----------
-  addZone(node) {
+  // Every zone keeps its own chips. Single-bet games move the whole bet when another zone is
+  // picked; multi-zone tables (blackjack boxes) keep a separate bet on each zone.
+  addZone(node, { passive = false } = {}) {
     const id = node.dataset.zone;
     if (!node.querySelector('.bet-stack')) node.append(el('span', 'bet-stack'));
     this.zones.set(id, node);
+    if (passive) { this.passive.add(id); return node; }
     node.addEventListener('click', () => {
       if (this.locked || this.busy) return;
       this.addChip(id, this.selected, this.tray.querySelector(`[data-value="${this.selected}"]`)?.getBoundingClientRect());
@@ -152,20 +162,35 @@ export class Table {
   }
 
   stackOf(zoneId) { return this.zones.get(zoneId)?.querySelector('.bet-stack'); }
-  get total() { return this.bet.chips.reduce((a, b) => a + b, 0); }
+  chipsOf(zoneId) { return this.bets.get(zoneId) || []; }
+  zoneTotal(zoneId) { return this.chipsOf(zoneId).reduce((a, b) => a + b, 0); }
+  get total() { let sum = 0; this.bets.forEach(chips => { sum += chips.reduce((a, b) => a + b, 0); }); return sum; }
+  get betZones() { return [...this.zones.keys()].filter(z => this.chipsOf(z).length && !this.passive.has(z)); }
+  // Compatibility view for single-bet games: the zone holding the bet and its chips.
+  get bet() { const zone = this.betZones[0] || null; return { zone, chips: zone ? [...this.chipsOf(zone)] : [] }; }
+
+  setFocus(zoneId) {
+    this.focus = zoneId;
+    if (this.multi) this.zones.forEach((z, id) => z.classList.toggle('is-focus', id === zoneId));
+  }
 
   async addChip(zoneId, value, fromRect) {
     if (this.locked || this.busy) return;
-    if (this.bet.zone && this.bet.zone !== zoneId) { await this.moveBet(zoneId); }
-    const next = this.total + value;
-    if (next > this.tier.max) return this.reject(`이 테이블 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
-    if (next > this.available) return this.reject('칩이 부족해요');
-    this.bet.zone = zoneId;
-    this.bet.chips.push(value);
+    if (!this.multi) { const held = this.bet.zone; if (held && held !== zoneId) await this.moveBet(held, zoneId); }
+    this.setFocus(zoneId);
+    if (this.zoneTotal(zoneId) + value > this.tier.max) return this.reject(`${this.multi ? '박스당' : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
+    if (this.total + value > this.available) return this.reject('칩이 부족해요');
+    this.record(zoneId, value);
     const chip = this.pushChip(zoneId, value);
     sound.chip(); haptic(10);
     this.refreshBet();
     if (fromRect) await flyFrom(chip, fromRect, { duration: 380, lift: 60, scale: 1.1, spin: 40 });
+  }
+
+  record(zoneId, value) {
+    if (!this.bets.has(zoneId)) this.bets.set(zoneId, []);
+    this.bets.get(zoneId).push(value);
+    this.history.push(zoneId);
   }
 
   pushChip(zoneId, value) {
@@ -174,81 +199,146 @@ export class Table {
     chip.style.setProperty('--i', stack.children.length);
     chip.style.setProperty('--jx', `${(Math.random() * 4 - 2).toFixed(1)}px`);
     stack.append(chip);
-    this.zones.forEach(z => z.classList.toggle('has-bet', z.dataset.zone === zoneId));
+    this.zones.get(zoneId).classList.add('has-bet');
     return chip;
   }
 
-  async moveBet(zoneId) {
-    const fromStack = this.stackOf(this.bet.zone);
+  async moveBet(fromId, toId) {
+    const fromStack = this.stackOf(fromId);
     const rects = [...fromStack.children].map(c => c.getBoundingClientRect());
     fromStack.replaceChildren();
-    this.bet.zone = zoneId;
-    const chips = this.bet.chips.map(v => this.pushChip(zoneId, v));
+    this.zones.get(fromId).classList.remove('has-bet');
+    const chips = this.chipsOf(fromId);
+    this.bets.delete(fromId);
+    this.bets.set(toId, chips);
+    this.history = this.history.map(z => z === fromId ? toId : z);
+    const nodes = chips.map(v => this.pushChip(toId, v));
     sound.chips(2);
-    await Promise.all(chips.map((c, i) => flyFrom(c, rects[i], { duration: 320, delay: i * 25 })));
+    await Promise.all(nodes.map((c, i) => flyFrom(c, rects[i], { duration: 320, delay: i * 25 })));
+  }
+
+  // Replace a zone's chips with the fewest chips that make `amount`.
+  restack(zoneId, amount) {
+    this.stackOf(zoneId).replaceChildren();
+    this.history = this.history.filter(z => z !== zoneId);
+    this.bets.delete(zoneId);
+    this.zones.get(zoneId).classList.remove('has-bet');
+    for (const v of breakdown(amount, this.tier.chips, 20)) { this.record(zoneId, v); this.pushChip(zoneId, v); }
+  }
+
+  emptyZone(zoneId) {
+    this.stackOf(zoneId)?.replaceChildren();
+    this.bets.delete(zoneId);
+    this.history = this.history.filter(z => z !== zoneId);
+    this.zones.get(zoneId)?.classList.remove('has-bet');
   }
 
   async clearBet({ animateBack = true } = {}) {
-    if (!this.bet.zone) return;
-    const stack = this.stackOf(this.bet.zone);
+    const stacks = [...this.bets.keys()].map(z => this.stackOf(z)).filter(Boolean);
     const target = this.tray.getBoundingClientRect();
-    if (animateBack) { sound.chips(2); await Promise.all([...stack.children].map((c, i) => flyTo(c, target, { duration: 320, delay: i * 20, fade: true }))); }
-    stack.replaceChildren();
-    this.bet = { zone: null, chips: [] };
-    this.zones.forEach(z => z.classList.remove('has-bet'));
+    if (animateBack && stacks.length) { sound.chips(2); await Promise.all(stacks.flatMap(s => [...s.children]).map((c, i) => flyTo(c, target, { duration: 320, delay: i * 20, fade: true }))); }
+    [...this.bets.keys()].forEach(z => this.emptyZone(z));
+    this.history = [];
     this.refreshBet();
   }
 
   // ---------- fine bet adjustments ----------
   async undo() {
-    if (this.locked || this.busy || !this.bet.chips.length) return;
-    this.bet.chips.pop();
-    const chip = this.stackOf(this.bet.zone)?.lastElementChild;
+    if (this.locked || this.busy || !this.history.length) return;
+    const zoneId = this.history.pop();
+    this.chipsOf(zoneId).pop();
+    const chip = this.stackOf(zoneId)?.lastElementChild;
     sound.chip();
     if (chip) await flyTo(chip, this.tray.getBoundingClientRect(), { duration: 300, fade: true }).then(() => chip.remove());
-    if (!this.bet.chips.length) { this.bet.zone = null; this.zones.forEach(z => z.classList.remove('has-bet')); }
+    if (!this.chipsOf(zoneId).length) this.emptyZone(zoneId);
     this.refreshBet();
   }
 
   async half() {
-    if (this.locked || this.busy || !this.bet.chips.length) return;
+    if (this.locked || this.busy || !this.total) return;
     const step = Math.min(...this.tier.chips);
-    const target = Math.max(step, Math.floor(this.total / 2 / step) * step);
-    if (target >= this.total) return;
-    const zone = this.bet.zone;
-    await this.clearBet();
-    this.bet.zone = zone;
-    for (const v of breakdown(target, this.tier.chips, 20)) { this.bet.chips.push(v); this.pushChip(zone, v); }
+    let changed = false;
+    for (const zoneId of this.betZones) {
+      const now = this.zoneTotal(zoneId);
+      // Halving never drops a bet under the table minimum.
+      const target = Math.max(Math.ceil(this.tier.min / step) * step, Math.floor(now / 2 / step) * step);
+      if (target < now) { this.restack(zoneId, target); changed = true; }
+    }
+    if (!changed) return;
     sound.chips(2);
     this.refreshBet();
   }
 
   async double() {
-    if (this.locked || this.busy || !this.bet.chips.length) return;
-    const room = Math.min(this.tier.max, this.available) - this.total;
-    const values = breakdown(Math.min(this.total, room), this.tier.chips, 20).filter((v, i, all) => all.slice(0, i + 1).reduce((a, b) => a + b, 0) <= room);
-    if (!values.length) return this.reject(this.total * 2 > this.tier.max ? `이 테이블 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요');
+    if (this.locked || this.busy || !this.total) return;
     const tray = this.tray.getBoundingClientRect();
-    for (const v of values) {
-      this.bet.chips.push(v);
-      const chip = this.pushChip(this.bet.zone, v);
-      sound.chip();
-      flyFrom(chip, tray, { duration: 320, lift: 40 });
-      await wait(60);
+    let added = 0, blocked = '';
+    for (const zoneId of this.betZones) {
+      const now = this.zoneTotal(zoneId);
+      const room = Math.min(this.tier.max - now, this.available - this.total);
+      const want = Math.min(now, room);
+      if (want < now) blocked = room === this.tier.max - now ? `${this.multi ? '박스당' : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요';
+      let sum = 0;
+      for (const v of breakdown(want, this.tier.chips, 20)) {
+        if (sum + v > want) break;
+        sum += v; added += v;
+        this.record(zoneId, v);
+        const chip = this.pushChip(zoneId, v);
+        sound.chip();
+        flyFrom(chip, tray, { duration: 320, lift: 40 });
+        await wait(50);
+      }
     }
+    if (!added) return this.reject(blocked || '칩이 부족해요');
+    if (blocked) this.toast(blocked);
+    this.refreshBet();
+  }
+
+  // The zone the 최대 button fills: the focused zone, the bet already down, or the only zone.
+  get maxZone() {
+    const open = [...this.zones.keys()].filter(z => !this.passive.has(z));
+    if (this.multi) return this.focus || open[0] || null;
+    return this.bet.zone || (open.length === 1 ? open[0] : null);
+  }
+
+  async max() {
+    if (this.locked || this.busy) return;
+    const zoneId = this.maxZone;
+    if (!zoneId) { this.hint('베팅할 곳을 탭하세요'); return; }
+    const step = Math.min(...this.tier.chips);
+    const room = this.available - (this.total - this.zoneTotal(zoneId));
+    const target = Math.floor(Math.min(this.tier.max, room) / step) * step;
+    if (target < this.tier.min) return this.reject('칩이 부족해요');
+    if (target === this.zoneTotal(zoneId)) return;
+    this.setFocus(zoneId);
+    this.restack(zoneId, target);
+    sound.chips(3); haptic(12);
+    const tray = this.tray.getBoundingClientRect();
+    [...this.stackOf(zoneId).children].forEach((c, i) => flyFrom(c, tray, { duration: 340, delay: i * 30, lift: 40 }));
     this.refreshBet();
   }
 
   async rebet() {
     if (!this.lastBet) return;
     await this.clearBet({ animateBack: false });
-    for (const v of this.lastBet.chips) {
-      if (this.total + v > Math.min(this.tier.max, this.available)) break;
-      await this.addChip(this.lastBet.zone, v, this.tray.getBoundingClientRect());
+    const tray = this.tray.getBoundingClientRect();
+    let short = false;
+    for (const [zoneId, chips] of this.lastBet) {
+      if (!this.zones.has(zoneId)) continue;
+      for (const v of chips) {
+        if (this.zoneTotal(zoneId) + v > this.tier.max || this.total + v > this.available) { short = true; break; }
+        this.record(zoneId, v);
+        flyFrom(this.pushChip(zoneId, v), tray, { duration: 340, lift: 50 });
+        sound.chip();
+        await wait(45);
+      }
+      this.setFocus(zoneId);
     }
+    if (short) this.toast('칩이 부족해 일부만 다시 놓았어요');
+    this.refreshBet();
   }
 
-  // Extra chips pushed out for a double or split.
+  // Extra chips pushed out for a double, split or insurance.
   async addFromTray(zoneId, amount) {
     const values = breakdown(amount, this.tier.chips, 6);
     const tray = this.tray.getBoundingClientRect();
@@ -257,21 +347,64 @@ export class Table {
       sound.chip();
       await flyFrom(chip, tray, { duration: 300, lift: 50 });
     }
-    this.bet.chips.push(amount);
+    if (!this.bets.has(zoneId)) this.bets.set(zoneId, []);
+    this.bets.get(zoneId).push(amount);
+    this.refreshBet();
+  }
+
+  // Put chips for a bet that is already locked on the server (resuming a round).
+  placeLocked(zoneId, amount) {
+    if (!this.bets.has(zoneId)) this.bets.set(zoneId, []);
+    this.bets.get(zoneId).push(amount);
+    for (const v of breakdown(amount, this.tier.chips, 8)) this.pushChip(zoneId, v);
+  }
+
+  // Sweep one zone's chips to the house before the round ends (a lost insurance bet).
+  async rakeZone(zoneId) {
+    const stack = this.stackOf(zoneId);
+    if (!stack?.children.length) return;
+    sound.chips(2);
+    await Promise.all([...stack.children].map((c, i) => flyTo(c, this.rack.getBoundingClientRect(), { duration: 420, delay: i * 30, fade: true })));
+    this.emptyZone(zoneId);
     this.refreshBet();
   }
 
   refreshBet() {
     this.betEl.textContent = formatCH(this.total);
-    const short = this.total > 0 && this.total < this.tier.min;
-    this.hint(short ? `최소 ${formatCH(this.tier.min)}` : '');
+    const zones = this.betZones;
+    const short = zones.some(z => this.zoneTotal(z) < this.tier.min);
+    this.hint(short ? `${this.multi && zones.length > 1 ? '박스마다 ' : ''}최소 ${formatCH(this.tier.min)}` : '');
+    if (this.multi) this.zones.forEach((node, id) => {
+      const tag = node.querySelector('.zone-amount');
+      if (tag) tag.textContent = this.zoneTotal(id) ? formatCH(this.zoneTotal(id)) : '';
+    });
     if (!this.locked) this.setBalance(this.available - this.total, { roll: false });
-    const empty = !this.bet.chips.length;
-    this.tools.forEach(b => { b.disabled = empty; });
+    const empty = !this.total;
+    this.tools.forEach(b => { b.disabled = b.dataset.tool === 'max' ? !this.maxZone : empty; });
     this.onBetChange?.();
   }
 
-  get betReady() { return this.total >= this.tier.min && this.total <= this.tier.max && this.bet.zone; }
+  get betReady() {
+    const zones = this.betZones;
+    return zones.length > 0 && this.total <= this.available && zones.every(z => this.zoneTotal(z) >= this.tier.min && this.zoneTotal(z) <= this.tier.max);
+  }
+
+  // Idle action row shared by every game: clear, rebet, and the primary deal/spin/roll.
+  // With nothing on the felt after a round, the primary button replays the last bet in one tap.
+  idleActions(label, go) {
+    const again = !this.total && this.lastBet;
+    if (again) return [
+      { label: '다시 베팅', ghost: true, onClick: () => this.rebet() },
+      { label: `같은 베팅으로 ${label}`, key: '↵', primary: true, onClick: async () => { await this.rebet(); if (this.betReady) await go(); } }
+    ];
+    return [
+      { label: '지우기', ghost: true, disabled: !this.total, onClick: () => this.clearBet() },
+      { label, key: '↵', primary: true, disabled: !this.betReady, onClick: go }
+    ];
+  }
+
+  // Enter runs whatever the primary idle button does right now.
+  enterAction() { return this.actionList?.find(a => a.key === '↵' && !a.disabled) || null; }
 
   reject(message) {
     sound.tick(); haptic([10, 40, 10]);
@@ -285,41 +418,48 @@ export class Table {
   lock() {
     this.locked = true;
     this.root.classList.add('is-playing');
-    this.lastBet = { zone: this.bet.zone, chips: [...this.bet.chips] };
+    this.lastBet = new Map(this.betZones.map(z => [z, [...this.chipsOf(z)]]));
   }
 
-  // Resolve the bet on the felt: winnings slide in from the rack, losses get raked away.
-  async settle(net, { label, kind } = {}) {
-    const zoneId = this.bet.zone;
-    const stack = this.stackOf(zoneId);
-    const stake = this.total;
-    if (net > 0) {
-      const pay = breakdown(net, this.tier.chips, 12);
+  // Resolve the bets on the felt: winnings slide in from the rack, losses get raked away.
+  // `zones` maps zone id to its own net; without it the whole net belongs to the one bet.
+  async settle(net, { label, kind, zones } = {}) {
+    const held = [...this.bets.keys()].filter(z => this.chipsOf(z).length);
+    const nets = zones || new Map([[held[0], net]]);
+    const rack = this.rack.getBoundingClientRect();
+    const pays = [];
+    nets.forEach((n, zoneId) => {
+      const stack = this.stackOf(zoneId);
+      if (!(n > 0) || !stack) return;
       const payStack = el('span', 'bet-stack bet-stack--payout');
       stack.after(payStack);
-      const rack = this.rack.getBoundingClientRect();
-      sound.chips(Math.min(pay.length, 6));
-      await Promise.all(pay.map((v, i) => {
+      breakdown(n, this.tier.chips, 12).forEach((v, i) => {
         const c = createChip(v); c.style.setProperty('--i', i); payStack.append(c);
-        return flyFrom(c, rack, { duration: 460, delay: i * 70, lift: 40 });
-      }));
-    }
+        pays.push(flyFrom(c, rack, { duration: 460, delay: i * 70, lift: 40 }));
+      });
+    });
+    if (pays.length) { sound.chips(Math.min(pays.length, 6)); await Promise.all(pays); }
     if (label) this.banner(label, kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'));
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
     await wait(net > 0 ? 900 : 650);
-    const chips = [...(stack?.parentElement?.querySelectorAll('.bet-stack .chip') || [])];
-    const target = net < 0 ? this.rack.getBoundingClientRect() : this.balanceEl.getBoundingClientRect();
-    if (chips.length) sound.chips(3);
-    await Promise.all(chips.map((c, i) => flyTo(c, target, { duration: 420, delay: i * 30, lift: net < 0 ? 0 : 50, fade: true })));
-    this.zones.forEach(z => { z.querySelectorAll('.bet-stack--payout').forEach(s => s.remove()); z.classList.remove('has-bet'); });
-    stack?.replaceChildren();
-    this.bet = { zone: null, chips: [] };
-    this.betEl.textContent = '0';
+    const moves = [];
+    const balance = this.balanceEl.getBoundingClientRect();
+    new Set([...held, ...nets.keys()]).forEach(zoneId => {
+      const node = this.zones.get(zoneId);
+      if (!node) return;
+      const lost = (nets.get(zoneId) ?? 0) < 0;
+      node.querySelectorAll('.bet-stack .chip').forEach(c => moves.push(flyTo(c, lost ? rack : balance, { duration: 420, delay: moves.length * 30, lift: lost ? 0 : 50, fade: true })));
+    });
+    if (moves.length) sound.chips(3);
+    await Promise.all(moves);
+    this.zones.forEach(z => z.querySelectorAll('.bet-stack--payout').forEach(s => s.remove()));
+    [...this.zones.keys()].forEach(z => this.emptyZone(z));
+    this.history = [];
     this.locked = false;
     this.root.classList.remove('is-playing');
-    void stake;
+    this.refreshBet();
   }
 
   setServerState(state) {

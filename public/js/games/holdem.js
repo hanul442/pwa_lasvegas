@@ -336,9 +336,7 @@ export async function mountHoldem(ctx) {
     const stackChips = [...t.stackOf('buyin').children];
     sound.chips(3);
     await Promise.all(stackChips.map((c, k) => flyTo(c, rectOf(seatEls[0].plate), { duration: 420, delay: k * 25, fade: true })));
-    t.stackOf('buyin').replaceChildren();
-    t.bet = { zone: null, chips: [] };
-    t.zones.forEach(z => z.classList.remove('has-bet'));
+    t.emptyZone('buyin');
     await t.syncBalance();
     seatEls.forEach((s, k) => animate(s.node, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: k * 70, fill: 'backwards' }));
     await wait(350);
@@ -451,11 +449,7 @@ export async function mountHoldem(ctx) {
   function refreshActions() {
     if (!session) {
       sizer.hidden = true;
-      t.setActions([
-        { label: '지우기', ghost: true, disabled: !t.total, onClick: () => t.clearBet() },
-        ...(t.lastBet ? [{ label: '다시 베팅', ghost: true, onClick: () => t.rebet() }] : []),
-        { label: '앉기', key: '↵', primary: true, disabled: !t.betReady, onClick: sit }
-      ]);
+      t.setActions(t.idleActions('앉기', sit));
       return;
     }
     const hero = session.table.seats[0];

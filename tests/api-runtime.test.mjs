@@ -53,3 +53,28 @@ test('worker-bound modules never touch node:fs', async () => {
     assert.doesNotMatch(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'), /node:fs|node:path/, file);
   }
 });
+
+test('blackjack start takes one stake per box and settles insurance through the action route', async () => {
+  const store = memoryStore();
+  const bad = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000, 100_000, 100_000, 100_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-bad-0001' });
+  assert.equal(bad.status, 400);
+  assert.equal(bad.data.error, 'INVALID_SPOTS');
+  const tiny = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000, 1], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-tiny-0001' });
+  assert.equal(tiny.status, 400);
+
+  const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
+  const res = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000, 200_000, 300_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-three-0001' });
+  assert.equal(res.status, 200);
+  let round = res.data.round;
+  assert.deepEqual(round.hands.map(h => h.stake), [100_000, 200_000, 300_000]);
+  let n = 0;
+  while (round.status !== 'SETTLED') {
+    const action = round.status === 'INSURANCE' ? 'INSURANCE' : 'STAND';
+    const step = await call(store, 'POST', '/api/blackjack/v2/action', { roundId: round.id, action, handIndex: round.activeHand }, { 'x-idempotency-key': `bj-key-step-${String(n++).padStart(4, '0')}` });
+    assert.equal(step.status, 200, JSON.stringify(step.data));
+    round = step.data.round;
+  }
+  const after = (await call(store, 'GET', '/api/state')).data.user.account;
+  assert.equal(after.locked, 0);
+  assert.equal(after.available, before + round.netPnl);
+});

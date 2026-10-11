@@ -213,6 +213,10 @@ test('one table at a time, and rooms list only where you may sit', () => {
   assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx()), /ALREADY_IN_ROOM/);
   createHoldemRoom(state, state.users.june, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx());
   assert.throws(() => joinRoom(state, state.users.june, room.code, w.ctx()), /ALREADY_IN_ROOM/);
+  // The refusal names the room that holds the seat, so the screen can offer a way back or out.
+  assert.throws(() => createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000, floor: 'downtown' }, w.ctx()), e => e.where?.game === 'seotda' && e.where.code === room.code && e.where.tier === room.tier);
+  assert.throws(() => joinRoom(state, state.users.june, room.code, w.ctx()), e => e.where?.game === 'holdem' && /^[A-Z0-9]{4}$/.test(e.where.code));
+  assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx()), e => e.where?.game === 'seotda');
   joinRoom(state, state.users.min, room.code, w.ctx());
   assert.throws(() => joinRoom(state, state.users.zero, room.code, w.ctx()), /ROOM_FULL/);
   assert.throws(() => createRoom(state, state.users.zero, { game: 'seotda', stake: 50_000, floor: 'downtown', size: 6 }, w.ctx()), /INVALID_ROOM_SIZE/);
@@ -253,6 +257,9 @@ test('rooms over the API: create, join by code, poll with a cursor, act, leave',
   assert.equal((await call(store, 'min', 'POST', '/api/rooms/join', { code }, 'k-join-min-1')).status, 200);
   assert.equal((await call(store, 'min', 'POST', '/api/rooms/join', { code }, 'k-join-min-1')).data.replayed, true);
   assert.equal((await call(store, 'min', 'GET', '/api/rooms')).data.mine.game, 'seotda');
+  const blocked = await call(store, 'min', 'POST', '/api/holdem/rooms', { buyIn: 500_000, floor: 'downtown', size: 3 });
+  assert.equal(blocked.status, 409);
+  assert.deepEqual({ error: blocked.data.error, game: blocked.data.where?.game, code: blocked.data.where?.code }, { error: 'ALREADY_IN_ROOM', game: 'seotda', code });
   const started = await call(store, 'hanseo', 'POST', '/api/rooms/start', { code, cursor: { hand: 0, from: 0 } });
   assert.equal(started.status, 200, JSON.stringify(started.data));
   assert.equal(started.data.room.round.you, 0);

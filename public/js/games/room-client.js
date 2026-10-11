@@ -7,6 +7,7 @@
 import { api, errorMessage } from '../api.js';
 import { el, formatCH, sound } from '../fx.js';
 import { TIERS } from '../chips.js';
+import { seatedElsewhere } from './seat-elsewhere.js';
 
 const POLL_MS = 1500;
 const LIST_MS = 4000;
@@ -128,7 +129,7 @@ export function createRoomClient(t, game, hooks) {
     if (!t.betReady) return;
     let res;
     try { res = await api.roomCreate(game, t.total, t.tier.floor, size); }
-    catch (e) { t.toast(errorMessage(e)); return; }
+    catch (e) { if (!blocked(e, create)) t.toast(errorMessage(e)); return; }
     await t.clearBet();
     t.setServerState(res.state);
     await enter(res.room);
@@ -138,11 +139,14 @@ export function createRoomClient(t, game, hooks) {
   async function join(roomCode) {
     let res;
     try { res = await api.roomJoin(roomCode); }
-    catch (e) { t.toast(errorMessage(e)); if (e.code === 'ROOM_NOT_FOUND') loadList(); return; }
+    catch (e) { if (!blocked(e, () => join(roomCode))) t.toast(errorMessage(e)); if (e.code === 'ROOM_NOT_FOUND') loadList(); return; }
     if (t.total) await t.clearBet();
     t.setServerState(res.state);
     await enter(res.room);
   }
+
+  // Still sitting at another room: offer to go back there, or to leave it and try again here.
+  const blocked = (e, retry) => seatedElsewhere(t, e, retry, e.where?.game === game ? rejoin : null);
 
   async function rejoin(roomCode) {
     let res;

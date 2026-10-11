@@ -514,6 +514,8 @@
 .pk-lobby-note{margin:0;font-size:13px;line-height:1.5;color:var(--smoke)}
 .pk-lobby-primary{min-height:48px;border-radius:999px;border:0;background:var(--white);color:var(--ink);font:650 15px var(--sans)}
 .pk-lobby-primary:disabled{background:#ffffff1f;color:var(--smoke)}
+.pk-lobby-secondary{min-height:48px;border-radius:999px;border:1px solid var(--hair);background:none;color:var(--white);font:600 15px var(--sans)}
+.rm-elsewhere{z-index:21;background:#0a0b0d}
 .pk-code{display:grid;grid-template-columns:1fr auto;gap:8px}
 .pk-code input{min-width:0;height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--hair-strong);background:#ffffff0a;color:var(--white);font:700 20px var(--display);font-stretch:112%;letter-spacing:.35em;text-transform:uppercase}
 .pk-code input::placeholder{color:#ffffff40}

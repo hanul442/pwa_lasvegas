@@ -7,6 +7,7 @@ import { el, formatCH, flyFrom, flyTo, sound, wait } from '../fx.js';
 import { createChip, breakdown, TIERS } from '../chips.js';
 import { voice } from '../voice.js';
 import { STYLE_LABEL } from './holdem-view.js';
+import { seatedElsewhere } from './seat-elsewhere.js';
 
 const POLL_MS = 1500;
 const LIST_MS = 4000;
@@ -129,7 +130,7 @@ export function createFriends(t, pk, bar, hooks) {
     if (!t.betReady) return;
     let res;
     try { res = await api.holdemRoomCreate(t.total, t.tier.floor, size); }
-    catch (e) { t.toast(errorMessage(e)); return; }
+    catch (e) { if (!blocked(e, create)) t.toast(errorMessage(e)); return; }
     t.lock();
     t.setServerState(res.state);
     await enter(res.room, { from: 'zone' });
@@ -139,11 +140,14 @@ export function createFriends(t, pk, bar, hooks) {
   async function join(roomCode) {
     let res;
     try { res = await api.holdemRoomJoin(roomCode); }
-    catch (e) { t.toast(errorMessage(e)); if (e.code === 'ROOM_NOT_FOUND') loadList(); return; }
+    catch (e) { if (!blocked(e, () => join(roomCode))) t.toast(errorMessage(e)); if (e.code === 'ROOM_NOT_FOUND') loadList(); return; }
     if (t.total) await t.clearBet();
     t.setServerState(res.state);
     await enter(res.room, { from: 'wallet' });
   }
+
+  // Still sitting at another room: offer to go back there, or to leave it and try again here.
+  const blocked = (e, retry) => seatedElsewhere(t, e, retry, e.where?.game === 'holdem' ? rejoin : null);
 
   async function rejoin(roomCode) {
     let res;

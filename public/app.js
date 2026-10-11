@@ -119,6 +119,13 @@ window.addEventListener('popstate', event => {
   if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) { showSurface('games'); restoreTrigger(); }
 });
 window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveTable(); });
+// A room screen sends someone back to the table where they still hold a seat.
+addEventListener('vegas:open-table', event => {
+  const game = GAMES.find(g => g.id === event.detail?.game);
+  if (!game) return;
+  selectedGame = game;
+  openTable(TIERS[event.detail.tier] ? event.detail.tier : Object.keys(TIERS)[0]);
+});
 
 // ---------- state ----------
 async function refresh() {

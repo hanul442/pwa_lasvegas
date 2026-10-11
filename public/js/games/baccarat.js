@@ -3,6 +3,7 @@ import { api, errorMessage } from '../api.js';
 import { dealCard, flipCard, sweepCards, parseCard } from '../cards.js';
 import { wait, formatCH, animate } from '../fx.js';
 import { Table } from '../table.js';
+import { voice } from '../voice.js';
 
 const point = texts => texts.reduce((s, t) => { const c = parseCard(t); if (!c) return s; return s + (c.rank === 'A' ? 1 : ['10', 'J', 'Q', 'K'].includes(c.rank) ? 0 : Number(c.rank)); }, 0) % 10;
 
@@ -85,6 +86,7 @@ export async function mountBaccarat(ctx) {
     while (road.children.length > 14) road.lastElementChild.remove();
     const net = r.netPnl;
     const label = `${r.winner === 'TIE' ? 'Tie' : `${r.winner === 'PLAYER' ? 'Player' : 'Banker'} wins`}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`;
+    voice.say(r.winner === 'TIE' ? 'tie' : r.winner === 'PLAYER' ? 'player-wins' : 'banker-wins');
     await t.settle(net, { label });
     await t.syncBalance();
   }

@@ -2,6 +2,7 @@
 import { api, errorMessage } from '../api.js';
 import { sound, haptic, formatCH, reducedMotion, wait } from '../fx.js';
 import { Table } from '../table.js';
+import { voice, rouletteLine } from '../voice.js';
 
 const ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -161,7 +162,9 @@ export async function mountRoulette(ctx) {
     try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    voice.say('no-more-bets', { cut: true });
     await spinTo(res.round.number);
+    voice.say(rouletteLine(res.round.number));
     await wait(250);
     const net = res.round.netPnl;
     // Each spot is paid or raked on its own.

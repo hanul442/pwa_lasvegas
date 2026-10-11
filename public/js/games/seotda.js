@@ -1,5 +1,6 @@
-// 섯다: one card, a betting round, a second card squeezed open, a last round, then both hands
-// are turned over. The house AI matches the ante and bets from its own two cards only.
+// 섯다 at a table of AI players: everyone antes, one card each, a betting round round the table,
+// a second card squeezed open, a last round, then the hands still in are turned over one by one.
+// Each AI bets from its own cards only; the pot slides to whoever holds the best 족보.
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu } from '../hwatu.js';
 import { animate, flyFrom, flyTo, wait, sound, haptic, formatCH, el } from '../fx.js';
@@ -7,102 +8,203 @@ import { breakdown, createChip } from '../chips.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
 
-const ME = 0, OPP = 1;
+const ME = 0;
 const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', HALF: '하프', CALL: '콜' };
 const LINE = { DIE: 'die', CHECK: 'check', HALF: 'half', CALL: 'call' };
+const NAMES = ['박사장', '김여사', '타짜 정', '막내']; // the server's roster, for the empty table
+const COUNT_KEY = 'vegas.seotda.players';
 
 export async function mountSeotda(ctx) {
   const t = new Table({ ...ctx, game: 'seotda', title: '섯다', feltClass: 'felt--seotda' });
+  let players = 4;
+  try { players = Math.min(5, Math.max(2, Number(localStorage.getItem(COUNT_KEY)) || 4)); } catch {}
   t.body.innerHTML = `
     <div class="sd">
-      <section class="sd-seat sd-seat--opp" data-seat="1">
-        <div class="sd-meta"><span class="mg-name">하우스 AI</span><span class="sd-said" data-said="1"></span></div>
-        <div class="sd-cards sd-cards--opp" data-cards="1"></div>
-        <span class="sd-hand-name" data-name="1"></span>
-      </section>
+      <div class="sd-ring" data-ring></div>
       <div class="sd-pot">
         <div class="mg-pile sd-deck" data-deck aria-hidden="true"></div>
-        <button type="button" class="zone sd-zone" data-zone="ANTE"><strong>판돈</strong><small>나와 AI가 똑같이 걸고 시작</small></button>
+        <button type="button" class="zone sd-zone" data-zone="ANTE"><strong>판돈</strong><small>모두 똑같이 걸고 시작</small></button>
         <div class="sd-pot-amount" data-pot></div>
+        <div class="sd-count" role="radiogroup" aria-label="상대 수">
+          <span>상대</span>${[1, 2, 3, 4].map(n => `<button type="button" role="radio" data-opp="${n}" aria-checked="${n === players - 1}">${n}</button>`).join('')}
+        </div>
       </div>
       <section class="sd-seat sd-seat--me" data-seat="0">
         <span class="sd-hand-name" data-name="0"></span>
         <div class="sd-cards" data-cards="0"></div>
         <div class="sd-meta"><span class="mg-name">나</span><span class="sd-said" data-said="0"></span></div>
       </section>
+      <div class="callout" data-callout aria-live="polite"></div>
     </div>`;
   const $ = s => t.body.querySelector(s);
+  const ring = $('[data-ring]');
   const zone = t.addZone($('[data-zone="ANTE"]'));
   const deck = $('[data-deck]');
   deck.append(createHwatu(null, { faceUp: false }));
+  const seatEl = seat => t.body.querySelector(`[data-seat="${seat}"]`);
   const cardsOf = seat => $(`[data-cards="${seat}"]`);
-  const potEl = $('[data-pot]');
-  let view = null;
+  const potEl = $('[data-pot]'), callout = $('[data-callout]');
+  let view = null, mine = 0; // what I have in the pot while events play out
   t.sd = { get view() { return view; } };
 
-  function oppStack() {
+  // Opponent seats across the top of the felt, outer ones lower so the row reads as an arc.
+  function buildSeats(list) {
+    ring.dataset.count = list.length;
+    ring.replaceChildren(...list.map((p, i) => {
+      const s = el('section', 'sd-seat sd-seat--opp');
+      s.dataset.seat = i + 1;
+      s.innerHTML = `<span class="sd-bubble" data-said="${i + 1}"></span>
+        <div class="sd-cards sd-cards--opp" data-cards="${i + 1}"></div>
+        <div class="sd-plate"><span class="sd-who">${p.name || 'AI'}</span><b data-put="${i + 1}"></b></div>
+        <span class="sd-hand-name" data-name="${i + 1}"></span>`;
+      return s;
+    }));
+  }
+  const preview = () => buildSeats(NAMES.slice(0, players - 1).map(name => ({ name })));
+
+  t.body.querySelectorAll('[data-opp]').forEach(b => b.addEventListener('click', () => {
+    if (t.locked) return;
+    players = Number(b.dataset.opp) + 1;
+    t.body.querySelectorAll('[data-opp]').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+    try { localStorage.setItem(COUNT_KEY, String(players)); } catch {}
+    sound.tick();
+    preview();
+  }));
+
+  function potStack() {
     let s = zone.querySelector('.bet-stack--payout');
     if (!s) { s = el('span', 'bet-stack bet-stack--payout'); zone.append(s); }
     return s;
   }
 
-  function paintPot(v) {
-    potEl.innerHTML = v ? `${formatCH(v.pot)}<small>판 · 내가 건 돈 ${formatCH(v.contrib[ME])}</small>` : '';
+  const potText = (pot, put) => { potEl.innerHTML = `${formatCH(pot)}<small>판 · 내가 건 돈 ${formatCH(put)}</small>`; };
+  function paintPot(v) { if (v) potText(v.pot, v.contrib[ME]); else potEl.textContent = ''; }
+
+  function paintSeats(v) {
+    v.players.forEach((p, s) => {
+      const node = seatEl(s);
+      node?.classList.toggle('is-folded', p.folded);
+      node?.classList.toggle('is-turn', v.status === 'PLAYING' && v.turn === s && s !== ME);
+      const put = $(`[data-put="${s}"]`);
+      if (put) put.textContent = formatCH(p.contrib);
+    });
   }
 
   function say(seat, action, cost) {
     const node = $(`[data-said="${seat}"]`);
+    if (!node) return;
     node.innerHTML = `<b>${LABEL[action]}</b>${cost ? ` ${formatCH(cost)}` : ''}`;
     voice.say(LINE[action]);
-    animate(node, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, fill: 'none' });
+    node.classList.add('is-shown');
+    node.classList.toggle('is-raise', action === 'HALF' || action === 'BBING');
+    animate(node, [{ opacity: 0, transform: 'translateY(4px) scale(.85)' }, { opacity: 1, transform: 'none' }], { duration: 220, fill: 'none' });
+  }
+  const hush = () => t.body.querySelectorAll('[data-said]').forEach(n => { n.textContent = ''; n.classList.remove('is-shown', 'is-raise'); });
+
+  async function shout(text) {
+    callout.textContent = text;
+    callout.className = 'callout callout--opp';
+    await animate(callout, [{ opacity: 0, transform: 'translate(-50%,8px) scale(.6)' }, { opacity: 1, transform: 'translate(-50%,0) scale(1.08)', offset: 0.25 }, { opacity: 1, transform: 'translate(-50%,0) scale(1)', offset: 0.8 }, { opacity: 0, transform: 'translate(-50%,-6px) scale(1)' }], { duration: 1100, fill: 'none' });
   }
 
   async function dealTo(seat, id, { squeeze = false } = {}) {
+    const box = cardsOf(seat);
+    if (!box) return null;
     const node = createHwatu(id && id !== 'HIDDEN' ? id : null, { faceUp: false });
-    cardsOf(seat).append(node);
+    box.append(node);
     sound.card(); haptic(6);
-    await flyFrom(node, deck.getBoundingClientRect(), { duration: 420, spin: -16, scale: 0.7, lift: 26 });
+    await flyFrom(node, deck.getBoundingClientRect(), { duration: seat === ME ? 420 : 300, spin: -16, scale: 0.7, lift: 26 });
     if (seat === ME && id && id !== 'HIDDEN') await flipHwatu(node, id, { squeeze });
     return node;
   }
 
-  async function oppChips(cost) {
+  async function seatChips(seat, cost) {
     if (!cost) return;
-    const stack = oppStack();
-    const from = cardsOf(OPP).getBoundingClientRect();
+    const stack = potStack();
+    const from = cardsOf(seat).getBoundingClientRect();
     sound.chips(2);
     for (const v of breakdown(cost, t.tier.chips, 6)) {
       const c = createChip(v);
       c.style.setProperty('--i', stack.children.length);
+      c.dataset.from = seat;
       stack.append(c);
       flyFrom(c, from, { duration: 360, lift: 30 });
-      await wait(60);
+      await wait(50);
     }
+  }
+
+  function setTurn(seat) {
+    t.body.querySelectorAll('.sd-seat--opp').forEach(n => n.classList.toggle('is-turn', Number(n.dataset.seat) === seat));
   }
 
   async function playEvents(events) {
     for (const e of events) {
-      if (e.type === 'bet') {
-        if (e.seat === OPP) await wait(600);
+      if (e.type === 'turn') setTurn(e.seat);
+      else if (e.type === 'bet') {
+        if (e.seat !== ME) await wait(520);
         say(e.seat, e.action, e.cost);
-        if (e.cost) { if (e.seat === ME) await t.addFromTray('ANTE', e.cost); else await oppChips(e.cost); }
+        if (e.cost) { if (e.seat === ME) await t.addFromTray('ANTE', e.cost); else await seatChips(e.seat, e.cost); }
         else sound.tick();
-        if (e.action === 'DIE') cardsOf(e.seat).querySelectorAll('.hw').forEach(n => animate(n, [{ opacity: 1 }, { opacity: 0.35, transform: 'translateY(8px)' }], { duration: 300 }));
-        potEl.firstChild && (potEl.firstChild.textContent = formatCH(e.pot));
-        await wait(220);
+        const put = $(`[data-put="${e.seat}"]`);
+        if (put && e.contrib != null) put.textContent = formatCH(e.contrib);
+        if (e.action === 'DIE') {
+          seatEl(e.seat)?.classList.add('is-folded');
+          cardsOf(e.seat).querySelectorAll('.hw').forEach(n => animate(n, [{ transform: 'none' }, { transform: 'translateY(6px)' }], { duration: 300 }));
+        }
+        if (e.seat === ME) mine = e.contrib;
+        potText(e.pot, mine);
+        await wait(160);
       } else if (e.type === 'deal') {
-        await dealTo(e.seat, e.card, { squeeze: e.seat === ME });
+        if (e.street === 2 && !t.body.dataset.street2) { t.body.dataset.street2 = '1'; hush(); }
+        await dealTo(e.seat, e.card, { squeeze: e.seat === ME && e.street === 2 });
       } else if (e.type === 'reveal') {
-        await wait(400);
-        const opp = [...cardsOf(OPP).querySelectorAll('.hw')];
-        for (let i = 0; i < opp.length; i++) await flipHwatu(opp[i], e.hands[OPP][i], { squeeze: i === 1 });
+        setTurn(-1);
+        hush();
+        await reveal(e);
+      } else if (e.type === 'redeal') {
+        await shout(`${e.name} · 재경기`);
+        t.toast('판돈은 그대로, 남은 사람끼리 다시 받아요');
+        await clearCards();
+        delete t.body.dataset.street2;
+        hush();
       }
     }
   }
 
+  // Turn the hands still in over one by one, round the table from the lead, each with its 족보.
+  async function reveal(e) {
+    await wait(350);
+    const n = e.hands.length, from = view?.first ?? 0;
+    for (let i = 0; i < n; i++) {
+      const s = (from + i) % n;
+      if (!e.hands[s]) continue;
+      if (s !== ME) {
+        const nodes = [...cardsOf(s).querySelectorAll('.hw')];
+        for (let k = 0; k < nodes.length; k++) await flipHwatu(nodes[k], e.hands[s][k], { squeeze: false });
+      }
+      const tag = $(`[data-name="${s}"]`);
+      tag.textContent = e.names[s];
+      animate(tag, [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'none' }], { duration: 240, fill: 'none' });
+      sound.tick();
+      await wait(380);
+    }
+    if (e.redeal) await wait(500);
+  }
+
+  async function clearCards() {
+    const nodes = [...t.body.querySelectorAll('[data-cards] .hw')];
+    const to = deck.getBoundingClientRect();
+    await Promise.all(nodes.map((n, i) => flyTo(n, to, { duration: 360, delay: i * 20, fade: true })));
+    nodes.forEach(n => n.remove());
+    t.body.querySelectorAll('[data-name]').forEach(n => { n.textContent = ''; });
+  }
+
   function paintNames(v) {
-    $('[data-name="0"]').textContent = v?.handName || '';
-    $('[data-name="1"]').textContent = v?.result?.hands?.[OPP] || '';
+    v?.players.forEach((p, s) => {
+      const tag = $(`[data-name="${s}"]`);
+      if (tag) tag.textContent = s === ME ? v.handName || '' : v.result?.hands?.[s] || '';
+    });
+    if (!v) t.body.querySelectorAll('[data-name]').forEach(n => { n.textContent = ''; });
   }
 
   async function apply(res) {
@@ -110,33 +212,33 @@ export async function mountSeotda(ctx) {
     view = res.round;
     await playEvents(res.events || []);
     paintPot(view);
+    paintSeats(view);
     paintNames(view);
     t.syncBalance();
     if (view.status === 'SETTLED') await finish(view, res.netPnl || 0);
   }
 
+  const nameOf = (v, s) => (s === ME ? '나' : v.players[s].name || 'AI');
+
   async function finish(v, net) {
-    const r = v.result;
-    const names = r.hands.filter(Boolean);
-    const label = r.reason === 'REDEAL' ? '구사 · 재경기 (판돈 돌려받음)'
-      : r.reason === 'TIE' ? '무승부 · 판돈 돌려받음'
-      : r.reason === 'FOLD' ? (r.winner === ME ? 'AI 다이 · 승리' : '다이')
-      : `${r.winner === ME ? '승리' : '패배'} · ${r.hands[r.winner]}`;
+    const r = v.result, won = r.winners.includes(ME), folded = v.players[ME].folded;
+    const top = r.winners.map(s => r.hands[s]).find(Boolean);
+    const label = r.reason === 'FOLD' ? (won ? '모두 다이 · 승리' : `다이 · ${nameOf(v, r.winners[0])} 승리`)
+      : r.winners.length > 1 ? (won ? `무승부 · ${top} 나눠 가짐` : `${r.winners.map(s => nameOf(v, s)).join(' · ')} 나눠 가짐`)
+      : won ? `승리 · ${r.hands[ME]}` : `${folded ? '다이' : '패배'} · ${nameOf(v, r.winners[0])} ${top || ''}`.trim();
+    r.winners.forEach(s => seatEl(s)?.classList.add('is-winner'));
     if (net > 0) voice.say('you-win');
-    if (names.length === 2) t.toast(`나 ${r.hands[ME]} · AI ${r.hands[OPP]}`);
     t.banner(`${label}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
     if (net > 0) { sound.win(); haptic([20, 60, 30]); t.glow(); } else if (net < 0) { sound.lose(); haptic(30); } else sound.push();
-    // 광땡 and 장땡 are the hands people remember.
-    const myHand = r.hands[ME] || '';
-    if (net > 0 && r.winner === ME && /광땡|장땡/.test(myHand)) await t.bigWin(net, { title: myHand, subtitle: '섯다' });
+    if (net > 0 && /광땡|장땡/.test(r.hands[ME] || '')) await t.bigWin(net, { title: r.hands[ME], subtitle: `섯다 · ${formatCH(r.pot)} 판을 가져왔어요` });
     await wait(900);
-    // The whole pot slides to whoever took it; a split sends each stack home.
-    const mine = [...(t.stackOf('ANTE')?.children || [])];
-    const theirs = [...oppStack().children];
-    const toMe = t.balanceEl.getBoundingClientRect(), toOpp = cardsOf(OPP).getBoundingClientRect();
-    const dest = c => (net > 0 ? toMe : net < 0 ? toOpp : mine.includes(c) ? toMe : toOpp);
+    // The pot slides to the winner; a split deals the chips out between the winners in turn.
+    const chips = [...(t.stackOf('ANTE')?.children || []), ...potStack().children];
+    const dest = s => (s === ME ? t.balanceEl : cardsOf(s)).getBoundingClientRect();
+    const spots = r.winners.map(dest);
     sound.chips(3);
-    await Promise.all([...mine, ...theirs].map((c, i) => flyTo(c, dest(c), { duration: 440, delay: i * 25, lift: 40, fade: true })));
+    await Promise.all(chips.map((c, i) => flyTo(c, spots[i % spots.length], { duration: 460, delay: i * 22, lift: 40, fade: true })));
+    paintPot(null);
     t.resetRound();
     await t.syncBalance();
     refreshActions();
@@ -146,19 +248,22 @@ export async function mountSeotda(ctx) {
     if (!t.betReady) return;
     t.lock();
     let res;
-    try { res = await api.seotdaStart(t.total, t.tier.floor); }
+    try { res = await api.seotdaStart(t.total, t.tier.floor, players); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
-    [ME, OPP].forEach(s => { cardsOf(s).replaceChildren(); $(`[data-said="${s}"]`).textContent = ''; });
-    paintNames(null);
-    await oppChips(res.round.stake);
     view = res.round;
+    mine = view.stake;
+    buildSeats(view.players.slice(1));
+    cardsOf(ME).replaceChildren();
+    seatEl(ME).classList.remove('is-winner', 'is-folded');
+    hush(); paintNames(null); delete t.body.dataset.street2;
+    // Everyone's ante goes in together.
+    await Promise.all(view.players.map((p, s) => (s === ME ? null : seatChips(s, view.stake))));
     paintPot(view);
-    const order = view.first === ME ? [ME, OPP] : [OPP, ME];
-    for (const s of order) await dealTo(s, s === ME ? view.hand[0] : 'HIDDEN');
-    // A second card already on the table means both seats saw street one play out.
+    paintSeats({ ...view, players: view.players.map(p => ({ ...p, contrib: view.stake, folded: false })) });
     await playEvents(res.events || []);
     paintPot(view);
+    paintSeats(view);
     paintNames(view);
     await t.syncBalance();
     if (view.status === 'SETTLED') await finish(view, res.netPnl || 0);
@@ -170,7 +275,7 @@ export async function mountSeotda(ctx) {
       t.setActions(t.idleActions('시작', deal));
       return;
     }
-    if (view.turn !== ME) { t.setActions([{ label: 'AI 차례', ghost: true, disabled: true }]); return; }
+    if (view.turn !== ME) { t.setActions([{ label: '상대 차례', ghost: true, disabled: true }]); return; }
     const turn = `${view.id}:${view.street}:${view.pot}`;
     if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
     const opts = view.options;
@@ -196,16 +301,22 @@ export async function mountSeotda(ctx) {
 
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && (!view || view.status !== 'PLAYING') && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
 
+  preview();
   try {
     const open = await api.seotdaOpen();
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
       view = open.round;
+      mine = view.contrib[ME];
       t.lock();
+      buildSeats(view.players.slice(1));
       t.placeLocked('ANTE', view.contrib[ME]); t.refreshBet();
-      breakdown(view.contrib[OPP], t.tier.chips, 12).forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); oppStack().append(c); });
-      view.hand.forEach(id => cardsOf(ME).append(createHwatu(id)));
-      view.opponent.forEach(() => cardsOf(OPP).append(createHwatu(null, { faceUp: false })));
+      const others = view.contrib.reduce((a, c, s) => a + (s === ME ? 0 : c), 0);
+      breakdown(others, t.tier.chips, 12).forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); potStack().append(c); });
+      view.players.forEach((p, s) => p.cards.forEach(id => cardsOf(s).append(s === ME ? createHwatu(id) : createHwatu(null, { faceUp: false }))));
+      view.players.forEach((p, s) => p.last && p.last.street === view.street && say(s, p.last.action, p.last.cost));
+      if (view.street === 2) t.body.dataset.street2 = '1';
       paintPot(view);
+      paintSeats(view);
       paintNames(view);
       t.toast('하던 섯다 판을 이어서 해요');
     } else if (open.round) t.toast('다른 테이블에 진행 중인 섯다 판이 있어요');

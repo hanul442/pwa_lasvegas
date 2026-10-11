@@ -1,32 +1,53 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, TIERS } from './chips.js';
+import { bigWin, isBigWin } from './bigwin.js';
+
+// Narrow phones show the balance as 12.5M so the top bar keeps room for its buttons.
+const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
+
+// Per-device memory of the chip last picked and the last bet placed, per game and table.
+const memoryKey = (game, tier, what) => `vegas:${what}:${game}:${tier}`;
+function recall(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
+function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
 
 export class Table {
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false }) {
+  // multi: separate bets per zone. zoneMin: every zone must meet the table minimum (blackjack
+  // boxes) rather than the total (chips spread over a roulette layout).
+  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당' }) {
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
+    this.nickname = state?.user?.nickname ?? '';
+    this.title = title;
     this.shownBalance = this.available;
     this.multi = multi;
+    this.zoneMin = zoneMin;
+    this.zoneWord = zoneWord;
     this.bets = new Map();
     this.history = [];
     this.focus = null;
     this.passive = new Set();
-    this.lastBet = null;
-    this.selected = this.tier.chips[0];
+    // Coming back to a table, the last bet is ready to repeat and the last chip is still picked.
+    const saved = recall(memoryKey(game, this.tier.slug, 'lastbet'));
+    this.lastBet = Array.isArray(saved) && saved.length ? new Map(saved) : null;
+    const chip = recall(memoryKey(game, this.tier.slug, 'chip'));
+    this.selected = this.tier.chips.includes(chip) ? chip : this.tier.chips[0];
     this.zones = new Map();
     this.locked = false;
     this.busy = false;
     this.listeners = [];
 
     const root = el('div', `table-screen table-screen--${game}`);
+    root.dataset.tier = this.tier.slug;
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
         <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)} CH</span></div>
-        <div class="table-balance"><span>보유 칩</span><strong data-balance>${formatFull(this.available)}</strong></div>
-        <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
+        <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
+        <div class="table-tools">
+          <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
+        </div>
       </header>
       <div class="felt ${feltClass}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
@@ -64,6 +85,14 @@ export class Table {
     root.querySelector('[data-tool="max"]').addEventListener('click', () => this.max());
     this.renderTray();
     this.renderRack();
+    // Number keys 1–5 pick a chip from the tray, left to right.
+    this.onKey(e => {
+      if (e.ctrlKey || e.metaKey || e.altKey || this.locked || this.busy) return;
+      const value = this.tier.chips[Number(e.key) - 1];
+      if (!value || !this.tray.offsetParent) return;
+      this.select(value);
+      sound.tick();
+    });
   }
 
   // ---------- layout ----------
@@ -135,6 +164,7 @@ export class Table {
 
   select(value) {
     this.selected = value;
+    remember(memoryKey(this.game, this.tier.slug, 'chip'), value);
     this.tray.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(Number(c.dataset.value) === value)));
   }
 
@@ -178,7 +208,7 @@ export class Table {
     if (this.locked || this.busy) return;
     if (!this.multi) { const held = this.bet.zone; if (held && held !== zoneId) await this.moveBet(held, zoneId); }
     this.setFocus(zoneId);
-    if (this.zoneTotal(zoneId) + value > this.tier.max) return this.reject(`${this.multi ? '박스당' : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
+    if (this.zoneTotal(zoneId) + value > this.tier.max) return this.reject(`${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
     if (this.total + value > this.available) return this.reject('칩이 부족해요');
     this.record(zoneId, value);
     const chip = this.pushChip(zoneId, value);
@@ -261,7 +291,7 @@ export class Table {
     for (const zoneId of this.betZones) {
       const now = this.zoneTotal(zoneId);
       // Halving never drops a bet under the table minimum.
-      const target = Math.max(Math.ceil(this.tier.min / step) * step, Math.floor(now / 2 / step) * step);
+      const target = Math.max(this.zoneMin ? Math.ceil(this.tier.min / step) * step : step, Math.floor(now / 2 / step) * step);
       if (target < now) { this.restack(zoneId, target); changed = true; }
     }
     if (!changed) return;
@@ -277,7 +307,7 @@ export class Table {
       const now = this.zoneTotal(zoneId);
       const room = Math.min(this.tier.max - now, this.available - this.total);
       const want = Math.min(now, room);
-      if (want < now) blocked = room === this.tier.max - now ? `${this.multi ? '박스당' : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요';
+      if (want < now) blocked = room === this.tier.max - now ? `${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요';
       let sum = 0;
       for (const v of breakdown(want, this.tier.chips, 20)) {
         if (sum + v > want) break;
@@ -297,7 +327,7 @@ export class Table {
   // The zone the 최대 button fills: the focused zone, the bet already down, or the only zone.
   get maxZone() {
     const open = [...this.zones.keys()].filter(z => !this.passive.has(z));
-    if (this.multi) return this.focus || open[0] || null;
+    if (this.multi) return this.focus || (this.zoneMin ? open[0] : null) || null;
     return this.bet.zone || (open.length === 1 ? open[0] : null);
   }
 
@@ -372,8 +402,8 @@ export class Table {
   refreshBet() {
     this.betEl.textContent = formatCH(this.total);
     const zones = this.betZones;
-    const short = zones.some(z => this.zoneTotal(z) < this.tier.min);
-    this.hint(short ? `${this.multi && zones.length > 1 ? '박스마다 ' : ''}최소 ${formatCH(this.tier.min)}` : '');
+    const short = this.zoneMin ? zones.some(z => this.zoneTotal(z) < this.tier.min) : this.total > 0 && this.total < this.tier.min;
+    this.hint(short ? `${this.multi && this.zoneMin && zones.length > 1 ? '박스마다 ' : this.zoneMin ? '' : '합계 '}최소 ${formatCH(this.tier.min)}` : '');
     if (this.multi) this.zones.forEach((node, id) => {
       const tag = node.querySelector('.zone-amount');
       if (tag) tag.textContent = this.zoneTotal(id) ? formatCH(this.zoneTotal(id)) : '';
@@ -386,7 +416,8 @@ export class Table {
 
   get betReady() {
     const zones = this.betZones;
-    return zones.length > 0 && this.total <= this.available && zones.every(z => this.zoneTotal(z) >= this.tier.min && this.zoneTotal(z) <= this.tier.max);
+    const enough = this.zoneMin ? zones.every(z => this.zoneTotal(z) >= this.tier.min) : this.total >= this.tier.min;
+    return zones.length > 0 && this.total <= this.available && enough && zones.every(z => this.zoneTotal(z) <= this.tier.max);
   }
 
   // Idle action row shared by every game: clear, rebet, and the primary deal/spin/roll.
@@ -419,11 +450,15 @@ export class Table {
     this.locked = true;
     this.root.classList.add('is-playing');
     this.lastBet = new Map(this.betZones.map(z => [z, [...this.chipsOf(z)]]));
+    if (this.lastBet.size) remember(memoryKey(this.game, this.tier.slug, 'lastbet'), [...this.lastBet]);
   }
 
   // Resolve the bets on the felt: winnings slide in from the rack, losses get raked away.
   // `zones` maps zone id to its own net; without it the whole net belongs to the one bet.
-  async settle(net, { label, kind, zones } = {}) {
+  // `big` names a moment worth stopping the table for ({ title, subtitle }); any win of five
+  // times the stake or more gets one anyway.
+  async settle(net, { label, kind, zones, big } = {}) {
+    const staked = this.total;
     const held = [...this.bets.keys()].filter(z => this.chipsOf(z).length);
     const nets = zones || new Map([[held[0], net]]);
     const rack = this.rack.getBoundingClientRect();
@@ -443,6 +478,7 @@ export class Table {
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
+    if (net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: `${Math.floor(net / staked)}×` });
     await wait(net > 0 ? 900 : 650);
     const moves = [];
     const balance = this.balanceEl.getBoundingClientRect();
@@ -477,9 +513,10 @@ export class Table {
     if (roll) {
       this.balanceEl.parentElement.classList.toggle('is-up', value > from);
       this.balanceEl.parentElement.classList.toggle('is-down', value < from);
-      await rollNumber(this.balanceEl, from, value);
+      await rollNumber(this.balanceEl, from, value, { format: balanceText });
       setTimeout(() => this.balanceEl.parentElement.classList.remove('is-up', 'is-down'), ms(600));
-    } else this.balanceEl.textContent = formatFull(value);
+    } else this.balanceEl.textContent = balanceText(value);
+    this.balanceEl.parentElement.title = `${formatFull(value)} CH`;
   }
 
   syncBalance() { return this.setBalance(this.available - (this.locked ? 0 : this.total)); }
@@ -499,6 +536,10 @@ export class Table {
     node.classList.add('is-shown');
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => node.classList.remove('is-shown'), 2600);
+  }
+
+  bigWin(amount, { title, subtitle } = {}) {
+    return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname });
   }
 
   glow() {

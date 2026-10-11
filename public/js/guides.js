@@ -54,11 +54,11 @@ export const GUIDES = {
     id: 'roulette', title: '룰렛',
     steps: [
       { target: '.wheel', title: '공이 멈출 칸 맞히기', body: '0부터 36까지 37칸짜리 유럽식 휠이에요. 공이 멈춘 숫자로 승패가 정해져요.' },
-      ...betSteps({ zone: '.rl-layout', zoneTitle: '숫자 판에 걸기', zoneBody: '숫자 하나에 걸면 35배, 아래 빨강·검정, 홀·짝, 1–18·19–36은 1배예요.', startLabel: '스핀' }),
+      ...betSteps({ zone: '.rl-layout', zoneTitle: '숫자 판에 걸기', zoneBody: '여러 곳에 한꺼번에 걸 수 있어요. 숫자 하나는 35배, 12개 묶음과 2:1 열은 2배, 빨강·검정, 홀·짝, 1–18·19–36은 1배예요.', startLabel: '스핀' }),
       { target: '.rl-history', title: '최근 숫자', body: '방금 나온 숫자가 맨 앞에 쌓여요. 휠에는 기억이 없으니 다음 판은 언제나 새 판이에요.' },
       helpStep
     ],
-    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>0이 나오면 바깥쪽 베팅은 모두 집니다.</p>`
+    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>12개 묶음 / 열 (2:1)</td><td>2 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>한 판에 여러 곳에 동시에 걸 수 있고, 각 자리는 따로 정산돼요. 0이 나오면 바깥쪽 베팅은 모두 집니다.</p>`
   },
 
   dice: {
@@ -129,6 +129,19 @@ export const GUIDES = {
         <tr><td>${hw('04-3', '09-3')} 구사</td><td>상대가 알리 이하면 재경기</td></tr>
         <tr><td>${hw('04-1', '09-1')} 멍텅구리구사</td><td>상대가 9땡 이하면 재경기</td></tr>
       </table><p>재경기와 같은 족보는 각자 건 돈을 돌려받아요.</p>`
+  },
+
+  slots: {
+    id: 'slots', title: '슬롯',
+    steps: [
+      { target: '.slot-jackpot', title: '프로그레시브 잭팟', body: ['모든 플레이어의 스핀이 베팅의 2%씩 이 잭팟에 쌓여요.', '별 세 개가 가운데 줄에 서면 잭팟이에요. 테이블 최대 베팅이면 전부, 적게 걸면 그 비율만큼 받아요.'] },
+      ...betSteps({ zone: '[data-zone="LINE"]', zoneTitle: '베팅', zoneBody: '칩을 놓은 만큼이 한 번 스핀의 베팅이에요.', startLabel: '스핀' }),
+      { target: '[data-lever]', title: '레버', body: '오른쪽 레버를 당겨도 돌아가요. 릴은 하나씩 멈춰요.' },
+      { target: '.slot-pays', title: '배당', body: ['가운데 줄 세 칸만 봐요. 별은 아무 그림이나 대신하는 와일드예요.', '별 하나가 끼면 2배, 둘이면 3배로 불어나요.'] },
+      helpStep
+    ],
+    rules: `<h3>배당 (베팅 대비)</h3><table><tr><td>★ ★ ★</td><td>잭팟 + 500배</td></tr><tr><td>7 7 7</td><td>80배</td></tr><tr><td>트리플 바 3개</td><td>40배</td></tr><tr><td>더블 바 3개</td><td>20배</td></tr><tr><td>바 3개</td><td>10배</td></tr><tr><td>같은 무늬 3개</td><td>6배</td></tr><tr><td>바 아무거나 3개</td><td>4배</td></tr><tr><td>빨강 또는 검정 무늬 3개</td><td>2배</td></tr><tr><td>★ 두 개</td><td>10배</td></tr><tr><td>★ 한 개</td><td>본전</td></tr></table>
+      <p>★은 와일드예요. 별 한 개가 끼어 줄이 맞으면 2배, 두 개면 3배. 모든 스핀의 2%가 잭팟에 쌓이고, 별 세 개는 테이블 최대 베팅 대비 비율만큼 잭팟을 가져가요.</p>`
   },
 
   poker: {

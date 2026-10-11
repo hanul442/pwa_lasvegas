@@ -32,13 +32,22 @@ async function request(path, { method = 'GET', body } = {}) {
 export const api = {
   state: () => request('/api/state'),
   recharge: () => request('/api/recharge/auto', { method: 'POST' }),
+  dailyClaim: () => request('/api/daily/claim', { method: 'POST' }),
+  missionClaim: missionId => request('/api/missions/claim', { method: 'POST', body: { missionId } }),
+  challenge: (opponentId, metric) => request('/api/social/challenges', { method: 'POST', body: { opponentId, metric } }),
+  challengeAccept: id => request(`/api/social/challenges/${encodeURIComponent(id)}/accept`, { method: 'POST' }),
+  challengeCancel: id => request(`/api/social/challenges/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
+  rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
   blackjackStart: (stakes, floor) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor } }),
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
   baccarat: (stake, floor, betType) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType } }),
+  // bets: [{ betType, target?, stake }], one per spot on the layout.
+  rouletteSpin: (bets, floor) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
   sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } }),
+  slots: (stake, floor) => request('/api/slots/spin', { method: 'POST', body: { stake, floor } }),
   matgoOpen: () => request('/api/matgo/open'),
   matgoStart: (stake, floor) => request('/api/matgo/start', { method: 'POST', body: { stake, floor } }),
   matgoAction: (roundId, move) => request('/api/matgo/action', { method: 'POST', body: { roundId, ...move } }),
@@ -77,7 +86,15 @@ const MESSAGES = {
   STALE_ACTION: '테이블 상황이 바뀌었어요. 다시 맞췄어요.',
   INVALID_RAISE: '레이즈 금액을 다시 골라 주세요.',
   CANNOT_CHECK: '지금은 체크할 수 없어요.',
-  SESSION_CLOSED: '이미 끝난 테이블이에요.'
+  SESSION_CLOSED: '이미 끝난 테이블이에요.',
+  DAILY_ALREADY_CLAIMED: '오늘 출석 보너스는 이미 받았어요.',
+  MISSION_NOT_DONE: '아직 미션을 끝내지 않았어요.',
+  MISSION_ALREADY_CLAIMED: '이미 받은 보상이에요.',
+  RESCUE_NOT_AVAILABLE: '지금은 럭키 카드를 뽑을 수 없어요.',
+  CHALLENGE_ALREADY_OPEN: '이 친구와 같은 대결이 이미 진행 중이에요.',
+  CHALLENGE_NOT_PENDING: '이미 답한 대결 신청이에요.',
+  CHALLENGE_NOT_OPEN: '이미 끝난 대결이에요.',
+  CHALLENGE_NOT_FOUND: '대결을 찾을 수 없어요.'
 };
 
 export function errorMessage(err) {

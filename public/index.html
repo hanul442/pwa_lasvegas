@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="table.css">
   <link rel="stylesheet" href="hwatu.css">
+  <link rel="stylesheet" href="lounge.css">
 </head>
 <body>
   <div class="app-shell">
@@ -24,7 +25,8 @@
       <button class="brand" type="button" data-nav="lobby" aria-label="VEGAS 로비로 이동"><img src="logo.svg" alt="VEGAS" width="104" height="22"></button>
       <div class="topbar-right">
         <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
-        <div class="wallet" aria-label="내 가상 칩"><strong data-wallet>—</strong><small>CH</small></div>
+        <button class="sound-toggle settings-toggle" type="button" data-nav="settings" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+        <button class="wallet" type="button" data-nav="profile" aria-label="내 가상 칩, 프로필 보기"><strong data-wallet>—</strong><small>CH</small></button>
       </div>
     </header>
 
@@ -45,6 +47,7 @@
             <ul class="game-menu" data-game-grid></ul>
           </div>
         </div>
+        <div class="lounge" data-lounge aria-label="오늘의 라운지"></div>
       </section>
 
       <section class="surface" data-surface="games" aria-labelledby="games-title">
@@ -55,13 +58,22 @@
 
       <section class="surface" data-surface="ranking" aria-labelledby="ranking-title">
         <h1 id="ranking-title">랭킹</h1>
+        <div class="segmented segmented--two" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
+        <div class="season-head" data-season-head></div>
         <div class="tabs" role="tablist" data-rank-tabs></div>
         <ol class="rank-list" data-rank-list></ol>
+        <section class="duels" data-duels aria-label="친구 대결"></section>
       </section>
 
       <section class="surface" data-surface="profile" aria-labelledby="profile-title">
         <h1 id="profile-title">프로필</h1>
         <div data-profile></div>
+      </section>
+
+      <section class="surface" data-surface="settings" aria-labelledby="settings-title">
+        <h1 id="settings-title">설정</h1>
+        <p class="lede">이 기기에만 저장돼요. 칩과 기록에는 영향을 주지 않아요.</p>
+        <div class="settings-body" data-settings></div>
       </section>
 
       <section class="surface" data-surface="tiers" aria-labelledby="tiers-title">

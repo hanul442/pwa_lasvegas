@@ -1,11 +1,14 @@
 // The dealer's voice: short recorded call-outs ("No more bets", "All in", "Straight") rendered
 // offline by scripts/voice/generate.py, so every device hears the same deep, unhurried dealer
 // with no speech engine or network at play time. They run on the shared WebAudio clock under the
-// same ♪ toggle as the effects, and the music dips while he speaks.
+// same ♪ toggle as the effects, can be switched off on its own in settings, and the music dips
+// while he speaks.
 import { audioContext, isMuted } from './fx.js';
 import { music } from './music.js';
+import { settings, onSettings } from './settings.js';
 
-const VOLUME = 0.95;
+const silent = () => isMuted() || !settings.get('voice');
+const level = () => Math.min(1, ((settings.get('voiceVolume') ?? 80) / 100) * 1.2); // 80 (default) ≈ 0.96
 const STALE_MS = 2500; // a call-out that would land this late is dropped; the table has moved on
 const MAX_QUEUE = 2;
 
@@ -42,7 +45,7 @@ function play(buffer, ac) {
   return new Promise(resolve => {
     const src = ac.createBufferSource();
     const gain = ac.createGain();
-    gain.gain.value = VOLUME;
+    gain.gain.value = level();
     src.buffer = buffer;
     src.connect(gain).connect(ac.destination);
     src.onended = () => { if (current === src) current = null; resolve(); };
@@ -57,10 +60,10 @@ async function pump() {
   try {
     while (queue.length) {
       const { id, at } = queue.shift();
-      const ac = isMuted() ? null : audioContext();
+      const ac = silent() ? null : audioContext();
       if (!ac) { queue = []; break; }
       const buffer = await bufferFor(id, ac);
-      if (!buffer || isMuted() || performance.now() - at > STALE_MS) continue;
+      if (!buffer || silent() || performance.now() - at > STALE_MS) continue;
       music.duck(true);
       await play(buffer, ac);
       if (!queue.length) music.duck(false);
@@ -74,7 +77,7 @@ async function pump() {
 export const voice = {
   // Queue a line. `cut` stops whatever he is saying first, for a call-out that supersedes it.
   say(id, { cut = false } = {}) {
-    if (!id || isMuted()) return;
+    if (!id || silent()) return;
     if (cut) this.hush();
     queue.push({ id, at: performance.now() });
     if (queue.length > MAX_QUEUE) queue = queue.slice(-MAX_QUEUE);
@@ -101,6 +104,8 @@ const TABLE_LINES = {
 };
 // Card tables open with the dealer inviting bets; the games played against AI seats start on their own cue.
 export const OPENS_WITH_BETS = new Set(['blackjack', 'baccarat', 'roulette', 'dice']);
+
+onSettings(key => { if ((key === 'voice' || key === null) && !settings.get('voice')) voice.hush(); });
 
 // ---------- line ids ----------
 const HAND_INDEX = ['하이카드', '원페어', '투페어', '트리플', '스트레이트', '플러시', '풀하우스', '포카드', '스트레이트 플러시'];

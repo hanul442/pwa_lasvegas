@@ -11,6 +11,15 @@ import { voice, handLine } from '../voice.js';
 const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
 const BLINDS = { low: 5_000, mid: 50_000, high: 500_000, vip: 2_500_000 };
+const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
+// Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
+const CHATTER = {
+  ROCK: { RAISE: ['이번엔 들어갈게요.', '패가 좋네요.'], BET: ['조금만 걸게요.'], ALL_IN: ['기다린 보람이 있네요.'], FOLD: ['이건 아니에요.', '다음 판에.'], CALL: ['보죠.'], WIN: ['참은 만큼 받아 가요.'], LOSE: ['역시 무리였네.'] },
+  SHARK: { RAISE: ['레이즈.', '읽혔어요.'], BET: ['얼마나 버틸까요?'], ALL_IN: ['다 걸죠.'], FOLD: ['넘어가요.'], CALL: ['따라가죠.'], WIN: ['계산대로예요.'], LOSE: ['운이 좋았네요.'] },
+  STATION: { RAISE: ['어? 저도 올려요!'], BET: ['한번 가볼까요?'], ALL_IN: ['에라 모르겠다!'], FOLD: ['아깝다…'], CALL: ['콜! 궁금하잖아요.', '일단 콜이요.', '보기만 할게요.'], WIN: ['콜하길 잘했다!'], LOSE: ['또 콜해버렸네…'] },
+  MANIAC: { RAISE: ['더 올려!', '가즈아!'], BET: ['재미없잖아요, 걸어요.'], ALL_IN: ['올인! 쫄리면 죽든가.', '인생 한 방!'], FOLD: ['…이번만 봐줄게요.'], CALL: ['콜 콜!'], WIN: ['봤죠? 이게 포커예요!'], LOSE: ['다음엔 두 배로!'] }
+};
+const pickLine = list => list?.[Math.floor(Math.random() * list.length)];
 
 // Seats sit on an ellipse; the person is always at the bottom.
 function seatPoint(k, n) {
@@ -114,6 +123,18 @@ export async function mountHoldem(ctx) {
     node.textContent = text; node.className = `pk-tag${text ? ' is-shown' : ''}${kind ? ` is-${kind}` : ''}`;
   }
   function clearTags() { seatEls.forEach((_, i) => tag(i, '')); }
+  // A speech bubble over a bot's seat.
+  function say(i, kind, chance = 0.4) {
+    const seat = session?.table?.seats?.[i];
+    const node = seatEls[i]?.node;
+    if (!seat || i === 0 || !node || Math.random() > chance) return;
+    const line = pickLine(CHATTER[seat.style]?.[kind]);
+    if (!line) return;
+    node.querySelector('.pk-say')?.remove();
+    const bubble = el('span', 'pk-say', line);
+    node.append(bubble);
+    setTimeout(() => bubble.remove(), 2200);
+  }
 
   function paintBet(i, amount) {
     const b = seatEls[i]?.bet; if (!b) return null;
@@ -216,6 +237,7 @@ export async function mountHoldem(ctx) {
         if (ev.seat !== 0) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(420 + Math.random() * 380); seatEls[ev.seat].node.classList.remove('is-thinking'); }
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
+        say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
         if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
         else if (ev.action === 'RAISE') voice.say('raise');
         if (ev.action === 'FOLD') {
@@ -288,9 +310,12 @@ export async function mountHoldem(ctx) {
         });
         sound.chips(Math.min(pay.length, 6));
         if (ev.seat === 0) { sound.win(); haptic([20, 60, 30]); t.glow(); }
+        else say(ev.seat, 'WIN', 0.6);
         await Promise.all(flying);
         setStack(ev.seat, ev.stack);
         tag(ev.seat, ev.uncalled ? '반환' : `+${formatCH(ev.amount)}`, 'win');
+        // A full house or better at showdown is a moment.
+        if (ev.seat === 0 && BIG_HANDS.has(ev.hand)) await t.bigWin(ev.amount, { title: ev.hand, subtitle: "Hold'em" });
         break;
       }
       case 'end': {

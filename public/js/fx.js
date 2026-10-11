@@ -1,10 +1,11 @@
 // Shared feel layer: motion timing, synthesized table sounds, haptics, number formatting.
+import { settings, onSettings, pace, paceScale } from './settings.js';
 
-const reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-export const reducedMotion = () => reduceQuery.matches;
+// "Minimal" pace comes from the settings screen, or from the system setting until one is picked.
+export const reducedMotion = () => pace() === 'minimal';
 
-// Scale every duration down to near-instant when the player asked for less motion.
-export const ms = value => (reducedMotion() ? Math.min(value, 60) : value);
+// Every duration follows the chosen pace; minimal shrinks it to near-instant.
+export const ms = value => (reducedMotion() ? Math.min(value, 60) : Math.round(value * paceScale()));
 export const wait = value => new Promise(resolve => setTimeout(resolve, ms(value)));
 
 export function animate(el, keyframes, options) {
@@ -56,26 +57,28 @@ export function setMuted(value) {
   try { localStorage.setItem('vegas:muted', value ? '1' : '0'); } catch {}
 }
 
+let sfxBus = null;
+const sfxLevel = () => (settings.get('sfx') ?? 80) / 100;
+
 // Shared with the background music so everything runs on one clock.
 export function audioContext() {
   if (!ctx) {
     const Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) return null;
     ctx = new Ctor();
+    sfxBus = ctx.createGain();
+    sfxBus.gain.value = sfxLevel();
+    sfxBus.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
+onSettings(key => { if (sfxBus && (key === 'sfx' || key === null)) sfxBus.gain.setTargetAtTime(sfxLevel(), ctx.currentTime, 0.02); });
 
+// Table sounds go through their own volume; at zero they are skipped entirely.
 function audio() {
-  if (muted) return null;
-  if (!ctx) {
-    const Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) return null;
-    ctx = new Ctor();
-  }
-  if (ctx.state === 'suspended') ctx.resume();
-  return ctx;
+  if (muted || sfxLevel() <= 0) return null;
+  return audioContext();
 }
 
 function noiseBurst(ac, { at = 0, length = 0.05, freq = 3000, q = 0.8, gain = 0.25 } = {}) {
@@ -91,7 +94,7 @@ function noiseBurst(ac, { at = 0, length = 0.05, freq = 3000, q = 0.8, gain = 0.
   filter.Q.value = q;
   const g = ac.createGain();
   g.gain.value = gain;
-  src.connect(filter).connect(g).connect(ac.destination);
+  src.connect(filter).connect(g).connect(sfxBus);
   src.start(ac.currentTime + at);
 }
 
@@ -104,7 +107,7 @@ function tone(ac, { at = 0, freq = 880, length = 0.12, gain = 0.12, type = 'sine
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(gain, t + 0.008);
   g.gain.exponentialRampToValueAtTime(0.0001, t + length);
-  osc.connect(g).connect(ac.destination);
+  osc.connect(g).connect(sfxBus);
   osc.start(t);
   osc.stop(t + length + 0.02);
 }
@@ -128,6 +131,7 @@ export const sound = {
 };
 
 export function haptic(pattern = 8) {
+  if (!settings.get('haptics')) return;
   try { navigator.vibrate?.(pattern); } catch {}
 }
 

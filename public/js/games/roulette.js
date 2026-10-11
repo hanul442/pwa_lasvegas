@@ -1,6 +1,6 @@
 // European roulette: the rotor and ball are animated to land on the server's number.
 import { api, errorMessage } from '../api.js';
-import { sound, haptic, formatCH, reducedMotion, wait } from '../fx.js';
+import { sound, haptic, reducedMotion, wait } from '../fx.js';
 import { Table } from '../table.js';
 import { seatCrowd } from '../npc.js';
 import { voice, rouletteLine } from '../voice.js';
@@ -208,7 +208,7 @@ export async function mountRoulette(ctx) {
     // Each spot is paid or raked on its own.
     const zones = new Map(res.round.bets.map((b, i) => [bets[i].zone, b.netPnl]));
     const hits = res.round.bets.filter(b => b.won).length;
-    const settled = t.settle(net, { zones, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
+    const settled = t.settle(net, { zones, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
     await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, res.round.number))]);
     await t.syncBalance();
     crowd.open();

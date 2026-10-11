@@ -342,8 +342,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         ev.stacks.forEach((s, i) => setStack(i, s));
         const net = handStart === null ? 0 : ev.stacks[me] - handStart;
         const names = [...new Set(winners)].map(i => (i === me ? '나' : pk.nameOf(i, current?.seats?.[i] || {})));
-        const label = net > 0 ? `You win +${formatCH(net)}` : names.length ? `${names.join(', ')} wins` : '';
-        if (label) t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
+        const label = net > 0 ? 'You win' : names.length ? `${names.join(', ')} wins` : '';
+        if (label || net) t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
         if (net > 0) voice.say('you-win');
         if (net < 0) sound.lose();
         pk.onEnd?.({ net, winners });

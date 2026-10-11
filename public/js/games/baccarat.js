@@ -162,7 +162,7 @@ export async function mountBaccarat(ctx) {
     // Each spot is paid or raked on its own: the main bet, then each pair from the server's result.
     const nets = new Map(zones.map(z => [z, z === betType ? r.mainPnl ?? r.netPnl : r.sideBets?.find(b => b.betType === z)?.netPnl ?? betNet(z, t.zoneTotal(z), r)]));
     const pairs = PAIRS.filter(z => r.pairs?.[z]).map(z => (z === 'PLAYER_PAIR' ? 'P Pair' : 'B Pair'));
-    const label = `${r.winner === 'TIE' ? 'Tie' : `${r.winner === 'PLAYER' ? 'Player' : 'Banker'} wins`}${pairs.length ? ` · ${pairs.join(' · ')}` : ''}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`;
+    const label = `${r.winner === 'TIE' ? 'Tie' : `${r.winner === 'PLAYER' ? 'Player' : 'Banker'} wins`}${pairs.length ? ` · ${pairs.join(' · ')}` : ''}`;
     voice.say(r.winner === 'TIE' ? 'tie' : r.winner === 'PLAYER' ? 'player-wins' : 'banker-wins');
     await Promise.all([t.settle(net, { label, zones: nets }), crowd.settle((zone, stake) => betNet(zone, stake, r))]);
     await t.syncBalance();

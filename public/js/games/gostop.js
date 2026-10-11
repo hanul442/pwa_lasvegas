@@ -307,7 +307,6 @@ export async function mountGostop(ctx) {
 
   async function finish(v, net) {
     const r = v.result;
-    const signed = net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : '';
     let label, note;
     if (r.winner === null) {
       label = '나가리';
@@ -329,7 +328,7 @@ export async function mountGostop(ctx) {
     const big = net > 0 && (r.go >= 3 || r.points >= 10)
       ? { title: r.go >= 3 ? `${r.go}고 승리` : `${r.points}점 승리`, subtitle: r.multipliers.concat(...r.shares.map(s => s.multipliers)).map(x => x.label).filter((x, i, a) => a.indexOf(x) === i).join(' · ') || '고스톱' }
       : null;
-    await t.settle(net || 0, { label: `${label}${signed}`, big });
+    await t.settle(net || 0, { label, big });
     zone.hidden = false;
     await t.syncBalance();
   }

@@ -1,6 +1,6 @@
 // The big-win moment: the table dims, a star bursts, the payout rolls up while chips rain,
 // and the phone shakes in your hand. From there the win can be saved or shared as a card.
-import { el, sound, haptic, rollNumber, formatFull, formatCH, animate, ms, reducedMotion } from './fx.js';
+import { el, sound, haptic, rollNumber, formatMoney, animate, ms, reducedMotion } from './fx.js';
 import { createChip } from './chips.js';
 
 const BRAGS = ['“오늘은 내가 하우스”', '“딜러가 울고 갔어요”', '“동네방네 자랑합니다”', '“이 맛에 앉아 있죠”'];
@@ -26,14 +26,14 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '' 
   return new Promise(resolve => {
     const node = el('div', 'bigwin');
     node.setAttribute('role', 'dialog');
-    node.setAttribute('aria-label', `${title} +${formatFull(amount)}원`);
+    node.setAttribute('aria-label', `${title} ${formatMoney(amount)} 벌었어요`);
     node.innerHTML = `
       <div class="bigwin-rain" aria-hidden="true"></div>
       <div class="bigwin-inner">
         <span class="bigwin-star" aria-hidden="true"></span>
         <p class="bigwin-sub">${subtitle || 'BIG WIN'}</p>
         <h2 class="bigwin-title">${title}</h2>
-        <strong class="bigwin-amount">+<span data-amount>0</span> <small>원</small></strong>
+        <strong class="bigwin-amount"><span data-amount>0원</span> <small>벌었어요</small></strong>
         <div class="bigwin-actions">
           <button type="button" class="pill-button pill-button--solid" data-share>동네방네 자랑하기</button>
           <button type="button" class="pill-button" data-close>계속</button>
@@ -54,7 +54,7 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '' 
     requestAnimationFrame(() => node.classList.add('is-open'));
     fanfare();
     haptic([40, 50, 40, 50, 120, 80, 200]);
-    rollNumber(node.querySelector('[data-amount]'), 0, amount, { duration: 1400 });
+    rollNumber(node.querySelector('[data-amount]'), 0, amount, { duration: 1400, format: formatMoney });
     animate(node.querySelector('.bigwin-title'), [{ transform: 'scale(.4)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 650 });
 
     let done = false;
@@ -127,8 +127,11 @@ export async function winCard({ title, amount, game, nickname = '' }) {
   while (ctx.measureText(title).width > W - 180 && size > 60) { size -= 8; ctx.font = `700 ${size}px Archivo, "Noto Sans KR", sans-serif`; }
   ctx.fillText(title, W / 2, 800);
   ctx.fillStyle = '#fff6dc';
-  ctx.font = '600 96px Archivo, sans-serif';
-  ctx.fillText(`+${formatCH(amount)}원`, W / 2, 940);
+  const won = `${formatMoney(amount)} 벌었어요`;
+  size = 96;
+  ctx.font = `700 ${size}px Archivo, "Noto Sans KR", sans-serif`;
+  while (ctx.measureText(won).width > W - 140 && size > 48) { size -= 6; ctx.font = `700 ${size}px Archivo, "Noto Sans KR", sans-serif`; }
+  ctx.fillText(won, W / 2, 940);
   ctx.fillStyle = '#f4f5f7';
   ctx.font = '600 50px "Noto Sans KR", sans-serif';
   ctx.fillText(BRAGS[Math.floor(amount / 7) % BRAGS.length], W / 2, 1050);
@@ -145,7 +148,7 @@ export async function shareWin({ title, amount, game, nickname = '' }) {
   if (!blob) return;
   const file = new File([blob], 'vegas-big-win.png', { type: 'image/png' });
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'VEGAS 대박', text: `VEGAS에서 ${title}! +${formatCH(amount)}원 땄어요` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
+    try { await navigator.share({ files: [file], title: 'VEGAS 대박', text: `VEGAS에서 ${title}! ${formatMoney(amount)} 벌었어요` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

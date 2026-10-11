@@ -134,7 +134,7 @@ export async function mountSlots(ctx) {
     }
     await wait(200);
     const big = jackpot > 0 ? { title: 'JACKPOT', subtitle: `잭팟 +${formatCH(jackpot)}` } : null;
-    await t.settle(net, { label: `${line ? `${LINE_LABEL[line]} ` : ''}${net ? `${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : '본전'}`, big });
+    await t.settle(net, { label: line ? LINE_LABEL[line] : net ? '' : '본전', big });
     await t.syncBalance();
     refreshActions();
   }

@@ -299,7 +299,7 @@ export async function mountMatgo(ctx) {
     // Three go's or a ten-point hand stop the table.
     const goes = r.multipliers?.find(x => /고$/.test(x.label) && x.label !== '고박');
     const big = r.winner === ME && (goes || r.points >= 10) ? { title: goes ? goes.label : `${r.points}점`, subtitle: goes ? '고 · 고 · 고' : '큰 판' } : null;
-    await t.settle(net || 0, { label: `${label}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big });
+    await t.settle(net || 0, { label: `${label}`, big });
     zone.hidden = false;
     await t.syncBalance();
   }

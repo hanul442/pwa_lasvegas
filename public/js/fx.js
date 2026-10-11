@@ -172,6 +172,21 @@ function manText(man) {
 }
 function trim(x) { return x >= 100 ? Math.round(x).toLocaleString('ko-KR') : x >= 10 ? x.toFixed(1).replace(/\.0$/, '') : x.toFixed(2).replace(/\.?0+$/, ''); }
 
+// Spelled out the way people say money: 7억 2천만원, 1조 3500억원, 2만 5천원, 800원.
+// The two largest units are kept, so a big win reads at a glance.
+export function formatMoney(value, unit = '원') {
+  const n = Math.abs(Math.round(Number(value) || 0));
+  if (n < 10_000) return `${n.toLocaleString('ko-KR')}${unit}`;
+  const groups = [[1e12, '조'], [1e8, '억'], [1e4, '만'], [1, '']]
+    .map(([size, name]) => [Math.floor(n / size) % 1e4, name]);
+  groups[0][0] = Math.floor(n / 1e12);
+  const parts = groups.filter(([v]) => v > 0).slice(0, 2)
+    .map(([v, name]) => `${v >= 1000 && v % 1000 === 0 && v < 1e4 ? `${v / 1000}천` : v}${name}`);
+  return `${parts.join(' ')}${unit}`;
+}
+// "7억 2천만원 벌었어요" / "3만원 잃었어요" under a result.
+export const moneyResult = net => (net > 0 ? `${formatMoney(net)} 벌었어요` : net < 0 ? `${formatMoney(net)} 잃었어요` : '');
+
 export const formatFull = value => `${Math.round(Number(value) || 0).toLocaleString('ko-KR')}`;
 // Full amount with the currency, for sentences and labels.
 export const formatWon = value => `${formatFull(value)}원`;

@@ -241,7 +241,7 @@ export async function mountSeotda(ctx) {
       : won ? `승리 · ${r.hands[ME]}` : `${folded ? '다이' : '패배'} · ${nameOf(v, r.winners[0])} ${top || ''}`.trim();
     r.winners.forEach(s => seatEl(s)?.classList.add('is-winner'));
     if (net > 0) voice.say('you-win');
-    t.banner(`${label}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
+    t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
     if (net > 0) { sound.win(); haptic([20, 60, 30]); t.glow(); } else if (net < 0) { sound.lose(); haptic(30); } else sound.push();
     if (net > 0 && /광땡|장땡/.test(r.hands[ME] || '')) await t.bigWin(net, { title: r.hands[ME], subtitle: `섯다 · ${formatCH(r.pot)} 판을 가져왔어요` });
     await wait(900);

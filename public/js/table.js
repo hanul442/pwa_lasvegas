@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, TIERS } from './chips.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
 
@@ -482,7 +482,7 @@ export class Table {
       });
     });
     if (pays.length) { sound.chips(Math.min(pays.length, 6)); await Promise.all(pays); }
-    if (label) this.banner(label, kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'));
+    if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'), net);
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
@@ -539,10 +539,13 @@ export class Table {
   syncBalance() { return this.setBalance(this.available - (this.locked ? 0 : this.total)); }
 
   // ---------- feedback ----------
-  banner(text, kind = 'win') {
+  // The headline, and under it what the round was worth: "7억 2천만원 벌었어요".
+  banner(text, kind = 'win', net = 0) {
     const node = this.root.querySelector('[data-banner]');
     node.className = `banner banner--${kind} is-shown`;
-    node.textContent = text;
+    node.replaceChildren();
+    if (text) node.append(el('span', 'banner-head', text));
+    if (net) node.append(el('span', 'banner-money', moneyResult(net)));
     clearTimeout(this.bannerTimer);
     this.bannerTimer = setTimeout(() => node.classList.remove('is-shown'), ms(1800));
   }

@@ -126,7 +126,7 @@ export async function mountHoldem(ctx) {
         return flyFrom(c, from, { duration: 520, delay: k * 50, lift: 50 }).then(() => c.remove());
       }));
     }
-    t.banner(`${cash > 0 ? '일어났어요' : '칩을 모두 잃었어요'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, net > 0 ? 'win' : net < 0 ? 'lose' : 'push');
+    t.banner(cash > 0 ? '일어났어요' : '칩을 모두 잃었어요', net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
     t.locked = false;
     t.root.classList.remove('is-playing');
     await pk.sweep();

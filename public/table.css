@@ -516,7 +516,9 @@
   .pk-seat--hero .pk-cards{--card-w:clamp(50px,14.5vw,62px);margin-bottom:0}
   .pk-plate small{display:none}
   .pk-board{--card-w:clamp(32px,9.2vw,50px)}
-  /* side seats and their bets move up/down, away from the board's row */
+}
+/* Phones upright: side seats and their bets move up/down, away from the board's row. */
+@media (max-width:759px) and (orientation:portrait){
   .pk-seat--side{top:calc((50 + (var(--y) - 50) * 1.3) * 1%)}
   .pk-bet--side{top:calc((50 + (var(--y) - 50) * 1.5) * 1%)}
 }

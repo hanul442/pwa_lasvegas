@@ -233,3 +233,22 @@
 .watch-hand{display:flex;flex-direction:column;align-items:center;gap:8px}
 .watch-note{margin:18px 0 0;color:#ffffffa6;font-size:13px;text-align:center}
 @media (min-width:760px){.watch-sheet{place-items:center}.watch-felt{border-radius:24px;border:1px solid #ffffff26}}
+/* Phones: the reels size to the screen height too, so the bet button below them stays on the felt. */
+.slot-window{--sym:clamp(44px,min(17vw,10.5dvh),92px)}
+@media (orientation:landscape) and (max-height:520px){
+  .table-screen--slots .felt-body{padding-top:10px}
+  .table-screen--slots .dealer-rack{display:none}
+  .slot{grid-template-columns:auto auto;align-items:center;justify-content:center;gap:6px 28px}
+  .slot>*{grid-column:1}
+  .slot>.slot-cabinet{grid-column:2;grid-row:1 / span 4}
+  .slot-window{--sym:clamp(40px,15dvh,72px)}
+  .slot-jackpot{padding:6px 16px 8px}
+  .slot-jackpot strong{font-size:24px}
+}
+@media (max-height:760px) and (orientation:portrait){
+  .table-screen--slots .felt-body{padding-top:14px}
+  .table-screen--slots .dealer-rack{display:none}
+  .slot{gap:8px}
+  .slot-window{--sym:clamp(44px,min(17vw,9dvh),92px)}
+  .slot-result{min-height:22px}
+}

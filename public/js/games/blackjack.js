@@ -91,7 +91,7 @@ export async function mountBlackjack(ctx) {
       { label: '히트', key: 'H', primary: true, onClick: () => act('HIT') },
       { label: '스탠드', key: 'S', onClick: () => act('STAND') },
       { label: '더블', key: 'D', disabled: !hand?.canDouble || t.available < hand.stake, onClick: () => act('DOUBLE') },
-      ...(hand?.canSplit ? [{ label: '스플릿', key: 'P', disabled: t.available < hand.stake, onClick: () => act('SPLIT') }] : [])
+      { label: '스플릿', key: 'P', disabled: !hand?.canSplit || t.available < hand.stake, onClick: () => act('SPLIT') }
     ]);
   }
   t.refreshActions = refreshActions;
@@ -133,7 +133,7 @@ export async function mountBlackjack(ctx) {
     catch (e) { t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     const next = res.round;
-    if (action === 'DOUBLE' || action === 'SPLIT') await t.addFromTray('main', hand.stake);
+    if (action === 'DOUBLE' || action === 'SPLIT') { await t.addFromTray('main', hand.stake); t.syncBalance(); }
     if (action === 'STAND') sound.tick();
 
     // Split: lift the second card into its new hand before dealing.

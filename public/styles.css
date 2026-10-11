@@ -49,7 +49,7 @@ button:disabled{cursor:not-allowed}
 .surface{display:none;padding:28px 0}
 .surface.is-active{display:block}
 .eyebrow{margin:0;color:var(--smoke);font-size:13px;letter-spacing:.04em}
-.surface>h1{margin:6px 0 14px;font:700 clamp(38px,10vw,72px)/.95 var(--display);font-stretch:118%;letter-spacing:-.04em}
+.surface>h1{margin:6px 0 14px;font:700 clamp(34px,9vw,60px)/1.05 var(--display);font-stretch:118%;letter-spacing:-.04em}
 .lede{max-width:34em;margin:0;color:var(--taupe);font-size:15px;line-height:1.75}
 .back-button{min-height:44px;padding:0;border:0;background:none;color:var(--taupe);margin-bottom:8px;font-size:14px}
 .back-button:hover{color:var(--ivory)}
@@ -85,14 +85,16 @@ button:disabled{cursor:not-allowed}
 
 /* ---------- tiers ---------- */
 .tier-grid{list-style:none;margin:24px 0 0;padding:0;border-top:1px solid var(--hair);display:block}
-.tier-card{width:100%;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;align-items:center;column-gap:16px;padding:18px 4px;border:0;border-bottom:1px solid var(--hair);background:none;text-align:left;transition:background .25s}
+.tier-card{width:100%;display:grid;grid-template-columns:1fr auto;column-gap:16px;row-gap:2px;align-items:center;padding:20px 4px;border:0;border-bottom:1px solid var(--hair);background:none;text-align:left;transition:background .25s}
 .tier-card:not(:disabled):hover{background:#ffffff08}
-.tier-card strong{font:650 30px/1.05 var(--display);font-stretch:118%;letter-spacing:-.035em}
-.tier-card span{grid-column:1;color:var(--ivory);font-size:15px;font-variant-numeric:tabular-nums}
-.tier-card small{grid-column:1;color:var(--taupe);font-size:13px}
+.tier-card>strong{grid-column:1;grid-row:1;font:650 30px/1.05 var(--display);font-stretch:118%;letter-spacing:-.035em}
+.tier-card>span:not(.tier-chips){grid-column:1;grid-row:2;color:var(--ivory);font-size:15px;font-variant-numeric:tabular-nums}
+.tier-card>small{grid-column:1;grid-row:3;color:var(--taupe);font-size:13px}
 .tier-card:disabled{opacity:.4}
-.tier-chips{grid-column:2;grid-row:1 / span 3;display:flex}
-.tier-chips .chip{--size:34px;margin-left:-14px}
+.tier-chips{grid-column:2;grid-row:1 / span 3;display:flex;align-items:center;padding-left:18px}
+.tier-chips .chip{--size:32px;margin-left:-18px}
+.tier-chips .chip-label{display:none}
+.tier-chips .chip:last-child .chip-label{display:block}
 .virtual-note{margin:22px 0;color:var(--dim);font-size:13px;line-height:1.6}
 
 /* ---------- ranking ---------- */

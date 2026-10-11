@@ -36,6 +36,26 @@ test('blackjack v2 split creates another hand on the same spot and increases loc
   assert.ok(round.hands.every(h => h.cards.length === 2));
 });
 
+test('blackjack v2 splits any two ten-value cards but not unequal values', () => {
+  const pairOf = (a, b) => {
+    for (let i = 0; i < 500; i++) {
+      const round = startBlackjackV2(1_000_000, 1);
+      if (round.status !== 'PLAYER') continue;
+      round.hands[0].cards = [{ r: a, s: '♠' }, { r: b, s: '♥' }];
+      return round;
+    }
+    throw new Error('no playable round');
+  };
+  const faces = pairOf('K', 'Q');
+  assert.equal(blackjackV2Public(faces).hands[0].canSplit, true);
+  blackjackV2Action(faces, 'SPLIT', 0);
+  assert.equal(faces.hands.length, 2);
+  assert.equal(blackjackV2Public(pairOf('10', 'J')).hands[0].canSplit, true);
+  const mixed = pairOf('9', '10');
+  assert.equal(blackjackV2Public(mixed).hands[0].canSplit, false);
+  assert.throws(() => blackjackV2Action(mixed, 'SPLIT', 0), /SPLIT_NOT_ALLOWED/);
+});
+
 test('blackjack v2 split lock and settlement conserve bankroll plus net PnL', () => {
   const state = defaultState();
   const user = state.users.hanseo;

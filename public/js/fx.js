@@ -56,6 +56,17 @@ export function setMuted(value) {
   try { localStorage.setItem('vegas:muted', value ? '1' : '0'); } catch {}
 }
 
+// Shared with the background music so everything runs on one clock.
+export function audioContext() {
+  if (!ctx) {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    ctx = new Ctor();
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+
 function audio() {
   if (muted) return null;
   if (!ctx) {

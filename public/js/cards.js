@@ -30,7 +30,8 @@ function faceMarkup(card) {
   } else {
     center = `<span class="card-court"><b>${rank}</b><i>${suit}</i></span>`;
   }
-  return `${corner}${center}${corner.replace('card-corner', 'card-corner card-corner--end')}`;
+  // card-mark: the big suit that the large-index faces (Hold'em) show in place of the pips.
+  return `${corner}${center}${corner.replace('card-corner', 'card-corner card-corner--end')}<span class="card-mark" aria-hidden="true">${suit}</span>`;
 }
 
 export function createCard(text, { faceUp = true } = {}) {

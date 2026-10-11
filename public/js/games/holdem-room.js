@@ -171,7 +171,7 @@ export function createFriends(t, pk, bar, hooks) {
     hooks.showSeated(true);
     t.locked = true;
     t.root.classList.add('is-room');
-    tableName.textContent = `${tierName(view.tier)} · 친구 방 · 블라인드 ${formatCH(pk.bb / 2)} / ${formatCH(pk.bb)}`;
+    tableName.textContent = `친구 방 · 블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`;
     chipEl.innerHTML = `<span>방 코드</span><b>${view.code}</b>`;
     chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 초대 문구 복사`);
     chipEl.hidden = false;

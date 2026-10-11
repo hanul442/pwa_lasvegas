@@ -37,7 +37,8 @@ export async function mountHoldem(ctx) {
   async function playEvents(events, view) {
     pk.animating = true;
     refreshActions();
-    await pk.playEvents(events, view.table);
+    // A finished session's table is stored without its last hand: keep the felt as the hand left it.
+    await pk.playEvents(events, view.table, { snap: view.status !== 'SETTLED' });
   }
 
   // ---------- server calls ----------
@@ -140,10 +141,21 @@ export async function mountHoldem(ctx) {
     if (session?.status === 'SETTLED') {
       const s = session;
       session = null;
+      // Out of chips: the showdown stays on the felt until the player gets up.
+      if (!(s.cashOut > 0)) { busted = s; return refreshActions(); }
       return cashOut(s.cashOut ?? 0, s.netPnl ?? 0).then(refreshActions);
     }
     refreshActions();
   }
+  let busted = null;
+  async function getUp() {
+    const s = busted; busted = null;
+    await cashOut(0, s.netPnl ?? 0);
+    refreshActions();
+  }
+  // After the hand, the hero may turn their cards up for the table (a folded hand, or a pot nobody called).
+  const canShow = () => !pk.animating && !pk.wasShown(0) && (busted || (session?.table.handOver && session.table.seats[0]?.inHand));
+  const showAction = () => (canShow() ? [{ label: '카드 공개', onClick: async () => { await pk.showOff(0, (session || busted)?.table.seats[0]?.cards || []); } }] : []);
 
   // ---------- controls ----------
   function showSeated(on) {
@@ -161,6 +173,12 @@ export async function mountHoldem(ctx) {
 
   function refreshActions() {
     if (friends.active) return friends.refreshActions();
+    if (busted) {
+      sizer.hidden = true;
+      t.hint('칩을 모두 잃었어요');
+      t.setActions([...showAction(), { label: '나가기', key: '↵', primary: true, disabled: pk.animating, onClick: getUp }]);
+      return;
+    }
     if (!session) {
       sizer.hidden = true;
       t.setActions(t.idleActions('앉기', sit));
@@ -182,6 +200,7 @@ export async function mountHoldem(ctx) {
     const over = session.table.handOver;
     t.setActions([
       { label: '일어나기', ghost: true, disabled: pk.animating, onClick: leave },
+      ...(over ? showAction() : []),
       { label: '다음 핸드', key: '↵', primary: true, disabled: pk.animating || !over, onClick: next }
     ]);
   }

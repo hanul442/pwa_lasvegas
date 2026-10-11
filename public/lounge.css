@@ -178,3 +178,58 @@
 .slot-pays td{padding:6px 4px;border-bottom:1px solid var(--hair)}
 .slot-pays td:last-child{text-align:right;color:var(--white);font-variant-numeric:tabular-nums}
 .slot-pays p{margin:8px 0 0;font-size:13px;line-height:1.5}
+
+/* ---------- friend duels ---------- */
+.duels{margin-top:30px;padding-top:22px;border-top:1px solid var(--hair)}
+.duel-list{list-style:none;margin:0 0 6px;padding:0}
+.duel{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 0}
+.duel+.duel{border-top:1px solid var(--hair)}
+.duel-text{flex:1 1 200px;min-width:0;display:grid;gap:3px}
+.duel-text strong{font-size:16px;font-weight:600}
+.duel-text small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
+.duel-actions{display:flex;gap:8px}
+.duel-actions .pill-button{min-height:40px;padding:0 16px}
+.duel-scores{flex:1 1 100%;display:grid;gap:8px}
+.duel-score{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;font-size:14px;color:var(--smoke)}
+.duel-score>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duel-score b{font-weight:600;font-variant-numeric:tabular-nums;color:var(--white)}
+.duel-score.is-me{color:var(--white)}
+.duel-bar{height:6px;border-radius:6px;background:#ffffff14;overflow:hidden}
+.duel-bar i{display:block;height:100%;border-radius:6px;background:var(--dim);transition:width .6s var(--ease-out)}
+.duel-score.is-me .duel-bar i{background:var(--star)}
+.duel-verdict{flex:none;color:var(--dim);font-size:13px}
+.duel-verdict.is-win{color:var(--star)}
+.duel-list--past .duel{padding:10px 0}
+.duel-list--past .duel-text small{display:none}
+.duel-list--past .duel-text strong{font-size:15px;font-weight:500;color:var(--smoke)}
+.duel-sub{margin:22px 0 4px;color:var(--dim);font-size:13px;font-weight:500;letter-spacing:.04em}
+.duel-form{display:grid;gap:12px;margin-top:10px;padding:16px;border:1px solid var(--hair);border-radius:16px;background:var(--ink-2)}
+.duel-people{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.duel-person{flex:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 6px;border:1px solid var(--hair);border-radius:999px;background:none;color:var(--smoke);font-size:15px}
+.duel-person.is-active{border-color:var(--white);color:var(--white);background:#ffffff0d}
+.duel-avatar{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--ink-3);border:1px solid var(--hair-strong);color:var(--white);font-size:14px;font-weight:600}
+.duel-metric{grid-template-columns:1fr 1fr}
+.duel-send{justify-self:stretch}
+
+/* ---------- watching ---------- */
+.watch-list{list-style:none;margin:0;padding:0}
+.watch-item{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 0;border:0;background:none;color:var(--white);text-align:left}
+.watch-list li+li .watch-item{border-top:1px solid var(--hair)}
+.watch-item>span:nth-child(2){flex:1;display:grid;gap:2px}
+.watch-item strong{font-size:16px;font-weight:600}
+.watch-item small{color:var(--smoke);font-size:13px}
+.watch-go{color:var(--smoke);font-size:14px}
+.watch-live{flex:none;width:8px;height:8px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 0 #ff4f4f66;animation:watch-pulse 1.6s infinite}
+@keyframes watch-pulse{70%{box-shadow:0 0 0 8px #ff4f4f00}100%{box-shadow:0 0 0 0 #ff4f4f00}}
+.watch-sheet{position:fixed;inset:0;z-index:80;display:grid;place-items:end center;background:#000000a6;opacity:0;transition:opacity .25s}
+.watch-sheet.is-open{opacity:1}
+.watch-felt{--card-w:clamp(52px,15vw,78px);width:min(560px,100%);max-height:92dvh;overflow:auto;padding:18px 18px calc(22px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;background:radial-gradient(120% 90% at 50% 0,#1f5a45 0,#123829 70%);border-top:1px solid #ffffff26;transform:translateY(30px);transition:transform .3s var(--ease-out)}
+.watch-sheet.is-open .watch-felt{transform:none}
+.watch-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.watch-head strong{flex:1;font:600 18px var(--display)}
+.watch-head .pill-button{min-height:38px}
+.watch-label{margin:10px 0 6px;color:#ffffffa6;font-size:13px;text-align:center}
+.watch-hands{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;margin-top:22px}
+.watch-hand{display:flex;flex-direction:column;align-items:center;gap:8px}
+.watch-note{margin:18px 0 0;color:#ffffffa6;font-size:13px;text-align:center}
+@media (min-width:760px){.watch-sheet{place-items:center}.watch-felt{border-radius:24px;border:1px solid #ffffff26}}

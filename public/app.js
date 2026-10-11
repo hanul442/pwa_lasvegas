@@ -12,6 +12,8 @@ import { mountMatgo } from './js/games/matgo.js';
 import { mountSeotda } from './js/games/seotda.js';
 import { attachGuide } from './js/guide.js';
 import { mountHoldem } from './js/games/holdem.js';
+import { settings, onSettings } from './js/settings.js';
+import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -47,6 +49,8 @@ function showSurface(name, { focus = false } = {}) {
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
   if (name === 'profile') renderProfile();
+  if (name === 'settings') openSettings(); else closeSettings();
+  syncWakeLock();
   if (focus) { const heading = target.querySelector('h1'); heading?.setAttribute('tabindex', '-1'); heading?.focus({ preventScroll: true }); }
 }
 
@@ -66,11 +70,13 @@ function chooseGame(button) {
 
 async function openTable(tier) {
   if (!selectedGame) return;
+  try { localStorage.setItem(LAST_TABLE_KEY, JSON.stringify({ game: selectedGame.id, tier })); } catch {}
   history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
   showSurface('table');
   closeTable();
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
   attachGuide(activeTable, selectedGame.id);
+  attachQuickSettings(activeTable);
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
 
@@ -111,10 +117,38 @@ async function refresh() {
   if (document.querySelector('[data-surface="profile"]').classList.contains('is-active')) renderProfile();
 }
 
+// The lobby offers to sit back down at the last table played on this device.
+const LAST_TABLE_KEY = 'vegas:last-table';
+function lastTable() {
+  try {
+    const t = JSON.parse(localStorage.getItem(LAST_TABLE_KEY) || 'null');
+    return t && GAMES.some(g => g.id === t.game) && TIERS[t.tier] ? t : null;
+  } catch { return null; }
+}
+
 function renderRecharge() {
   const slot = document.querySelector('[data-recharge-slot]');
   const r = state?.recharge;
   slot.replaceChildren();
+  const last = lastTable();
+  if (last) {
+    const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
+    const short = (state?.user?.account?.available ?? Infinity) < tier.min;
+    const b = el('button', 'pill-button pill-button--solid', `${game.name} ${tier.name}에 다시 앉기`);
+    b.type = 'button';
+    b.disabled = short;
+    if (short) b.title = '칩이 부족해요';
+    b.addEventListener('click', () => {
+      lastLobbyTrigger = b;
+      selectedGame = game;
+      history.pushState({ vegasSurface: 'tiers' }, '', `#tiers-${game.id}`);
+      renderTiers();
+      document.querySelector('#tiers-title').textContent = game.name;
+      document.querySelector('#tier-game-name').textContent = `${game.blurb} 앉을 테이블을 골라 주세요.`;
+      openTable(tier.slug);
+    });
+    slot.append(b);
+  }
   if (r?.eligible) {
     const b = el('button', 'pill-button', `칩 충전 · +${formatCH(r.amount)}`);
     b.type = 'button';
@@ -243,6 +277,26 @@ function renderProfile() {
   }));
 }
 
+// ---------- settings ----------
+let settingsCleanup = null;
+function openSettings() {
+  settingsCleanup?.();
+  settingsCleanup = renderSettings(document.querySelector('[data-settings]'));
+  paintSound();
+}
+function closeSettings() { settingsCleanup?.(); settingsCleanup = null; }
+
+// "화면 켜두기": hold a screen wake lock while sitting at a table.
+let wakeLock = null;
+async function syncWakeLock() {
+  const want = settings.get('awake') && document.body.classList.contains('game-mode') && !document.hidden;
+  if (want && !wakeLock && 'wakeLock' in navigator) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } catch { wakeLock = null; }
+  } else if (!want && wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', syncWakeLock);
+onSettings(key => { if (key === 'awake' || key === null) syncWakeLock(); if (key === 'music' || key === null) syncMusic(); });
+
 // ---------- sound and music ----------
 // One toggle (in the top bar and on every table) silences both effects and music.
 let audioUnlocked = false;
@@ -252,7 +306,7 @@ function syncMusic() {
 }
 function paintSound() {
   document.querySelectorAll('[data-sound]').forEach(btn => {
-    btn.setAttribute('aria-pressed', String(!isMuted()));
+    btn.setAttribute(btn.getAttribute('role') === 'switch' ? 'aria-checked' : 'aria-pressed', String(!isMuted()));
     btn.setAttribute('aria-label', isMuted() ? '소리 켜기' : '소리 끄기');
     btn.classList.toggle('is-muted', isMuted());
   });

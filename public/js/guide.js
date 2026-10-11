@@ -2,10 +2,16 @@
 // for hands-on steps, waits until the player actually does it. Plus a rules sheet behind "?".
 import { el } from './fx.js';
 import { GUIDES } from './guides.js';
+import { settings } from './settings.js';
 
 const seenKey = id => `vegas:guide:${id}`;
 const seen = id => { try { return localStorage.getItem(seenKey(id)) === '1'; } catch { return true; } };
 const markSeen = id => { try { localStorage.setItem(seenKey(id), '1'); } catch {} };
+
+// Forget which guides were seen, so each game's coach starts again on the next visit.
+export function resetGuides() {
+  try { Object.keys(GUIDES).forEach(id => localStorage.removeItem(seenKey(GUIDES[id].id || id))); } catch {}
+}
 
 class Coach {
   constructor(table, def) {
@@ -120,6 +126,7 @@ function rulesSheet(table, def, coach) {
     <button type="button" class="action action--primary" data-tour>테이블에서 따라 하며 배우기</button>
     <div class="rules">${def.rules}</div>`;
   const open = value => {
+    if (value) table.root.querySelectorAll('.sheet.is-open').forEach(s => { if (s !== sheet) s.querySelector('[data-close]')?.click(); });
     sheet.classList.toggle('is-open', value);
     sheet.inert = !value;
     if (value) sheet.querySelector('[data-tour]').focus({ preventScroll: true });
@@ -137,11 +144,11 @@ export function attachGuide(table, gameId) {
   if (!def || !table?.root) return null;
   const coach = new Coach(table, def);
   const sheet = rulesSheet(table, def, coach);
-  const help = el('button', 'table-help', '?');
+  const help = el('button', 'table-help table-icon', '?');
   help.type = 'button';
   help.setAttribute('aria-label', `${def.title} 하는 법과 규칙`);
   help.addEventListener('click', () => { if (coach.active) coach.stop(); sheet.open(!sheet.isOpen); });
-  table.root.querySelector('.table-bar')?.append(help);
+  (table.root.querySelector('.table-tools') || table.root.querySelector('.table-bar'))?.append(help);
 
   // Escape closes the coach or the sheet first, before it can leave the table.
   const onKey = e => {
@@ -153,6 +160,6 @@ export function attachGuide(table, gameId) {
   const destroy = table.destroy.bind(table);
   table.destroy = () => { if (coach.active) coach.stop({ remember: false }); window.removeEventListener('keydown', onKey, true); destroy(); };
   table.guide = coach;
-  if (!seen(def.id)) setTimeout(() => { if (table.root.isConnected && !coach.active) coach.start(); }, 700);
+  if (settings.get('guides') && !seen(def.id)) setTimeout(() => { if (table.root.isConnected && !coach.active) coach.start(); }, 700);
   return coach;
 }

@@ -2,6 +2,14 @@
 import { animate, flyFrom, flyTo, sound, haptic, formatCH, formatFull, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, TIERS } from './chips.js';
 
+// Narrow phones show the balance as 12.5M so the top bar keeps room for its buttons.
+const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
+
+// Per-device memory of the chip last picked and the last bet placed, per game and table.
+const memoryKey = (game, tier, what) => `vegas:${what}:${game}:${tier}`;
+function recall(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
+function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+
 export class Table {
   constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false }) {
     this.tier = TIERS[tier] || TIERS.mid;
@@ -13,8 +21,11 @@ export class Table {
     this.history = [];
     this.focus = null;
     this.passive = new Set();
-    this.lastBet = null;
-    this.selected = this.tier.chips[0];
+    // Coming back to a table, the last bet is ready to repeat and the last chip is still picked.
+    const saved = recall(memoryKey(game, this.tier.slug, 'lastbet'));
+    this.lastBet = Array.isArray(saved) && saved.length ? new Map(saved) : null;
+    const chip = recall(memoryKey(game, this.tier.slug, 'chip'));
+    this.selected = this.tier.chips.includes(chip) ? chip : this.tier.chips[0];
     this.zones = new Map();
     this.locked = false;
     this.busy = false;
@@ -25,8 +36,10 @@ export class Table {
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
         <div class="table-name"><strong>${title}</strong><span>${this.tier.name} 테이블, ${formatCH(this.tier.min)} – ${formatCH(this.tier.max)} CH</span></div>
-        <div class="table-balance"><span>보유 칩</span><strong data-balance>${formatFull(this.available)}</strong></div>
-        <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
+        <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
+        <div class="table-tools">
+          <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
+        </div>
       </header>
       <div class="felt ${feltClass}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
@@ -64,6 +77,14 @@ export class Table {
     root.querySelector('[data-tool="max"]').addEventListener('click', () => this.max());
     this.renderTray();
     this.renderRack();
+    // Number keys 1–5 pick a chip from the tray, left to right.
+    this.onKey(e => {
+      if (e.ctrlKey || e.metaKey || e.altKey || this.locked || this.busy) return;
+      const value = this.tier.chips[Number(e.key) - 1];
+      if (!value || !this.tray.offsetParent) return;
+      this.select(value);
+      sound.tick();
+    });
   }
 
   // ---------- layout ----------
@@ -135,6 +156,7 @@ export class Table {
 
   select(value) {
     this.selected = value;
+    remember(memoryKey(this.game, this.tier.slug, 'chip'), value);
     this.tray.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(Number(c.dataset.value) === value)));
   }
 
@@ -419,6 +441,7 @@ export class Table {
     this.locked = true;
     this.root.classList.add('is-playing');
     this.lastBet = new Map(this.betZones.map(z => [z, [...this.chipsOf(z)]]));
+    if (this.lastBet.size) remember(memoryKey(this.game, this.tier.slug, 'lastbet'), [...this.lastBet]);
   }
 
   // Resolve the bets on the felt: winnings slide in from the rack, losses get raked away.
@@ -477,9 +500,10 @@ export class Table {
     if (roll) {
       this.balanceEl.parentElement.classList.toggle('is-up', value > from);
       this.balanceEl.parentElement.classList.toggle('is-down', value < from);
-      await rollNumber(this.balanceEl, from, value);
+      await rollNumber(this.balanceEl, from, value, { format: balanceText });
       setTimeout(() => this.balanceEl.parentElement.classList.remove('is-up', 'is-down'), ms(600));
-    } else this.balanceEl.textContent = formatFull(value);
+    } else this.balanceEl.textContent = balanceText(value);
+    this.balanceEl.parentElement.title = `${formatFull(value)} CH`;
   }
 
   syncBalance() { return this.setBalance(this.available - (this.locked ? 0 : this.total)); }

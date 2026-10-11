@@ -2,11 +2,14 @@
 // live with WebAudio, so there are no audio files to load or license. It loops a 16-bar form
 // in D♭ and voices each chord a little differently every time around.
 import { audioContext } from './fx.js';
+import { settings, onSettings } from './settings.js';
 
 const BPM = 76;
 const BEAT = 60 / BPM;
 const SWING = 0.62; // the off-beat eighth lands at 62% of the beat
-const VOLUME = 0.32;
+const FULL = 0.32;
+// The settings slider scales the trio; 60 (the default) sits a little under the old fixed level.
+const volume = () => FULL * Math.min(1, (settings.get('music') ?? 60) / 75);
 
 // Chords as [root MIDI note, intervals for the piano voicing above the root].
 const MAJ9 = [4, 7, 11, 14], MIN9 = [3, 7, 10, 14], DOM13 = [4, 10, 14, 21], DOM7B9 = [4, 10, 13, 16], MIN11 = [3, 10, 14, 17];
@@ -154,14 +157,14 @@ function tick() {
 export const music = {
   get playing() { return playing; },
   start() {
-    if (playing) return;
+    if (playing || volume() <= 0) return;
     if (!ac && !build()) return;
     if (ac.state === 'suspended') ac.resume();
     playing = true;
     nextBar = ac.currentTime + 0.1;
     bus.gain.cancelScheduledValues(ac.currentTime);
     bus.gain.setValueAtTime(Math.max(bus.gain.value, 0.0001), ac.currentTime);
-    bus.gain.exponentialRampToValueAtTime(VOLUME, ac.currentTime + 3);
+    bus.gain.exponentialRampToValueAtTime(volume(), ac.currentTime + 3);
     tick();
     timer = setInterval(tick, 200);
   },
@@ -174,3 +177,12 @@ export const music = {
     bus.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.8);
   }
 };
+
+// Slider moves are heard right away; at zero the music stops, above zero it comes back.
+onSettings(key => {
+  if (key !== 'music' && key !== null) return;
+  if (!playing) return; // the app restarts it through syncMusic()
+  if (volume() <= 0) { music.stop(); return; }
+  bus.gain.cancelScheduledValues(ac.currentTime);
+  bus.gain.setTargetAtTime(volume(), ac.currentTime, 0.08);
+});

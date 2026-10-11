@@ -24,7 +24,8 @@
       <button class="brand" type="button" data-nav="lobby" aria-label="VEGAS 로비로 이동"><img src="logo.svg" alt="VEGAS" width="104" height="22"></button>
       <div class="topbar-right">
         <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
-        <div class="wallet" aria-label="내 가상 칩"><strong data-wallet>—</strong><small>CH</small></div>
+        <button class="sound-toggle settings-toggle" type="button" data-nav="settings" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+        <button class="wallet" type="button" data-nav="profile" aria-label="내 가상 칩, 프로필 보기"><strong data-wallet>—</strong><small>CH</small></button>
       </div>
     </header>
 
@@ -62,6 +63,12 @@
       <section class="surface" data-surface="profile" aria-labelledby="profile-title">
         <h1 id="profile-title">프로필</h1>
         <div data-profile></div>
+      </section>
+
+      <section class="surface" data-surface="settings" aria-labelledby="settings-title">
+        <h1 id="settings-title">설정</h1>
+        <p class="lede">이 기기에만 저장돼요. 칩과 기록에는 영향을 주지 않아요.</p>
+        <div class="settings-body" data-settings></div>
       </section>
 
       <section class="surface" data-surface="tiers" aria-labelledby="tiers-title">

@@ -1,10 +1,12 @@
 // 고스톱: three at the blanket, the player and two AI. Same physical cards as 맞고: every play,
 // flip, capture and stolen 피 moves one card node, and both AI turns play out with their names.
+// "친구와 함께" puts friends in the AI chairs (room-client.js); the server turns the room so I sit in seat 0.
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu, slap, hwatu, isBombCard, monthOf } from '../hwatu.js';
 import { animate, flyFrom, wait, sound, haptic, formatCH, el } from '../fx.js';
 import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
+import { createRoomClient } from './room-client.js';
 
 const ME = 0, SEATS = [0, 1, 2], OPPS = [1, 2];
 const GOAL = 3, DEPOSIT_POINTS = 10;
@@ -28,6 +30,7 @@ export async function mountGostop(ctx) {
       <div class="mg-board" data-board>
         <div class="mg-pile" data-pile aria-label="뒤집을 패 더미"><span class="mg-pile-count" data-pile-count>48</span></div>
         <button type="button" class="zone mg-zone" data-zone="POINT"><strong>점당</strong><small>이긴 점수 × 점당, 진 사람마다</small></button>
+        <button type="button" class="pk-friends-open mg-friends" data-friends-open>친구와 함께</button>
       </div>
       ${caps(ME, 'gs-caps-me')}
       <div class="mg-seat mg-seat--me" data-seat="0"><span class="mg-name">나 <small data-go="0"></small></span><span class="mg-score" data-score="0">0<small>점</small></span></div>
@@ -46,6 +49,14 @@ export async function mountGostop(ctx) {
   let selected = null;
   let options = null;   // floor cards the player may pick: { kind: 'pick' | 'choose', ids, card }
   t.gs = { get view() { return view; }, get selected() { return selected; }, plays: 0 };
+
+  const room = createRoomClient(t, 'gostop', {
+    label: '고스톱', word: '점당',
+    soloBusy: () => Boolean(view && view.status === 'PLAYING'),
+    begin, apply, snapshot, refreshActions,
+    clear: () => clearFelt()
+  });
+  t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
 
   function paintNames() {
     OPPS.forEach(s => { $(`[data-name="${s}"]`).textContent = names[s]; $(`[data-opp-hand="${s}"]`).setAttribute('aria-label', `${names[s]} 패`); });
@@ -267,6 +278,7 @@ export async function mountGostop(ctx) {
     options = null;
     prompt = null;
     t.hint('');
+    if (room.active) return room.act(move);
     let res;
     try { res = await api.gostopAction(view.id, move); }
     catch (e) { t.toast(errorMessage(e)); await sync(); return; }
@@ -274,7 +286,7 @@ export async function mountGostop(ctx) {
   }
 
   async function apply(res) {
-    t.setServerState(res.state);
+    if (res.state) t.setServerState(res.state);
     view = res.round;
     if (res.events?.length) await playEvents(res.events);
     model = toModel(view);
@@ -330,6 +342,12 @@ export async function mountGostop(ctx) {
     try { res = await api.gostopStart(t.total, t.tier.floor); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    await begin(res);
+  }
+
+  // A fresh hand from the server, dealt the way a 3인 판 is dealt, then whatever followed.
+  async function begin(res) {
+    if (room.active) { t.resetRound(); t.locked = true; t.root.classList.add('is-playing'); t.placeLocked('POINT', res.round.stake); t.refreshBet(); }
     await t.syncBalance();
     zone.hidden = true;
     nodes.forEach(n => n.remove()); nodes.clear();
@@ -369,7 +387,7 @@ export async function mountGostop(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {
@@ -383,13 +401,14 @@ export async function mountGostop(ctx) {
     if (prompt) { t.setActions(prompt); return; }
     const mine = view.actor === ME;
     t.setActions([
+      ...(room.active && !mine ? [room.leaveAction()] : []),
       { label: options ? '취소' : mine ? '낼 패를 고르세요' : `${names[view.actor] || 'AI'} 차례`, ghost: true, disabled: !options, onClick: () => { options = null; selected = null; t.hint(''); refresh(); } },
       { label: '내기', primary: true, disabled: !mine || !selected || Boolean(options), onClick: () => commit(selected) }
     ]);
   }
   function refresh() { if (model) layout(model, { duration: 160 }); refreshActions(); }
   t.refreshActions = refreshActions;
-  t.onBetChange = refreshActions;
+  t.onBetChange = () => { refreshActions(); room.onBetChange(); };
 
   t.onKey(e => {
     if (t.busy || e.target.closest('button,.hw')) return;
@@ -397,25 +416,49 @@ export async function mountGostop(ctx) {
     if (a) { e.preventDefault(); t.run(a.onClick); }
   });
 
+  // A hand drawn as it stands: coming back to a solo game, or sitting down at a room mid-hand.
+  async function snapshot(v) {
+    await clearFelt();
+    if (v.status !== 'PLAYING') return;
+    view = v;
+    names = view.seats.map((s, i) => (i === ME ? '나' : s.name || `AI ${i}`));
+    paintNames();
+    if (room.active) t.locked = true; else t.lock();
+    t.root.classList.add('is-playing');
+    zone.hidden = true;
+    t.placeLocked('POINT', view.stake); t.refreshBet();
+    model = toModel(view);
+    await layout(model);
+    paintSeats(view);
+    if (view.phase === 'CHOOSE_FLIP' && view.actor === ME) { options = { kind: 'choose', ids: view.pending.options }; paintOptions(); }
+  }
+
+  // An empty blanket: no cards anywhere, the bet zone back for the next game.
+  async function clearFelt() {
+    view = null; selected = null; options = null; prompt = null;
+    t.resetRound();
+    zone.hidden = false;
+    names = ['나', '은하', '태오'];
+    paintNames();
+    model = { hand: [], opp: [0, 0, 0], floor: [], pileCount: 48, captured: [[], [], []], ppeok: [] };
+    await layout(model, { duration: 0 });
+    SEATS.forEach(s => paintScore(s, 0));
+    t.body.querySelectorAll('[data-go]').forEach(n => { n.textContent = ''; });
+    paintTurn(-1);
+  }
+
   paintNames();
   // Resume a game left mid-way.
   try {
     const open = await api.gostopOpen();
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
-      view = open.round;
-      names = view.seats.map((s, i) => (i === ME ? '나' : s.name || `AI ${i}`));
-      paintNames();
-      t.lock();
-      t.root.classList.add('is-playing');
-      zone.hidden = true;
-      t.placeLocked('POINT', view.stake); t.refreshBet();
-      model = toModel(view);
-      await layout(model);
-      paintSeats(view);
-      if (view.phase === 'CHOOSE_FLIP' && view.actor === ME) { options = { kind: 'choose', ids: view.pending.options }; paintOptions(); }
+      await snapshot(open.round);
       t.toast('하던 고스톱 판을 이어서 해요');
     } else if (open.round) t.toast('다른 테이블에 진행 중인 고스톱 판이 있어요');
+    else await room.resume();
   } catch {}
   refreshActions();
+  const destroy = t.destroy.bind(t);
+  t.destroy = () => { room.stop(); return destroy(); };
   return t;
 }

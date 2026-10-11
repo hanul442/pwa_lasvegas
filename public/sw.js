@@ -1,12 +1,12 @@
 // Offline app shell. Game and chip API responses are never cached: the server stays authoritative.
-const CACHE = 'vegas-shell-v22';
+const CACHE = 'vegas-shell-v23';
 const SHELL = [
   './', 'index.html', 'styles.css', 'table.css', 'hwatu.css', 'app.js', 'icon.svg', 'logo.svg', 'manifest.webmanifest',
   'js/config.js', 'js/music.js', 'js/api.js', 'js/fx.js', 'js/cards.js', 'js/chips.js', 'js/table.js',
   'js/games/blackjack.js', 'js/games/baccarat.js', 'js/games/roulette.js', 'js/games/dice.js', 'js/games/holdem.js', 'js/games/holdem-view.js', 'js/games/holdem-room.js',
   'js/hwatu.js', 'js/guide.js', 'js/guides.js', 'js/games/matgo.js', 'js/games/gostop.js', 'js/games/seotda.js',
   'js/settings.js', 'js/settings-panel.js', 'js/auth.js', 'js/admin.js', 'js/bj-strategy.js',
-  'lounge.css', 'js/lounge.js', 'js/bigwin.js', 'js/social.js', 'js/games/slots.js', 'js/voice.js', 'crowd.css', 'js/npc.js'
+  'lounge.css', 'js/lounge.js', 'js/bigwin.js', 'js/social.js', 'js/games/slots.js', 'js/voice.js', 'crowd.css', 'js/npc.js', 'js/notify.js', 'icon-192.png'
 ];
 
 self.addEventListener('install', event => {
@@ -35,4 +35,28 @@ self.addEventListener('fetch', event => {
       .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(event.request, copy)); return res; })
       .catch(() => caches.match(event.request).then(hit => hit || caches.match('index.html')))
   );
+});
+
+// Reminders from the hourly cron (lib/notifications.mjs): daily bonus, free chips, come back.
+self.addEventListener('push', event => {
+  let msg = {};
+  try { msg = event.data ? event.data.json() : {}; } catch { msg = { body: event.data?.text() || '' }; }
+  event.waitUntil(self.registration.showNotification(msg.title || 'VEGAS', {
+    body: msg.body || '',
+    icon: 'icon-192.png',
+    tag: msg.tag || undefined,
+    renotify: Boolean(msg.tag),
+    lang: 'ko',
+    data: { url: msg.url || './' }
+  }));
+});
+
+// Tapping a reminder brings the open app forward, or opens it.
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || './', self.registration.scope).href;
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const open = list.find(c => c.url.startsWith(self.registration.scope));
+    return open ? open.focus() : self.clients.openWindow(url);
+  }));
 });

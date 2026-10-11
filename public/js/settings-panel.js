@@ -4,6 +4,7 @@ import { el, isMuted, sound, haptic } from './fx.js';
 import { settings, onSettings, pace, PACES } from './settings.js';
 import { resetGuides } from './guide.js';
 import { voice } from './voice.js';
+import { notifyRow } from './notify.js';
 
 const canVibrate = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 const canWakeLock = () => typeof navigator !== 'undefined' && 'wakeLock' in navigator;
@@ -150,6 +151,7 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
     const replay = el('button', 'pill-button', '처음부터 다시 보기');
     replay.type = 'button';
     replay.addEventListener('click', () => { resetGuides(); done(replay, '다음에 앉으면 다시 나와요'); });
+    sections.push(section('알림', [notifyRow(row)]));
     sections.push(section('가이드', [
       add(toggle('guides', '처음 앉을 때 가이드', '게임에 처음 앉으면 테이블에서 따라 하는 가이드가 시작돼요')),
       row('본 가이드 기록', '모든 게임의 가이드를 처음 앉을 때처럼 다시 보여 줘요', replay)

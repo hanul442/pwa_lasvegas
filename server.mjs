@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadState, mutate } from './lib/store.mjs';
 import { handleApi } from './lib/api.mjs';
+import { runPushRound } from './lib/notifications.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR=path.join(__dirname,'public');
@@ -32,3 +33,5 @@ async function serveStatic(req,res,url){
 
 const server=http.createServer(async(req,res)=>{const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname.startsWith('/api/'))return api(req,res,url);return serveStatic(req,res,url);});
 server.listen(PORT,'0.0.0.0',()=>console.log(`SOCIAL VEGAS listening on http://0.0.0.0:${PORT}`));
+// Same hourly reminder round the Worker's cron runs.
+setInterval(()=>runPushRound(store).catch(e=>console.error('push round',e)),60*60*1000).unref();

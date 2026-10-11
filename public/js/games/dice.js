@@ -2,6 +2,7 @@
 import { api, errorMessage } from '../api.js';
 import { animate, sound, haptic, formatCH, wait, reducedMotion } from '../fx.js';
 import { Table } from '../table.js';
+import { seatCrowd } from '../npc.js';
 
 const FACE_ROT = { 1: '', 2: 'rotateX(90deg)', 3: 'rotateY(-90deg)', 4: 'rotateY(90deg)', 5: 'rotateX(-90deg)', 6: 'rotateY(180deg)' };
 const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
@@ -12,6 +13,31 @@ function cube() {
   return `<div class="die"><div class="die-cube">${FACES.map(([side, n]) => `<span class="die-face die-face--${side}">${Array.from({ length: 9 }, (_, i) => `<i${PIPS[n].includes(i + 1) ? ' class="on"' : ''}></i>`).join('')}</span>`).join('')}</div></div>`;
 }
 const pose = n => `rotateX(-22deg) rotateY(28deg) ${FACE_ROT[n]}`;
+
+// A bet's net on these dice, by the server's payouts: a triple loses every even-money bet.
+function betNet(zone, stake, dice) {
+  const total = dice[0] + dice[1] + dice[2], triple = dice[0] === dice[1] && dice[1] === dice[2];
+  if (zone.startsWith('T')) return Number(zone.slice(1)) === total ? stake * TOTAL_PAY[total] : -stake;
+  if (zone === 'ANY_TRIPLE') return triple ? stake * 24 : -stake;
+  const won = !triple && (zone === 'SMALL' ? total <= 10 : zone === 'BIG' ? total >= 11 : zone === 'ODD' ? total % 2 === 1 : total % 2 === 0);
+  return won ? stake : -stake;
+}
+
+// The AI regulars mostly play Big/Small, with a total or a triple for the thrill.
+function crowdPlan(npc, t) {
+  const unit = t.tier.chips[0];
+  const main = Math.ceil(t.tier.min * (1 + Math.floor(Math.random() * (npc.bold > 0.6 ? 5 : 2))) / unit) * unit;
+  const roll = Math.random();
+  const zone = roll < 0.35 ? 'BIG' : roll < 0.7 ? 'SMALL' : roll < 0.85 ? 'ODD' : 'EVEN';
+  const lines = { BIG: ['빅 갑니다', '크게 가죠'], SMALL: ['스몰이요', '작게 작게'], ODD: ['홀!'], EVEN: ['짝!'] };
+  const bets = [{ zone, amount: main, line: Math.random() < 0.35 ? lines[zone][Math.floor(Math.random() * lines[zone].length)] : null }];
+  if (Math.random() < 0.45) {
+    const n = 4 + Math.floor(Math.random() * 14);
+    bets.push({ zone: `T${n}`, amount: unit * (1 + Math.floor(Math.random() * 2)), line: Math.random() < 0.6 ? `이번엔 ${n}!` : null });
+  }
+  if (Math.random() < 0.12) bets.push({ zone: 'ANY_TRIPLE', amount: unit, line: '트리플 한번 봅시다' });
+  return bets;
+}
 
 export async function mountDice(ctx) {
   const t = new Table({ ...ctx, game: 'dice', title: 'Sic Bo', feltClass: 'felt--red' });
@@ -29,6 +55,7 @@ export async function mountDice(ctx) {
       <div class="sb-totals">${totals}</div>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
+  const crowd = seatCrowd(t, { plan: crowdPlan });
   const dome = t.body.querySelector('[data-dome]');
   const dice = [...t.body.querySelectorAll('.die')];
   const totalEl = t.body.querySelector('[data-total]');
@@ -87,6 +114,7 @@ export async function mountDice(ctx) {
     const betType = zone.startsWith('T') ? 'TOTAL' : zone;
     const target = zone.startsWith('T') ? Number(zone.slice(1)) : undefined;
     t.lock();
+    await crowd.close();
     let res;
     try { res = await api.sicbo(t.total, t.tier.floor, betType, target); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
@@ -94,11 +122,16 @@ export async function mountDice(ctx) {
     await roll(res.round.dice);
     await wait(200);
     const net = res.round.netPnl;
-    await t.settle(net, { label: `${res.round.dice.join(' · ')}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` });
+    await Promise.all([
+      t.settle(net, { label: `${res.round.dice.join(' · ')}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}` }),
+      crowd.settle((zone, stake) => betNet(zone, stake, res.round.dice))
+    ]);
     await t.syncBalance();
+    crowd.open();
   }
 
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
   refreshActions();
+  crowd.open();
   return t;
 }

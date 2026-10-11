@@ -17,6 +17,8 @@ function betSteps({ zone, zoneTitle, zoneBody, startLabel = '딜' }) {
     { target: '[data-actions]', title: `${startLabel} 누르기`, body: '최소 베팅을 넘기면 버튼이 켜져요. 같은 금액으로 다시 하려면 판이 끝난 뒤 다시 베팅을 누르면 돼요.', do: `${startLabel}를 눌러 시작해 보세요`, ...started }
   ];
 }
+// The AI regulars on the rail at baccarat, roulette and sic bo.
+const crowdStep = { target: '.crowd', title: '함께 앉은 손님', body: ['NOVA, REX, LUNA 같은 AI 플레이어들도 같은 판에 자기 칩을 걸어요. 가끔 한마디씩 하기도 해요.', '그들의 칩은 테이블 분위기를 위한 연출이라 내 베팅과 보유 칩에는 영향이 없어요. 결과가 나오면 나와 똑같은 규칙으로 지급되거나 걷혀요.'] };
 const helpStep = { target: '.table-help', title: '언제든 다시 보기', body: '? 버튼에 규칙표와 이 가이드가 있어요. 가이드는 처음 앉을 때 한 번만 저절로 열려요.' };
 
 export const GUIDES = {
@@ -41,13 +43,17 @@ export const GUIDES = {
     steps: [
       { target: '.bac-sides', title: '어느 쪽이 9에 가까울까', body: ['플레이어와 뱅커 중 끝자리가 9에 가까운 쪽이 이겨요. 카드는 딜러가 규칙대로 돌리니 나는 고르기만 하면 돼요.', '10·J·Q·K는 0, A는 1. 합이 15면 5로 봐요.'] },
       ...betSteps({ zone: '.bac-zones', zoneTitle: '어디에 걸까', zoneBody: 'Player, Tie, Banker 가운데 한 곳에 걸어요. 다른 칸을 탭하면 칩이 그쪽으로 옮겨 가요.' }),
+      { target: '.bac-pairs', title: '페어 사이드 베팅', body: ['P Pair는 플레이어, B Pair는 뱅커의 처음 두 장이 같은 숫자(K·K, 7·7)면 11배를 받아요. 승패와 상관없이 따로 정산돼요.', '메인 베팅과 함께 원하는 만큼 얹을 수 있어요.'] },
       { target: '.bac-sides', title: '카드 쪼기', body: '내가 건 쪽 카드는 천천히 쪼여서 열려요. 필요하면 세 번째 카드가 옆으로 눕혀져 나와요.' },
       { target: '.road', title: '지난 결과', body: '최근 결과가 점으로 쌓여요. P는 플레이어, B는 뱅커, T는 타이예요.' },
+      crowdStep,
       helpStep
     ],
     rules: `<h3>점수</h3><p>카드 합의 끝자리. 10·J·Q·K는 0, A는 1. 처음 두 장이 8이나 9면 내추럴로 바로 끝나요.</p>
-      <h3>배당</h3><table><tr><td>Player</td><td>1 : 1</td></tr><tr><td>Banker</td><td>0.95 : 1</td></tr><tr><td>Tie</td><td>8 : 1</td></tr></table>
-      <p>타이가 나오면 Player·Banker에 건 칩은 돌려받아요. 세 번째 카드는 정해진 표대로 자동으로 나와요.</p>`
+      <h3>배당</h3><table><tr><td>Player</td><td>1 : 1</td></tr><tr><td>Banker</td><td>0.95 : 1</td></tr><tr><td>Tie</td><td>8 : 1</td></tr><tr><td>P Pair / B Pair</td><td>11 : 1</td></tr></table>
+      <p>타이가 나오면 Player·Banker에 건 칩은 돌려받아요. 세 번째 카드는 정해진 표대로 자동으로 나와요.</p>
+      <p>페어는 그쪽 처음 두 장이 같은 숫자일 때만 이겨요(세 번째 카드는 세지 않아요). Player·Banker·Tie 중 한 곳에 메인 베팅이 있어야 걸 수 있어요.</p>
+      <p>같은 테이블의 AI 플레이어 칩은 연출이에요. 내 칩과 정산에는 영향이 없어요.</p>`
   },
 
   roulette: {
@@ -56,9 +62,10 @@ export const GUIDES = {
       { target: '.wheel', title: '공이 멈출 칸 맞히기', body: '0부터 36까지 37칸짜리 유럽식 휠이에요. 공이 멈춘 숫자로 승패가 정해져요.' },
       ...betSteps({ zone: '.rl-layout', zoneTitle: '숫자 판에 걸기', zoneBody: '여러 곳에 한꺼번에 걸 수 있어요. 숫자 하나는 35배, 12개 묶음과 2:1 열은 2배, 빨강·검정, 홀·짝, 1–18·19–36은 1배예요.', startLabel: '스핀' }),
       { target: '.rl-history', title: '최근 숫자', body: '방금 나온 숫자가 맨 앞에 쌓여요. 휠에는 기억이 없으니 다음 판은 언제나 새 판이에요.' },
+      crowdStep,
       helpStep
     ],
-    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>12개 묶음 / 열 (2:1)</td><td>2 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>한 판에 여러 곳에 동시에 걸 수 있고, 각 자리는 따로 정산돼요. 0이 나오면 바깥쪽 베팅은 모두 집니다.</p>`
+    rules: `<h3>배당</h3><table><tr><td>숫자 하나</td><td>35 : 1</td></tr><tr><td>12개 묶음 / 열 (2:1)</td><td>2 : 1</td></tr><tr><td>빨강 / 검정</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>1–18 / 19–36</td><td>1 : 1</td></tr></table><p>한 판에 여러 곳에 동시에 걸 수 있고, 각 자리는 따로 정산돼요. 0이 나오면 바깥쪽 베팅은 모두 집니다.</p><p>숫자 칸 모서리의 작은 칩은 AI 플레이어들의 베팅이에요. 연출일 뿐 내 칩과 정산에는 영향이 없어요.</p>`
   },
 
   dice: {
@@ -67,9 +74,10 @@ export const GUIDES = {
       { target: '.dome', title: '주사위 세 개', body: '유리 돔 안에서 주사위 세 개가 굴러요. 세 눈의 합과 모양을 맞혀요.' },
       ...betSteps({ zone: '.sb-main', zoneTitle: '어디에 걸까', zoneBody: 'Small은 합 4–10, Big은 11–17이에요. 아래 숫자 칸은 합 하나를 맞히는 대신 배당이 커요.', startLabel: '굴리기' }),
       { target: '.sb-totals', title: '합 맞히기', body: '4나 17처럼 잘 안 나오는 합일수록 배당이 커요. 칸 아래 숫자가 배당이에요.' },
+      crowdStep,
       helpStep
     ],
-    rules: `<h3>배당</h3><table><tr><td>Small (4–10) / Big (11–17)</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>아무 트리플</td><td>24 : 1</td></tr><tr><td>합 4 · 17</td><td>50 : 1</td></tr><tr><td>합 10 · 11</td><td>6 : 1</td></tr></table><p>세 개가 같은 눈(트리플)이면 Small·Big·홀짝은 집니다.</p>`
+    rules: `<h3>배당</h3><table><tr><td>Small (4–10) / Big (11–17)</td><td>1 : 1</td></tr><tr><td>홀 / 짝</td><td>1 : 1</td></tr><tr><td>아무 트리플</td><td>24 : 1</td></tr><tr><td>합 4 · 17</td><td>50 : 1</td></tr><tr><td>합 10 · 11</td><td>6 : 1</td></tr></table><p>세 개가 같은 눈(트리플)이면 Small·Big·홀짝은 집니다.</p><p>함께 앉은 AI 플레이어들의 칩은 연출이에요. 내 칩과 정산에는 영향이 없어요.</p>`
   },
 
   matgo: {

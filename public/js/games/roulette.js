@@ -2,6 +2,7 @@
 import { api, errorMessage } from '../api.js';
 import { sound, haptic, formatCH, reducedMotion, wait } from '../fx.js';
 import { Table } from '../table.js';
+import { seatCrowd } from '../npc.js';
 
 const ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -66,6 +67,41 @@ function zoneBet(zone) {
   return { betType: zone };
 }
 
+// A spot's net for `number`, by the same payouts as the server: straight 35, dozen/column 2, even chances 1.
+function spotNet(zone, stake, number) {
+  const { betType, target } = zoneBet(zone);
+  const color = colorOf(number).toUpperCase();
+  let won = false, mult = 1;
+  if (betType === 'NUMBER') { won = number === target; mult = 35; }
+  else if (number === 0) won = false;
+  else if (betType === 'DOZEN') { won = Math.ceil(number / 12) === target; mult = 2; }
+  else if (betType === 'COLUMN') { won = ((number - 1) % 3) + 1 === target; mult = 2; }
+  else if (betType === 'RED' || betType === 'BLACK') won = color === betType;
+  else if (betType === 'ODD') won = number % 2 === 1;
+  else if (betType === 'EVEN') won = number % 2 === 0;
+  else if (betType === 'LOW') won = number <= 18;
+  else if (betType === 'HIGH') won = number >= 19;
+  return won ? stake * mult : -stake;
+}
+
+// The AI regulars spread a few chips: a lucky number or two, a colour, sometimes a dozen.
+function crowdPlan(npc, t) {
+  const unit = t.tier.chips[0];
+  const chip = () => unit * (1 + Math.floor(Math.random() * (npc.bold > 0.5 ? 4 : 2)));
+  npc.lucky ??= 1 + Math.floor(Math.random() * 36);
+  const bets = [];
+  const add = (zone, amount, line) => { if (!bets.some(b => b.zone === zone)) bets.push({ zone, amount, line }); };
+  const n = Math.random() < 0.6 ? npc.lucky : Math.floor(Math.random() * 37);
+  if (Math.random() < 0.75) add(`N${n}`, chip(), Math.random() < 0.45 ? `이번엔 ${n}!` : null);
+  if (npc.bold > 0.5 && Math.random() < 0.5) add(`N${Math.floor(Math.random() * 37)}`, chip());
+  const outside = ['RED', 'BLACK', 'ODD', 'EVEN', 'LOW', 'HIGH', 'D1', 'D2', 'D3', 'C1', 'C2', 'C3'];
+  const o = outside[Math.floor(Math.random() * outside.length)];
+  const lines = { RED: '레드 갑니다', BLACK: '블랙이 올 차례', D2: '가운데 12개', LOW: '낮은 쪽으로' };
+  add(o, Math.max(t.tier.min, chip() * 2), Math.random() < 0.4 ? lines[o] : null);
+  if (Math.random() < 0.3) add(outside[Math.floor(Math.random() * outside.length)], chip());
+  return bets;
+}
+
 export async function mountRoulette(ctx) {
   // Chips go on as many spots as you like before the spin, like a real layout.
   const t = new Table({ ...ctx, game: 'roulette', title: 'Roulette', feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당' });
@@ -81,9 +117,10 @@ export async function mountRoulette(ctx) {
         <ol class="rl-history" data-history aria-label="최근 번호"></ol>
       </div>
       <div class="rl-layout">${boardMarkup()}</div>
-      <p class="rl-payouts" aria-hidden="true">여러 곳에 함께 걸 수 있어요 · 숫자 35:1 · 12개/열 2:1 · 색/홀짝/구간 1:1</p>
+      <p class="rl-payouts" aria-hidden="true">여러 곳에 함께 · 숫자 35:1 · 12개/열 2:1 · 나머지 1:1</p>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
+  const crowd = seatCrowd(t, { plan: crowdPlan });
   const rotor = t.body.querySelector('.wheel-rotor');
   const wheel = t.body.querySelector('[data-wheel]');
   const orbit = t.body.querySelector('[data-orbit]');
@@ -157,6 +194,7 @@ export async function mountRoulette(ctx) {
     if (!t.betReady) return;
     const bets = t.betZones.map(zone => ({ zone, ...zoneBet(zone), stake: t.zoneTotal(zone) }));
     t.lock();
+    await crowd.close();
     let res;
     try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
@@ -167,11 +205,14 @@ export async function mountRoulette(ctx) {
     // Each spot is paid or raked on its own.
     const zones = new Map(res.round.bets.map((b, i) => [bets[i].zone, b.netPnl]));
     const hits = res.round.bets.filter(b => b.won).length;
-    await t.settle(net, { zones, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
+    const settled = t.settle(net, { zones, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${net ? ` ${net > 0 ? '+' : '−'}${formatCH(Math.abs(net))}` : ''}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
+    await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, res.round.number))]);
     await t.syncBalance();
+    crowd.open();
   }
 
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
   refreshActions();
+  crowd.open();
   return t;
 }

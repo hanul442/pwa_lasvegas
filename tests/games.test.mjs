@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo, baccaratShouldBankerDraw, resolveBaccarat } from '../lib/games.mjs';
+import { startBlackjack, blackjackAction, blackjackPublic, settleBlackjack, playBaccarat, playRoulette, playSicBo, baccaratShouldBankerDraw, resolveBaccarat, isBaccaratPair, validateBaccaratSideBets } from '../lib/games.mjs';
 
 test('blackjack round starts with two cards each',()=>{
   const r=startBlackjack(1_000_000);
@@ -118,4 +118,41 @@ test('roulette takes chips on many spots in one spin and pays each on its own', 
   assert.throws(() => playRouletteBets([{ betType: 'RED', stake: 1 }, { betType: 'RED', stake: 1 }]), /DUPLICATE_BET/);
   assert.throws(() => playRouletteBets([{ betType: 'DOZEN', target: 4, stake: 1 }]), /INVALID_TARGET/);
   assert.throws(() => playRouletteBets([]), /INVALID_BETS/);
+});
+
+test('baccarat pair side bets read the first two cards of each side and pay 11:1', () => {
+  assert.equal(isBaccaratPair([{ r: 'K', s: '♠' }, { r: 'K', s: '♥' }]), true);
+  assert.equal(isBaccaratPair([{ r: 'K', s: '♠' }, { r: 'Q', s: '♠' }]), false);
+  assert.equal(isBaccaratPair([{ r: '10', s: '♠' }, { r: 'J', s: '♠' }]), false);
+  // Cards come off the end: player 7-7, banker K-9 (banker natural 9, player 4 stands).
+  const deck = [{ r: '2', s: '♣' }, { r: '3', s: '♣' }, { r: '9', s: '♦' }, { r: 'K', s: '♣' }, { r: '7', s: '♥' }, { r: '7', s: '♠' }];
+  const r = resolveBaccarat(1_000_000, 'BANKER', deck, { PLAYER_PAIR: 200_000, BANKER_PAIR: 100_000 });
+  assert.equal(r.winner, 'BANKER');
+  assert.deepEqual(r.pairs, { PLAYER_PAIR: true, BANKER_PAIR: false });
+  assert.equal(r.mainPnl, 950_000);
+  assert.deepEqual(r.sideBets.map(b => [b.betType, b.won, b.netPnl]), [['BANKER_PAIR', false, -100_000], ['PLAYER_PAIR', true, 2_200_000]]);
+  assert.equal(r.stake, 1_300_000);
+  assert.equal(r.mainStake, 1_000_000);
+  assert.equal(r.netPnl, 950_000 + 2_200_000 - 100_000);
+  // Without side bets the round reads exactly as before.
+  const plain = resolveBaccarat(1_000_000, 'PLAYER', deck);
+  assert.equal(plain.netPnl, -1_000_000);
+  assert.equal(plain.stake, 1_000_000);
+  assert.equal(plain.sideBets, undefined);
+  // Only the first two cards count: player A-2 draws another A, still no pair.
+  const third = [{ r: 'Q', s: '♣' }, { r: 'A', s: '♦' }, { r: '7', s: '♦' }, { r: 'K', s: '♦' }, { r: '2', s: '♠' }, { r: 'A', s: '♠' }];
+  const t = resolveBaccarat(1_000_000, 'TIE', third, { PLAYER_PAIR: 100_000 });
+  assert.equal(t.player.length, 3);
+  assert.equal(t.player[0][0], t.player[2][0]);
+  assert.equal(t.pairs.PLAYER_PAIR, false);
+  assert.equal(t.sideBets[0].netPnl, -100_000);
+});
+
+test('baccarat side bets are validated', () => {
+  assert.deepEqual(validateBaccaratSideBets(undefined), []);
+  assert.deepEqual(validateBaccaratSideBets({ BANKER_PAIR: 5 }), [{ betType: 'BANKER_PAIR', stake: 5 }]);
+  assert.throws(() => validateBaccaratSideBets({ TIE_PAIR: 5 }), /INVALID_BET_TYPE/);
+  assert.throws(() => validateBaccaratSideBets({ PLAYER_PAIR: 0 }), /INVALID_STAKE/);
+  assert.throws(() => validateBaccaratSideBets({ PLAYER_PAIR: 1.5 }), /INVALID_STAKE/);
+  assert.throws(() => validateBaccaratSideBets([1]), /INVALID_BETS/);
 });

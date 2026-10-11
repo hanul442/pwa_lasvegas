@@ -1,0 +1,65 @@
+/* ================= AI REGULARS ON THE RAIL (baccarat, roulette, sic bo) ================= */
+/* The rail stays pinned to the felt's lower edge when a short screen makes the felt scroll. */
+.crowd{flex:0 0 auto;position:sticky;bottom:0;z-index:5;display:flex;justify-content:space-between;gap:6px;margin:10px -14px -18px;padding:10px 14px 12px;border-top:1px solid #efe7d91a;background:linear-gradient(color-mix(in srgb,var(--felt-c) 70%,transparent),var(--felt-c) 70%)}
+.crowd-seat{position:relative;display:flex;align-items:center;gap:7px;min-width:0}
+.crowd-avatar{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(160deg,#2a2e34,#0c0d10);box-shadow:inset 0 0 0 1px #ffffff2e,0 4px 10px #0008;font:650 13px var(--display);font-stretch:118%;color:var(--ivory)}
+.crowd-meta{display:grid;min-width:0;line-height:1.15}
+.crowd-meta b{font:600 13px var(--display);font-stretch:112%;letter-spacing:.02em;color:#efe7d9c7;white-space:nowrap}
+.crowd-meta span{font:500 13px var(--sans);font-variant-numeric:tabular-nums;color:var(--ivory);white-space:nowrap;transition:color .4s}
+.crowd-seat.is-up .crowd-meta span{color:#5fd39a}
+.crowd-seat.is-down .crowd-meta span{color:#ff9a92}
+.crowd-bubble{position:absolute;left:-2px;bottom:calc(100% + 9px);padding:6px 10px;border-radius:12px 12px 12px 3px;background:var(--ivory);color:var(--ink);font:500 13px/1.2 var(--sans);white-space:nowrap;box-shadow:0 8px 18px #0009;opacity:0;transform:translateY(4px) scale(.96);transform-origin:0 100%;transition:opacity .2s,transform .25s cubic-bezier(.2,1.4,.4,1);pointer-events:none;z-index:8}
+.crowd-seat:last-child:not(:first-child) .crowd-bubble{left:auto;right:-2px;border-radius:12px 12px 3px 12px;transform-origin:100% 100%}
+.crowd-bubble.is-shown{opacity:1;transform:none}
+
+/* AI chips keep to their own corner of a spot; yours stay where they always sit. */
+.npc-stack{--npc:22px;position:absolute;width:var(--npc);height:var(--npc);pointer-events:none;z-index:3;left:4px;bottom:4px}
+.npc-stack .chip{--size:var(--npc);position:absolute;left:0;top:0;translate:0 calc(var(--i) * -3px);box-shadow:0 2px 4px #0008}
+.npc-stack[data-seat="1"]{bottom:auto;top:4px}
+.npc-stack[data-seat="2"]{left:auto;right:4px;bottom:auto;top:4px}
+.npc-stack[data-seat="3"]{left:50%;bottom:auto;top:4px;margin-left:calc(var(--npc) / -2)}
+.npc-stack--payout{translate:calc(var(--npc) * .6) 0}
+.npc-stack--payout[data-seat="2"]{translate:calc(var(--npc) * -.6) 0}
+.bac-zones .npc-stack{--npc:26px}
+.sb-main .npc-stack,.zone--total .npc-stack,.zone--pair .npc-stack,.rl-outside .npc-stack,.rl-dozens .npc-stack{--npc:18px;left:2px;bottom:2px}
+.zone--total .npc-stack[data-seat="1"],.zone--pair .npc-stack[data-seat="1"],.rl-outside .npc-stack[data-seat="1"],.rl-dozens .npc-stack[data-seat="1"]{bottom:auto;top:2px}
+.zone--total .npc-stack[data-seat="2"],.zone--pair .npc-stack[data-seat="2"],.rl-outside .npc-stack[data-seat="2"],.rl-dozens .npc-stack[data-seat="2"]{left:auto;right:2px;bottom:auto;top:2px}
+.zone--total .npc-stack[data-seat="3"],.zone--pair .npc-stack[data-seat="3"],.rl-outside .npc-stack[data-seat="3"],.rl-dozens .npc-stack[data-seat="3"]{top:2px}
+/* Roulette cells are narrow: AI chips perch on the cell corners. */
+.num .npc-stack{--npc:15px;left:-4px;bottom:-4px;z-index:4}
+.num .npc-stack[data-seat="1"]{bottom:auto;top:-4px}
+.num .npc-stack[data-seat="2"]{left:auto;right:-4px;bottom:auto;top:-4px}
+.num .npc-stack[data-seat="3"]{left:auto;right:-4px;top:auto;bottom:-4px;margin:0}
+.num .npc-stack .chip-label{display:none}
+
+/* Baccarat pair side bets sit above the main three. */
+.bac-bets{display:grid;gap:8px}
+.bac-pairs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.zone--pair{min-height:50px;flex-direction:row;gap:10px;--size:28px}
+.zone--pair strong{font-size:15px}
+
+/* Room for the rail: slightly smaller wheel and dome on portrait phones. */
+.has-crowd .wheel{width:min(56vw,236px,22dvh)}
+.has-crowd .rl{gap:8px}
+.has-crowd .dome{width:min(58vw,236px,26dvh)}
+@media (max-height:760px) and (orientation:portrait){
+  .has-crowd .wheel{width:min(50vw,200px,22dvh)}
+  .has-crowd .dome{width:min(48vw,190px,22dvh)}
+  .crowd{padding-top:8px;padding-bottom:10px}
+  .zone--pair{min-height:42px}
+  .has-crowd .bac-side{min-height:calc(var(--card-w) * 1.4 + 70px)}
+}
+/* Landscape phones: the rail moves up to the top edge, two seats each side of the dealer's rack. */
+@media (orientation:landscape) and (max-height:520px){
+  .crowd{position:absolute;top:6px;bottom:auto;left:62px;right:62px;margin:0;padding:0;border:0;background:none;justify-content:flex-start;gap:14px;z-index:3}
+  .crowd-seat:nth-child(3){margin-left:auto}
+  .crowd-avatar{width:26px;height:26px}
+  .crowd-bubble{bottom:auto;top:calc(100% + 6px);border-radius:3px 12px 12px 12px;transform-origin:0 0}
+  .crowd-seat:last-child:not(:first-child) .crowd-bubble{left:auto;right:-2px;border-radius:12px 3px 12px 12px;transform-origin:100% 0}
+  .bac-bets{gap:6px}
+  .zone--pair{min-height:32px;padding:2px 6px}
+  .bac-zones .zone{min-height:40px}
+  .has-crowd .wheel{width:min(30dvw,46dvh)}
+  .has-crowd .dome{width:min(28dvw,40dvh)}
+}
+@media (prefers-reduced-motion:reduce){.crowd-bubble{transition:opacity .01ms}}

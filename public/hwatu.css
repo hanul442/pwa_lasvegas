@@ -186,3 +186,55 @@
   .sheet,.coach-ring,.coach-bubble{transition:none}
   .hw.is-option,.coach-do::before{animation:none}
 }
+
+/* ---------- 고스톱 (three seats) ---------- */
+.table-screen--gostop .felt-body{padding:48px 10px 14px}
+.table-screen--gostop.is-playing .chip-tray,.table-screen--gostop.is-playing .bet-tools{display:none}
+.table-screen--gostop .dealer-rack{opacity:.85}
+.gs{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto auto auto;grid-template-areas:"opps" "board" "caps" "seat" "hand"}
+.gs-opps{grid-area:opps;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gs .mg-board{grid-area:board}
+.gs-caps-me{grid-area:caps}
+.gs .mg-seat--me{grid-area:seat}
+.gs-hand{grid-area:hand;--hw-w:clamp(30px,calc((100vw - 110px) / 7),62px)}
+.gs-opp{display:flex;flex-direction:column;gap:5px;min-width:0;padding:7px 8px;border-radius:12px;background:#0a0b0d40;box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow .2s}
+.gs-opp.is-turn{box-shadow:inset 0 0 0 1px var(--white)}
+.gs-opp-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.gs-opp-head .mg-score{padding:2px 8px;font-size:14px}
+.gs-opp.is-turn .mg-name::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--signal);align-self:center}
+.gs-opp-meta{display:flex;align-items:center;gap:6px;min-height:22px}
+.gs-opp-meta small{font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gs-opp-meta .gs-go{margin-left:auto;color:var(--white);font-weight:650}
+.gs-opp-hand{display:flex;--hw-w:13px}
+.gs-opp-hand .hw{rotate:0deg}
+.gs-opp-hand .hw+.hw{margin-left:-8px}
+/* AI capture piles: tiny overlapping cards per group with the count on top */
+.gs-mini{--cap-w:clamp(11px,3vw,18px);gap:2px;min-height:calc(var(--cap-w) * 1.6 + 15px)}
+.gs-mini .mg-cap>span{font-size:11px}
+.gs-mini .mg-cap-cards .hw+.hw{margin-left:calc(var(--cap-w) * -.78)}
+.gs-mini .mg-cap--pi .mg-cap-cards .hw+.hw{margin-left:calc(var(--cap-w) * -.86)}
+.gs-mini .hw-face{box-shadow:inset 0 0 0 1px #0000002a,0 1px 0 #0007}
+.gs .callout--opp{top:16%}
+.gs .gs-callout--1{left:27%}
+.gs .gs-callout--2{left:73%}
+@media (min-width:760px){
+  .gs-mini{--cap-w:clamp(14px,min(1.8vw,3.4dvh),24px)}
+  .gs-opp-hand{--hw-w:18px}
+  .gs-opp-hand .hw+.hw{margin-left:-10px}
+  .gs-hand{--hw-w:clamp(40px,min(6vw,8.4dvh),72px)}
+}
+@media (orientation:landscape) and (max-height:520px){
+  /* the AI sit at the sides of the blanket, the player below it */
+  .table-screen--gostop .dealer-rack{display:none}
+  .table-screen--gostop .felt-body{padding:8px 10px}
+  .gs{gap:6px 10px;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"o1 board o2" "caps hand hand" "seat hand hand"}
+  .gs-opps{display:contents}
+  .gs-opp[data-seat="1"]{grid-area:o1}
+  .gs-opp[data-seat="2"]{grid-area:o2}
+  .gs-opp{align-self:start;gap:3px;padding:5px 7px}
+  .gs .mg-board{min-height:0;padding:4px;gap:8px 6px}
+  .gs-caps-me{--cap-w:clamp(12px,2.2vw,18px);min-height:0}
+  .gs .mg-seat--me{min-height:24px}
+  .gs-hand{--hw-w:clamp(26px,4.6vw,42px);align-self:end;padding-top:10px}
+}
+@media (prefers-reduced-motion:reduce){ .gs-opp{transition:none} }

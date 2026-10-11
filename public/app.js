@@ -10,6 +10,7 @@ import { mountBaccarat } from './js/games/baccarat.js';
 import { mountRoulette } from './js/games/roulette.js';
 import { mountDice } from './js/games/dice.js';
 import { mountMatgo } from './js/games/matgo.js';
+import { mountGostop } from './js/games/gostop.js';
 import { mountSeotda } from './js/games/seotda.js';
 import { attachGuide } from './js/guide.js';
 import { mountHoldem } from './js/games/holdem.js';
@@ -27,6 +28,7 @@ const GAMES = [
   { id: 'baccarat', name: 'Baccarat', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
   { id: 'dice', name: 'Sic Bo', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
   { id: 'matgo', name: '맞고', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
+  { id: 'gostop', name: '고스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
   { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
   { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
   { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots }

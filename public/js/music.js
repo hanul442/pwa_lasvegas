@@ -1,12 +1,12 @@
-// Background music: a slow lounge-jazz trio (electric piano, upright bass, brushes) synthesized
-// live with WebAudio, so there are no audio files to load or license. It loops a 16-bar form
-// in D♭ and voices each chord a little differently every time around.
+// Background music: an uptempo casino-lounge jazz trio (electric piano, walking bass, ride cymbal
+// and a light kick) synthesized live with WebAudio, so there are no audio files to load or license.
+// It loops a 16-bar form in D♭ and voices each chord a little differently every time around.
 import { audioContext } from './fx.js';
 import { settings, onSettings } from './settings.js';
 
-const BPM = 76;
+const BPM = 118;
 const BEAT = 60 / BPM;
-const SWING = 0.62; // the off-beat eighth lands at 62% of the beat
+const SWING = 0.64; // the off-beat eighth lands at 64% of the beat
 const FULL = 0.32;
 // The settings slider scales the trio; 60 (the default) sits a little under the old fixed level.
 const volume = () => FULL * Math.min(1, (settings.get('music') ?? 60) / 75);
@@ -41,11 +41,11 @@ function build() {
   bus.gain.value = 0.0001;
   const tone = ac.createBiquadFilter();
   tone.type = 'lowpass';
-  tone.frequency.value = 3200;
+  tone.frequency.value = 5200;
   const verb = ac.createConvolver();
   verb.buffer = impulse();
   const wet = ac.createGain();
-  wet.gain.value = 0.32;
+  wet.gain.value = 0.2;
   // The dealer's voice dips the band through its own stage so it never fights the fade in or out.
   duckGain = ac.createGain();
   bus.connect(duckGain).connect(tone);
@@ -102,7 +102,7 @@ function bass(freq, at, length) {
 }
 
 let noise = null;
-function brush(at, length, gain, freq) {
+function brush(at, length, gain, freq, attack = length * 0.3) {
   if (!noise) {
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const d = noise.getChannelData(0);
@@ -116,11 +116,25 @@ function brush(at, length, gain, freq) {
   f.frequency.value = freq;
   f.Q.value = 0.7;
   g.gain.setValueAtTime(0.0001, at);
-  g.gain.linearRampToValueAtTime(gain, at + length * 0.3);
+  g.gain.linearRampToValueAtTime(gain, at + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, at + length);
   src.connect(f).connect(g).connect(bus);
   src.start(at, Math.random() * 0.5);
   src.stop(at + length + 0.05);
+}
+
+// Kick: a soft felt thump that keeps the floor moving without getting in the way.
+function kick(at, gain) {
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.frequency.setValueAtTime(110, at);
+  o.frequency.exponentialRampToValueAtTime(48, at + 0.12);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+  o.connect(g).connect(bus);
+  o.start(at);
+  o.stop(at + 0.25);
 }
 
 function scheduleBar(at, index) {
@@ -129,12 +143,16 @@ function scheduleBar(at, index) {
   const lap = Math.floor(index / FORM.length);
   const off = beat => at + beat * BEAT + SWING * BEAT;
 
-  // Piano comps: a long chord on 1, sometimes a short push on the and-of-2 or a fill on 4.
+  // Piano comps in a Charleston: a short stab on 1 and a push on the and-of-2, with a little
+  // right-hand lick climbing the chord at the end of every other bar.
   const lift = lap % 2 && root < 52 ? 12 : 0;
   const notes = voicing.map(i => hz(root + i + lift));
-  notes.forEach((f, i) => piano(f, at + i * 0.018, BEAT * 3.2, 0.055));
-  if ((index + lap) % 3 !== 1) notes.slice(1).forEach((f, i) => piano(f, off(1) + i * 0.012, BEAT * 1.1, 0.04));
-  if (index % 4 === 3) piano(hz(root + voicing[3] + 12), off(2), BEAT * 1.4, 0.035);
+  notes.forEach((f, i) => piano(f, at + i * 0.012, BEAT * 1.2, 0.05));
+  notes.slice(1).forEach((f, i) => piano(f, off(1) + i * 0.01, (index + lap) % 3 === 1 ? BEAT * 2 : BEAT * 0.8, 0.042));
+  if (index % 2 === 1) {
+    const top = root + voicing[3] + 12 + lift;
+    [top - voicing[3] + voicing[1], top - voicing[3] + voicing[2], top].forEach((m, i) => piano(hz(m), at + (2 + i * 0.5) * BEAT + (i % 2 ? (SWING - 0.5) * BEAT : 0), BEAT * 0.7, 0.03));
+  }
 
   // Walking bass: root, chord tone, passing tone, then a half step into the next root.
   const low = m => m - (m > 52 ? 24 : 12);
@@ -142,10 +160,13 @@ function scheduleBar(at, index) {
   const walk = [r, r + (voicing[0] === 3 ? 3 : 4), r + 7, low(nextRoot) + (index % 2 ? 1 : -1)];
   walk.forEach((m, b) => bass(hz(m), at + b * BEAT, BEAT * 0.95));
 
-  // Brushes: a swish on 2 and 4, a light tap on each swung off-beat.
+  // Drums: ride on every beat with the swung skip into 2 and 4, hi-hat chick on 2 and 4,
+  // and a feathered kick on 1 and 3.
   for (let b = 0; b < 4; b++) {
-    if (b % 2) brush(at + b * BEAT, BEAT * 0.9, 0.05, 2400);
-    brush(off(b), BEAT * 0.25, 0.022, 6500);
+    brush(at + b * BEAT, BEAT * 0.7, b % 2 ? 0.045 : 0.035, 8200, 0.004);
+    if (b % 2) brush(at + b * BEAT, BEAT * 0.12, 0.04, 5200, 0.003);
+    if (!(b % 2)) brush(off(b), BEAT * 0.3, 0.026, 8200, 0.004);
+    if (!(b % 2)) kick(at + b * BEAT, b ? 0.16 : 0.2);
   }
 }
 

@@ -30,7 +30,13 @@ export async function mountBlackjack(ctx) {
         <div class="hand" data-dealer></div>
         <span class="hand-total" data-dealer-total hidden></span>
       </div>
-      <p class="felt-arc" aria-hidden="true"><span>BLACKJACK PAYS 3 TO 2</span><small>DEALER STANDS ON ALL 17</small></p>
+      <svg class="felt-arc" viewBox="0 0 420 100" aria-hidden="true">
+        <path id="bj-arc" d="M24 14 Q210 92 396 14" fill="none"/>
+        <path id="bj-arc2" d="M74 44 Q210 112 346 44" fill="none"/>
+        <path class="arc-line" d="M14 4 Q210 96 406 4"/>
+        <text font-size="17"><textPath href="#bj-arc" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
+        <text class="arc-sub" font-size="9"><textPath href="#bj-arc2" startOffset="50%" text-anchor="middle">DEALER MUST STAND ON ALL 17</textPath></text>
+      </svg>
       <div class="bj-hands" data-hands></div>
       <button class="bet-circle" type="button" data-zone="main" aria-label="베팅 원"><span class="bet-circle-label">BET</span></button>
     </div>`;

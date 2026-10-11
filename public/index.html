@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b0806">
+  <meta name="theme-color" content="#08050a">
   <meta name="description" content="현금 가치가 없는 가상 칩으로 친구들과 즐기는 소셜 카지노">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,14 +13,14 @@
   <link rel="apple-touch-icon" href="/icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Inter:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@1,600&family=Noto+Serif+KR:wght@600;900&family=Inter:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/table.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <button class="brand" type="button" data-nav="lobby" aria-label="VEGAS 로비로 이동"><span class="brand-mark" aria-hidden="true">♠</span>VEGAS</button>
+      <button class="brand" type="button" data-nav="lobby" aria-label="VEGAS 로비로 이동"><span class="brand-mark" aria-hidden="true"><span>♠</span></span>VEGAS</button>
       <div class="topbar-right">
         <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
         <div class="wallet" aria-label="내 가상 칩"><span class="wallet-chip" aria-hidden="true"></span><strong data-wallet>—</strong><small>CH</small></div>
@@ -29,9 +29,14 @@
 
     <main id="app" class="surface-stack">
       <section class="surface is-active" data-surface="lobby" aria-labelledby="lobby-title">
-        <div class="marquee" aria-hidden="true"><div class="marquee-bulbs"></div></div>
+        <div class="vegas-sign" aria-hidden="true">
+          <div class="sign-bulbs" data-bulbs></div>
+          <span class="sign-top">WELCOME TO</span>
+          <span class="sign-main">VEGAS</span>
+          <span class="sign-star">★ SOCIAL CASINO ★</span>
+        </div>
         <div class="hero">
-          <p class="eyebrow">WELCOME TO THE FLOOR</p>
+          <p class="eyebrow">THE FLOOR IS OPEN</p>
           <h1 id="lobby-title">오늘 밤,<br><em>테이블은 당신 것.</em></h1>
           <p class="lede">현금 가치가 없는 가상 칩(CH)으로 즐기는 소셜 카지노예요. 친구와 함께, 혹은 혼자서.</p>
           <div class="hero-actions" data-recharge-slot></div>

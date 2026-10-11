@@ -127,7 +127,7 @@ function preview(id) {
 function renderLobby() {
   const grid = document.querySelector('[data-game-grid]');
   grid.replaceChildren(...GAMES.map(g => {
-    const b = el('button', `game-card game-card--${g.id}${g.hero ? ' game-card--hero' : ''}${g.soon ? ' is-soon' : ''}`);
+    const b = el('button', `game-card deco game-card--${g.id}${g.hero ? ' game-card--hero' : ''}${g.soon ? ' is-soon' : ''}`);
     b.type = 'button';
     b.dataset.game = g.id;
     if (g.soon) b.setAttribute('aria-disabled', 'true');
@@ -170,7 +170,7 @@ function renderTiers() {
     const floor = floors.find(f => f.slug === tier.floor);
     const locked = floor ? !floor.unlocked : false;
     const broke = available < tier.min;
-    const b = el('button', `tier-card tier-card--${tier.slug}${locked ? ' is-locked' : ''}`);
+    const b = el('button', `tier-card deco tier-card--${tier.slug}${locked ? ' is-locked' : ''}`);
     b.type = 'button';
     b.dataset.tier = tier.slug;
     b.dataset.min = tier.min;
@@ -216,7 +216,7 @@ function renderProfile() {
   const floors = state.floors.map(f => `<li class="floor-row${f.unlocked ? ' is-open' : ''}"><span>${f.unlocked ? '◆' : '🔒'} ${f.name}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
   const ledger = state.ledger.slice(0, 15).map(x => `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${x.metadata.game}` : ''}</span><b class="${x.amount > 0 ? 'pos' : x.amount < 0 ? 'neg' : ''}">${x.amount > 0 ? '+' : ''}${formatCH(x.amount)}</b></li>`).join('');
   root.innerHTML = `
-    <div class="profile-card">
+    <div class="profile-card deco">
       <span class="profile-avatar">${u.accent}</span>
       <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)} CH</small></div>
     </div>
@@ -242,9 +242,17 @@ function paintSound() { soundBtn.setAttribute('aria-pressed', String(!isMuted())
 soundBtn.addEventListener('click', () => { setMuted(!isMuted()); paintSound(); if (!isMuted()) sound.chip(); });
 paintSound();
 
-// ---------- marquee bulbs ----------
-const bulbs = document.querySelector('.marquee-bulbs');
-if (bulbs) bulbs.append(...Array.from({ length: 28 }, (_, i) => { const b = el('i'); b.style.setProperty('--i', i); return b; }));
+// ---------- marquee sign bulbs ----------
+// Bulbs run around the sign's perimeter so the chase reads like a real marquee.
+const bulbs = document.querySelector('[data-bulbs]');
+if (bulbs) {
+  const top = 13, side = 4, pts = [];
+  for (let i = 0; i < top; i++) pts.push([4 + (92 * i) / (top - 1), 3.5]);
+  for (let i = 1; i <= side; i++) pts.push([97, 3.5 + (93 * i) / (side + 1)]);
+  for (let i = top - 1; i >= 0; i--) pts.push([4 + (92 * i) / (top - 1), 96.5]);
+  for (let i = side; i >= 1; i--) pts.push([3, 3.5 + (93 * i) / (side + 1)]);
+  bulbs.append(...pts.map(([x, y], i) => { const b = el('i'); b.style.cssText = `left:${x}%;top:${y}%;--i:${i}`; return b; }));
+}
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('/sw.js').catch(() => {});
 

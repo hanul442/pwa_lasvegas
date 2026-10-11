@@ -1,6 +1,7 @@
 // VEGAS client: floor navigation, lobby, rankings, profile, and mounting live tables.
 import { api, errorMessage, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
+import { renderAdmin } from './js/admin.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
 import { music } from './js/music.js';
 import { createCard, flipCard } from './js/cards.js';
@@ -298,7 +299,7 @@ function renderRanking() {
 }
 
 // ---------- profile ----------
-const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', DAILY_BONUS: '출석 보너스', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟' };
+const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '출석 보너스', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟' };
 function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }
@@ -336,6 +337,7 @@ function renderProfile() {
     <h2 class="sub-head">최근 기록</h2><ul class="ledger">${ledger || '<li><span>아직 기록이 없어요</span></li>'}</ul>
     <h2 class="sub-head">계정</h2>
     <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
+  renderAdmin(root, state, applyState);
   root.querySelector('[data-sign-out]').addEventListener('click', async () => {
     await api.logout().catch(() => {});
     signedOut();

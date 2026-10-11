@@ -116,3 +116,27 @@ test('the deployed Worker and Node server turn accounts on', async () => {
   assert.match(await readFile(new URL('../worker/index.mjs', import.meta.url), 'utf8'), /AUTH_REQUIRED: true/);
   assert.match(await readFile(new URL('../server.mjs', import.meta.url), 'utf8'), /AUTH_REQUIRED:true/);
 });
+
+test('the operator can give and take back chips, recorded in the ledger; other players cannot', async () => {
+  const store = memoryStore();
+  const admin = (await call(store, 'POST', '/api/auth/signup', { username: '한서', password: 'secret12', claimId: 'hanseo' })).data;
+  const guest = (await call(store, 'POST', '/api/auth/signup', { username: 'guest', password: 'secret12' })).data;
+  const gid = guest.state.user.id;
+  const denied = await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: 1_000_000 }, { token: guest.token });
+  assert.equal(denied.status, 403);
+  const give = await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: 50_000_000, note: '이벤트 보상' }, { token: admin.token });
+  assert.equal(give.status, 200, JSON.stringify(give.data));
+  assert.equal(give.data.adjustment.available, 150_000_000);
+  assert.equal(give.data.state.adminLog[0].note, '이벤트 보상');
+  const take = await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: -20_000_000 }, { token: admin.token });
+  assert.equal(take.data.adjustment.available, 130_000_000);
+  assert.equal((await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: -999_000_000 }, { token: admin.token })).data.error, 'INSUFFICIENT_BANKROLL');
+  assert.equal((await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: 1.5 }, { token: admin.token })).data.error, 'INVALID_AMOUNT');
+  const g = (await call(store, 'GET', '/api/state', null, { token: guest.token })).data;
+  assert.equal(g.user.account.available, 130_000_000);
+  assert.equal(g.user.account.qualifiedPnl, 0, 'grants are not winnings');
+  assert.deepEqual(g.adminLog, [], 'only the operator sees the log');
+  const s = store.peek();
+  assert.deepEqual(s.ledger.filter(x => x.userId === gid).map(x => x.type), ['INITIAL_GRANT', 'ADMIN_GRANT', 'ADMIN_DEDUCT']);
+  assert.equal(s.ledger.filter(x => x.userId === gid).at(-1).availableAfter, 130_000_000);
+});

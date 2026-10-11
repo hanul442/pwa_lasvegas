@@ -5,6 +5,7 @@ import { createRoom as createHoldemRoom } from '../lib/holdem-room.mjs';
 import { seotdaNet, seotdaOptions } from '../lib/seotda.mjs';
 import { gostopNet } from '../lib/gostop.mjs';
 import { matgoAiDecision, matgoNet } from '../lib/matgo.mjs';
+import { blackjackRoomNet, blackjackRoomOptions, blackjackRoomPublic } from '../lib/blackjack-room.mjs';
 import { validateStakeAgainstFloor } from '../lib/stakes.mjs';
 import { FLOORS } from '../lib/constants.mjs';
 import { handleApi } from '../lib/api.mjs';
@@ -25,11 +26,16 @@ function world(seed = 7) {
   return { state, ctx, rand, advance: ms => { clock += ms; }, get now() { return clock; } };
 }
 const wealth = (state, ids) => ids.reduce((a, uid) => a + state.users[uid].account.available + state.users[uid].account.locked, 0);
-const netOf = { seotda: seotdaNet, gostop: gostopNet, matgo: matgoNet };
+const netOf = { seotda: seotdaNet, gostop: gostopNet, matgo: matgoNet, blackjack: blackjackRoomNet };
+const actorOf = r => (r.players || r.game === 'Seotda' ? r.turn : r.phase === 'PLAY' ? r.turn : r.pending.seat);
 
 // A person's move from their own seat: the same heuristics the house AI uses, or a legal 섯다 call.
 function moveFor(room, seat, rand) {
   const r = room.round;
+  if (room.game === 'blackjack') {
+    const o = blackjackRoomOptions(r, seat), v = blackjackRoomPublic(r, seat).seats[seat].hands[o.hand].value, pick = rand();
+    return { action: o.canSplit && pick < 0.5 ? 'SPLIT' : o.canDouble && v >= 9 && v <= 11 ? 'DOUBLE' : v < 15 ? 'HIT' : 'STAND' };
+  }
   if (room.game === 'seotda') {
     const opts = seotdaOptions(r, seat).map(o => o.action);
     const pick = rand();
@@ -44,25 +50,29 @@ function playHands(w, room, hands) {
   const { state } = w;
   const ids = Object.keys(room.players);
   const before = wealth(state, ids);
-  let ended = 0, settledNet = 0, lastNo = room.handNo;
+  let ended = 0, settledNet = 0;
+  const counted = new Set([room.round, room.prev?.round].filter(r => r?.status === 'SETTLED').map(r => r.id)); // settled before we started watching
+  // A hand can end the moment it is dealt (a dealer blackjack), so count every settled round once.
+  const count = r => {
+    if (!r || r.status !== 'SETTLED' || counted.has(r.id)) return;
+    counted.add(r.id);
+    ended++;
+    // Seats add up to zero: whatever people won came from the AI seats or the other people.
+    if (room.game === 'seotda') assert.equal(r.seats.map((_, i) => netOf[room.game](r, i)).reduce((a, b) => a + b, 0), 0);
+    for (const net of Object.values(r.nets)) settledNet += net;
+  };
   for (let step = 0; step < 5000 && ended < hands && room.status === 'OPEN'; step++) {
+    count(room.prev?.round);
+    count(room.round);
     const r = room.round;
     if (!r || r.status === 'SETTLED') {
-      if (r && room.handNo === lastNo) {
-        ended++;
-        // Seats add up to zero: whatever people won came from the AI seats or the other people.
-        const nets = r.seats.map((_, i) => netOf[room.game](r, i));
-        if (room.game === 'seotda') assert.equal(nets.reduce((a, b) => a + b, 0), 0);
-        for (const [uid, net] of Object.entries(r.nets)) settledNet += net;
-        for (const uid of ids) assert.equal(state.users[uid].account.locked, 0, 'nothing stays locked between hands');
-        assert.equal(wealth(state, ids) - before, settledNet);
-      }
+      for (const uid of ids) assert.equal(state.users[uid].account.locked, 0, 'nothing stays locked between hands');
+      assert.equal(wealth(state, ids) - before, settledNet);
       w.advance(NEXT_HAND_MS);
       tick(state, room, w.ctx());
-      lastNo = room.handNo;
       continue;
     }
-    const seat = room.round.seats[room.game === 'seotda' ? r.turn : (r.phase === 'PLAY' ? r.turn : r.pending.seat)];
+    const seat = room.round.seats[actorOf(r)];
     assert.equal(seat.kind, 'human', 'AI seats never hold the turn');
     const s = r.seats.indexOf(seat);
     roomAction(state, state.users[seat.userId], room.code, { handNo: room.handNo, seq: room.events.length, ...moveFor(room, s, w.rand) }, w.ctx());
@@ -98,6 +108,22 @@ test('고스톱 and 맞고 rooms play to the end and settle each person', () => 
     assert.equal(room.round.seats.filter(s => s.kind === 'human').length, 2);
     assert.ok(playHands(w, room, 6) >= 6, game);
   }
+});
+
+test('blackjack room: friends and AI against one dealer, doubles and splits locked and settled', () => {
+  const w = world(13);
+  const { state } = w;
+  const room = createRoom(state, state.users.hanseo, { game: 'blackjack', stake: 50_000, floor: 'downtown', size: 4 }, w.ctx());
+  joinRoom(state, state.users.min, room.code, w.ctx());
+  joinRoom(state, state.users.zero, room.code, w.ctx());
+  startRoom(state, state.users.hanseo, room.code, w.ctx());
+  assert.equal(room.round.seats.length, 4);
+  assert.equal(room.round.seats.filter(s => s.kind === 'ai').length, 1);
+  const v = roomView(room, 'min', { hand: 0, from: 0 }, w.now);
+  const k = room.round.seats.findIndex(s => s.userId === 'min');
+  assert.deepEqual(v.round.seats[0].hands[0].cards, blackjackRoomPublic(room.round, k).seats[k].hands[0].cards);
+  assert.equal(v.round.dealer[1], room.round.status === 'PLAYING' ? 'HIDDEN' : v.round.dealer[1]);
+  assert.ok(playHands(w, room, 25) >= 25);
 });
 
 test('the room is drawn from each viewer\'s own seat, and other hands stay hidden', () => {
@@ -187,6 +213,10 @@ test('one table at a time, and rooms list only where you may sit', () => {
   assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx()), /ALREADY_IN_ROOM/);
   createHoldemRoom(state, state.users.june, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx());
   assert.throws(() => joinRoom(state, state.users.june, room.code, w.ctx()), /ALREADY_IN_ROOM/);
+  // The refusal names the room that holds the seat, so the screen can offer a way back or out.
+  assert.throws(() => createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000, floor: 'downtown' }, w.ctx()), e => e.where?.game === 'seotda' && e.where.code === room.code && e.where.tier === room.tier);
+  assert.throws(() => joinRoom(state, state.users.june, room.code, w.ctx()), e => e.where?.game === 'holdem' && /^[A-Z0-9]{4}$/.test(e.where.code));
+  assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx()), e => e.where?.game === 'seotda');
   joinRoom(state, state.users.min, room.code, w.ctx());
   assert.throws(() => joinRoom(state, state.users.zero, room.code, w.ctx()), /ROOM_FULL/);
   assert.throws(() => createRoom(state, state.users.zero, { game: 'seotda', stake: 50_000, floor: 'downtown', size: 6 }, w.ctx()), /INVALID_ROOM_SIZE/);
@@ -227,6 +257,9 @@ test('rooms over the API: create, join by code, poll with a cursor, act, leave',
   assert.equal((await call(store, 'min', 'POST', '/api/rooms/join', { code }, 'k-join-min-1')).status, 200);
   assert.equal((await call(store, 'min', 'POST', '/api/rooms/join', { code }, 'k-join-min-1')).data.replayed, true);
   assert.equal((await call(store, 'min', 'GET', '/api/rooms')).data.mine.game, 'seotda');
+  const blocked = await call(store, 'min', 'POST', '/api/holdem/rooms', { buyIn: 500_000, floor: 'downtown', size: 3 });
+  assert.equal(blocked.status, 409);
+  assert.deepEqual({ error: blocked.data.error, game: blocked.data.where?.game, code: blocked.data.where?.code }, { error: 'ALREADY_IN_ROOM', game: 'seotda', code });
   const started = await call(store, 'hanseo', 'POST', '/api/rooms/start', { code, cursor: { hand: 0, from: 0 } });
   assert.equal(started.status, 200, JSON.stringify(started.data));
   assert.equal(started.data.room.round.you, 0);

@@ -23,6 +23,7 @@ import { renderDuels } from './js/social.js';
 import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName } from './js/lounge.js';
 import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
 import { startNews, stopNews } from './js/news.js';
+import { maybeBust } from './js/bust.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -118,6 +119,13 @@ window.addEventListener('popstate', event => {
   if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) { showSurface('games'); restoreTrigger(); }
 });
 window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveTable(); });
+// A room screen sends someone back to the table where they still hold a seat.
+addEventListener('vegas:open-table', event => {
+  const game = GAMES.find(g => g.id === event.detail?.game);
+  if (!game) return;
+  selectedGame = game;
+  openTable(TIERS[event.detail.tier] ? event.detail.tier : Object.keys(TIERS)[0]);
+});
 
 // ---------- state ----------
 async function refresh() {
@@ -138,6 +146,7 @@ function applyState(next) {
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
   renderRecharge();
+  maybeBust(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();

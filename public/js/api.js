@@ -23,7 +23,7 @@ function key() {
 }
 
 export class ApiError extends Error {
-  constructor(code, status) { super(code); this.code = code; this.status = status; }
+  constructor(code, status, where = null) { super(code); this.code = code; this.status = status; this.where = where; }
 }
 
 async function request(path, { method = 'GET', body } = {}) {
@@ -41,7 +41,7 @@ async function request(path, { method = 'GET', body } = {}) {
   if (!res.ok) {
     // A missing or expired session sends the player back to the sign-in screen.
     if (data.error === 'AUTH_REQUIRED') { clearSession(); dispatchEvent(new CustomEvent('vegas:signed-out')); }
-    throw new ApiError(data.error || 'BAD_REQUEST', res.status);
+    throw new ApiError(data.error || 'BAD_REQUEST', res.status, data.where || null);
   }
   return data;
 }

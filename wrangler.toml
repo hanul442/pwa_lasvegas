@@ -1,0 +1,22 @@
+# The whole app on Cloudflare: public/ is served as static assets and /api/* runs the game Worker.
+# Cloudflare Workers Builds deploys it from GitHub (main to production, other branches as previews).
+name = "pwa-lasvegas"
+main = "worker/index.mjs"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[assets]
+directory = "./public"
+
+[vars]
+# Only needed when a page on another origin calls the API, e.g. the local Node dev server.
+ALLOW_ORIGINS = "http://localhost:3000,http://localhost:3100"
+
+[[durable_objects.bindings]]
+name = "FLOOR"
+class_name = "VegasFloor"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["VegasFloor"]

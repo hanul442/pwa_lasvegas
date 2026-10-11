@@ -60,7 +60,9 @@ test('layouts protect safe areas, landscape phones and horizontal overflow', () 
 });
 
 test('installable PWA never caches game or chip API responses', () => {
-  assert.match(html, /rel="manifest" href="\/manifest\.webmanifest"/);
+  assert.match(html, /rel="manifest" href="manifest\.webmanifest"/);
+  assert.doesNotMatch(html, /(href|src)="\//, "asset paths stay relative so the app also works under /pwa_lasvegas/ on GitHub Pages");
+  assert.equal(manifest.start_url, "./");
   assert.equal(manifest.display, 'standalone');
   assert.ok(manifest.icons.length > 0);
   assert.match(sw, /startsWith\('\/api\/'\)\) return/);

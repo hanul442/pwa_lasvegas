@@ -233,7 +233,7 @@ function paintSound() { soundBtn.setAttribute('aria-pressed', String(!isMuted())
 soundBtn.addEventListener('click', () => { setMuted(!isMuted()); paintSound(); if (!isMuted()) sound.chip(); });
 paintSound();
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('/sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 renderLobby();
 showSurface('lobby');

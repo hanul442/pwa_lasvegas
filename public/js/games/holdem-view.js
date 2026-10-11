@@ -13,10 +13,10 @@ export const BLINDS = { low: 5_000, mid: 50_000, high: 500_000, vip: 10_000_000,
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {
-  ROCK: { RAISE: ['이번엔 들어갈게요.', '패가 좋네요.'], BET: ['조금만 걸게요.'], ALL_IN: ['기다린 보람이 있네요.'], FOLD: ['이건 아니에요.', '다음 판에.'], CALL: ['보죠.'], WIN: ['참은 만큼 받아 가요.'], LOSE: ['역시 무리였네.'] },
-  SHARK: { RAISE: ['레이즈.', '읽혔어요.'], BET: ['얼마나 버틸까요?'], ALL_IN: ['다 걸죠.'], FOLD: ['넘어가요.'], CALL: ['따라가죠.'], WIN: ['계산대로예요.'], LOSE: ['운이 좋았네요.'] },
-  STATION: { RAISE: ['어? 저도 올려요!'], BET: ['한번 가볼까요?'], ALL_IN: ['에라 모르겠다!'], FOLD: ['아깝다…'], CALL: ['콜! 궁금하잖아요.', '일단 콜이요.', '보기만 할게요.'], WIN: ['콜하길 잘했다!'], LOSE: ['또 콜해버렸네…'] },
-  MANIAC: { RAISE: ['더 올려!', '가즈아!'], BET: ['재미없잖아요, 걸어요.'], ALL_IN: ['올인! 쫄리면 죽든가.', '인생 한 방!'], FOLD: ['…이번만 봐줄게요.'], CALL: ['콜 콜!'], WIN: ['봤죠? 이게 포커예요!'], LOSE: ['다음엔 두 배로!'] }
+  ROCK: { RAISE: ['이번엔 들어갈게요.', '패가 좋네요.'], BET: ['조금만 걸게요.'], ALL_IN: ['기다린 보람이 있네요.'], FOLD: ['이건 아니에요.', '다음 판에.'], CALL: ['보죠.'], WIN: ['참은 만큼 받아 가요.'], LOSE: ['역시 무리였네.'], SHOWN: ['그걸로 거기까지 왔어요?', '접길 잘했네요.'] },
+  SHARK: { RAISE: ['레이즈.', '읽혔어요.'], BET: ['얼마나 버틸까요?'], ALL_IN: ['다 걸죠.'], FOLD: ['넘어가요.'], CALL: ['따라가죠.'], WIN: ['계산대로예요.'], LOSE: ['운이 좋았네요.'], SHOWN: ['기억해 둘게요.', '흥미롭네요.'] },
+  STATION: { RAISE: ['어? 저도 올려요!'], BET: ['한번 가볼까요?'], ALL_IN: ['에라 모르겠다!'], FOLD: ['아깝다…'], CALL: ['콜! 궁금하잖아요.', '일단 콜이요.', '보기만 할게요.'], WIN: ['콜하길 잘했다!'], LOSE: ['또 콜해버렸네…'], SHOWN: ['아, 콜할걸!!', '그거였어요?!'] },
+  MANIAC: { RAISE: ['더 올려!', '가즈아!'], BET: ['재미없잖아요, 걸어요.'], ALL_IN: ['올인! 쫄리면 죽든가.', '인생 한 방!'], FOLD: ['…이번만 봐줄게요.'], CALL: ['콜 콜!'], WIN: ['봤죠? 이게 포커예요!'], LOSE: ['다음엔 두 배로!'], SHOWN: ['약 올리네! 다음 판에 갚아 줄게요.', '와… 그걸 보여 줘요?'] }
 };
 const pickLine = list => list?.[Math.floor(Math.random() * list.length)];
 const RING = 2 * Math.PI * 15; // turn clock circumference (r = 15)
@@ -131,6 +131,21 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     setTimeout(() => bubble.remove(), 2200);
   }
 
+  // Cards turned up after the hand for the table to see; the bots take it personally.
+  async function showOff(i, cards = []) {
+    const e = seatEls[i]; if (!e) return;
+    // A folded hand went to the muck: lay it back down face up.
+    if (!e.cards.querySelector('.card.is-faceup') && cards.length) e.cards.replaceChildren(...cards.map(text => createCard(text)));
+    e.node.classList.add('is-showing');
+    shown.set(i, shown.get(i) || [...e.cards.children].map(c => c.dataset.card));
+    sound.flip();
+    tag(i, '카드 공개', 'show');
+    e.cards.classList.remove('is-showoff'); void e.cards.offsetWidth; e.cards.classList.add('is-showoff');
+    const bots = (current?.seats || []).map((s, j) => (s?.kind === 'bot' && j !== i && seatEls[j] ? j : -1)).filter(j => j >= 0);
+    bots.sort(() => Math.random() - 0.5).slice(0, 2).forEach((j, k) => setTimeout(() => say(j, 'SHOWN', 1), 450 + k * 700));
+    await wait(450);
+  }
+
   function paintBet(i, amount) {
     const b = seatEls[i]?.bet; if (!b) return null;
     const stack = b.querySelector('.pk-bet-stack');
@@ -167,7 +182,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       paintSeat(i, s);
       paintBet(i, s.bet);
       const box = seatEls[i].cards;
-      const want = s.folded ? [] : s.cards;
+      const want = s.folded && !shown.has(i) ? [] : s.cards; // a folded hand stays mucked unless it was shown
       if (box.children.length !== want.length) box.replaceChildren(...want.map(c => createCard(c, { faceUp: c !== 'HIDDEN' })));
       else [...box.children].forEach((node, k) => { if (want[k] !== 'HIDDEN' && node.dataset.card !== want[k]) { setCardFace(node, want[k]); node.classList.add('is-faceup'); } });
     });
@@ -205,7 +220,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         winners = [];
         shown.clear(); calledHand = false;
         handStart = me >= 0 && ev.seats.includes(me) ? seatEls[me]?.stack ?? null : null;
-        seatEls.forEach((s, i) => { s.node.classList.remove('is-folded', 'is-allin', 'is-winner'); s.node.classList.toggle('is-out', !ev.seats.includes(i) && !s.node.classList.contains('is-empty')); paintBet(i, 0); s.node.querySelector('[data-hand-name]')?.remove(); });
+        seatEls.forEach((s, i) => { s.node.classList.remove('is-folded', 'is-allin', 'is-winner'); s.node.classList.toggle('is-out', !ev.seats.includes(i) && !s.node.classList.contains('is-empty')); paintBet(i, 0); s.node.querySelector('[data-hand-name]')?.remove(); s.cards.classList.remove('is-showoff'); s.node.classList.remove('is-showing'); });
         moveButton(ev.button);
         sound.tick();
         await wait(220);
@@ -287,6 +302,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
           for (const [k, node] of [...box.children].entries()) await flipCard(node, ev.cards[k], { duration: 320 });
         }
         shown.set(ev.seat, ev.cards);
+        if (ev.voluntary) { await showOff(ev.seat, ev.cards); break; }
         const name = el('span', 'pk-handname', ev.hand);
         name.dataset.handName = '';
         seatEls[ev.seat].node.append(name);
@@ -388,7 +404,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     clockTimer = setInterval(paint, 250);
   }
 
-  Object.assign(pk, { buildSeats, paintSeat, paintBet, paintPot, setStack, markTurn, render, play, playEvents, sweep, clear, clock, rectOf, moveButton, tag });
+  pk.wasShown = i => shown.has(i);
+  Object.assign(pk, { showOff, buildSeats, paintSeat, paintBet, paintPot, setStack, markTurn, render, play, playEvents, sweep, clear, clock, rectOf, moveButton, tag });
   return pk;
 }
 
@@ -396,30 +413,41 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
 export function createActionBar(t, pk) {
   const sizer = el('div', 'pk-sizer');
   sizer.innerHTML = `
-    <div class="pk-presets" role="group" aria-label="레이즈 크기">
-      <button type="button" data-preset="0.5">½ 팟</button><button type="button" data-preset="0.75">¾ 팟</button>
-      <button type="button" data-preset="1">팟</button><button type="button" data-preset="all">올인</button>
-    </div>
+    <div class="pk-presets" role="group" aria-label="레이즈 크기" data-presets></div>
     <div class="pk-slider"><button type="button" data-step="-1" aria-label="줄이기">−</button><input type="range" data-range aria-label="레이즈 금액"><button type="button" data-step="1" aria-label="늘리기">+</button></div>`;
   t.root.querySelector('.table-controls').prepend(sizer);
-  const range = sizer.querySelector('[data-range]');
-  let raiseTo = 0;
-  const bar = { sizer, legal: () => null, refresh: () => {} };
+  const range = sizer.querySelector('[data-range]'), presetsEl = sizer.querySelector('[data-presets]');
+  let raiseTo = 0, shown = [];
+  const bar = { sizer, legal: () => null, street: () => null, refresh: () => {} };
+
+  const clampRaise = (l, value) => {
+    const step = pk.bb / 2;
+    return value >= l.maxRaiseTo ? l.maxRaiseTo : Math.max(l.minRaiseTo, Math.min(l.maxRaiseTo, Math.round(value / step) * step));
+  };
+  // Opening a pot before the flop sizes in big blinds; after that, or facing a raise, in pot fractions.
+  function presetsFor(l) {
+    const pot = f => l.currentBet + (l.pot + l.toCall) * f;
+    const list = bar.street() === 'PREFLOP' && l.currentBet <= pk.bb
+      ? [['2.5BB', 2.5 * pk.bb], ['3BB', 3 * pk.bb], ['4BB', 4 * pk.bb]]
+      : [['⅓ 팟', pot(1 / 3)], ['½ 팟', pot(0.5)], ['¾ 팟', pot(0.75)], ['팟', pot(1)]];
+    return [...list.map(([label, v]) => [label, clampRaise(l, v)]).filter(([, v]) => v < l.maxRaiseTo), ['올인', l.maxRaiseTo]];
+  }
+  function paintPresets() {
+    presetsEl.style.setProperty('--n', shown.length);
+    presetsEl.innerHTML = shown.map(([label, v], k) => `<button type="button" data-preset="${k}" aria-pressed="${v === raiseTo}">${label}</button>`).join('');
+  }
 
   function setRaise(value) {
     const l = bar.legal(); if (!l) return;
-    const step = pk.bb / 2;
-    raiseTo = Math.max(l.minRaiseTo, Math.min(l.maxRaiseTo, Math.round(value / step) * step));
-    if (value >= l.maxRaiseTo) raiseTo = l.maxRaiseTo;
+    raiseTo = clampRaise(l, value);
     range.value = raiseTo;
     bar.refresh();
   }
-  sizer.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
-    const l = bar.legal(); if (!l) return;
+  presetsEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-preset]'); if (!b) return;
     sound.tick();
-    if (b.dataset.preset === 'all') return setRaise(l.maxRaiseTo);
-    setRaise(l.currentBet + (l.pot + l.toCall) * Number(b.dataset.preset));
-  }));
+    setRaise(shown[Number(b.dataset.preset)]?.[1] ?? raiseTo);
+  });
   sizer.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => { sound.tick(); setRaise(raiseTo + Number(b.dataset.step) * pk.bb); }));
   range.addEventListener('input', () => setRaise(Number(range.value)));
 
@@ -430,6 +458,8 @@ export function createActionBar(t, pk) {
       range.min = l.minRaiseTo; range.max = l.maxRaiseTo; range.step = pk.bb / 2;
       if (raiseTo < l.minRaiseTo || raiseTo > l.maxRaiseTo) raiseTo = l.minRaiseTo;
       range.value = raiseTo;
+      shown = presetsFor(l);
+      paintPresets();
     }
     const allIn = raiseTo >= l.maxRaiseTo;
     return [

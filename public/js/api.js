@@ -99,6 +99,7 @@ export const api = {
   holdemRoomStart: (code, cursor) => request('/api/holdem/rooms/start', { method: 'POST', body: { code, cursor } }),
   holdemRoomAction: (code, handNo, seq, action, amount, cursor) => request('/api/holdem/rooms/action', { method: 'POST', body: { code, handNo, seq, action, amount, cursor } }),
   holdemRoomLeave: code => request('/api/holdem/rooms/leave', { method: 'POST', body: { code } }),
+  holdemRoomShow: (code, cursor) => request('/api/holdem/rooms/show', { method: 'POST', body: { code, cursor } }),
   // Friends' rooms for 섯다, 고스톱 and 맞고: the same shape, one route set for all three.
   rooms: game => request(`/api/rooms${game ? `?game=${game}` : ''}`),
   room: (code, cursor) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),

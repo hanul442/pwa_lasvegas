@@ -14,6 +14,8 @@
 .table-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:560 clamp(18px,5.6vw,22px)/1.15 var(--display);font-stretch:125%;letter-spacing:-.02em}
 @media (max-width:519px){.table-name strong{font-size:clamp(16px,4.8vw,19px);font-stretch:108%}}
 .table-name span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
+/* narrow phones: the subtitle (stakes, room, blinds) wraps to a second line instead of being cut off */
+@media (max-width:519px){.table-name span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;font-size:12px;line-height:1.25}}
 .table-balance{text-align:right;transition:color .4s}
 .table-balance span{display:block;font-size:12px;color:var(--taupe)}
 .table-balance strong{font:600 17px var(--sans);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
@@ -71,6 +73,14 @@
 .card-court{position:absolute;inset:16% 18%;display:grid;place-items:center;align-content:center;border:1px solid currentColor;border-radius:4%;background:#f1f2f4;font-family:var(--display)}
 .card-court b{font-size:2em;line-height:1;font-weight:700;font-stretch:118%}
 .card-court i{font-style:normal;font-size:1em}
+.card-mark{display:none}
+/* Large-index faces (Hold'em): small cards on a phone read by a big rank and suit, as on a poker app,
+   instead of a corner index squeezed against the pips. */
+.pk .card-pips,.pk .card-ace,.pk .card-court,.pk .card-corner--end{display:none}
+.pk .card-corner{top:5%;left:8%;align-items:center;line-height:.86}
+.pk .card-corner b{font-size:2.25em;font-weight:700;letter-spacing:-.09em}
+.pk .card-corner i{font-size:1.55em;margin-top:.12em}
+.pk .card-mark{display:block;position:absolute;right:7%;bottom:3%;font-size:2.9em;line-height:1}
 
 /* ---------- chips: clay colours, edge inserts, no gloss ---------- */
 .chip{--size:var(--chip);--c:#e9e3d6;--edge:#f6f1e7;--ink:#1a1714;--rim:#2b4a7a;position:relative;flex:none;display:grid;place-items:center;width:var(--size);height:var(--size);padding:0;border:0;border-radius:50%;
@@ -135,6 +145,11 @@
 .action--primary{background:var(--white);color:var(--ink);border-color:var(--white);font-weight:650}
 .action--primary:not(:disabled):hover{background:#fff}
 .action--ghost{flex:.7;border-color:transparent;color:var(--smoke)}
+.action>span{white-space:nowrap}
+@media (max-width:519px){.table-screen--holdem .action{font-size:15px;padding:0 8px;min-width:0}}
+.action[aria-pressed]{font-size:15px}
+.action[aria-pressed="true"]{background:#f4f5f71f;border-color:var(--white);font-weight:650}
+.action[aria-pressed="true"]>span::before{content:"✓ "}
 .action kbd{display:none;font:400 11px var(--sans);padding:1px 5px;border-radius:4px;border:1px solid currentColor;opacity:.5}
 @media (hover:hover) and (pointer:fine){.action kbd{display:inline-block}}
 
@@ -434,9 +449,9 @@
 .pk-seats{display:contents}
 
 /* centre: deck, board, pot */
-.pk-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,420px);pointer-events:none}
-.pk-deck{position:relative;width:24px;height:34px;border-radius:4px;background:linear-gradient(160deg,#1e2126,#0a0b0d);box-shadow:inset 0 0 0 2px #f4f5f7,inset 0 0 0 3px #0a0b0d,0 1px 0 #0a0b0d,0 2px 0 #f4f5f7aa,0 3px 0 #0a0b0d,0 4px 0 #f4f5f788,0 8px 12px #0008}
-.pk-board{--card-w:clamp(38px,10.6vw,66px);display:flex;gap:clamp(3px,1vw,8px);min-height:calc(var(--card-w) * 1.4)}
+.pk-center{--card-w:clamp(38px,10.6vw,66px);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;width:min(100%,420px);pointer-events:none}
+.pk-deck{position:absolute;top:calc(var(--card-w) * .7 - 19px);right:calc(50% + var(--card-w) * 2.5 + 16px);rotate:-10deg;width:27px;height:38px;border-radius:4px;background:linear-gradient(160deg,#1e2126,#0a0b0d);box-shadow:inset 0 0 0 2px #f4f5f7,inset 0 0 0 3px #0a0b0d,0 1px 0 #0a0b0d,0 2px 0 #f4f5f7aa,0 3px 0 #0a0b0d,0 4px 0 #f4f5f788,0 8px 12px #0008}
+.pk-board{display:flex;gap:clamp(3px,1vw,8px);min-height:calc(var(--card-w) * 1.4)}
 .pk-board .card{rotate:0deg}
 .pk-pot{display:flex;align-items:center;gap:10px;min-height:30px}
 .pk-pot[hidden]{display:flex;visibility:hidden}
@@ -451,7 +466,7 @@
 .pk-seat{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:4;transition:opacity .3s}
 .pk-seat .pk-cards{--card-w:clamp(26px,7.5vw,40px);min-height:calc(var(--card-w) * 1.4);margin-bottom:-14px}
 .pk-seat .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.42)}
-.pk-seat--hero{top:100%;transform:translate(-50%,6px);z-index:6}
+.pk-seat--hero{top:100%;transform:translate(-50%,-12px);z-index:6}
 .pk-seat--hero .pk-cards{--card-w:clamp(58px,16vw,80px);margin-bottom:4px}
 .pk-seat--hero .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.2)}
 .pk-plate{position:relative;display:grid;justify-items:center;min-width:78px;padding:5px 10px 6px;border-radius:12px;background:#0a0b0deb;box-shadow:0 0 0 1px #ffffff1f,0 8px 18px #0009;line-height:1.15;transition:box-shadow .25s,background .25s,color .25s;z-index:2}
@@ -463,11 +478,17 @@
 .pk-seat.is-thinking .pk-plate{animation:pk-think 1s ease-in-out infinite}
 @keyframes pk-think{50%{box-shadow:0 0 0 4px #f4f5f733,0 8px 18px #0009}}
 .pk-seat.is-folded{opacity:.42}
+.pk-seat.is-showing{opacity:1}
 .pk-seat.is-out{opacity:.25}
 .pk-seat.is-winner .pk-plate{background:var(--white);color:var(--ink)}
 .pk-seat.is-winner .pk-plate small{color:#0a0b0d99}
 .pk-tag{position:absolute;left:50%;top:calc(100% + 4px);transform:translate(-50%,-4px) scale(.8);opacity:0;padding:2px 9px;border-radius:999px;background:#0a0b0dd9;border:1px solid #ffffff2e;font:600 12px var(--sans);font-style:normal;white-space:nowrap;transition:opacity .2s,transform .3s cubic-bezier(.2,1.6,.4,1);pointer-events:none}
 .pk-tag.is-shown{opacity:1;transform:translate(-50%,0) scale(1)}
+.pk-tag.is-show{background:var(--white);color:var(--ink);border-color:var(--white)}
+/* cards turned up after the hand: they rise, flare and settle, for everyone to see */
+.pk-cards.is-showoff{animation:pk-showoff .9s cubic-bezier(.2,1.4,.4,1) both}
+.pk-cards.is-showoff .card-face{box-shadow:inset 0 0 0 1px #0000001a,0 0 0 2px var(--star),0 10px 26px #000a}
+@keyframes pk-showoff{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-14px) scale(1.12)}100%{transform:translateY(-4px) scale(1.04)}}
 .pk-tag.is-aggr,.pk-tag.is-win{background:var(--white);color:var(--ink);border-color:var(--white)}
 .pk-tag.is-fold{color:var(--smoke)}
 .pk-seat--hero .pk-tag{top:50%;bottom:auto;left:calc(100% + 8px);transform:translateY(-50%)}
@@ -497,7 +518,8 @@
 /* controls while seated: raise sizer replaces the chip tray */
 .pk-sizer{grid-area:sizer;display:grid;gap:8px}
 .pk-sizer[hidden]{display:none}
-.pk-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pk-presets{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px}
+.pk-presets button[aria-pressed="true"]{background:var(--ivory);color:var(--ink);border-color:var(--ivory);font-weight:650}
 .pk-presets button,.pk-slider button{height:38px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px}
 .pk-slider{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:10px}
 .pk-slider input{width:100%;accent-color:var(--white)}
@@ -536,6 +558,7 @@
 .pk-seat.is-human [data-name]::before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--star);clip-path:var(--star-shape);vertical-align:1px}
 .pk-seat.is-human .pk-plate small{color:var(--star)}
 .pk-clock{position:absolute;right:-20px;top:-18px;z-index:6;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#0a0b0d}
+.pk-seat--r .pk-clock{right:auto;left:-20px}
 .pk-clock svg{position:absolute;inset:0;transform:rotate(-90deg)}
 .pk-clock circle{fill:none;stroke:#ffffff26;stroke-width:3}
 .pk-clock .pk-clock-run{stroke:var(--white);stroke-linecap:round;transition:stroke-dashoffset .25s linear}
@@ -543,7 +566,12 @@
 .pk-clock.is-low .pk-clock-run{stroke:var(--star)}
 .pk-clock.is-low b{color:var(--star)}
 .table-screen--holdem.is-room .pk-hint{max-width:260px}
-.table-screen--holdem.is-room .bet-readout small{color:var(--smoke)}
+.table-screen--holdem.is-room .bet-readout{align-items:center}
+.table-screen--holdem.is-room .bet-readout small{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;background:#ffffff14;color:var(--ivory);font:600 14px var(--sans)}
+.table-screen--holdem.is-room .bet-readout small::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--star);animation:pk-wait 1.2s ease-in-out infinite}
+.table-screen--holdem.is-room .bet-readout small:empty{display:none}
+@keyframes pk-wait{50%{opacity:.25}}
+.table-screen--holdem.is-room .action--ghost:only-child{flex:1;border-color:var(--hair-strong);color:var(--ivory)}
 .pk-seat.is-human [data-name]{white-space:nowrap}
 .table-screen--holdem.is-seated .table-controls{grid-template-areas:"bet bet" "sizer sizer" "act act"}
 .table-screen--holdem.is-seated .chip-tray,.table-screen--holdem.is-seated .bet-tools{display:none}
@@ -561,7 +589,7 @@
   .pk-seat--hero{flex-direction:row;align-items:center;gap:8px;transform:translate(-50%,6px)}
   .pk-seat--hero .pk-cards{--card-w:clamp(50px,14.5vw,62px);margin-bottom:0}
   .pk-plate small{display:none}
-  .pk-board{--card-w:clamp(32px,9.2vw,50px)}
+  .pk-center{--card-w:clamp(32px,9.2vw,50px)}
 }
 /* Phones upright: side seats and their bets move up/down, away from the board's row. */
 @media (max-width:759px) and (orientation:portrait){
@@ -578,7 +606,7 @@
   .pk-seat:not(.pk-seat--hero) .pk-cards{--card-w:28px;margin-bottom:0}
   .pk-plate{padding:4px 9px}
   .pk-plate small{display:none}
-  .pk-board{--card-w:38px}
+  .pk-center{--card-w:38px}
   .pk-buyin{width:90px;height:90px}
   .table-screen--holdem.is-seated .table-controls{grid-template-columns:auto 1fr auto;grid-template-areas:"bet sizer act"}
   .pk-sizer{grid-template-columns:auto 1fr}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoom, joinRoom, leaveRoom, startRoom, roomAction, tick, roomDue, roomView, listRooms, tableChips, TURN_MS, NEXT_HAND_MS, MISSED_TURNS_LIMIT } from '../lib/holdem-room.mjs';
+import { createRoom, joinRoom, leaveRoom, startRoom, roomAction, showCards, tick, roomDue, roomView, listRooms, tableChips, TURN_MS, NEXT_HAND_MS, MISSED_TURNS_LIMIT } from '../lib/holdem-room.mjs';
 import { validateStakeAgainstFloor } from '../lib/stakes.mjs';
 import { FLOORS } from '../lib/constants.mjs';
 import { handleApi } from '../lib/api.mjs';
@@ -262,4 +262,52 @@ test('rooms over the API: create, list, join by code, poll with a cursor, act, l
   }
   assert.equal(availableTotal(store.peek()) - total, store.peek().ledger.filter(tx => tx.metadata?.room).reduce((a, tx) => a + tx.rawPnlDelta, 0), 'the only change is the settled results');
   assert.equal((await call(store, 'hanseo', 'GET', '/api/holdem/rooms')).data.mine, null);
+});
+
+// Plays the current hand to its end: whoever is to act folds (or checks when that is free).
+function finishHand(state, room, w) {
+  for (let guard = 0; guard < 200 && room.table.hand && !room.table.hand.over; guard++) {
+    const h = room.table.hand, seat = room.table.seats[h.toAct];
+    const legal = roomView(room, seat.id).table.legal;
+    roomAction(state, state.users[seat.id], room.code, { handNo: h.no, seq: h.seq, action: legal.canCheck ? 'CHECK' : 'FOLD' }, w.ctx());
+  }
+}
+
+test('after a hand a player can turn their cards up for the table, once', () => {
+  const w = world(5);
+  const { state } = w;
+  const room = createRoom(state, state.users.hanseo, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx());
+  joinRoom(state, state.users.min, room.code, w.ctx());
+  startRoom(state, state.users.hanseo, room.code, w.ctx());
+  assert.throws(() => showCards(state, state.users.hanseo, room.code, w.ctx()), /HAND_NOT_ACTIVE/);
+  finishHand(state, room, w);
+  const me = room.players.hanseo.seat;
+  const mine = roomView(room, 'hanseo').table.seats[me].cards;
+  assert.ok(roomView(room, 'min').table.seats[me].cards.every(c => c === 'HIDDEN') || room.table.hand.events.some(e => e.t === 'show' && e.seat === me));
+  showCards(state, state.users.hanseo, room.code, w.ctx());
+  assert.deepEqual(roomView(room, 'min').table.seats[me].cards, mine, 'friends now see my hand');
+  assert.deepEqual(room.table.hand.events.at(-1), { t: 'show', seat: me, cards: mine, voluntary: true });
+  assert.throws(() => showCards(state, state.users.hanseo, room.code, w.ctx()), /ALREADY_SHOWN/);
+});
+
+test('a player who lost everything keeps the chair until the next deal, then gets up', () => {
+  const w = world(9);
+  const { state } = w;
+  const room = createRoom(state, state.users.hanseo, { buyIn: 500_000, floor: 'downtown', size: 3 }, w.ctx());
+  joinRoom(state, state.users.min, room.code, w.ctx());
+  startRoom(state, state.users.hanseo, room.code, w.ctx());
+  finishHand(state, room, w);
+  // Pretend Min's last chips went to a bot in that hand.
+  const seat = room.players.min.seat;
+  const bot = room.table.seats.findIndex(s => s.kind === 'bot');
+  room.table.seats[bot].stack += room.table.seats[seat].stack;
+  room.table.seats[seat].stack = 0;
+  tick(state, room, w.ctx());
+  assert.ok(room.players.min, 'still seated while the showdown is on the felt');
+  assert.equal(roomView(room, 'min').seated, true);
+  w.advance(NEXT_HAND_MS);
+  tick(state, room, w.ctx());
+  assert.equal(room.players.min, undefined, 'stood up at the next deal');
+  assert.ok(room.table.hand && !room.table.hand.over, 'the others play on');
+  assert.equal(state.users.min.account.locked, 0);
 });

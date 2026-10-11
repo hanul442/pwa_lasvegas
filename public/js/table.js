@@ -571,6 +571,7 @@ export class Table {
     this.actions.replaceChildren(...list.map(a => {
       const b = el('button', `action${a.primary ? ' action--primary' : ''}${a.ghost ? ' action--ghost' : ''}`);
       b.type = 'button';
+      if (a.pressed != null) b.setAttribute('aria-pressed', String(a.pressed));
       b.innerHTML = `<span>${a.label}</span>${a.key ? `<kbd>${a.key}</kbd>` : ''}`;
       b.disabled = Boolean(a.disabled) || this.busy;
       b.addEventListener('click', () => this.run(a.onClick));

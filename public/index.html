@@ -10,7 +10,7 @@
   <title>VEGAS</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
@@ -25,6 +25,7 @@
     <header class="topbar">
       <button class="brand" type="button" data-nav="lobby" aria-label="VEGAS 로비로 이동"><img src="logo.svg" alt="VEGAS" width="104" height="22"></button>
       <div class="topbar-right">
+        <button class="install-pill" type="button" data-install hidden aria-label="VEGAS 앱 설치"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg><span>앱 설치</span></button>
         <button class="sound-toggle" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
         <button class="sound-toggle settings-toggle" type="button" data-nav="settings" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
         <button class="wallet" type="button" data-nav="profile" aria-label="내 가상 칩, 프로필 보기"><strong data-wallet>—</strong><small>원</small></button>

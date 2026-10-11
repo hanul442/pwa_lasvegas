@@ -1,6 +1,7 @@
 // Sign-in gate: every visitor plays with their own account (username + password).
 import { api, errorMessage, saveSession } from './api.js';
 import { el } from './fx.js';
+import { mountInstallButton } from './install.js';
 
 let gate = null;
 
@@ -38,7 +39,9 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
           <button class="pill-button pill-button--solid auth-submit" type="submit">${signup ? '계정 만들기' : '로그인'}</button>
         </form>
         <p class="auth-switch">${signup ? '이미 계정이 있나요?' : '처음 왔나요?'} <button type="button" data-auth-mode>${signup ? '로그인하기' : '새 계정 만들기'}</button></p>
+        <button class="pill-button auth-install" type="button" data-auth-install hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg>홈 화면에 앱 설치</button>
       </div>`;
+    mountInstallButton(gate.querySelector('[data-auth-install]'));
     const form = gate.querySelector('form');
     gate.querySelector('[data-auth-mode]').addEventListener('click', () => { mode = signup ? 'login' : 'signup'; render(); gate.querySelector('input')?.focus(); });
     form.querySelectorAll('input').forEach(input => input.addEventListener('input', () => { gate.querySelector('.auth-error').textContent = ''; }));

@@ -251,9 +251,9 @@ test('섯다 AI games always finish', () => {
 test('맞고 API locks a 10-point deposit and settles back to a clean ledger', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  let res = await call(store, 'POST', '/api/matgo/start', { stake: 100_000, floor: 'downtown' });
+  let res = await call(store, 'POST', '/api/matgo/start', { stake: 10_000_000, floor: 'downtown' });
   assert.equal(res.status, 200, JSON.stringify(res.data));
-  assert.equal((await call(store, 'POST', '/api/matgo/start', { stake: 100_000, floor: 'downtown' })).status, 409);
+  assert.equal((await call(store, 'POST', '/api/matgo/start', { stake: 10_000_000, floor: 'downtown' })).status, 409);
   const open = await call(store, 'GET', '/api/matgo/open');
   assert.equal(open.data.round.id, res.data.round.id);
   for (let i = 0; i < 40 && res.data.round.status === 'PLAYING'; i++) {
@@ -278,8 +278,8 @@ test('맞고 API locks a 10-point deposit and settles back to a clean ledger', a
 test('섯다 API charges each raise and pays the pot', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  assert.equal((await call(store, 'POST', '/api/seotda/start', { stake: 100_000, floor: 'downtown', players: 6 })).status, 400);
-  let res = await call(store, 'POST', '/api/seotda/start', { stake: 100_000, floor: 'downtown' });
+  assert.equal((await call(store, 'POST', '/api/seotda/start', { stake: 10_000_000, floor: 'downtown', players: 6 })).status, 400);
+  let res = await call(store, 'POST', '/api/seotda/start', { stake: 10_000_000, floor: 'downtown' });
   assert.equal(res.status, 200, JSON.stringify(res.data));
   assert.equal(res.data.round.players.length, 4, 'four seats by default');
   for (const e of res.data.events) if (e.type === 'deal' && e.seat !== 0) assert.equal(e.card, 'HIDDEN');
@@ -300,7 +300,7 @@ test('섯다 API charges each raise and pays the pot', async () => {
 test('섯다 API seats the chosen number of players and settles a fold at the lost contribution', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  let res = await call(store, 'POST', '/api/seotda/start', { stake: 100_000, floor: 'downtown', players: 5 });
+  let res = await call(store, 'POST', '/api/seotda/start', { stake: 10_000_000, floor: 'downtown', players: 5 });
   assert.equal(res.status, 200, JSON.stringify(res.data));
   assert.equal(res.data.round.players.length, 5);
   assert.ok(res.data.round.players.slice(1).every(p => p.kind === 'ai' && p.name));
@@ -316,7 +316,7 @@ test('섯다 API finishes a two-seat round saved by the old engine', async () =>
   const store = memoryStore();
   await call(store, 'GET', '/api/state');
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  let res = await call(store, 'POST', '/api/seotda/start', { stake: 100_000, floor: 'downtown', players: 2 });
+  let res = await call(store, 'POST', '/api/seotda/start', { stake: 10_000_000, floor: 'downtown', players: 2 });
   // Rewrite the saved round into the old shape: no folded/players fields, house AI in seat 1.
   await store.mutate(state => {
     const r = state.rounds.find(x => x.id === res.data.round.id);

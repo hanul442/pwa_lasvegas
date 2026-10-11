@@ -163,22 +163,22 @@ const call = (store, method, path, body, headers = {}) =>
 test('blackjack start route locks side bets with the round and keeps the AI players', async () => {
   const store = memoryStore();
   const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  const tooBig = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000], pairs: [200_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-side-big-0001' });
+  const tooBig = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000], pairs: [20_000_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-side-big-0001' });
   assert.equal(tooBig.status, 400);
   let names = null, total = 0, stayed = 0;
   for (let n = 0; n < 8; n++) {
-    const body = { stakes: [100_000], pairs: [25_000], trips: [50_000], floor: 'downtown' };
+    const body = { stakes: [10_000_000], pairs: [2_500_000], trips: [5_000_000], floor: 'downtown' };
     const res = await call(store, 'POST', '/api/blackjack/v2/start', body, { 'x-idempotency-key': `bj-side-start-${n}000` });
     assert.equal(res.status, 200, JSON.stringify(res.data));
     let round = res.data.round;
-    assert.equal(round.stake, 175_000);
+    assert.equal(round.stake, 17_500_000);
     assert.equal(round.sideBets.length, 2);
     assert.ok(round.ai.length >= 1 && round.ai.length <= 3);
     if (names && round.ai.some(a => names.includes(a.name))) stayed++;
     names = round.ai.map(a => a.name);
     const replay = await call(store, 'POST', '/api/blackjack/v2/start', body, { 'x-idempotency-key': `bj-side-start-${n}000` });
     assert.equal(replay.data.replayed, true);
-    const conflict = await call(store, 'POST', '/api/blackjack/v2/start', { ...body, pairs: [50_000] }, { 'x-idempotency-key': `bj-side-start-${n}000` });
+    const conflict = await call(store, 'POST', '/api/blackjack/v2/start', { ...body, pairs: [5_000_000] }, { 'x-idempotency-key': `bj-side-start-${n}000` });
     assert.equal(conflict.data.error, 'IDEMPOTENCY_CONFLICT', 'a different side bet under the same key is refused');
     let k = 0;
     while (round.status !== 'SETTLED') {

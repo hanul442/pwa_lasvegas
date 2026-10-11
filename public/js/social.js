@@ -6,7 +6,7 @@ import { el, formatCH, sound } from './fx.js';
 import { placeCards } from './cards.js';
 
 const METRIC = { QUALIFIED_PROFIT: '수익', WINS: '승리' };
-const PRIZE = 10_000_000;
+const PRIZE = 100_000_000;
 
 function timeLeft(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());

@@ -1,25 +1,30 @@
 // Casino chips: denominations per stake tier, chip markup and stack decomposition.
 import { el, formatCH } from './fx.js';
 
-export const CHIP_COLORS = {
-  10_000: 'white', 50_000: 'red', 100_000: 'blue', 250_000: 'green', 500_000: 'teal',
-  1_000_000: 'black', 2_500_000: 'purple', 5_000_000: 'orange',
-  10_000_000: 'blue', 25_000_000: 'pink', 50_000_000: 'gold', 100_000_000: 'wine',
-  250_000_000: 'purple', 500_000_000: 'orange', 1_000_000_000: 'black',
-  2_500_000_000: 'pink', 5_000_000_000: 'gold', 10_000_000_000: 'wine',
-  50_000_000_000: 'teal', 100_000_000_000: 'ivory', 500_000_000_000: 'gold'
+// Each table has five chips: 1, 2, 3, 5 and 7 times its smallest bet. The table's colours go
+// up with the floor, so a glance at the rack says where you are sitting.
+const STEPS = [1, 2, 3, 5, 7];
+const PALETTES = {
+  low: ['white', 'red', 'blue', 'green', 'black'],
+  mid: ['black', 'purple', 'orange', 'teal', 'pink'],
+  high: ['gold', 'wine', 'purple', 'blue', 'black'],
+  vip: ['pink', 'gold', 'wine', 'teal', 'ivory'],
+  royal: ['teal', 'ivory', 'gold', 'wine', 'purple'],
+  vault: ['gold', 'black', 'wine', 'ivory', 'pink']
+};
+const tier = (slug, name, floor, floorName, min) => ({ slug, name, floor, floorName, min, max: min * 10 - 1, chips: STEPS.map(k => k * min) });
+
+// The smallest bet anywhere is 1천만 원; each floor up is ten times the last, to 10조 at The Vault.
+export const TIERS = {
+  low: tier('low', 'Low', 'downtown', 'Downtown', 10_000_000),
+  mid: tier('mid', 'Mid', 'strip', 'The Strip', 100_000_000),
+  high: tier('high', 'High', 'high-limit', 'High Limit', 1_000_000_000),
+  vip: tier('vip', 'Salon', 'salon-prive', 'Salon Privé', 10_000_000_000),
+  royal: tier('royal', 'Penthouse', 'penthouse', 'Penthouse', 100_000_000_000),
+  vault: { ...tier('vault', 'Vault', 'vault', 'The Vault', 1_000_000_000_000), max: 10_000_000_000_000 }
 };
 
-// Five denominations per table so a bet can be built in fine steps up to the limit.
-// The smallest bet anywhere is 1만 원; The Vault goes up to 1조.
-export const TIERS = {
-  low: { slug: 'low', name: 'Low', floor: 'downtown', floorName: 'Downtown', min: 10_000, max: 999_999, chips: [10_000, 50_000, 100_000, 250_000, 500_000] },
-  mid: { slug: 'mid', name: 'Mid', floor: 'strip', floorName: 'The Strip', min: 1_000_000, max: 9_999_999, chips: [100_000, 500_000, 1_000_000, 2_500_000, 5_000_000] },
-  high: { slug: 'high', name: 'High', floor: 'high-limit', floorName: 'High Limit', min: 10_000_000, max: 99_999_999, chips: [1_000_000, 5_000_000, 10_000_000, 25_000_000, 50_000_000] },
-  vip: { slug: 'vip', name: 'Salon', floor: 'salon-prive', floorName: 'Salon Privé', min: 100_000_000, max: 999_999_999, chips: [10_000_000, 50_000_000, 100_000_000, 250_000_000, 500_000_000] },
-  royal: { slug: 'royal', name: 'Penthouse', floor: 'penthouse', floorName: 'Penthouse', min: 1_000_000_000, max: 9_999_999_999, chips: [100_000_000, 500_000_000, 1_000_000_000, 2_500_000_000, 5_000_000_000] },
-  vault: { slug: 'vault', name: 'Vault', floor: 'vault', floorName: 'The Vault', min: 10_000_000_000, max: 1_000_000_000_000, chips: [1_000_000_000, 10_000_000_000, 50_000_000_000, 100_000_000_000, 500_000_000_000] }
-};
+export const CHIP_COLORS = Object.fromEntries(Object.entries(TIERS).flatMap(([slug, t]) => t.chips.map((v, k) => [v, PALETTES[slug][k]])));
 
 export function createChip(value, tag = 'span') {
   const chip = el(tag, `chip chip--${CHIP_COLORS[value] || 'white'}`);

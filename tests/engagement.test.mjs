@@ -128,8 +128,8 @@ test('API exposes engagement and the claim routes', async () => {
   assert.equal((await call('POST', '/api/missions/claim', { missionId: 'nope' })).status, 404);
   assert.equal((await call('POST', '/api/rescue', { pick: 0 })).status, 409);
   // Settling a round shows up in the weekly season board.
-  await call('POST', '/api/sicbo/play', { stake: 100_000, floor: 'downtown', betType: 'BIG' });
+  await call('POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'downtown', betType: 'BIG' });
   const after = await call('GET', '/api/state');
   const me = after.data.rankings.season.highRoller.find(r => r.id === 'hanseo');
-  assert.equal(me.value, 100_000);
+  assert.equal(me.value, 10_000_000);
 });

@@ -225,7 +225,7 @@ async function dealVignette() {
   const hand = document.querySelector('[data-vignette-hand]');
   const chips = document.querySelector('[data-vignette-chips]');
   const shoe = { left: innerWidth, top: -120, width: 0, height: 0 };
-  [500_000, 250_000, 250_000, 100_000, 100_000].forEach((v, i) => {
+  [50_000_000, 30_000_000, 30_000_000, 10_000_000, 10_000_000].forEach((v, i) => {
     const c = createChip(v); c.style.setProperty('--i', i); c.style.setProperty('--jx', `${(i % 2) - 0.5}px`); chips.append(c);
   });
   for (const t of ['A♠', 'K♥']) {
@@ -292,7 +292,7 @@ function renderRanking() {
   head.replaceChildren();
   if (rankPeriod === 'season' && season) {
     const last = state.engagement?.lastSeason;
-    head.innerHTML = `<div class="season-card"><div><strong>${season.name}</strong><small>${timeLeft(season.endsAt)} 남음 · 월요일 0시에 새로 시작</small></div><ol class="season-prizes"><li><b>1위</b> 5천만</li><li><b>2위</b> 3천만</li><li><b>3위</b> 1,500만</li></ol></div>`
+    head.innerHTML = `<div class="season-card"><div><strong>${season.name}</strong><small>${timeLeft(season.endsAt)} 남음 · 월요일 0시에 새로 시작</small></div><ol class="season-prizes"><li><b>1위</b> 5억</li><li><b>2위</b> 3억</li><li><b>3위</b> 1억 5천만</li></ol></div>`
       + (last?.podium?.length ? `<p class="season-last">지난 시즌 ${last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '');
   }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];

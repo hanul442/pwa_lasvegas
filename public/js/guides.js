@@ -12,7 +12,7 @@ const finished = { enter: (t, s) => { s.last = t.lastBet; s.was = t.locked; }, u
 
 function betSteps({ zone, zoneTitle, zoneBody, zoneEg, startLabel = '딜' }) {
   return [
-    { target: '.chip-tray', title: '1. 칩 고르기', body: ['화면 아래 동그란 칩이 내 돈이에요. 칩에 적힌 금액만큼 걸 수 있어요.', '칩을 한 번 탭하면 살짝 올라오면서 골라져요.'], eg: '1만 원 칩을 고르고 테이블을 세 번 탭하면 3만 원을 건 거예요.' },
+    { target: '.chip-tray', title: '1. 칩 고르기', body: ['화면 아래 동그란 칩이 내 돈이에요. 칩에 적힌 금액만큼 걸 수 있어요.', '칩을 한 번 탭하면 살짝 올라오면서 골라져요.'], eg: '1천만 원 칩을 고르고 테이블을 세 번 탭하면 3천만 원을 건 거예요.' },
     { target: zone, title: `2. ${zoneTitle}`, body: [zoneBody, '칩을 고른 채로 이 자리를 탭하면 칩이 올라가요. 칩을 꾹 눌러 끌어다 놓아도 돼요.'], eg: zoneEg, do: '칩을 하나 놓아 보세요', until: t => t.total > 0 },
     { target: '.bet-tools', title: '3. 금액 고치기', body: ['잘못 놓았으면 되돌리기로 마지막 칩을 빼요. ½은 절반으로, ×2는 두 배로, 최대는 걸 수 있는 만큼 채워요.', '왼쪽 "베팅"에 지금 건 금액이 보여요.'] },
     { target: '[data-actions]', title: `4. ${startLabel} 누르기`, body: [`테이블 최소 금액 이상 걸면 ${startLabel} 버튼이 켜져요. 누르면 판이 시작되고, 그때부터는 칩을 바꿀 수 없어요.`, '판이 끝나면 "같은 베팅으로" 버튼 하나로 똑같이 다시 걸 수 있어요.'], do: `${startLabel}를 눌러 시작해 보세요`, ...started }

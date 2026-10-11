@@ -45,12 +45,12 @@ test('slots spin settles through the API and posts a jackpot to the lounge', asy
   const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
   const call = (path, body, key) => handleApi({ method: 'POST', header: n => (n === 'x-idempotency-key' ? key : undefined), body: async () => body }, new URL(`http://x${path}`), store, { NODE_ENV: 'production' });
   const before = state.users.hanseo.account.available;
-  const res = await call('/api/slots/spin', { stake: 100_000, floor: 'downtown' }, 'slot-key-0001');
+  const res = await call('/api/slots/spin', { stake: 10_000_000, floor: 'downtown' }, 'slot-key-0001');
   assert.equal(res.status, 200);
   assert.equal(res.data.state.user.account.available, before + res.data.round.netPnl);
   assert.equal(res.data.round.reels.length, 3);
   assert.ok(res.data.state.jackpot.pool > JACKPOT_SEED);
-  const again = await call('/api/slots/spin', { stake: 100_000, floor: 'downtown' }, 'slot-key-0001');
+  const again = await call('/api/slots/spin', { stake: 10_000_000, floor: 'downtown' }, 'slot-key-0001');
   assert.equal(again.data.replayed, true);
   assert.equal(again.data.state.user.account.available, res.data.state.user.account.available);
 });

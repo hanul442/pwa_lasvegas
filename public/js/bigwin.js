@@ -4,12 +4,12 @@ import { el, sound, haptic, rollNumber, formatFull, formatCH, animate, ms, reduc
 import { createChip } from './chips.js';
 
 const BRAGS = ['“오늘은 내가 하우스”', '“딜러가 울고 갔어요”', '“동네방네 자랑합니다”', '“이 맛에 앉아 있죠”'];
-const RAIN = [5_000_000, 1_000_000, 2_500_000, 10_000_000, 500_000, 25_000_000, 250_000];
+const RAIN = [50_000_000, 10_000_000, 30_000_000, 100_000_000, 20_000_000, 500_000_000, 70_000_000];
 
 // Wins worth stopping the table for, unless a game names its own moment: 5x the stake, or
-// 5천만 or more however it was won (the same bar as the lounge feed's hot wins).
+// 5억 or more however it was won (the same bar as the lounge feed's hot wins).
 export const BIG_WIN_MULTIPLE = 5;
-export const BIG_WIN_CHIPS = 50_000_000;
+export const BIG_WIN_CHIPS = 500_000_000;
 
 export function isBigWin(net, staked) {
   return net > 0 && ((staked > 0 && net >= staked * BIG_WIN_MULTIPLE) || net >= BIG_WIN_CHIPS);

@@ -26,10 +26,10 @@ test('game API runs against an in-memory store with no file system', async () =>
   const before = await call(store, 'GET', '/api/state');
   assert.equal(before.status, 200);
   const start = before.data.user.account.available;
-  const res = await call(store, 'POST', '/api/sicbo/play', { stake: 100_000, floor: 'downtown', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
+  const res = await call(store, 'POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'downtown', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
   assert.equal(res.status, 200);
   assert.equal(res.data.state.user.account.available, start + res.data.round.netPnl);
-  const replay = await call(store, 'POST', '/api/sicbo/play', { stake: 100_000, floor: 'downtown', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
+  const replay = await call(store, 'POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'downtown', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
   assert.equal(replay.data.replayed, true);
   assert.equal(replay.data.state.user.account.available, res.data.state.user.account.available);
 });
@@ -56,17 +56,17 @@ test('worker-bound modules never touch node:fs', async () => {
 
 test('blackjack start takes one stake per box and settles insurance through the action route', async () => {
   const store = memoryStore();
-  const bad = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000, 100_000, 100_000, 100_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-bad-0001' });
+  const bad = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000, 10_000_000, 10_000_000, 10_000_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-bad-0001' });
   assert.equal(bad.status, 400);
   assert.equal(bad.data.error, 'INVALID_SPOTS');
-  const tiny = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000, 1], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-tiny-0001' });
+  const tiny = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000, 1], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-tiny-0001' });
   assert.equal(tiny.status, 400);
 
   const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  const res = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [100_000, 200_000, 300_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-three-0001' });
+  const res = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000, 20_000_000, 30_000_000], floor: 'downtown' }, { 'x-idempotency-key': 'bj-key-three-0001' });
   assert.equal(res.status, 200);
   let round = res.data.round;
-  assert.deepEqual(round.hands.map(h => h.stake), [100_000, 200_000, 300_000]);
+  assert.deepEqual(round.hands.map(h => h.stake), [10_000_000, 20_000_000, 30_000_000]);
   let n = 0;
   while (round.status !== 'SETTLED') {
     const action = round.status === 'INSURANCE' ? 'INSURANCE' : 'STAND';
@@ -82,27 +82,27 @@ test('blackjack start takes one stake per box and settles insurance through the 
 test('baccarat takes optional pair side bets in the same round and ledger entry', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  const body = { stake: 100_000, floor: 'downtown', betType: 'PLAYER', sideBets: { PLAYER_PAIR: 25_000, BANKER_PAIR: 50_000 } };
+  const body = { stake: 10_000_000, floor: 'downtown', betType: 'PLAYER', sideBets: { PLAYER_PAIR: 2_500_000, BANKER_PAIR: 5_000_000 } };
   const res = await call(store, 'POST', '/api/baccarat/play', body, { 'x-idempotency-key': 'bac-side-0001' });
   assert.equal(res.status, 200);
   const r = res.data.round;
-  assert.equal(r.stake, 175_000);
+  assert.equal(r.stake, 17_500_000);
   assert.equal(r.sideBets.length, 2);
   for (const b of r.sideBets) assert.equal(b.netPnl, r.pairs[b.betType] ? b.stake * 11 : -b.stake);
   assert.equal(r.netPnl, r.mainPnl + r.sideBets.reduce((a, b) => a + b.netPnl, 0));
   assert.equal(res.data.state.user.account.available, start + r.netPnl);
   const tx = res.data.state.ledger.find(x => x.referenceId === r.id);
-  assert.equal(tx.metadata.stake, 175_000);
+  assert.equal(tx.metadata.stake, 17_500_000);
   assert.equal(tx.amount, r.netPnl);
   // A replay matches only the same side bets.
   const replay = await call(store, 'POST', '/api/baccarat/play', body, { 'x-idempotency-key': 'bac-side-0001' });
   assert.equal(replay.data.replayed, true);
-  const changed = await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 25_000 } }, { 'x-idempotency-key': 'bac-side-0001' });
+  const changed = await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 2_500_000 } }, { 'x-idempotency-key': 'bac-side-0001' });
   assert.equal(changed.status, 409);
   // The old single-bet request still works; bad side stakes are refused.
-  assert.equal((await call(store, 'POST', '/api/baccarat/play', { stake: 100_000, floor: 'downtown', betType: 'BANKER' })).status, 200);
+  assert.equal((await call(store, 'POST', '/api/baccarat/play', { stake: 10_000_000, floor: 'downtown', betType: 'BANKER' })).status, 200);
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: -5 } })).status, 400);
-  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 2_000_000 } })).status, 400);
+  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 200_000_000 } })).status, 400);
   const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, stake: 1_000_000, sideBets: { PLAYER_PAIR: 1_000_000, BANKER_PAIR: 1_000_000 } }, {})).status, before < 3_000_000 ? 409 : 200);
+  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, stake: 100_000_000, sideBets: { PLAYER_PAIR: 100_000_000, BANKER_PAIR: 100_000_000 } }, {})).status, before < 300_000_000 ? 409 : 200);
 });

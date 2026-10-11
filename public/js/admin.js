@@ -2,7 +2,7 @@
 import { api, errorMessage } from './api.js';
 import { formatCH, formatFull, el } from './fx.js';
 
-const PRESETS = [10e6, 50e6, 100e6, 1e9];
+const PRESETS = [1e8, 5e8, 1e9, 1e10];
 // Survives the profile re-rendering after every state change.
 const ui = { mode: 'grant', amount: PRESETS[2], target: null, message: '', ok: false };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);

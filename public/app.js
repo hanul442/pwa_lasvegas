@@ -242,7 +242,7 @@ function renderTiers() {
     const chips = el('span', 'tier-chips');
     tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
     const status = locked ? `${tier.floorName} 층이 열리면 앉을 수 있어요 (${Math.round((floor?.progress || 0) * 100)}%)` : broke ? '칩이 부족해요' : `${tier.floorName} 층`;
-    b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)} CH</span><small>${status}</small>`;
+    b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
     b.addEventListener('click', () => openTable(tier.slug));
@@ -280,7 +280,7 @@ function renderRanking() {
   head.replaceChildren();
   if (rankPeriod === 'season' && season) {
     const last = state.engagement?.lastSeason;
-    head.innerHTML = `<div class="season-card"><div><strong>${season.name}</strong><small>${timeLeft(season.endsAt)} 남음 · 월요일 0시에 새로 시작</small></div><ol class="season-prizes"><li><b>1위</b> 50M</li><li><b>2위</b> 30M</li><li><b>3위</b> 15M</li></ol></div>`
+    head.innerHTML = `<div class="season-card"><div><strong>${season.name}</strong><small>${timeLeft(season.endsAt)} 남음 · 월요일 0시에 새로 시작</small></div><ol class="season-prizes"><li><b>1위</b> 5천만</li><li><b>2위</b> 3천만</li><li><b>3위</b> 1,500만</li></ol></div>`
       + (last?.podium?.length ? `<p class="season-last">지난 시즌 ${last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '');
   }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
@@ -326,7 +326,7 @@ function renderProfile() {
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)} CH</small></div>
+      <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)}원</small></div>
     </div>
     <dl class="stat-grid">
       <div><dt>총 손익</dt><dd class="${a.qualifiedPnl >= 0 ? 'pos' : 'neg'}">${a.qualifiedPnl >= 0 ? '+' : ''}${formatCH(a.qualifiedPnl)}</dd></div>

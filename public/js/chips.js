@@ -18,7 +18,9 @@ export const TIERS = {
 export function createChip(value, tag = 'span') {
   const chip = el(tag, `chip chip--${CHIP_COLORS[value] || 'white'}`);
   chip.dataset.value = value;
-  chip.innerHTML = `<span class="chip-label">${formatCH(value)}</span>`;
+  const label = formatCH(value);
+  // Long Korean amounts (2500만) get a smaller face so they stay inside the inlay.
+  chip.innerHTML = `<span class="chip-label${label.length > 4 ? ' chip-label--long' : ''}">${label}</span>`;
   return chip;
 }
 

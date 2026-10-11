@@ -29,7 +29,7 @@ export function renderAdmin(root, state, onChanged) {
         </div>
         <div class="admin-field"><span id="admin-amount-label">금액</span>
           <div class="admin-presets">${PRESETS.map(v => `<button type="button" class="pill-button${v === amount ? ' is-active' : ''}" data-amount="${v}">${formatCH(v)}</button>`).join('')}</div>
-          <label class="admin-custom"><input name="custom" inputmode="numeric" aria-labelledby="admin-amount-label" placeholder="직접 입력" value="${PRESETS.includes(amount) ? '' : amount / 1e6}"><span>M</span></label></div>
+          <label class="admin-custom"><input name="custom" inputmode="numeric" aria-labelledby="admin-amount-label" placeholder="직접 입력" value="${PRESETS.includes(amount) ? '' : amount / 1e4}"><span>만 원</span></label></div>
         <label class="admin-field"><span>메모 <small>선택</small></span><input name="note" maxlength="40"></label>
         <p class="admin-msg${ok ? ' is-ok' : ''}" role="status">${esc(message)}</p>
         <button type="submit" class="pill-button pill-button--solid">${formatCH(amount)} ${mode === 'grant' ? '지급하기' : '회수하기'}</button>
@@ -42,7 +42,7 @@ export function renderAdmin(root, state, onChanged) {
     box.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { ui.amount = Number(b.dataset.amount); paint(); }));
     form.custom.addEventListener('change', () => {
       const m = Number(form.custom.value.replace(/[^\d.]/g, ''));
-      if (m > 0) { ui.amount = Math.round(m * 1e6); paint(); box.querySelector('[name=custom]').focus(); }
+      if (m > 0) { ui.amount = Math.round(m * 1e4); paint(); box.querySelector('[name=custom]').focus(); }
     });
     form.addEventListener('submit', async e => {
       e.preventDefault();
@@ -52,7 +52,7 @@ export function renderAdmin(root, state, onChanged) {
       try {
         const out = await api.adminAdjust(ui.target, ui.mode === 'grant' ? ui.amount : -ui.amount, note);
         const a = out.adjustment;
-        Object.assign(ui, { message: `${a.nickname}에게 ${a.amount > 0 ? '+' : ''}${formatCH(a.amount)} 반영했어요. 지금 ${formatFull(a.available)} CH.`, ok: true });
+        Object.assign(ui, { message: `${a.nickname}에게 ${a.amount > 0 ? '+' : ''}${formatCH(a.amount)} 반영했어요. 지금 ${formatFull(a.available)}원.`, ok: true });
         onChanged(out.state);
       } catch (err) {
         Object.assign(ui, { message: err.code === 'INSUFFICIENT_BANKROLL' ? '회수할 만큼 칩이 없어요.' : errorMessage(err), ok: false });

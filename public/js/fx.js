@@ -136,25 +136,30 @@ export function haptic(pattern = 8) {
 }
 
 // ---------- numbers ----------
+// Chips read like Korean money: 1억 2천만, 3500만, 10만. Short enough for chips and buttons.
 export function formatCH(value) {
-  const n = Number(value) || 0;
-  const abs = Math.abs(n);
+  const n = Math.round(Number(value) || 0);
   const sign = n < 0 ? '-' : '';
-  const units = [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
-  for (let i = 0; i < units.length; i++) {
-    const [size, suffix] = units[i];
-    if (abs >= size) {
-      const text = trim(abs / size);
-      // 999,999 rounds to "1000K"; promote it to the next unit instead.
-      if (Number(text) >= 1000 && i > 0) return `${sign}${trim(abs / units[i - 1][0])}${units[i - 1][1]}`;
-      return `${sign}${text}${suffix}`;
-    }
-  }
-  return `${sign}${abs}`;
+  const abs = Math.abs(n);
+  if (abs < 10_000) return sign + abs.toLocaleString('ko-KR');
+  if (abs >= 1e12) return `${sign}${trim(abs / 1e12)}조`;
+  if (abs < 1e6) return `${sign}${trim(abs / 1e4)}만`; // 2.5만, 35만
+  const total = Math.round(abs / 1e4); // in 만
+  const eok = Math.floor(total / 1e4), man = total % 1e4;
+  if (eok >= 100 || (eok > 0 && man === 0)) return `${sign}${trim(abs / 1e8)}억`;
+  // Keep two parts at most: 1억 2천만, 3억 8200만.
+  if (eok > 0) return `${sign}${eok}억 ${manText(man)}`;
+  return sign + manText(man);
 }
-function trim(x) { return x >= 100 ? x.toFixed(0) : x >= 10 ? x.toFixed(1).replace(/\.0$/, '') : x.toFixed(2).replace(/\.?0+$/, ''); }
+function manText(man) {
+  if (man >= 1000 && man % 1000 === 0) return `${man / 1000}천만`;
+  return `${man}만`;
+}
+function trim(x) { return x >= 100 ? Math.round(x).toLocaleString('ko-KR') : x >= 10 ? x.toFixed(1).replace(/\.0$/, '') : x.toFixed(2).replace(/\.?0+$/, ''); }
 
 export const formatFull = value => `${Math.round(Number(value) || 0).toLocaleString('ko-KR')}`;
+// Full amount with the currency, for sentences and labels.
+export const formatWon = value => `${formatFull(value)}원`;
 
 // Animated number roll for balances and payouts.
 export function rollNumber(el, from, to, { duration = 700, format = formatFull } = {}) {

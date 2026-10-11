@@ -1,4 +1,5 @@
 // Thin client for the server-authoritative game API.
+import { API_BASE } from './config.js';
 
 const PLAYER_KEY = 'vegas:player';
 
@@ -19,7 +20,7 @@ async function request(path, { method = 'GET', body } = {}) {
   if (method !== 'GET') { headers['content-type'] = 'application/json'; headers['x-idempotency-key'] = key(); }
   let res;
   try {
-    res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    res = await fetch(API_BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
     throw new ApiError('NETWORK', 0);
   }

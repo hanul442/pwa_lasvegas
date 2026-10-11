@@ -4,9 +4,20 @@ A fictional-chip social table-game project. **CH has no real-world monetary valu
 
 ## Live preview
 
-- Railway HTTPS: https://social-vegas-web-production.up.railway.app
+- Site: https://hanul442.github.io/pwa_lasvegas/ (GitHub Pages)
+- API: https://vegas-api.kimwriter222.workers.dev (Cloudflare Worker, see `worker/` and `wrangler.toml`)
 - GitHub: https://github.com/hanul442/pwa_lasvegas
-- Current deployment is a **preview build**. Supabase Auth is not connected yet, so do not treat demo player switching as production identity.
+- Current deployment is a **preview build**. There is no login yet, so do not treat demo player switching as real identity.
+
+## Deploy
+
+Every push to `main` runs `.github/workflows/deploy.yml`, the same setup as gnomon_analytics:
+
+- `public/` is published to GitHub Pages. Asset paths are relative, so it works under `/pwa_lasvegas/`.
+- The game API (`lib/api.mjs`) runs in a Cloudflare Worker. One Durable Object (`VegasFloor`) keeps the floor's state and applies bets one at a time.
+- `public/js/config.js` points the Pages site at the Worker. Locally the API is the same origin (`npm run dev`).
+
+One-time setup: add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and set Settings → Pages → Source to **GitHub Actions**. Run the Worker locally with `npx wrangler dev`.
 
 ## PWA readiness
 
@@ -65,4 +76,4 @@ Economy invariants:
 
 ## Production next step
 
-Railway deployment is live. Next, create a dedicated Supabase project, apply the migration, replace the JSON store with Postgres transactions and add Supabase Auth before sharing the app as a real friends-only service. Do not reuse the Black Oracle database or Railway service.
+The site and API are deployed from `main`. Next, create a dedicated Supabase project, apply the migration, replace the JSON store with Postgres transactions and add Supabase Auth before sharing the app as a real friends-only service. Do not reuse the Black Oracle or gnomon databases.

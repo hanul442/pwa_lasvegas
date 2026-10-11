@@ -2,14 +2,14 @@
   "name": "VEGAS · Social Casino",
   "short_name": "VEGAS",
   "description": "현금 가치가 없는 가상 칩으로 친구들과 즐기는 소셜 카지노",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0b0806",
-  "theme_color": "#0b0806",
+  "background_color": "#0a0b0d",
+  "theme_color": "#0a0b0d",
   "lang": "ko",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

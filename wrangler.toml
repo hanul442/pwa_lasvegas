@@ -1,0 +1,17 @@
+# Game API on Cloudflare Workers. Deployed by .github/workflows/deploy.yml on every push to main.
+name = "vegas-api"
+main = "worker/index.mjs"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+ALLOW_ORIGINS = "https://hanul442.github.io,http://localhost:3000,http://localhost:3100,http://localhost:8787"
+
+[[durable_objects.bindings]]
+name = "FLOOR"
+class_name = "VegasFloor"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["VegasFloor"]

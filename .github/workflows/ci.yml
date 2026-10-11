@@ -24,7 +24,7 @@ jobs:
           node-version: '22'
 
       - name: Syntax check server
-        run: node --check server.mjs
+        run: node --check server.mjs && node --check lib/api.mjs && node --check worker/index.mjs
 
       - name: Syntax check clean UI bootstrap
         run: node --check public/app.js

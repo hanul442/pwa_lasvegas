@@ -25,7 +25,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
       <span>상대</span>${[1, 2, 3, 4, 5].map(n => `<button type="button" role="radio" data-opp="${n}" aria-checked="${n === 5}">${n}</button>`).join('')}
     </div>
     <button type="button" class="pk-friends-open" data-friends-open>친구와 함께</button>` });
-  t.body.querySelector('[data-blinds]').textContent = `블라인드 ${formatCH(pk.bb / 2)} / ${formatCH(pk.bb)}`;
+  t.body.querySelector('[data-blinds]').textContent = `블라인드 ${formatCH(pk.bb / 2)} / ${formatCH(pk.bb)} · 최소 바이인 ${formatCH(pk.bb * 5)}`;
   const entry = t.tier.max;
   const hud = el('div', 'royale-hud');
   hud.hidden = true;
@@ -269,7 +269,17 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     if (!session) {
       sizer.hidden = true;
       if (royale) t.setActions([{ label: `참가 · ${formatCH(entry)}`, key: '↵', primary: true, disabled: t.available < entry, onClick: sit }]);
-      else t.setActions(t.idleActions('앉기', sit));
+      else {
+        // Below the minimum buy-in, 앉기 stays off and says what it takes, before any tap.
+        const acts = t.idleActions('앉기', sit);
+        const min = pk.bb * 5;
+        const go = acts.find(a => a.primary);
+        if (t.total > 0 && t.total < min && go) {
+          go.disabled = true;
+          go.label = `앉기 · 최소 ${formatCH(min)}`;
+        }
+        t.setActions(acts);
+      }
       return;
     }
     if (session.royale?.canRebuy) {

@@ -965,3 +965,7 @@
 @media (max-height:640px){.sq-card{--card-w:clamp(90px,26vh,150px)}.sq-cards{padding:14px 10px}}
 @media (prefers-reduced-motion:reduce){.sq-card>.sq-back{animation:none!important}.sq-stage,.sq-mat,.sq-head,.sq-hint,.sq-actions{transition:none}}
 .sq-card:only-child{--card-w:clamp(120px,46vw,200px)}
+/* The table name opens the table switcher: a small chevron says it can be tapped. */
+.table-name[data-switch]{cursor:pointer;border-radius:8px}
+.table-name[data-switch] strong::after{content:"";flex:none;width:6px;height:6px;margin:-4px 2px 0;border-right:1.5px solid var(--smoke);border-bottom:1.5px solid var(--smoke);rotate:45deg}
+.table-name[data-switch]:focus-visible{outline:2px solid var(--white);outline-offset:2px}

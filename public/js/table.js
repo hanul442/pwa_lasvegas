@@ -27,7 +27,9 @@ export class Table {
   // skin: whether the player's own felt (꾸미기, lib/shop.mjs) may cover this table; slots keep
   // their cabinet. Event tables keep their look too: table.css skips the skin under .is-event
   // and the event felts, so a table that turns into an event mid-visit changes back.
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true }) {
+  // backLabel: where the ← goes (the screen this table was opened from). onSwitch: the table name
+  // opens the quick switcher (other games, other tables of this one).
+  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true }) {
     this.pushDouble = pushDouble;
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
@@ -59,7 +61,7 @@ export class Table {
     root.dataset.tier = this.tier.slug;
     root.innerHTML = `
       <header class="table-bar">
-        <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
+        <button class="table-back" type="button" aria-label="${backLabel}" title="${backLabel}"><span aria-hidden="true">←</span></button>
         <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatCH(this.tier.max)}원</i></span></div>
         <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
         <div class="table-tools">
@@ -95,6 +97,16 @@ export class Table {
     this.betEl = root.querySelector('[data-bet]');
     this.hintEl = root.querySelector('[data-hint]');
     root.querySelector('.table-back').addEventListener('click', () => onLeave?.());
+    if (onSwitch) {
+      const name = root.querySelector('.table-name');
+      name.dataset.switch = '';
+      name.setAttribute('role', 'button');
+      name.tabIndex = 0;
+      name.setAttribute('aria-haspopup', 'dialog');
+      name.setAttribute('aria-label', `${title} ${this.tier.name} · 테이블 바꾸기`);
+      name.addEventListener('click', () => onSwitch());
+      name.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSwitch(); } });
+    }
     this.tools = root.querySelectorAll('[data-tool]');
     root.querySelector('[data-tool="undo"]').addEventListener('click', () => this.undo());
     root.querySelector('[data-tool="half"]').addEventListener('click', () => this.half());

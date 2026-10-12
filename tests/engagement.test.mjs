@@ -25,15 +25,22 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
   assert.throws(() => claimDaily(state, u, WED + 1000), /DAILY_ALREADY_CLAIMED/);
   assert.equal(dailyStatus(u, WED).claimed, true);
   assert.equal(dailyStatus(u, WED).toWeekly, 6);
-  for (let d = 1; d < 7; d++) claimDaily(state, u, WED + d * DAY);
+  // Pay is counted in the table base on the day it is paid, and the pay itself can lift the
+  // player past a floor's ceiling, so each day is checked against the base it was paid at.
+  let paid = first.amount, last;
+  const claim = d => { const b = tableBase(u); last = claimDaily(state, u, WED + d * DAY); paid += last.amount; return b; };
+  for (let d = 1; d < 6; d++) claim(d);
+  const weekBase = claim(6);
   assert.equal(u.daily.streak, 7);
-  assert.equal(u.account.available, start + 7 * PAY.daily * base + PAY.weekly * base);
+  assert.deepEqual(last.pay, { daily: PAY.daily * weekBase, weekly: PAY.weekly * weekBase, monthly: 0 });
+  assert.equal(u.account.available, start + paid);
   assert.equal(u.payStats.weeks, 1);
   assert.equal(state.feed[0].type, 'DAILY_STREAK');
-  for (let d = 7; d < PAY_CYCLE; d++) claimDaily(state, u, WED + d * DAY);
+  for (let d = 7; d < PAY_CYCLE - 1; d++) claim(d);
+  const monthBase = claim(PAY_CYCLE - 1);
   assert.equal(u.payStats.weeks, 4);
   assert.equal(u.payStats.months, 1);
-  assert.ok(state.ledger.some(x => x.userId === 'hanseo' && x.type === 'MONTHLY_PAY' && x.amount === PAY.monthly * base));
+  assert.ok(state.ledger.some(x => x.userId === 'hanseo' && x.type === 'MONTHLY_PAY' && x.amount === PAY.monthly * monthBase));
   // Day 29 starts the calendar over but keeps the streak.
   assert.equal(dailyStatus(u, WED + PAY_CYCLE * DAY).day, 1);
   assert.equal(claimDaily(state, u, WED + PAY_CYCLE * DAY).streak, PAY_CYCLE + 1);
@@ -43,10 +50,13 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
 
 test('정부 지원금 once a week for anyone; 기초생활수급 once a day for someone worth under 1천원', () => {
   const state = defaultState(); const u = state.users.hanseo;
+  // Mid-way through High Limit (1억–10억 net worth), so a payout doesn't graduate the floor.
+  u.account.available = 300_000_000;
   const grant = claimSupport(state, u, 'grant', WED);
   assert.equal(grant.amount, 50 * tableBase(u));
   assert.throws(() => claimSupport(state, u, 'grant', WED + DAY), /SUPPORT_ALREADY_CLAIMED/);
-  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 50 * tableBase(u), 'next week pays again');
+  const base = tableBase(u);
+  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 50 * base, 'next week pays again');
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
   u.account.available = 200;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
@@ -64,6 +74,8 @@ test('three missions a day, stable within the day, one of them general', () => {
 
 test('settled rounds advance missions, and claiming all three adds the sweep bonus', () => {
   const state = defaultState(); const u = state.users.hanseo;
+  // Mid-way through High Limit (1억–10억 net worth), so a payout doesn't graduate the floor.
+  u.account.available = 300_000_000;
   // Force a known set of missions for the day.
   u.missions = { day: dayKey(WED), items: ['rounds-any', 'wins-blackjack', 'mult-5'].map(id => ({ id, progress: 0, claimed: false })), games: [], swept: false };
   assert.throws(() => claimMission(state, u, 'rounds-any', WED), /MISSION_NOT_DONE/);
@@ -141,6 +153,8 @@ test('lucky card rescue only opens on an empty wallet while the recharge cools d
 
 test('API exposes engagement and the claim routes', async () => {
   let state = defaultState();
+  // Mid-way through High Limit (1억–10억 net worth), so a payout doesn't graduate the floor.
+  state.users.hanseo.account.available = 300_000_000;
   const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
   const call = (method, path, body) => handleApi({ method, header: () => undefined, body: async () => body ?? {} }, new URL(`http://x${path}`), store, { NODE_ENV: 'production' });
   const s = await call('GET', '/api/state');

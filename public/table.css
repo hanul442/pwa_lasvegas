@@ -917,3 +917,49 @@
   .pk-oval.is-duel::after{animation:none}
   .pk-duel{animation:none}
 }
+
+/* ---------- baccarat squeeze (쪼기): js/squeeze.js ---------- */
+.card.is-lifted{visibility:hidden}
+.sq-stage{position:absolute;grid-row:2 / 4;grid-column:1;inset:0;z-index:30;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:10px;padding:10px 16px calc(14px + env(safe-area-inset-bottom));background:#0a0b0d;transition:background .3s}
+.sq-head{display:flex;align-items:baseline;justify-content:center;gap:14px;min-height:40px;transition:opacity .2s}
+.sq-title{font:650 22px var(--display);font-stretch:118%;letter-spacing:-.02em}
+.sq-stage--player .sq-title{color:#c7d6ea}.sq-stage--banker .sq-title{color:#ead0c9}
+.sq-note{font-size:15px;font-weight:600;color:var(--smoke)}
+.sq-total{font:700 34px/1 var(--display);font-variant-numeric:tabular-nums;color:var(--white)}
+.sq-total:empty{display:none}
+.sq-mat{position:relative;display:grid;place-items:center;border-radius:28px;
+  background:radial-gradient(70% 60% at 50% 40%,var(--felt-a,#22548a) 0,var(--felt-b,#143660) 55%,var(--felt-c,#08172d) 100%);
+  box-shadow:inset 0 0 0 1px #ffffff14,inset 0 0 60px #0009;transition:opacity .25s}
+.sq-cards{display:flex;justify-content:center;align-items:center;gap:clamp(12px,4vw,32px);padding:24px 12px}
+.sq-card{--card-w:clamp(112px,40vw,184px);position:relative;flex:none;width:var(--card-w);height:calc(var(--card-w) * 1.4);font-size:calc(var(--card-w) * .2);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab;border-radius:8%/5.7%;outline:none}
+.sq-card:focus-visible{box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--white)}
+.sq-card.is-grabbed{cursor:grabbing}
+.sq-card>.sq-back{transform:none;backface-visibility:visible;-webkit-backface-visibility:visible}
+.sq-flapwrap{position:absolute;inset:0;pointer-events:none;filter:drop-shadow(0 6px 10px #0009);visibility:hidden}
+.sq-card.is-bent .sq-flapwrap{visibility:visible}
+.sq-flap{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:0 0}
+.sq-face{backface-visibility:visible;-webkit-backface-visibility:visible;transform-origin:0 0}
+.sq-flap .sq-face{box-shadow:inset 0 0 0 1px #00000024}
+/* big faces: a smaller index and the pips drawn in from it, the way a real card leaves its margin */
+.sq-face .card-corner{font-size:.8em}
+.sq-face .card-pips{inset:18% 28%}
+.sq-face .card-pips i{font-size:.82em}
+/* the underside has no index, so the pips tell it */
+.sq-flap .card-corner{display:none}
+.sq-shade{position:absolute;inset:0;border-radius:8%/5.7%;pointer-events:none}
+.sq-open{position:absolute;inset:0;visibility:hidden;transform-origin:50% 50%}
+.sq-open .sq-face{transform:none}
+.sq-card.is-open{cursor:default}
+.sq-card.is-open>.sq-back{visibility:hidden}
+.sq-card.is-open .sq-open{visibility:visible}
+.sq-hint{margin:0;min-height:20px;text-align:center;font-size:15px;font-weight:600;color:var(--smoke);transition:opacity .2s}
+.sq-actions{display:flex;gap:8px;transition:opacity .2s}
+.sq-stage.is-done .sq-actions{opacity:0;pointer-events:none}
+.sq-stage.is-entering{background:#0a0b0d00}
+.sq-stage.is-entering .sq-mat,.sq-stage.is-leaving .sq-mat,.sq-stage.is-leaving .sq-head,.sq-stage.is-leaving .sq-hint,.sq-stage.is-leaving .sq-actions{opacity:0}
+.sq-stage.is-entering .sq-mat{transition:none}
+.sq-stage.is-leaving{background:#0a0b0d00;pointer-events:none}
+@media (min-width:520px){.sq-stage{padding-left:24px;padding-right:24px}.sq-actions{max-width:520px;width:100%;justify-self:center}}
+@media (max-height:640px){.sq-card{--card-w:clamp(90px,26vh,150px)}.sq-cards{padding:14px 10px}}
+@media (prefers-reduced-motion:reduce){.sq-card>.sq-back{animation:none!important}.sq-stage,.sq-mat,.sq-head,.sq-hint,.sq-actions{transition:none}}
+.sq-card:only-child{--card-w:clamp(120px,46vw,200px)}

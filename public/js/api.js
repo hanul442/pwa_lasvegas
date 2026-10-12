@@ -81,6 +81,10 @@ export const api = {
   borrow: (lender, amount, days) => request('/api/bank/borrow', { method: 'POST', body: { lender, amount, days } }),
   repay: (loanId, amount) => request('/api/bank/repay', { method: 'POST', body: { loanId, amount } }),
   bankruptcy: () => request('/api/bank/bankruptcy', { method: 'POST' }),
+  // 상점: itemId from the catalog in lib/shop.mjs; equip with itemId null puts the house look back.
+  shopBuy: itemId => request('/api/shop/buy', { method: 'POST', body: { itemId } }),
+  shopSell: itemId => request('/api/shop/sell', { method: 'POST', body: { itemId } }),
+  shopEquip: (slot, itemId) => request('/api/shop/equip', { method: 'POST', body: { slot, itemId } }),
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
@@ -158,7 +162,7 @@ const MESSAGES = {
   REPAY_OVER_BALANCE: '남은 빚보다 많이 갚을 수는 없어요.',
   BANKRUPTCY_NOT_AVAILABLE: '지금은 파산 신청을 할 수 없어요.',
   SUPPORT_ALREADY_CLAIMED: '이미 받았어요. 다음 지급일에 다시 와 주세요.',
-  WELFARE_NOT_QUALIFIED: '순자산이 100만원 미만일 때만 받을 수 있어요.',
+  WELFARE_NOT_QUALIFIED: '순자산이 100만원 미만일 때만 받을 수 있어요. 되팔 수 있는 사치품도 함께 세요.',
   ACHIEVEMENT_NOT_DONE: '아직 달성하지 않은 업적이에요.',
   ACHIEVEMENT_ALREADY_CLAIMED: '이미 받은 업적 보상이에요.',
   BET_OUTSIDE_TABLE_LIMIT: '이 테이블의 베팅 한도를 벗어났어요.',
@@ -200,7 +204,14 @@ const MESSAGES = {
   CHALLENGE_ALREADY_OPEN: '이 친구와 같은 대결이 이미 진행 중이에요.',
   CHALLENGE_NOT_PENDING: '이미 답한 대결 신청이에요.',
   CHALLENGE_NOT_OPEN: '이미 끝난 대결이에요.',
-  CHALLENGE_NOT_FOUND: '대결을 찾을 수 없어요.'
+  CHALLENGE_NOT_FOUND: '대결을 찾을 수 없어요.',
+  ITEM_NOT_FOUND: '상점에 없는 물건이에요. 화면을 새로 고쳐 주세요.',
+  ITEM_ALREADY_OWNED: '이미 가지고 있어요.',
+  ITEM_NOT_OWNED: '가지고 있지 않은 물건이에요.',
+  ITEM_NOT_FOR_SALE: '업적을 달성하면 무료로 열리는 스킨이에요.',
+  ITEM_NOT_SELLABLE: '꾸미기는 되팔 수 없어요.',
+  INVALID_SLOT: '장착할 수 없는 자리예요.',
+  IDEMPOTENCY_CONFLICT: '같은 요청이 이미 처리 중이에요. 잠시 후 다시 시도해 주세요.'
 };
 
 export function errorMessage(err) {

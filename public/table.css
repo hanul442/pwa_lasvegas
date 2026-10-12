@@ -831,9 +831,11 @@
   background:repeating-conic-gradient(color-mix(in srgb,var(--ink) 34%,transparent) 0 2.2deg,transparent 2.2deg 7.5deg);
   -webkit-mask:radial-gradient(circle closest-side,transparent 0 63.5%,#000 64.5% 68%,transparent 69%);
           mask:radial-gradient(circle closest-side,transparent 0 63.5%,#000 64.5% 68%,transparent 69%)}
-.chip:not(.chip--plaque)::before{inset:21%;border:max(1px,calc(var(--size) * .014)) solid #ffffff5c;
+/* The inlay line takes the player's chip accent (꾸미기, shop.css): --chip-inlay is its colour,
+   --chip-inlay-w its weight, and --chip-halo (0 or 1) adds a second ring outside it. */
+.chip:not(.chip--plaque)::before{inset:21%;border:max(1px,calc(var(--size) * .014 * var(--chip-inlay-w,1))) solid var(--chip-inlay,#ffffff5c);
   background:radial-gradient(circle closest-side,color-mix(in srgb,var(--c) 90%,#fff) 0,var(--c) 100%);
-  box-shadow:0 0 0 max(1px,calc(var(--size) * .01)) color-mix(in srgb,var(--ink) 22%,transparent),inset 0 calc(var(--size) * .02) calc(var(--size) * .05) #00000038}
+  box-shadow:0 0 0 max(1px,calc(var(--size) * .01)) color-mix(in srgb,var(--ink) 22%,transparent),0 0 0 calc(var(--size) * .03 * var(--chip-halo,0)) var(--c),0 0 0 calc(var(--size) * .042 * var(--chip-halo,0)) var(--chip-inlay,#ffffff5c),inset 0 calc(var(--size) * .02) calc(var(--size) * .05) #00000038}
 .chip-label{font-size:calc(var(--size) * .2);font-weight:650;font-family:var(--display);font-stretch:108%;font-variant-numeric:tabular-nums;letter-spacing:-.01em;text-shadow:0 1px 0 #0000002e}
 
 /* Plaques (1억 and up): pearl acrylic tiles with a clear bevelled edge, a fine double frame,
@@ -845,8 +847,8 @@
     linear-gradient(160deg,color-mix(in srgb,var(--c) 80%,#fff) 0,var(--c) 46%,color-mix(in srgb,var(--c) 78%,#000) 100%);
   box-shadow:inset 0 0 0 1px #ffffff70,inset 0 0 0 calc(var(--size) * .04) color-mix(in srgb,var(--c) 72%,#000),inset 0 0 0 calc(var(--size) * .046) #ffffff38,
     inset 0 calc(var(--size) * .06) calc(var(--size) * .08) #ffffff1f,0 calc(var(--size) * .035) 0 color-mix(in srgb,var(--rim) 45%,#000),0 calc(var(--size) * .1) calc(var(--size) * .2) #000000b0}
-.chip--plaque::before{inset:13% 8.5%;border-radius:calc(var(--size) * .035);border:1px solid color-mix(in srgb,var(--ink) 38%,transparent);
-  outline:1px solid color-mix(in srgb,var(--ink) 16%,transparent);outline-offset:calc(var(--size) * .022)}
+.chip--plaque::before{inset:13% 8.5%;border-radius:calc(var(--size) * .035);border:1px solid var(--plaque-inlay,color-mix(in srgb,var(--ink) 38%,transparent));
+  outline:1px solid var(--plaque-outline,color-mix(in srgb,var(--ink) 16%,transparent));outline-offset:calc(var(--size) * .022)}
 .chip--plaque .chip-label{font:600 calc(var(--size) * .23)/1 var(--display);font-stretch:110%;letter-spacing:-.015em}
 .chip:not(.chip--plaque) .chip-label--long{font-size:calc(var(--size) * .15)}
 .chip--plaque .chip-label--long{font-size:calc(var(--size) * .19)}

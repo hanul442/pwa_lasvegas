@@ -35,7 +35,7 @@ function symbol(s) {
 const randomSymbol = () => STRIP[Math.floor(Math.random() * STRIP.length)];
 
 export async function mountSlots(ctx) {
-  const t = new Table({ ...ctx, game: 'slots', title: 'Slots', feltClass: 'felt--slots' });
+  const t = new Table({ ...ctx, game: 'slots', title: 'Slots', feltClass: 'felt--slots', skin: false });
   t.body.innerHTML = `
     <div class="slot">
       <div class="slot-jackpot"><span>PROGRESSIVE JACKPOT</span><strong data-pool>—</strong></div>

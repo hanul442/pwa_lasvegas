@@ -45,7 +45,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false } = {}) {
     const r = s?.royale;
     hud.hidden = !r;
     if (!r) return;
-    hud.innerHTML = `<span><b>LEVEL ${r.level}</b> ${formatCH(s.table.smallBlind)}/${formatCH(s.table.bigBlind)}</span><span>${r.handsToNext}핸드 뒤 ${formatCH(r.next.small)}/${formatCH(r.next.big)}</span><span>남은 사람 <b>${r.left}/${r.seats}</b></span><span>상금 <b>${formatCH(r.prize)}</b></span>`;
+    hud.innerHTML = `<span><b>LEVEL ${r.level}</b> · ${formatCH(s.table.smallBlind)}/${formatCH(s.table.bigBlind)}</span><span>${r.handsToNext}핸드 뒤 ${formatCH(r.next.big)}</span><span>남은 사람 <b>${r.left}/${r.seats}</b></span><span>상금 <b>${formatCH(r.prize)}</b></span>`;
   }
   function useBlinds(table) {
     pk.bb = table.bigBlind;

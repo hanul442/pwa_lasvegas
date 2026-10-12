@@ -9,6 +9,7 @@ import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../f
 import { settings, onSettings } from '../settings.js';
 import { basicStrategy } from '../bj-strategy.js';
 import { Table } from '../table.js';
+import { createDoubleOrNothing } from '../double-or-nothing.js';
 import { voice } from '../voice.js';
 import { createRoomClient } from './room-client.js';
 
@@ -42,7 +43,8 @@ function hintRecord() { try { const r = JSON.parse(localStorage.getItem(HINT_KEY
 function saveHint(r) { try { localStorage.setItem(HINT_KEY, JSON.stringify(r)); } catch {} }
 
 export async function mountBlackjack(ctx) {
-  const t = new Table({ ...ctx, game: 'blackjack', title: 'Blackjack', multi: true });
+  const t = new Table({ ...ctx, game: 'blackjack', title: 'Blackjack', multi: true, pushDouble: true });
+  const don = createDoubleOrNothing(t);
   t.body.innerHTML = `
     <div class="bj">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
@@ -466,6 +468,7 @@ export async function mountBlackjack(ctx) {
     await t.settle(net, { label: `${headline}`, zones, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     await t.syncBalance();
     refreshActions();
+    if (net > 0 && round.id && !room.active) don.offer(round.id, net);
   }
 
   // Resume an unfinished round so locked chips are never stranded.

@@ -77,3 +77,36 @@ test('a solo 나가리 waits on the account until the next hand takes it or turn
   assert.equal(fresh.data.round.double, 1, 'turning it down plays a plain hand');
   assert.equal(user().nagari.Gostop, undefined);
 });
+
+test('더블 오어 낫띵 stakes a fresh baccarat win on one card and can be pressed three times', async () => {
+  const store = memoryStore();
+  await call(store, 'GET', '/api/state');
+  let win = null;
+  for (let i = 0; i < 40 && !win; i++) {
+    const res = await call(store, 'POST', '/api/baccarat/play', { stake: 10_000_000, floor: 'high-limit', betType: 'PLAYER' });
+    assert.equal(res.status, 200, JSON.stringify(res.data));
+    if (res.data.round.netPnl > 0) win = res.data.round;
+  }
+  assert.ok(win, 'a baccarat win within 40 hands');
+  const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
+  let res = await call(store, 'POST', '/api/double', { roundId: win.id, pick: 'RED' });
+  assert.equal(res.status, 200, JSON.stringify(res.data));
+  let d = res.data.double;
+  assert.equal(d.stake, win.netPnl);
+  assert.equal(d.won, d.color === 'RED');
+  assert.equal(res.data.state.user.account.available, before + d.netPnl);
+  // The same win cannot be gambled twice.
+  assert.equal((await call(store, 'POST', '/api/double', { roundId: win.id, pick: 'BLACK' })).status, 409);
+  let steps = 1;
+  while (d.won && d.next) {
+    assert.equal(d.next, d.stake * 2);
+    res = await call(store, 'POST', '/api/double', { roundId: d.id, pick: 'BLACK' });
+    assert.equal(res.status, 200, JSON.stringify(res.data));
+    d = res.data.double; steps++;
+  }
+  assert.ok(steps <= 3);
+  if (d.won) assert.equal(d.next, null, 'stops after the third press');
+  // A loss gives nothing more to press.
+  if (!d.won) assert.equal((await call(store, 'POST', '/api/double', { roundId: d.id, pick: 'RED' })).status, 409);
+  assert.equal((await call(store, 'POST', '/api/double', { roundId: win.id, pick: 'GREEN' })).status, 400);
+});

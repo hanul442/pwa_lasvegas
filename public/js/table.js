@@ -14,7 +14,8 @@ function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(v
 export class Table {
   // multi: separate bets per zone. zoneMin: every zone must meet the table minimum (blackjack
   // boxes) rather than the total (chips spread over a roulette layout).
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당' }) {
+  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false }) {
+    this.pushDouble = pushDouble;
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
@@ -432,6 +433,11 @@ export class Table {
   // With nothing on the felt after a round, the primary button replays the last bet in one tap.
   idleActions(label, go) {
     const again = !this.total && this.lastBet;
+    // After a push: leave the chips where they were and double them for the next hand.
+    if (again && this.pushed && this.pushDouble) return [
+      { label: `같은 베팅으로 ${label}`, ghost: true, onClick: async () => { this.pushed = false; await this.rebet(); if (this.betReady) await go(); } },
+      { label: '묻고 더블로 가 ×2', key: '↵', primary: true, onClick: async () => { this.pushed = false; await this.rebet(); await this.double(); if (this.betReady) await go(); } }
+    ];
     if (again) return [
       { label: '다시 베팅', ghost: true, onClick: () => this.rebet() },
       { label: `같은 베팅으로 ${label}`, key: '↵', primary: true, onClick: async () => { await this.rebet(); if (this.betReady) await go(); } }
@@ -469,6 +475,8 @@ export class Table {
     const staked = this.total;
     const held = [...this.bets.keys()].filter(z => this.chipsOf(z).length);
     const nets = zones || new Map([[held[0], net]]);
+    // A stand-off (blackjack push, baccarat tie on a player/banker bet) offers 묻고 더블로 가.
+    this.pushed = staked > 0 && net === 0 && [...nets.values()].every(n => !n);
     const rack = this.rack.getBoundingClientRect();
     const pays = [];
     nets.forEach((n, zoneId) => {

@@ -4,7 +4,7 @@ import { el, sound, haptic, rollNumber, formatMoney, animate, ms, reducedMotion 
 import { createChip } from './chips.js';
 
 const BRAGS = ['“오늘은 내가 하우스”', '“딜러가 울고 갔어요”', '“동네방네 자랑합니다”', '“이 맛에 앉아 있죠”'];
-const RAIN = [50_000_000, 10_000_000, 30_000_000, 100_000_000, 20_000_000, 500_000_000, 70_000_000];
+const RAIN = [50_000_000, 10_000_000, 20_000_000, 100_000_000, 20_000_000, 500_000_000, 1_000_000_000];
 
 // Wins worth stopping the table for, unless a game names its own moment: 5x the stake, or
 // 5억 or more however it was won (the same bar as the lounge feed's hot wins).

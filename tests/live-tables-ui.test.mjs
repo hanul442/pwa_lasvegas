@@ -83,7 +83,9 @@ test('chip tiers match server floor limits', () => {
     assert.ok(tier.min >= floor.minBet && tier.max <= floor.maxBet, tier.slug);
     for (const stake of [tier.min, tier.max]) assert.ok(floor.stakeTiers.includes(stakeTierFor(stake)?.slug), `${tier.slug} ${stake}`);
   }
-  assert.deepEqual(breakdown(90_000_000, TIERS['high-limit'].chips), [70_000_000, 20_000_000]);
+  assert.deepEqual(breakdown(90_000_000, TIERS['high-limit'].chips), [50_000_000, 20_000_000, 20_000_000]);
+  // Round chips only: 1, 2, 5 and 10 times the table minimum.
+  assert.deepEqual(TIERS['salon-prive'].chips, [100_000_000, 200_000_000, 500_000_000, 1_000_000_000]);
 });
 
 test('chip amounts read as Korean money and never overflow a unit', () => {
@@ -101,9 +103,9 @@ test('chip amounts read as Korean money and never overflow a unit', () => {
   assert.equal(formatCH(2_500_000_000_000), '2.5조');
 });
 
-test('every table offers five chip denominations that fit under its limit', () => {
+test('every table offers four round chip denominations that fit under its limit', () => {
   for (const tier of Object.values(TIERS)) {
-    assert.equal(tier.chips.length, 5);
+    assert.deepEqual(tier.chips, [1, 2, 5, 10].map(k => k * tier.min));
     assert.ok(tier.chips.every(c => c <= tier.max));
     assert.ok(tier.chips[0] <= tier.min, `${tier.slug} smallest chip builds bets in steps`);
   }

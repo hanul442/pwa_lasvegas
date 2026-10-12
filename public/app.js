@@ -236,7 +236,7 @@ async function dealVignette() {
   const hand = document.querySelector('[data-vignette-hand]');
   const chips = document.querySelector('[data-vignette-chips]');
   const shoe = { left: innerWidth, top: -120, width: 0, height: 0 };
-  [50_000_000, 30_000_000, 30_000_000, 10_000_000, 10_000_000].forEach((v, i) => {
+  [50_000_000, 20_000_000, 20_000_000, 10_000_000, 10_000_000].forEach((v, i) => {
     const c = createChip(v); c.style.setProperty('--i', i); c.style.setProperty('--jx', `${(i % 2) - 0.5}px`); chips.append(c);
   });
   for (const t of ['A♠', 'K♥']) {

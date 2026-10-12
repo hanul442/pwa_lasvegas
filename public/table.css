@@ -688,3 +688,13 @@
 .don-btn--red{background:#b3262b;border-color:#b3262b}
 .don-btn--black{background:var(--white);color:var(--ink);border-color:var(--white)}
 .don-btn:disabled{opacity:.45;cursor:default}
+
+/* ---------- plaques: 1억 and up are rectangular pearl tiles, not discs ---------- */
+.chip--plaque{width:calc(var(--size) * 1.24);height:calc(var(--size) * .8);border-radius:calc(var(--size) * .09);
+  background:linear-gradient(140deg,color-mix(in srgb,var(--c) 70%,#fff) 0,var(--c) 38%,color-mix(in srgb,var(--c) 82%,#000) 100%);
+  box-shadow:inset 0 0 0 max(1px,calc(var(--size) * .03)) color-mix(in srgb,var(--edge) 75%,transparent),inset 0 calc(var(--size) * .05) calc(var(--size) * .08) #ffffff40,0 calc(var(--size) * .04) 0 color-mix(in srgb,var(--rim) 50%,#000),0 calc(var(--size) * .1) calc(var(--size) * .18) #0009}
+.chip--plaque::before{inset:13% 9%;border-radius:calc(var(--size) * .05);border-color:color-mix(in srgb,var(--ink) 45%,transparent)}
+.chip--plaque::after{content:"";position:absolute;left:50%;top:9%;width:calc(var(--size) * .1);height:calc(var(--size) * .1);margin-left:calc(var(--size) * -.05);background:color-mix(in srgb,var(--ink) 70%,transparent);clip-path:var(--star-shape)}
+.chip--plaque .chip-label{font-size:calc(var(--size) * .25);translate:0 calc(var(--size) * .03)}
+.chip--plaque .chip-label--long{font-size:calc(var(--size) * .2)}
+.chip-tray .chip--plaque[aria-pressed="true"]::after{top:auto}

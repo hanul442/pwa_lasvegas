@@ -237,27 +237,50 @@ function gameRow(g) {
   b.dataset.game = g.id;
   if (g.soon) b.setAttribute('aria-disabled', 'true');
   if (g.event) b.classList.add('is-event');
-  b.style.setProperty('--felt', FELT[g.id] || FELT.blackjack);
-  b.innerHTML = `<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span><span class="game-row-stake">${g.soon ? '준비 중' : g.event ? '이벤트' : `${formatCH(TIERS.corner.min)}원부터`}</span>`;
+  b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span>`;
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
   return li;
 }
 
-// Each tile is lit with its own table's felt, the one colour a tile carries.
-const FELT = {
-  blackjack: '#1d6b4f', roulette: '#1b5e3f', baccarat: '#1d3f6b', dice: '#6b1f24', matgo: '#2f4a3c', gostop: '#2f4a3c',
-  seotda: '#4a2f28', poker: '#1d6b5e', slots: '#3a3f47', royale: '#173f3a', tazza: '#4a1a1d', oceans: '#1d2f4f', rounders: '#3a2f22', montecarlo: '#2d2346'
+// Each game is marked by its own table object drawn in a fine ivory line, like an engraved
+// menu: no colour, no glow. Colour stays on the felt.
+const ICON = {
+  blackjack: '<rect x="9" y="10" width="19" height="27" rx="2.5" transform="rotate(-10 18 24)"/><rect x="20" y="11" width="19" height="27" rx="2.5" transform="rotate(8 30 24)"/><path d="M27 29.5l2.6-8 2.6 8M28 27h3.4"/>',
+  roulette: '<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="10"/><circle cx="24" cy="24" r="3"/><path d="M24 9v5M24 34v5M9 24h5M34 24h5M13.4 13.4l3.5 3.5M31.1 31.1l3.5 3.5M13.4 34.6l3.5-3.5M31.1 16.9l3.5-3.5"/><circle cx="30.5" cy="17.5" r="1.3" fill="currentColor" stroke="none"/>',
+  baccarat: '<rect x="7" y="13" width="17" height="24" rx="2.5"/><rect x="24" y="13" width="17" height="24" rx="2.5"/><path d="M12.5 21.5c0-2 1.4-3 3-3s3 1 3 3-1.4 3.2-3 3.2-3-1.1-3-3.2zM18.5 21.5v4c0 2-1.4 3-3 3s-2.6-.8-2.9-2"/><path d="M29 18.5h6.5l-4.5 11"/>',
+  dice: '<path d="M24 8l13 7.5v15L24 38l-13-7.5v-15z"/><path d="M11 15.5L24 23l13-7.5M24 23v15"/><circle cx="24" cy="15.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="27" r="1.3" fill="currentColor" stroke="none"/><circle cx="31" cy="25" r="1.3" fill="currentColor" stroke="none"/><circle cx="31" cy="31" r="1.3" fill="currentColor" stroke="none"/>',
+  matgo: '<rect x="14" y="8" width="20" height="32" rx="2"/><circle cx="24" cy="19" r="5.5"/><path d="M14 31c4-3.5 7-4.5 10-4.5s6 1 10 4.5"/>',
+  gostop: '<rect x="8" y="11" width="17" height="27" rx="2" transform="rotate(-9 16 24)"/><rect x="23" y="11" width="17" height="27" rx="2" transform="rotate(9 32 24)"/><circle cx="32" cy="20" r="4"/><path d="M11 27.5c2.5-1.5 5-2 8-1"/>',
+  seotda: '<rect x="8" y="10" width="15" height="28" rx="2"/><rect x="25" y="10" width="15" height="28" rx="2"/><circle cx="15.5" cy="19" r="3.6"/><circle cx="32.5" cy="19" r="3.6"/><path d="M11 30h9M28 30h9"/>',
+  poker: '<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="8.5"/><path d="M24 9v5M24 34v5M9 24h5M34 24h5M13.4 13.4l3.5 3.5M31.1 31.1l3.5 3.5M13.4 34.6l3.5-3.5M31.1 16.9l3.5-3.5"/>',
+  slots: '<rect x="7" y="12" width="34" height="24" rx="3"/><path d="M18.3 12v24M29.7 12v24"/><path d="M12.6 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM24 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM35.4 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3z"/>'
 };
+const icon = id => `<svg class="game-row-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${ICON[id] || ICON.poker}</svg>`;
+// The smallest table this player can sit at right now: the lowest floor they have unlocked and
+// not yet outgrown.
+function entryMin() {
+  const open = Object.values(TIERS).filter(t => {
+    const f = state?.floors?.find(x => x.slug === t.floor);
+    return f ? f.unlocked && !f.outgrown : t === TIERS.corner;
+  });
+  return (open.length ? Math.min(...open.map(t => t.min)) : TIERS.corner.min);
+}
 const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'slots']], ['화투', ['matgo', 'gostop', 'seotda']]];
-const groupHead = text => { const li = el('li', 'game-group', text); li.setAttribute('role', 'presentation'); return li; };
+const groupHead = (text, aside = '') => {
+  const li = el('li', 'game-group');
+  li.setAttribute('role', 'presentation');
+  li.innerHTML = `<span>${text}</span>${aside ? `<small>${aside}</small>` : ''}`;
+  return li;
+};
 
 // Both lists show the everyday tables (events live in the 이벤트 tab); the 게임 tab groups them.
 function renderGameLists() {
   const games = GAMES.filter(g => !g.event);
   const byId = id => games.find(g => g.id === id);
-  document.querySelector('[data-game-grid]').replaceChildren(...games.map(gameRow));
-  document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids]) => [groupHead(name), ...ids.map(byId).filter(Boolean).map(gameRow)]));
+  const stake = `최소 ${formatCH(entryMin())}원부터 앉을 수 있어요`;
+  document.querySelector('[data-game-grid]').replaceChildren(groupHead('테이블', stake), ...games.map(gameRow));
+  document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids], i) => [groupHead(name, i ? '' : stake), ...ids.map(byId).filter(Boolean).map(gameRow)]));
   renderEvents();
 }
 

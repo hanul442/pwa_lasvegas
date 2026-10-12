@@ -63,7 +63,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
         <path id="bj-arc2" d="M74 44 Q210 112 346 44" fill="none"/>
         <path class="arc-line" d="M14 4 Q210 96 406 4"/>
         <text font-size="17"><textPath href="#bj-arc" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2</textPath></text>
-        <text class="arc-sub" font-size="9"><textPath href="#bj-arc2" startOffset="50%" text-anchor="middle">DEALER MUST STAND ON ALL 17</textPath></text>
+        <text class="arc-sub" font-size="9"><textPath href="#bj-arc2" startOffset="50%" text-anchor="middle">${t.tier.h17 ? 'DEALER HITS SOFT 17' : 'DEALER MUST STAND ON ALL 17'}</textPath></text>
       </svg>
       <div class="bj-insurance" data-zone="ins" aria-hidden="true"><span>INSURANCE PAYS 2 TO 1</span></div>
       <div class="bj-ai" data-ai aria-label="같은 테이블의 다른 플레이어"></div>

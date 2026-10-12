@@ -7,6 +7,7 @@ import { animate, flyFrom, wait, sound, haptic, formatCH, el } from '../fx.js';
 import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
 import { createRoomClient } from './room-client.js';
+import { doubleStamp, doubleBadge, doubleActions } from '../double-down.js';
 
 const ME = 0, SEATS = [0, 1, 2], OPPS = [1, 2];
 const GOAL = 3, DEPOSIT_POINTS = 10;
@@ -40,6 +41,8 @@ export async function mountGostop(ctx) {
   const $ = s => t.body.querySelector(s);
   const zone = t.addZone($('[data-zone="POINT"]'));
   const board = $('[data-board]'), pile = $('[data-pile]'), handEl = $('[data-hand]');
+  const dd = doubleBadge(board);
+  let carry = 1; // 묻고 더블로 가 on offer after a solo 나가리
   const callout = $('[data-callout]');
   const nodes = new Map();
   let pileBack = null;
@@ -309,8 +312,9 @@ export async function mountGostop(ctx) {
     const r = v.result;
     let label, note;
     if (r.winner === null) {
-      label = '나가리';
-      note = '아무도 스톱하지 못했어요. 판돈은 그대로예요.';
+      label = `나가리 · 다음 판 ×${r.nextDouble}`;
+      note = room.active ? `나가리! 다음 판은 묻고 더블 ×${r.nextDouble}로 가요.` : `나가리! 묻고 더블로 가면 다음 판은 ×${r.nextDouble}이에요.`;
+      if (!room.active) carry = r.nextDouble;
     } else {
       const lines = r.lines?.map(l => `${l.label} ${l.points}`).join(' · ') || '';
       const shareText = r.shares.map(s => `${names[s.seat]} ${s.points}점${s.multipliers.length ? ` (${s.multipliers.map(x => x.label).join(' ')})` : ''}`).join(', ');
@@ -334,13 +338,14 @@ export async function mountGostop(ctx) {
   }
 
   // ---------- round start ----------
-  async function deal() {
+  async function deal(double = false) {
     if (!t.betReady) return;
     t.lock();
     let res;
-    try { res = await api.gostopStart(t.total, t.tier.floor); }
+    try { res = await api.gostopStart(t.total, t.tier.floor, double === true); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    carry = 1;
     await begin(res);
   }
 
@@ -349,6 +354,8 @@ export async function mountGostop(ctx) {
     if (room.active) { t.resetRound(); t.locked = true; t.root.classList.add('is-playing'); t.placeLocked('POINT', res.round.stake); t.refreshBet(); }
     await t.syncBalance();
     zone.hidden = true;
+    dd.set(res.round.double || 1);
+    if (res.round.double > 1) await doubleStamp(t.body, res.round.double);
     nodes.forEach(n => n.remove()); nodes.clear();
     board.querySelectorAll('.mg-slot').forEach(s => s.remove());
     const round = res.round;
@@ -386,7 +393,7 @@ export async function mountGostop(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(room.active ? room.idleActions() : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, carry, deal) : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {
@@ -425,6 +432,7 @@ export async function mountGostop(ctx) {
     if (room.active) t.locked = true; else t.lock();
     t.root.classList.add('is-playing');
     zone.hidden = true;
+    dd.set(view.double || 1);
     t.placeLocked('POINT', view.stake); t.refreshBet();
     model = toModel(view);
     await layout(model);
@@ -437,6 +445,7 @@ export async function mountGostop(ctx) {
     view = null; selected = null; options = null; prompt = null;
     t.resetRound();
     zone.hidden = false;
+    dd.set(1);
     names = ['나', '은하', '태오'];
     paintNames();
     model = { hand: [], opp: [0, 0, 0], floor: [], pileCount: 48, captured: [[], [], []], ppeok: [] };
@@ -450,6 +459,7 @@ export async function mountGostop(ctx) {
   // Resume a game left mid-way.
   try {
     const open = await api.gostopOpen();
+    carry = open.double || 1;
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
       await snapshot(open.round);
       t.toast('하던 고스톱 판을 이어서 해요');

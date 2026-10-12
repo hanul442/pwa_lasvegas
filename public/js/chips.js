@@ -31,8 +31,14 @@ export const TIERS = Object.fromEntries([
 
 export const CHIP_COLORS = Object.fromEntries(Object.values(TIERS).flatMap((t, i) => t.chips.map((v, k) => [v, COLORS[i * 3 + k]])));
 
+// Big money is played with plaques, the rectangular pearl tiles of a high-roller table (the
+// Casino Royale look): every value from 1억 up, so Salon Privé and the floors above it bet
+// with plaques while the tables below keep round chips.
+export const PLAQUE_MIN = 100_000_000;
+export const isPlaque = value => value >= PLAQUE_MIN;
+
 export function createChip(value, tag = 'span') {
-  const chip = el(tag, `chip chip--${CHIP_COLORS[value] || 'white'}`);
+  const chip = el(tag, `chip chip--${CHIP_COLORS[value] || 'white'}${isPlaque(value) ? ' chip--plaque' : ''}`);
   chip.dataset.value = value;
   const label = formatCH(value);
   // Long Korean amounts (2500만) get a smaller face so they stay inside the inlay.

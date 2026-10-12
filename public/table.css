@@ -663,3 +663,100 @@
 /* "친구와 함께" at the blackjack table, out of the way of the boxes */
 .bj-friends{position:absolute;left:12px;bottom:12px;z-index:6}
 .bj-seat.is-friend .bj-seat-plate b{color:var(--white)}
+
+/* ---------- 묻고 더블로 가 ---------- */
+.dd-stamp{position:absolute;left:50%;top:46%;z-index:60;display:grid;justify-items:center;gap:4px;padding:16px 26px 14px;border:3px solid var(--white);border-radius:6px;background:#0a0b0de6;color:var(--white);pointer-events:none;box-shadow:0 0 0 1px #0008,0 24px 60px #000c;transform:translate(-50%,-50%) rotate(-4deg)}
+.dd-stamp-line{font:800 clamp(22px,6.4vw,34px)/1 var(--display);font-stretch:118%;letter-spacing:-.03em;white-space:nowrap}
+.dd-stamp-times{font:800 clamp(40px,13vw,68px)/.9 var(--display);font-stretch:125%;letter-spacing:-.04em;color:var(--star)}
+.dd-stamp-times--text{font-size:clamp(16px,4.6vw,22px);letter-spacing:0}
+.dd-badge{position:absolute;right:8px;top:8px;z-index:6;padding:5px 10px;border-radius:999px;background:var(--white);color:var(--ink);font:800 13px/1 var(--display);font-stretch:112%;letter-spacing:-.01em;box-shadow:0 6px 16px #0008}
+.dd-badge[hidden]{display:none}
+
+/* ---------- 더블 오어 낫띵 ---------- */
+.don{position:absolute;left:50%;bottom:12px;z-index:45;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"card head" "card picks";gap:8px 14px;align-items:center;width:min(380px,calc(100% - 24px));padding:14px 14px 14px 16px;border-radius:14px;background:#0a0b0df2;border:1px solid var(--hair-strong);box-shadow:0 20px 50px #000c;transform:translate(-50%,0)}
+.don[hidden]{display:none}
+.don-head{grid-area:head;display:grid;gap:2px;color:var(--white)}
+.don-kicker{font:800 15px/1.1 var(--display);font-stretch:115%;letter-spacing:-.01em}
+.don-stake{font:800 22px/1.1 var(--display);font-variant-numeric:tabular-nums;color:var(--star)}
+.don-head small{font:500 13px/1.3 var(--sans);color:var(--smoke)}
+.don.is-won .don-head small{color:var(--white);font-weight:700}
+.don.is-lost .don-head small{color:#ff9a92;font-weight:700}
+.don-card{grid-area:card;--card-w:54px;width:54px}
+.don-picks{grid-area:picks;display:grid;grid-template-columns:auto 1fr 1fr;gap:6px}
+.don-btn{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--hair-strong);background:transparent;color:var(--white);font:700 15px/1 var(--sans);cursor:pointer}
+.don-btn--take{font-size:13px;color:var(--smoke)}
+.don-btn--red{background:#b3262b;border-color:#b3262b}
+.don-btn--black{background:var(--white);color:var(--ink);border-color:var(--white)}
+.don-btn:disabled{opacity:.45;cursor:default}
+
+/* ---------- plaques: 1억 and up are rectangular pearl tiles, not discs ---------- */
+.chip--plaque{width:calc(var(--size) * 1.24);height:calc(var(--size) * .8);border-radius:calc(var(--size) * .09);
+  background:linear-gradient(140deg,color-mix(in srgb,var(--c) 70%,#fff) 0,var(--c) 38%,color-mix(in srgb,var(--c) 82%,#000) 100%);
+  box-shadow:inset 0 0 0 max(1px,calc(var(--size) * .03)) color-mix(in srgb,var(--edge) 75%,transparent),inset 0 calc(var(--size) * .05) calc(var(--size) * .08) #ffffff40,0 calc(var(--size) * .04) 0 color-mix(in srgb,var(--rim) 50%,#000),0 calc(var(--size) * .1) calc(var(--size) * .18) #0009}
+.chip--plaque::before{inset:13% 9%;border-radius:calc(var(--size) * .05);border-color:color-mix(in srgb,var(--ink) 45%,transparent)}
+.chip--plaque::after{content:"";position:absolute;left:50%;top:9%;width:calc(var(--size) * .1);height:calc(var(--size) * .1);margin-left:calc(var(--size) * -.05);background:color-mix(in srgb,var(--ink) 70%,transparent);clip-path:var(--star-shape)}
+.chip--plaque .chip-label{font-size:calc(var(--size) * .25);translate:0 calc(var(--size) * .03)}
+.chip--plaque .chip-label--long{font-size:calc(var(--size) * .2)}
+.chip-tray .chip--plaque[aria-pressed="true"]::after{top:auto}
+
+/* ---------- Casino Royale event table: midnight felt, tuxedo-black rail ---------- */
+.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
+.table-screen.is-royale .chip-tray,.table-screen.is-royale .bet-tools{display:none}
+.table-screen.is-royale .pk-sitdown>:not(.royale-entry),.table-screen.is-royale .pk-hint{display:none!important}
+.royale-entry{display:grid;justify-items:center;gap:5px;padding:14px 18px 12px;border:1px solid #ffffff38;border-radius:14px;background:#050607e6;box-shadow:0 24px 50px #000b;text-align:center;color:var(--white)}
+.royale-kicker{font:700 12px/1 var(--sans);letter-spacing:.14em;color:var(--smoke)}
+.royale-title{font:800 clamp(20px,6vw,28px)/1 var(--display);font-stretch:125%;letter-spacing:.06em;white-space:nowrap}
+.royale-buyin{display:flex;align-items:baseline;gap:8px;font:800 20px/1.1 var(--display);font-variant-numeric:tabular-nums;color:var(--star)}
+.royale-buyin small{font:600 12px var(--sans);color:var(--smoke)}
+.royale-rules{display:grid;gap:2px;margin:2px 0 0;padding:0;list-style:none;font:500 12.5px/1.35 var(--sans);color:#d9dde2}
+.royale-hud{position:absolute;left:6px;top:2px;z-index:7;display:grid;gap:2px;padding:7px 10px;border-radius:10px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:500 11.5px/1.3 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.royale-hud[hidden]{display:none}
+.royale-hud b{color:var(--white);font-weight:800}
+
+/* ---------- premium pass: chips and cards ----------
+   Chips: three-stripe edge inserts, a matte body that darkens toward the rim, and an inlay
+   framed by a fine silver line. Cards: warm ivory stock with a printed inner frame, framed
+   court panels, and a black lacquer back with a guilloche rosette and the VEGAS star. */
+.chip:not(.chip--plaque){
+  background:
+    radial-gradient(circle,transparent 0 57%,color-mix(in srgb,var(--rim) 70%,#000) 57.5% 59%,transparent 59.5%),
+    radial-gradient(circle,var(--c) 0 50%,color-mix(in srgb,var(--c) 88%,#000) 57%,transparent 57.5%),
+    radial-gradient(circle,transparent 0 92%,#0000002e 97%),
+    repeating-conic-gradient(var(--edge) 0 2.6deg,var(--rim) 2.6deg 4.4deg,var(--edge) 4.4deg 7deg,var(--rim) 7deg 9deg,var(--edge) 9deg 11.6deg,var(--rim) 11.6deg 45deg)}
+.chip:not(.chip--plaque)::before{inset:22%;border:max(1px,calc(var(--size) * .018)) solid color-mix(in srgb,var(--ink) 30%,transparent);box-shadow:0 0 0 max(1px,calc(var(--size) * .012)) #ffffff2e,inset 0 0 0 max(1px,calc(var(--size) * .03)) color-mix(in srgb,var(--c) 80%,#fff)}
+.chip-label{font-weight:750;font-variant-numeric:tabular-nums}
+.chip--plaque .chip-label{display:grid;justify-items:center;line-height:1}
+.chip--plaque .chip-label::after{content:"VEGAS";margin-top:calc(var(--size) * .04);font:700 calc(var(--size) * .075)/1 var(--display);font-stretch:125%;letter-spacing:.32em;opacity:.55}
+.pk-pot-stack .chip-label,.pk-bet-stack .chip-label,.rack-col .chip-label,.bj-seat-chips .chip-label,.chip-flyer .chip-label,.pk-flying .chip-label{display:none}
+
+.card-face{background:
+    repeating-linear-gradient(0deg,#00000005 0 1px,transparent 1px 3px),
+    repeating-linear-gradient(90deg,#00000004 0 1px,transparent 1px 3px),
+    linear-gradient(165deg,#fffdf8,#f3eee3);
+  box-shadow:inset 0 0 0 1px #00000024,inset 0 0 0 calc(var(--card-w) * .02) #fffdf8,0 1px 1px #0005,0 10px 22px #0007}
+.card-face::before{content:"";position:absolute;inset:3.2%;border:1px solid #1a171414;border-radius:6%/4.4%;pointer-events:none}
+.card-court{inset:17% 19%;border:1px solid currentColor;border-radius:5%;outline:1px solid color-mix(in srgb,currentColor 35%,transparent);outline-offset:calc(var(--card-w) * -.04);
+  background:repeating-linear-gradient(45deg,color-mix(in srgb,currentColor 7%,transparent) 0 1px,transparent 1px 4px),repeating-linear-gradient(-45deg,color-mix(in srgb,currentColor 7%,transparent) 0 1px,transparent 1px 4px),#f7f4ee}
+.card-ace::before{content:"";position:absolute;left:50%;top:50%;width:1.45em;height:1.45em;transform:translate(-50%,-50%);border:1px solid color-mix(in srgb,currentColor 30%,transparent);border-radius:50%;font-size:1em}
+.card-back{
+  background:
+    radial-gradient(circle at 50% 50%,#0a0b0d 0 14%,transparent 14.5%),
+    repeating-radial-gradient(circle at 50% 50%,#ffffff16 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(60deg,#ffffff0d 0 1px,transparent 1px 6px),
+    repeating-linear-gradient(-60deg,#ffffff0d 0 1px,transparent 1px 6px),
+    linear-gradient(160deg,#1c1f24,#08090b);
+  box-shadow:inset 0 0 0 calc(var(--card-w) * .04) #f4f5f7,inset 0 0 0 calc(var(--card-w) * .05) #08090b,inset 0 0 0 calc(var(--card-w) * .058) #ffffff55,inset 0 0 0 calc(var(--card-w) * .075) #08090b,inset 0 0 0 calc(var(--card-w) * .08) #ffffff26,0 1px 1px #0005,0 10px 22px #0007}
+.card-back::after{content:"";width:1.5em;height:1.5em;border-radius:0;background:#f4f5f7;box-shadow:none;clip-path:var(--star-shape)}
+.card-back::before{content:"";position:absolute;left:50%;top:50%;width:2.3em;height:2.3em;transform:translate(-50%,-50%);border:1px solid #ffffff59;border-radius:50%}
+
+/* ---------- visibility pass: brighter secondary text, buttons that read as buttons ---------- */
+.action{font-weight:600}
+.action--ghost{color:#e4e7eb;border-color:var(--hair)}
+.action:disabled{opacity:.5}
+.bet-tool{font-size:15px;font-weight:600;color:var(--white)}
+.bet-tool:disabled{opacity:.45}
+.bet-readout span,.table-balance span{color:#cfd3d8}
+.bet-readout strong{color:var(--white)}
+.chip-label{text-shadow:0 1px 0 color-mix(in srgb,var(--c) 60%,transparent)}
+.toast{font-size:15px;font-weight:600}
+.banner-head{letter-spacing:-.01em}

@@ -3,6 +3,7 @@ import { api, errorMessage } from '../api.js';
 import { dealCard, flipCard, sweepCards, parseCard } from '../cards.js';
 import { wait, formatCH, animate } from '../fx.js';
 import { Table } from '../table.js';
+import { createDoubleOrNothing } from '../double-or-nothing.js';
 import { seatCrowd } from '../npc.js';
 import { voice } from '../voice.js';
 
@@ -39,7 +40,8 @@ function crowdPlan(last) {
 
 export async function mountBaccarat(ctx) {
   // Multi-zone for the pair side bets; the main bet still sits on exactly one of Player/Banker/Tie.
-  const t = new Table({ ...ctx, game: 'baccarat', title: 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당' });
+  const t = new Table({ ...ctx, game: 'baccarat', title: 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true });
+  const don = createDoubleOrNothing(t);
   t.body.innerHTML = `
     <div class="bac">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
@@ -167,6 +169,7 @@ export async function mountBaccarat(ctx) {
     await Promise.all([t.settle(net, { label, zones: nets }), crowd.settle((zone, stake) => betNet(zone, stake, r))]);
     await t.syncBalance();
     crowd.open();
+    if (net > 0 && r.id) don.offer(r.id, net);
   }
 
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });

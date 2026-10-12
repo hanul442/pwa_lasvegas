@@ -136,11 +136,12 @@ export function amountWords(amount) {
   return words;
 }
 const LEADS = { CALL: 'lead-call', RAISE: 'lead-raise', BET: 'lead-bet', ALL_IN: 'lead-all-in' };
-// "Call, fifty thousand." The last word is the falling, phrase-final take.
+// "Fifty thousand." The last word is the falling, phrase-final take.
 export function betLine(action, amount) {
   const words = amountWords(amount);
   if (!LEADS[action] || !words.length) return null;
-  return [LEADS[action], ...words.map((w, i) => `n-${w}${i === words.length - 1 ? '-end' : ''}`)];
+  // Only the amount is spoken ("Sixty thousand"); the action is already on the seat's tag.
+  return words.map((w, i) => `n-${w}${i === words.length - 1 ? '-end' : ''}`);
 }
 
 const range = (from, to, line) => Array.from({ length: to - from + 1 }, (_, i) => line(from + i));

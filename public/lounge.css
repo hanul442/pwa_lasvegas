@@ -380,3 +380,35 @@
 .bank-hero .bank-grade{max-width:none}
 .bank-hero .bank-sums{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
 @media (min-width:760px){.bank-hero{gap:40px}.bank-hero .bank-sums{margin:0;padding:0;border:0}}
+
+/* ---------- event result (js/event-result.js): a film-title win, a noir defeat ---------- */
+.event-result{position:fixed;inset:0;z-index:160;display:grid;place-items:center;padding:24px;overflow:hidden;background:#030304;opacity:0;transition:opacity .45s}
+.event-result.is-open{opacity:1}
+/* letterbox bars, as on a cinema screen */
+.event-result::before,.event-result::after{content:"";position:absolute;left:0;right:0;height:11vh;background:#000;border-color:#ffffff1f;border-style:solid;border-width:0;transition:transform .7s var(--ease-out)}
+.event-result::before{top:0;border-bottom-width:1px;transform:translateY(-100%)}
+.event-result::after{bottom:0;border-top-width:1px;transform:translateY(100%)}
+.event-result.is-open::before,.event-result.is-open::after{transform:none}
+.event-result--win{background:radial-gradient(60% 45% at 50% 48%,#262b33 0,#030304 72%)}
+.event-result--lose{background:radial-gradient(60% 45% at 50% 48%,#17181b 0,#000 72%)}
+/* film grain over the defeat */
+.event-result--lose .event-result-inner::before{content:"";position:fixed;inset:-50%;z-index:-1;opacity:.14;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");animation:event-grain .5s steps(3) infinite}
+@keyframes event-grain{33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}}
+.event-result-inner{position:relative;z-index:1;display:grid;justify-items:center;gap:6px;max-width:min(560px,92vw);text-align:center}
+.event-result-kicker{margin:0;color:var(--smoke);font:600 13px var(--sans);letter-spacing:.32em;text-transform:uppercase}
+.event-result-star{width:46px;height:46px;margin:14px 0 4px;background:var(--star);clip-path:var(--star-shape);animation:floor-star 1.2s var(--ease-out) both,bigwin-glow 2.4s ease-in-out 1s infinite}
+.event-result-rule{width:56px;height:1px;margin:18px 0 8px;background:#ffffff4d}
+.event-result-mark{margin:0;max-width:92vw;font:600 clamp(34px,11vw,92px)/1 var(--display);font-stretch:125%;letter-spacing:.08em;color:var(--white);overflow-wrap:anywhere}
+.event-result--lose .event-result-mark{color:#c9ccd1;letter-spacing:.14em;font-weight:500}
+.event-result-place{margin:8px 0 0;color:var(--white);font:600 17px var(--sans)}
+.event-result-amount{margin-top:10px;color:var(--star);font:600 clamp(28px,8vw,46px) var(--display);font-stretch:112%;font-variant-numeric:tabular-nums}
+.event-result--lose .event-result-amount{color:#8b9097;font-size:clamp(22px,6vw,32px)}
+.event-result-detail{margin:2px 0 0;color:var(--smoke);font-size:14px}
+.event-result-line{margin:14px 0 0;max-width:30ch;color:#d9dde2;font-size:15px;line-height:1.55}
+.event-result--lose .event-result-line{font-style:italic;color:var(--smoke)}
+.event-result-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px}
+@media (prefers-reduced-motion:reduce){
+  .event-result,.event-result::before,.event-result::after{transition:opacity .01ms}
+  .event-result--lose .event-result-inner::before{animation:none}
+  .event-result-star{animation:none}
+}

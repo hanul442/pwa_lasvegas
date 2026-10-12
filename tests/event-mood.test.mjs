@@ -42,3 +42,14 @@ test('events live in their own tab, out of the game lists', async () => {
   assert.match(app, /GAMES\.filter\(g => !g\.event\)/);
   assert.match(app, /if \(name === 'events'\) renderEventTab\(\)/);
 });
+
+test('events end on their own victory and defeat screens', async () => {
+  const result = await read('js/event-result.js');
+  const holdem = await read('js/games/holdem.js');
+  const streak = await read('js/event-table.js');
+  const gostop = await read('js/games/gostop.js');
+  for (const id of ['royale', 'whale', 'rounders', 'oceans', 'montecarlo', 'tazza']) assert.match(result, new RegExp(`\\b${id}: \\{ win:`), id);
+  assert.match(holdem, /await eventResult\(\{ event, win: won/, 'a tournament ends on the event screen, won or lost');
+  assert.match(streak, /eventResult\(\{ event: ev\.id, win: true/);
+  assert.match(gostop, /if \(tazzaWin\) await eventResult/);
+});

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
-import { EVENTS, liveEvents, currentEvent, nextEvent, eventOfWeek, ROTATION_START, WEEK } from '../lib/events.mjs';
+import { EVENTS, ROTATION, liveEvents, currentEvent, nextEvent, eventOfWeek, eventOpen, eventById, ROTATION_START, WEEK } from '../lib/events.mjs';
 import { during, holdings } from './event-clock.mjs';
 import { trackEventStreak } from '../lib/event-bonus.mjs';
 import { createHoldemSession, ROUNDERS } from '../lib/holdem-session.mjs';
@@ -32,12 +32,15 @@ test('every event names a lobby game and its rules', () => {
 
 test('one event runs at a time, a week each from Monday 00:00 KST, in rotation', () => {
   assert.equal(new Date(ROTATION_START).toISOString(), '2026-10-11T15:00:00.000Z', 'Monday 2026-10-12 00:00 KST');
-  assert.deepEqual(liveEvents(ROTATION_START - 1), [], 'nothing before the rotation starts');
-  const ids = EVENTS.map(e => e.id);
+  const rotating = at => liveEvents(at).filter(e => !e.always);
+  assert.deepEqual(rotating(ROTATION_START - 1), [], 'nothing before the rotation starts');
+  const ids = ROTATION.map(e => e.id);
+  assert.ok(!ids.includes('whale'), 'The Whale Room stays out of the rotation');
   for (let w = 0; w < ids.length * 2; w++) {
     const at = ROTATION_START + w * WEEK;
-    assert.deepEqual(liveEvents(at).map(e => e.id), [ids[w % ids.length]]);
-    assert.deepEqual(liveEvents(at + WEEK - 1).map(e => e.id), [ids[w % ids.length]], 'still on until Sunday 23:59');
+    assert.deepEqual(rotating(at).map(e => e.id), [ids[w % ids.length]]);
+    assert.deepEqual(rotating(at + WEEK - 1).map(e => e.id), [ids[w % ids.length]], 'still on until Sunday 23:59');
+    assert.ok(eventOpen(eventById('whale'), at), 'The Whale Room is open every week');
     assert.equal(nextEvent(at).id, ids[(w + 1) % ids.length]);
     assert.equal(Date.parse(currentEvent(at).until), at + WEEK);
   }
@@ -114,10 +117,27 @@ test('Rounders seats one boss heads-up by ladder step', during('rounders', async
 test('the state lists this week\'s event and the weeks after it', during('tazza', async () => {
   const store = memoryStore();
   const res = await call(store, 'GET', '/api/state');
-  assert.deepEqual(res.data.events.map(e => e.id), ['tazza']);
+  assert.deepEqual(res.data.events.map(e => e.id), ['tazza', 'whale']);
+  assert.deepEqual(res.data.eventsAlways.map(e => [e.id, e.floor, e.entry]), [['whale', 'sky-lounge', 100_000_000_000]]);
   assert.deepEqual(res.data.eventSchedule.map(e => e.id), ['tazza', 'oceans', 'rounders', 'montecarlo', 'royale']);
   assert.equal(Date.parse(res.data.eventSchedule[1].from), Date.parse(res.data.eventSchedule[0].until));
   holdings(store, 20_000_000_000);
   const closed = await call(store, 'POST', '/api/baccarat/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BANKER', event: 'montecarlo' });
   assert.equal(closed.status, 409, 'an event that is not this week\'s is closed');
+}));
+
+test('The Whale Room seats only the very rich, at Sky Lounge, for a fixed 1천억', during('tazza', async () => {
+  const store = memoryStore();
+  await call(store, 'GET', '/api/state');
+  holdings(store, 50_000_000_000);
+  assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 100_000_000_000, floor: 'sky-lounge', event: 'whale' })).data.error, 'EVENT_ENTRY_REQUIRED', '500억 is not enough');
+  holdings(store, 200_000_000_000);
+  assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 10_000_000_000, floor: 'penthouse', event: 'whale' })).data.error, 'EVENT_FLOOR_ONLY');
+  assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000_000, floor: 'sky-lounge', event: 'whale' })).status, 400, 'the buy-in is the table maximum');
+  const res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 100_000_000_000, floor: 'sky-lounge', event: 'whale' });
+  assert.equal(res.status, 200, JSON.stringify(res.data));
+  assert.equal(res.data.session.royale.event, 'whale');
+  assert.equal(res.data.session.table.seats.length, 6);
+  assert.ok(res.data.session.table.seats.some(s => s.name === '두바이 왕자'));
+  assert.equal(res.data.session.royale.prize, 1_000_000_000_000, 'a champion takes ×10');
 }));

@@ -4,6 +4,7 @@
 import { api, errorMessage } from '../api.js';
 import { createHwatu, flipHwatu, slap, hwatu, isBombCard, monthOf } from '../hwatu.js';
 import { animate, flyFrom, wait, sound, haptic, formatCH, el } from '../fx.js';
+import { eventResult } from '../event-result.js';
 import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
 import { createRoomClient } from './room-client.js';
@@ -350,7 +351,10 @@ export async function mountGostop(ctx, { event = null } = {}) {
     const big = net > 0 && (r.go >= 3 || r.points >= 10)
       ? { title: r.go >= 3 ? `${r.go}고 승리` : `${r.points}점 승리`, subtitle: r.multipliers.concat(...r.shares.map(s => s.multipliers)).map(x => x.label).filter((x, i, a) => a.indexOf(x) === i).join(' · ') || '고스톱' }
       : null;
-    await t.settle(net || 0, { label, big });
+    // 타짜 나이트: a hand won with the house's bonus gets the event's own victory card.
+    const tazzaWin = Boolean(v.bonus) && r.winner === ME;
+    await t.settle(net || 0, { label, big: tazzaWin ? false : big }); // the event card below is the moment
+    if (tazzaWin) await eventResult({ event: 'tazza', win: true, title: '타짜 나이트', amount: (net || 0) + v.bonus, detail: `타짜 보너스 ${formatCH(v.bonus)} 포함`, nickname: t.nickname });
     zone.hidden = false;
     await t.syncBalance();
   }

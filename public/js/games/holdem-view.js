@@ -227,7 +227,33 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     paintMyHand();
   }
 
-  // ---------- event playback ----------
+  // ---------- heads-up ----------
+  // When a hand comes down to two players the table changes key: everyone else dims, the two
+  // seats are lit, the felt starts to pulse like a heartbeat, the bots take a breath longer, and
+  // the turn and river are squeezed open slowly.
+  let inHand = new Set();
+  let duel = false;
+  function enterDuel({ announce = true } = {}) {
+    if (duel || inHand.size !== 2) return;
+    duel = true;
+    const [a, b] = [...inHand];
+    pk.oval.classList.add('is-duel');
+    [a, b].forEach(i => seatEls[i]?.node.classList.add('is-duelist'));
+    if (!announce) return;
+    const nameOf = i => (i === pk.me ? '나' : pk.nameOf(i, current?.seats?.[i] || {}));
+    const flash = el('div', 'pk-duel', `<b>HEADS-UP</b><small>${nameOf(a)} vs ${nameOf(b)}</small>`);
+    flash.setAttribute('role', 'status');
+    pk.oval.append(flash);
+    sound.tick(); setTimeout(() => sound.tick(), 140);
+    haptic([30, 80, 30]);
+    setTimeout(() => flash.remove(), 1700);
+  }
+  function leaveDuel() {
+    duel = false;
+    pk.oval.classList.remove('is-duel');
+    seatEls.forEach(s => s.node.classList.remove('is-duelist'));
+  }
+
   const rectOf = node => node.getBoundingClientRect();
   async function pushChips(i, total) {
     const plate = seatEls[i].plate;
@@ -253,9 +279,12 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         markTurn(-1);
         winners = [];
         shown.clear(); calledHand = false; lastStanding = false;
+        leaveDuel();
+        inHand = new Set(ev.seats);
         handStart = me >= 0 && ev.seats.includes(me) ? seatEls[me]?.stack ?? null : null;
         seatEls.forEach((s, i) => { s.node.classList.remove('is-folded', 'is-allin', 'is-winner'); s.node.classList.toggle('is-out', !ev.seats.includes(i) && !s.node.classList.contains('is-empty')); paintBet(i, 0); s.node.querySelector('[data-hand-name]')?.remove(); s.cards.classList.remove('is-showoff'); s.node.classList.remove('is-showing'); });
         moveButton(ev.button);
+        enterDuel({ announce: false });
         sound.tick();
         await wait(220);
         break;
@@ -283,7 +312,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       case 'act': {
         // A bot thinks for a short beat. The table never waits on the dealer's voice: a call-out
         // he has no time for is simply skipped (see the drop option below).
-        if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(ev.timeout ? 200 : 320 + Math.random() * 280); seatEls[ev.seat].node.classList.remove('is-thinking'); }
+        if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(ev.timeout ? 200 : (duel ? 700 : 320) + Math.random() * 280); seatEls[ev.seat].node.classList.remove('is-thinking'); }
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
@@ -298,6 +327,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));
           seatEls[ev.seat].cards.replaceChildren();
           seatEls[ev.seat].node.classList.add('is-folded');
+          inHand.delete(ev.seat);
+          if (inHand.size === 2) enterDuel();
         } else if (ev.action === 'CHECK') {
           sound.tick(); sound.tick();
           animate(seatEls[ev.seat].plate, [{ transform: 'translateY(0)' }, { transform: 'translateY(2px)' }, { transform: 'translateY(0)' }], { duration: 200, fill: 'none' });
@@ -330,7 +361,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
           sound.card();
           await flyFrom(card, rectOf(deck), { duration: 340, spin: -20, scale: 0.7 });
         }
-        for (const card of [...boardEl.children].filter(c => !c.classList.contains('is-faceup'))) await flipCard(card, card.dataset.card, { duration: 300 });
+        // Heads-up, the turn and the river are squeezed open slowly, with a heartbeat first.
+        const slow = duel && ev.cards.length === 1;
+        if (slow) { haptic([20, 120, 20]); sound.tick(); await wait(380); sound.tick(); await wait(260); }
+        for (const card of [...boardEl.children].filter(c => !c.classList.contains('is-faceup'))) await flipCard(card, card.dataset.card, slow ? { duration: 900, squeeze: true } : { duration: 300 });
         break;
       }
       case 'show': {
@@ -384,6 +418,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         break;
       }
       case 'end': {
+        leaveDuel();
         ev.stacks.forEach((s, i) => setStack(i, s));
         const net = handStart === null ? 0 : ev.stacks[me] - handStart;
         const names = [...new Set(winners)].map(i => (i === me ? '나' : pk.nameOf(i, current?.seats?.[i] || {})));

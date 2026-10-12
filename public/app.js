@@ -39,7 +39,7 @@ const GAMES = [
   { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
   { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
   { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
-  // Event tables (lib/events.mjs) appear only while their event runs.
+  // Event tables (lib/events.mjs): one runs each week, reached from the 이벤트 tab.
   { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
   { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
   { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: ctx => mountBlackjack(ctx, { event: 'oceans' }) },
@@ -70,6 +70,7 @@ function showSurface(name, { focus = false } = {}) {
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
+  if (name === 'events') renderEventTab();
   if (name === 'lobby' && state) { celebrateFloors(state); maybeOpenDaily(state, applyState); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'bank') renderBank(document.querySelector('[data-bank]'), state, applyState);
@@ -243,26 +244,52 @@ function gameRow(g) {
 }
 
 function renderGameLists() {
-  const games = GAMES.filter(playable);
+  const games = GAMES.filter(g => !g.event);
   document.querySelector('[data-game-grid]').replaceChildren(...games.map(gameRow));
   document.querySelector('[data-floor-list]').replaceChildren(...games.map(gameRow));
   renderEvents();
 }
 
-// Live events get a banner at the top of the lobby: what it is, how long it runs, a way in.
+// The lobby carries one slim teaser for this week's event; the 이벤트 tab has the rest.
 function renderEvents() {
   const slot = document.querySelector('[data-events]');
-  const live = GAMES.filter(g => g.event && eventOf(g));
-  slot.replaceChildren(...live.map(g => {
-    const ev = eventOf(g);
-    const b = el('button', `event-banner event-banner--${g.id}`);
-    b.type = 'button';
-    b.dataset.game = g.id;
-    b.innerHTML = `<span class="event-kicker">${ev.kicker} · ${timeLeft(ev.until)} 남음</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><span class="event-cta">테이블 고르기</span>`;
-    b.addEventListener('click', () => chooseGame(b));
-    return b;
+  const g = GAMES.find(x => x.event && eventOf(x));
+  const ev = g && eventOf(g);
+  slot.hidden = !ev;
+  if (!ev) { slot.replaceChildren(); return; }
+  const b = el('button', `event-banner event-banner--teaser event-banner--${g.id}`);
+  b.type = 'button';
+  b.innerHTML = `<span class="event-kicker">이번 주 이벤트 · ${timeLeft(ev.until)} 남음</span><strong class="event-title">${ev.title}</strong><span class="event-cta">이벤트 보기</span>`;
+  b.addEventListener('click', () => showSurface('events', { focus: true }));
+  slot.replaceChildren(b);
+  if (document.querySelector('[data-surface="events"]').classList.contains('is-active')) renderEventTab();
+}
+
+const dayLabel = iso => new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'Asia/Seoul' });
+function eventCard(ev, { now = false } = {}) {
+  const g = GAMES.find(x => x.event === ev.id);
+  const card = el('article', `event-banner event-card event-banner--${ev.id}${now ? '' : ' is-upcoming'}`);
+  const when = now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
+  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>`;
+  if (now && g) {
+    const go = el('button', 'event-cta', '테이블 고르기');
+    go.type = 'button';
+    go.dataset.game = g.id;
+    go.addEventListener('click', () => chooseGame(go));
+    card.append(go);
+  }
+  return card;
+}
+function renderEventTab() {
+  const [now, next, ...later] = state?.eventSchedule || [];
+  const live = now && eventOf({ event: now.id }) ? now : null;
+  document.querySelector('[data-event-now]').replaceChildren(live ? eventCard(live, { now: true }) : el('p', 'lede', '이번 주에는 열린 이벤트가 없어요.'));
+  document.querySelector('[data-event-next]').replaceChildren(...(next ? [eventCard(next)] : []));
+  document.querySelector('[data-event-schedule]').replaceChildren(...later.map(ev => {
+    const li = el('li', `event-schedule-row event-banner--${ev.id}`);
+    li.innerHTML = `<span>${dayLabel(ev.from)}</span><b>${ev.title}</b><small>${ev.kicker}</small>`;
+    return li;
   }));
-  slot.hidden = !live.length;
 }
 
 function renderLobby() {

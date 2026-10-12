@@ -91,7 +91,7 @@ export const api = {
   double: (roundId, pick) => request('/api/double', { method: 'POST', body: { roundId, pick } }),
   baccarat: (stake, floor, betType, sideBets, event) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType, sideBets, ...(event ? { event } : {}) } }),
   // bets: [{ betType, target?, stake }], one per spot on the layout.
-  rouletteSpin: (bets, floor) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor } }),
+  rouletteSpin: (bets, floor, lightning = false) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor, ...(lightning ? { lightning: true } : {}) } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
   sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } }),
   slots: (stake, floor) => request('/api/slots/spin', { method: 'POST', body: { stake, floor } }),

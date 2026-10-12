@@ -10,6 +10,16 @@ const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 
 const colorOf = n => (n === 0 ? 'green' : RED.has(n) ? 'red' : 'black');
 const STEP = 360 / 37;
 
+// 일반 or 라이트닝, remembered per device. The server strikes the numbers; this only asks for them.
+const MODE_KEY = 'vegas:roulette:mode';
+const readMode = () => { try { return localStorage.getItem(MODE_KEY) === 'lightning' ? 'lightning' : 'normal'; } catch { return 'normal'; } };
+const saveMode = mode => { try { localStorage.setItem(MODE_KEY, mode); } catch {} };
+const PAYOUTS = {
+  normal: '여러 곳에 함께 · 숫자 35:1 · 12개/열 2:1 · 나머지 1:1',
+  lightning: '번개 맞은 숫자 50–500배 · 다른 숫자 29:1 · 나머지 그대로'
+};
+const BOLT = '<svg class="rl-bolt" viewBox="0 0 24 64" aria-hidden="true"><path d="M15 0 4 34h8L7 64 21 24h-8L18 0z"/></svg>';
+
 function wheelSvg() {
   const pockets = ORDER.map((n, i) => {
     const a0 = ((i - 0.5) * STEP - 90) * Math.PI / 180, a1 = ((i + 0.5) * STEP - 90) * Math.PI / 180;
@@ -17,7 +27,7 @@ function wheelSvg() {
     const p = (rad, ang) => `${(rad * Math.cos(ang)).toFixed(2)},${(rad * Math.sin(ang)).toFixed(2)}`;
     const fill = { green: '#2e5e45', red: '#8a2626', black: '#1a1714' }[colorOf(n)];
     const label = `<text transform="rotate(${i * STEP}) translate(0,-76)" text-anchor="middle" dominant-baseline="middle">${n}</text>`;
-    return `<path d="M${p(R, a0)} A${R},${R} 0 0 1 ${p(R, a1)} L${p(r, a1)} A${r},${r} 0 0 0 ${p(r, a0)} Z" fill="${fill}"/>${label}`;
+    return `<path data-n="${n}" d="M${p(R, a0)} A${R},${R} 0 0 1 ${p(R, a1)} L${p(r, a1)} A${r},${r} 0 0 0 ${p(r, a0)} Z" fill="${fill}"/>${label}`;
   }).join('');
   const frets = ORDER.map((_, i) => `<line x1="0" y1="-60" x2="0" y2="-86" transform="rotate(${(i + 0.5) * STEP})"/>`).join('');
   return `<svg class="wheel-rotor" viewBox="-100 -100 200 200" aria-hidden="true">
@@ -68,12 +78,13 @@ function zoneBet(zone) {
   return { betType: zone };
 }
 
-// A spot's net for `number`, by the same payouts as the server: straight 35, dozen/column 2, even chances 1.
-function spotNet(zone, stake, number) {
+// A spot's net for `number`, by the same payouts as the server: straight 35, dozen/column 2, even
+// chances 1. On a 라이트닝 spin a straight pays its multiplier in total if struck, 29:1 if not.
+function spotNet(zone, stake, number, strikes = null) {
   const { betType, target } = zoneBet(zone);
   const color = colorOf(number).toUpperCase();
   let won = false, mult = 1;
-  if (betType === 'NUMBER') { won = number === target; mult = 35; }
+  if (betType === 'NUMBER') { won = number === target; const hit = strikes?.find(s => s.number === target); mult = !strikes ? 35 : hit ? hit.multiplier - 1 : 29; }
   else if (number === 0) won = false;
   else if (betType === 'DOZEN') { won = Math.ceil(number / 12) === target; mult = 2; }
   else if (betType === 'COLUMN') { won = ((number - 1) % 3) + 1 === target; mult = 2; }
@@ -115,10 +126,16 @@ export async function mountRoulette(ctx) {
           <div class="ball-orbit" data-orbit aria-hidden="true"><i class="ball" data-ball></i></div>
           <div class="wheel-result" data-result aria-live="polite"></div>
         </div>
-        <ol class="rl-history" data-history aria-label="최근 번호"></ol>
+        <div class="rl-strip">
+          <div class="rl-mode" role="group" aria-label="테이블 모드">
+            <button type="button" data-mode="normal">일반</button>
+            <button type="button" data-mode="lightning">라이트닝</button>
+          </div>
+          <ol class="rl-history" data-history aria-label="최근 번호"></ol>
+        </div>
       </div>
       <div class="rl-layout">${boardMarkup()}</div>
-      <p class="rl-payouts" aria-hidden="true">여러 곳에 함께 · 숫자 35:1 · 12개/열 2:1 · 나머지 1:1</p>
+      <p class="rl-payouts" data-payouts aria-hidden="true"></p>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
   const crowd = seatCrowd(t, { plan: crowdPlan });
@@ -128,7 +145,61 @@ export async function mountRoulette(ctx) {
   const ball = t.body.querySelector('[data-ball]');
   const resultEl = t.body.querySelector('[data-result]');
   const history = t.body.querySelector('[data-history]');
+  const rl = t.body.querySelector('.rl');
+  const modeButtons = [...t.body.querySelectorAll('[data-mode]')];
+  const payouts = t.body.querySelector('[data-payouts]');
   let rotorAngle = 0, ballAngle = 0;
+  let mode = readMode();
+
+  function showMode() {
+    rl.classList.toggle('rl--lightning', mode === 'lightning');
+    modeButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    payouts.textContent = PAYOUTS[mode];
+  }
+  function lockMode(locked) { modeButtons.forEach(b => { b.disabled = locked; }); }
+  modeButtons.forEach(b => b.addEventListener('click', () => {
+    if (t.locked || t.busy || b.dataset.mode === mode) return;
+    mode = b.dataset.mode;
+    saveMode(mode);
+    clearStrikes();
+    showMode();
+    sound.chip(); haptic(8);
+    t.toast(mode === 'lightning' ? '라이트닝: 번개 맞은 숫자는 50–500배, 그 외 숫자는 29:1' : '일반 룰렛: 숫자 35:1');
+  }));
+  showMode();
+
+  // Lightning: before the ball drops, each struck number takes a bolt and keeps its multiplier
+  // on the layout (and its pocket lit on the wheel) until the next spin.
+  function clearStrikes() {
+    t.body.querySelectorAll('.is-struck').forEach(n => n.classList.remove('is-struck', 'is-lit-hit'));
+    t.body.querySelectorAll('.rl-mult,.rl-bolt').forEach(n => n.remove());
+    t.body.querySelectorAll('.num[data-zone^="N"]').forEach(n => n.setAttribute('aria-label', `${n.dataset.zone.slice(1)}번`));
+  }
+  async function strike(strikes) {
+    const calm = reducedMotion();
+    for (const s of strikes) {
+      const cell = t.body.querySelector(`[data-zone="N${s.number}"]`);
+      rotor.querySelector(`[data-n="${s.number}"]`)?.classList.add('is-struck');
+      if (!cell) continue;
+      if (!calm) {
+        cell.insertAdjacentHTML('beforeend', BOLT);
+        const bolt = cell.lastElementChild;
+        bolt.addEventListener('animationend', () => bolt.remove(), { once: true });
+        t.felt.classList.remove('is-flash'); void t.felt.offsetWidth; t.felt.classList.add('is-flash');
+      }
+      sound.strike(); haptic(12);
+      if (!calm) await wait(170);
+      cell.classList.add('is-struck');
+      const tag = document.createElement('span');
+      tag.className = 'rl-mult';
+      tag.setAttribute('aria-hidden', 'true');
+      tag.textContent = `${s.multiplier}×`;
+      cell.append(tag);
+      cell.setAttribute('aria-label', `${s.number}번, 번개 ${s.multiplier}배`);
+      if (!calm) await wait(360);
+    }
+    await wait(calm ? 300 : 500);
+  }
 
   // Idle drift so the wheel never looks frozen.
   let idle = rotor.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 60000, iterations: Infinity });
@@ -195,12 +266,16 @@ export async function mountRoulette(ctx) {
     if (!t.betReady) return;
     const bets = t.betZones.map(zone => ({ zone, ...zoneBet(zone), stake: t.zoneTotal(zone) }));
     t.lock();
+    lockMode(true);
+    clearStrikes();
     await crowd.close();
     let res;
-    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor); }
-    catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
+    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning'); }
+    catch (e) { t.locked = false; t.root.classList.remove('is-playing'); lockMode(false); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     voice.say('no-more-bets', { cut: true });
+    const strikes = res.round.lightning || null;
+    if (strikes) await strike(strikes);
     await spinTo(res.round.number);
     voice.say(rouletteLine(res.round.number));
     await wait(250);
@@ -208,10 +283,18 @@ export async function mountRoulette(ctx) {
     const net = res.round.netPnl + (hot?.bonus || 0);
     // Each spot is paid or raked on its own.
     const zones = new Map(res.round.bets.map((b, i) => [bets[i].zone, b.netPnl]));
-    const hits = res.round.bets.filter(b => b.won).length;
-    const settled = t.settle(net, { zones, hot, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
-    await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, res.round.number))]);
+    const n = res.round.number;
+    const straight = res.round.bets.find(b => b.won && b.betType === 'NUMBER');
+    // A straight-up win on a struck number always stops the table: that is the whole point of the mode.
+    const lit = straight?.multiplier ? strikes?.find(s => s.number === n) : null;
+    if (strikes?.some(s => s.number === n)) t.body.querySelector(`[data-zone="N${n}"]`)?.classList.add('is-lit-hit');
+    const big = lit ? { title: `${lit.multiplier}×`, subtitle: `라이트닝 ${n}` }
+      : straight && net >= res.round.stake * 5 ? { title: `${n}`, subtitle: strikes ? '29 대 1' : '35 대 1' } : null;
+    const label = `${n} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${lit ? ` · ${lit.multiplier}×` : ''}`;
+    const settled = t.settle(net, { zones, hot, label, big });
+    await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, n, strikes))]);
     await t.syncBalance();
+    lockMode(false);
     crowd.open();
   }
 

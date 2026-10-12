@@ -134,7 +134,8 @@ export async function mountSlots(ctx) {
     }
     await wait(200);
     const big = jackpot > 0 ? { title: 'JACKPOT', subtitle: `잭팟 +${formatCH(jackpot)}` } : null;
-    await t.settle(net, { label: line ? LINE_LABEL[line] : net ? '' : '본전', big });
+    const hot = res.round.hotTable;
+    await t.settle(net + (hot?.bonus || 0), { label: line ? LINE_LABEL[line] : net ? '' : '본전', big, hot });
     await t.syncBalance();
     refreshActions();
   }

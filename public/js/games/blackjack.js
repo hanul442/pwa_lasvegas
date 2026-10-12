@@ -47,7 +47,7 @@ function saveHint(r) { try { localStorage.setItem(HINT_KEY, JSON.stringify(r)); 
 // that opens after five winning hands in a row.
 export async function mountBlackjack(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
-  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : 'Blackjack', multi: true, pushDouble: true });
+  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : 'Blackjack', multi: true, pushDouble: true, hot: !ev });
   const don = createDoubleOrNothing(t);
   t.body.innerHTML = `
     <div class="bj">
@@ -454,7 +454,9 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       if (tag) { tag.textContent = label; tag.className = `hand-result is-${kind} is-shown`; }
     }
     await settleSeats(round);
-    const net = res.netPnl ?? round.netPnl ?? 0;
+    const base = res.netPnl ?? round.netPnl ?? 0;
+    const hot = res.hotTable;
+    const net = base + (hot?.bonus || 0);
     const top = round.hands.map(h => h.result?.result);
     const handNet = round.hands.reduce((a, h) => a + (h.result?.netPnl || 0), 0);
     const insured = round.insurance?.taken && round.insurance.result === 'WIN';
@@ -469,11 +471,11 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     for (const h of round.hands) zones.set(boxOf(h), (zones.get(boxOf(h)) || 0) + (h.result?.netPnl || 0));
     if (round.insurance?.taken) zones.set('ins', round.insurance.netPnl);
     for (const b of round.sideBets || []) if (b.netPnl > 0) zones.set(sideZone(b), 0);
-    await t.settle(net, { label: `${headline}`, zones, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
+    await t.settle(net, { label: `${headline}`, zones, hot, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     await t.syncBalance();
     refreshActions();
     if (res.eventStreak) await meter?.update(res.eventStreak);
-    if (net > 0 && round.id && !room.active) don.offer(round.id, net);
+    if (base > 0 && round.id && !room.active) don.offer(round.id, base); // 묻고 더블 rides the table win, not the hot bonus
   }
 
   // Resume an unfinished round so locked chips are never stranded.

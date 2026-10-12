@@ -43,7 +43,7 @@ function crowdPlan(last) {
 export async function mountBaccarat(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
   // Multi-zone for the pair side bets; the main bet still sits on exactly one of Player/Banker/Tie.
-  const t = new Table({ ...ctx, game: 'baccarat', title: ev ? ev.title : 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true });
+  const t = new Table({ ...ctx, game: 'baccarat', title: ev ? ev.title : 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true, hot: !ev });
   const don = createDoubleOrNothing(t);
   const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
   if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
@@ -165,17 +165,18 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     dot.textContent = r.winner === 'TIE' ? 'T' : r.winner[0];
     road.prepend(dot);
     while (road.children.length > 14) road.lastElementChild.remove();
-    const net = r.netPnl;
+    const hot = r.hotTable;
+    const net = r.netPnl + (hot?.bonus || 0);
     // Each spot is paid or raked on its own: the main bet, then each pair from the server's result.
     const nets = new Map(zones.map(z => [z, z === betType ? r.mainPnl ?? r.netPnl : r.sideBets?.find(b => b.betType === z)?.netPnl ?? betNet(z, t.zoneTotal(z), r)]));
     const pairs = PAIRS.filter(z => r.pairs?.[z]).map(z => (z === 'PLAYER_PAIR' ? 'P Pair' : 'B Pair'));
     const label = `${r.winner === 'TIE' ? 'Tie' : `${r.winner === 'PLAYER' ? 'Player' : 'Banker'} wins`}${pairs.length ? ` · ${pairs.join(' · ')}` : ''}`;
     voice.say(r.winner === 'TIE' ? 'tie' : r.winner === 'PLAYER' ? 'player-wins' : 'banker-wins');
-    await Promise.all([t.settle(net, { label, zones: nets }), crowd.settle((zone, stake) => betNet(zone, stake, r))]);
+    await Promise.all([t.settle(net, { label, zones: nets, hot }), crowd.settle((zone, stake) => betNet(zone, stake, r))]);
     await t.syncBalance();
     crowd.open();
     if (res.eventStreak) await meter?.update(res.eventStreak);
-    if (net > 0 && r.id) don.offer(r.id, net);
+    if (r.netPnl > 0 && r.id) don.offer(r.id, r.netPnl); // 묻고 더블 rides the table win, not the hot bonus
   }
 
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });

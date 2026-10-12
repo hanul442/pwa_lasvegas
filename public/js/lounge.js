@@ -4,6 +4,7 @@ import { api, errorMessage, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock, watchBlock } from './social.js';
+import { hotStatus, clock, pct, startTime } from './hot.js';
 
 const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Gostop: '고스톱', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯', Double: '묻고 더블' };
 export const gameName = g => GAME_KO[g] || g || '';
@@ -248,6 +249,43 @@ function feedBlock(state) {
   return box;
 }
 
+// ---------- 핫 딜러 타임 ----------
+// One game pays more on every win for ten minutes each hour (lib/hot-table.mjs). While it runs the
+// block leads the lounge with a countdown and a way to the table; between windows it names the next.
+let hotTimer = null;
+function hotBlock(state) {
+  const box = el('section', 'lounge-block lounge-block--hot');
+  let phase = null;
+  const paint = () => {
+    if (!box.isConnected && phase !== null) { clearInterval(hotTimer); hotTimer = null; return; }
+    const { live, next, now } = hotStatus(state);
+    const w = live || next;
+    const key = w ? `${live ? 'live' : 'next'}:${w.game}:${w.startsAt}` : 'none';
+    if (key !== phase) {
+      phase = key;
+      box.hidden = !w;
+      box.classList.toggle('is-live', Boolean(live));
+      if (live) {
+        box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker"><span class="hot-pill">HOT</span>핫 딜러 타임</small>지금 ${live.label}</h2><small class="hot-count" data-hot-count></small></header>
+          <p class="lounge-note">${live.label}에서 이기는 판마다 순수익 ${pct(live)}를 더 드려요. 보너스는 한 판 베팅액까지예요.</p>`;
+        const go = el('button', 'pill-button pill-button--solid hot-go', `${live.label} 앉기`);
+        go.type = 'button';
+        go.addEventListener('click', () => dispatchEvent(new CustomEvent('vegas:choose-game', { detail: { game: live.game } })));
+        box.append(go);
+      } else if (next) {
+        box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 핫 딜러 타임</small>${startTime(next)} · ${next.label}</h2><small class="hot-count" data-hot-count></small></header>
+          <p class="lounge-note">매시 정각, 한 게임이 10분 동안 핫 테이블이 돼요. 이기면 순수익 ${pct(next)}.</p>`;
+      }
+    }
+    const count = box.querySelector('[data-hot-count]');
+    if (count && w) count.textContent = live ? `${clock(Date.parse(live.endsAt) - now)} 남음` : `${clock(Date.parse(next.startsAt) - now)} 뒤`;
+  };
+  clearInterval(hotTimer);
+  paint();
+  hotTimer = setInterval(paint, 1000);
+  return box;
+}
+
 // ---------- floor ladder ----------
 function floorBlock(state) {
   const floors = state.floors || [];
@@ -265,6 +303,7 @@ function floorBlock(state) {
 export function renderLounge(root, state, onChanged) {
   if (!state?.engagement) { root.replaceChildren(); return; }
   const blocks = [];
+  if (state.hotTable || state.hotNext) blocks.push(hotBlock(state));
   if (state.engagement.rescue?.eligible) blocks.push(rescueBlock(state, onChanged));
   const invites = duelInviteBlock(state, onChanged);
   if (invites) blocks.push(invites);

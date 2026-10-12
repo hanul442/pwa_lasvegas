@@ -124,9 +124,10 @@ export async function mountDice(ctx) {
     await roll(res.round.dice);
     voice.say(sicboLine(res.round.dice));
     await wait(200);
-    const net = res.round.netPnl;
+    const hot = res.round.hotTable;
+    const net = res.round.netPnl + (hot?.bonus || 0);
     await Promise.all([
-      t.settle(net, { label: `${res.round.dice.join(' · ')}` }),
+      t.settle(net, { label: `${res.round.dice.join(' · ')}`, hot }),
       crowd.settle((zone, stake) => betNet(zone, stake, res.round.dice))
     ]);
     await t.syncBalance();

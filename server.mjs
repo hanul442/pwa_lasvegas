@@ -34,4 +34,7 @@ async function serveStatic(req,res,url){
 const server=http.createServer(async(req,res)=>{const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname.startsWith('/api/'))return api(req,res,url);return serveStatic(req,res,url);});
 server.listen(PORT,'0.0.0.0',()=>console.log(`SOCIAL VEGAS listening on http://0.0.0.0:${PORT}`));
 // Same hourly reminder round the Worker's cron runs.
-setInterval(()=>runPushRound(store).catch(e=>console.error('push round',e)),60*60*1000).unref();
+// Like the cron, it runs on the hour, as that hour's 핫 테이블 opens (lib/hot-table.mjs).
+const pushRound=()=>runPushRound(store).catch(e=>console.error('push round',e));
+const HOUR=60*60*1000;
+setTimeout(()=>{pushRound();setInterval(pushRound,HOUR).unref();},HOUR-Date.now()%HOUR+2000).unref();

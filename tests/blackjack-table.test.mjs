@@ -8,6 +8,10 @@ import { basicStrategy } from '../public/js/bj-strategy.js';
 import { BOT_NAMES } from '../lib/holdem-bot.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
+import { forceHotTable } from '../lib/hot-table.mjs';
+
+// These tests count exact payouts: keep 핫 딜러 타임 (lib/hot-table.mjs) out of them whatever the hour.
+forceHotTable('off');
 
 const c = text => ({ r: text.slice(0, -1), s: text.slice(-1) });
 const cards = (...texts) => texts.map(c);

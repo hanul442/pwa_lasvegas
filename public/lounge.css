@@ -12,9 +12,16 @@
 .lounge-head small{color:var(--smoke);font-size:13px;text-align:right}
 .lounge-note{margin:10px 0 0;color:var(--smoke);font-size:14px;line-height:1.55}
 .lounge-eyebrow{margin:0;color:var(--smoke);font-size:14px}
+/* 핫 딜러 타임: white on black, like everything else off the felt */
+.hot-pill{display:inline-block;margin-right:8px;padding:2px 7px 1px;border-radius:999px;background:var(--white);color:var(--ink);font:800 11px/1.3 var(--sans);letter-spacing:.06em;vertical-align:1px}
+.lounge-block--hot .hot-count{color:var(--white);font:600 17px/1.2 var(--sans);font-variant-numeric:tabular-nums}
+.lounge-block--hot:not(.is-live) .hot-count{color:var(--smoke);font-size:14px}
+.lounge-block--hot.is-live .lounge-head h2{font-size:26px}
+.hot-go{margin-top:14px}
 @media (min-width:760px){
   .lounge{grid-template-columns:1fr 1fr;column-gap:48px}
   .lounge-block--rescue{grid-column:1 / -1}
+  .lounge-block--hot{grid-column:1 / -1}
 }
 
 .pill-button--star{display:inline-flex;align-items:center;gap:8px;border-color:var(--star);color:var(--star)}

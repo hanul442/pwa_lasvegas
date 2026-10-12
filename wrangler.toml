@@ -13,7 +13,8 @@ directory = "./public"
 # Only needed when a page on another origin calls the API, e.g. the local Node dev server.
 ALLOW_ORIGINS = "http://localhost:3000,http://localhost:3100"
 
-# Every hour on the hour: daily-bonus, free-chip and come-back push notifications (lib/notifications.mjs).
+# Every hour on the hour: daily-bonus, free-chip, come-back and 핫 테이블 push notifications
+# (lib/notifications.mjs). The hot table windows (lib/hot-table.mjs) open on the hour to match.
 [triggers]
 crons = ["0 * * * *"]
 

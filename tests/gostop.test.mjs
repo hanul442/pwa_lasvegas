@@ -147,13 +147,13 @@ test('맞고 still plays two seats with the shared engine', () => {
 
 test('고스톱 table is in the lobby, has a guide and plays through the server API', async () => {
   const read = path => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
-  const [app, client, guides, sw, lounge] = await Promise.all(['app.js', 'js/games/gostop.js', 'js/guides.js', 'sw.js', 'js/lounge.js'].map(read));
+  const [app, client, guides, sw, names] = await Promise.all(['app.js', 'js/games/gostop.js', 'js/guides.js', 'sw.js', 'js/names.js'].map(read));
   assert.match(app, /id: 'gostop', name: '고스톱'.*mount: mountGostop/);
   assert.ok(app.indexOf("id: 'gostop'") > app.indexOf("id: 'matgo'"));
   for (const call of ['gostopStart(', 'gostopAction(', 'gostopOpen()']) assert.ok(client.includes(`api.${call}`), call);
   assert.match(guides, /\n  gostop: \{\n    id: 'gostop'/);
   assert.match(sw, /'js\/games\/gostop\.js'/);
-  assert.match(lounge, /Gostop: '고스톱'/);
+  assert.match(names, /Gostop: '고스톱'/);
 });
 
 test('고스톱 API locks a deposit, plays to the end against two AI and settles a clean ledger', async () => {

@@ -969,3 +969,7 @@
 .table-name[data-switch]{cursor:pointer;border-radius:8px}
 .table-name[data-switch] strong::after{content:"";flex:none;width:6px;height:6px;margin:-4px 2px 0;border-right:1.5px solid var(--smoke);border-bottom:1.5px solid var(--smoke);rotate:45deg}
 .table-name[data-switch]:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+
+/* A toast that carries one action (다시 시도 after a dropped connection) takes taps. */
+.toast.has-action{display:flex;align-items:center;gap:12px;width:max-content;border-radius:16px;text-align:left;pointer-events:auto;padding:6px 6px 6px 16px}
+.toast-action{flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--white);color:var(--ink);font:600 13px var(--sans)}

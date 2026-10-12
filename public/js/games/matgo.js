@@ -361,7 +361,7 @@ export async function mountMatgo(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, carry, deal) : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, carry, deal) : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal, { againLabel: '같은 베팅으로 한 판 더' }));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {

@@ -415,7 +415,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, shown(carry), deal) : t.idleActions(t.total ? `시작${ev ? ' ×2' : ''} · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, shown(carry), deal) : t.idleActions(t.total ? `시작${ev ? ' ×2' : ''} · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal, { againLabel: '같은 베팅으로 한 판 더' }));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {

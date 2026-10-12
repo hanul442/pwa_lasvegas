@@ -9,6 +9,7 @@ import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../f
 import { settings, onSettings } from '../settings.js';
 import { basicStrategy } from '../bj-strategy.js';
 import { Table } from '../table.js';
+import { gameName } from '../names.js';
 import { createDoubleOrNothing } from '../double-or-nothing.js';
 import { eventInfo, createStreakMeter } from '../event-table.js';
 import { voice } from '../voice.js';
@@ -47,7 +48,7 @@ function saveHint(r) { try { localStorage.setItem(HINT_KEY, JSON.stringify(r)); 
 // that opens after five winning hands in a row.
 export async function mountBlackjack(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
-  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : 'Blackjack', multi: true, pushDouble: true, hot: !ev });
+  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : gameName('blackjack'), multi: true, pushDouble: true, hot: !ev });
   const don = createDoubleOrNothing(t);
   t.body.innerHTML = `
     <div class="bj">

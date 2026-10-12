@@ -1,6 +1,7 @@
 // 상점: luxury assets (사치품) to show off and skins (꾸미기) for the tables. Prices, ownership
 // and what is worn all come from the server (lib/shop.mjs); this screen only draws them.
 import { api, errorMessage } from './api.js';
+import { errorToast } from './notice.js';
 import { el, formatCH, sound } from './fx.js';
 import { createCard, setCardBack } from './cards.js';
 import { createChip } from './chips.js';
@@ -186,7 +187,7 @@ function cosmeticsTab(state, onChanged) {
         b.addEventListener('click', async () => {
           b.disabled = true;
           try { const out = await api.shopEquip(slot, item.house ? null : item.id); sound.chip(); onChanged(out.state); }
-          catch (e) { b.disabled = false; alert(errorMessage(e)); }
+          catch (e) { b.disabled = false; errorToast(e); }
         });
         li.append(b);
       } else if (!item.achievement) {

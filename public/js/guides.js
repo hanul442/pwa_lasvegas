@@ -271,7 +271,7 @@ export const GUIDES = {
   },
 
   poker: {
-    id: 'poker', title: "Hold'em",
+    id: 'poker', title: '홀덤',
     steps: [
       { target: '.felt', title: '텍사스 홀덤', body: ['각자 비밀 카드 두 장을 받고, 가운데에 모두가 같이 쓰는 카드 다섯 장이 열려요.', '내 두 장과 가운데 다섯 장 중 다섯 장으로 가장 센 패를 만든 사람, 또는 끝까지 포기하지 않은 사람이 가운데 돈(팟)을 가져가요.'] },
       { target: '.chip-tray', title: '1. 칩 고르기', body: '아래 칩을 탭해서 골라요. 첫 칩은 이 테이블의 빅 블라인드(기본 베팅) 금액이에요.' },

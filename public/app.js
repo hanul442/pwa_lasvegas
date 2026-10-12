@@ -1,5 +1,5 @@
 // VEGAS client: floor navigation, lobby, rankings, profile, and mounting live tables.
-import { api, errorMessage, sessionToken, clearSession } from './js/api.js';
+import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
@@ -21,12 +21,14 @@ import { mountHorses } from './js/games/horses.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels } from './js/social.js';
-import { renderLounge, maybeOpenDaily, dailyButton, celebrateFloors, gameName, chipsToWallet } from './js/lounge.js';
+import { renderLounge, maybeOpenDaily, dailyButton, dailyDue, celebrateFloors, gameName, chipsToWallet } from './js/lounge.js';
 import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
 import { mountInstallButton } from './js/install.js';
 import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
-import { renderBank } from './js/bank.js';
+import { renderBank, supportButtons } from './js/bank.js';
+import { renderLedger } from './js/ledger.js';
+import { errorToast, watchConnection } from './js/notice.js';
 import { hotStatus, clock, pct } from './js/hot.js';
 import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
@@ -34,15 +36,15 @@ import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/t
 document.documentElement.dataset.vegasUi = 'live-tables';
 
 const GAMES = [
-  { id: 'blackjack', name: 'Blackjack', tag: '21에 가깝게, 블랙잭은 3 대 2', blurb: '21에 가깝게. 블랙잭은 3 대 2로 받아요.', mount: mountBlackjack },
-  { id: 'roulette', name: 'Roulette', tag: '싱글 제로 휠, 숫자 하나에 35배', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
-  { id: 'baccarat', name: 'Baccarat', tag: '플레이어냐 뱅커냐', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
-  { id: 'dice', name: 'Sic Bo', tag: '주사위 세 개의 합', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
+  { id: 'blackjack', name: '블랙잭', tag: '21에 가깝게, 블랙잭은 3 대 2', blurb: '21에 가깝게. 블랙잭은 3 대 2로 받아요.', mount: mountBlackjack },
+  { id: 'roulette', name: '룰렛', tag: '싱글 제로 휠, 숫자 하나에 35배', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
+  { id: 'baccarat', name: '바카라', tag: '플레이어냐 뱅커냐', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
+  { id: 'dice', name: '식보', tag: '주사위 세 개의 합', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
   { id: 'matgo', name: '맞고', tag: '둘이서 치는 고스톱', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
   { id: 'gostop', name: '고스톱', tag: 'AI 둘과 셋이서 고·스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
   { id: 'seotda', name: '섯다', tag: '두 장으로 겨루는 족보 싸움', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
-  { id: 'poker', name: "Hold'em", tag: 'AI들과 텍사스 홀덤', blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
-  { id: 'slots', name: 'Slots', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
+  { id: 'poker', name: '홀덤', tag: 'AI들과 텍사스 홀덤', blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
+  { id: 'slots', name: '슬롯', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
   { id: 'horses', name: '경마', tag: '여섯 마리, 1200m 단거리', blurb: '여섯 마리 중 1등을 맞혀요. 단승은 1착, 연승은 2착 안에만 들면 돼요.', mount: mountHorses },
   // Event tables (lib/events.mjs): one runs each week, reached from the 이벤트 tab.
   { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
@@ -314,27 +316,39 @@ function renderRecharge() {
   const slot = document.querySelector('[data-recharge-slot]');
   const r = state?.recharge;
   slot.replaceChildren();
-  const daily = dailyButton(state, applyState);
-  if (daily) slot.append(daily);
-  // Not enough for the cheapest table where this player may sit: the bank is the way back in.
-  if (state?.bank && state.user.account.available < state.bank.base) {
-    const b = el('button', 'pill-button pill-button--solid', '은행에서 칩 빌리기');
+  renderResume();
+  renderRecent();
+  // Short of the cheapest table: the free chips lead as solid buttons (pay first, then recharge,
+  // then 구제금융 or 정부 지원금; two at most) and the bank loan follows, outlined, as the
+  // secondary way back in.
+  const broke = Boolean(state?.bank && state.user.account.available < state.bank.base);
+  const note = document.querySelector('[data-vignette-note]');
+  if (note) note.textContent = broke ? '무료 칩을 받고 바로 앉아요' : '지금 바로 앉을 수 있어요';
+  const daily = dailyButton(state, applyState, { solid: broke });
+  if (broke) {
+    const free = [daily, r?.eligible ? rechargeButton(r, true) : null, ...supportButtons(state, applyState)].filter(Boolean);
+    slot.append(...free.slice(0, 2));
+    const b = el('button', 'pill-button', '은행에서 빌리기');
     b.type = 'button';
     b.addEventListener('click', () => showSurface('bank', { focus: true }));
     slot.append(b);
+    return;
   }
-  renderResume();
-  renderRecent();
-  if (r?.eligible) {
-    const b = el('button', 'pill-button', `칩 충전 · +${formatCH(r.amount)}`);
-    b.type = 'button';
-    b.addEventListener('click', async () => {
-      b.disabled = true;
-      try { await api.recharge(); sound.chips(6); } catch (e) { alert(errorMessage(e)); }
-      refresh();
-    });
-    slot.append(b);
-  }
+  if (daily) slot.append(daily);
+  if (r?.eligible) slot.append(rechargeButton(r, false));
+}
+
+// The server grants a recharge at most once per cooldown, so a retry after a dropped
+// connection can't pay twice.
+function rechargeButton(r, solid) {
+  const b = el('button', `pill-button${solid ? ' pill-button--solid' : ''}`, `칩 충전 +${formatCH(r.amount)}`);
+  b.type = 'button';
+  b.addEventListener('click', async () => {
+    b.disabled = true;
+    try { await api.recharge(); sound.chips(6); } catch (e) { b.disabled = false; errorToast(e, () => b.click()); }
+    refresh();
+  });
+  return b;
 }
 
 // ---------- lobby ----------
@@ -612,17 +626,11 @@ function renderRanking() {
 }
 
 // ---------- profile ----------
-const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금', PURCHASE: '구매', RESALE: '되팔기' };
 function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }
   const u = state.user, a = u.account;
   const floors = state.floors.map(f => `<li class="floor-row${f.open ? ' is-open' : ''}${f.outgrown ? ' is-outgrown' : ''}"><span>${f.name}${f.outgrown ? ' <small>졸업</small>' : ''}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
-  // One line per finished round: chip locks are skipped and a round shows its win or loss, not the chips handed back.
-  const ledger = state.ledger.filter(x => x.type !== 'BET_LOCK').slice(0, 15).map(x => {
-    const amount = x.type.startsWith('GAME_') && Number.isFinite(x.rawPnlDelta) ? x.rawPnlDelta : x.amount;
-    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${gameName(x.metadata.game)}` : ''}${x.referenceType === 'SHOP' && x.metadata?.name ? ` · ${x.metadata.name}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
-  }).join('');
   const eng = state.engagement || {};
   const badges = (eng.badges || []).map(b => `<li class="badge badge--${b.rank}"><span class="badge-star" aria-hidden="true"></span><b>${b.rank}위</b><small>${b.name}</small></li>`).join('');
   // Per-game record: win rate, biggest win and net, most played first.
@@ -657,11 +665,12 @@ function renderProfile() {
     <h2 class="sub-head">게임별 기록</h2>
     ${games ? `<div class="game-stats-wrap"><table class="game-stats"><thead><tr><th scope="col">게임</th><th scope="col">판</th><th scope="col">승률</th><th scope="col">최대 승리</th><th scope="col">손익</th></tr></thead><tbody>${games}</tbody></table></div>` : '<p class="lounge-note">아직 플레이한 게임이 없어요.</p>'}
     <h2 class="sub-head">층</h2><ul class="floor-rows">${floors}</ul>
-    <h2 class="sub-head">최근 기록</h2><ul class="ledger">${ledger || '<li><span>아직 기록이 없어요</span></li>'}</ul>
+    <div data-ledger></div>
     <h2 class="sub-head">계정</h2>
     <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
   renderAchievements(root.querySelector('[data-achievements]'));
   root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
+  renderLedger(root.querySelector('[data-ledger]'), state);
   renderAdmin(root, state, applyState);
   root.querySelector('[data-sign-out]').addEventListener('click', async () => {
     await forgetDevice();
@@ -685,7 +694,7 @@ function renderAchievements(box) {
       b.addEventListener('click', async () => {
         b.disabled = true;
         try { const out = await api.achievementClaim(a.id); await chipsToWallet(b, out.claim.amount); applyState(out.state); }
-        catch (e) { b.disabled = false; alert(errorMessage(e)); }
+        catch (e) { b.disabled = false; errorToast(e, () => b.click()); }
       });
       li.append(b);
     }
@@ -703,12 +712,15 @@ function renderAchievements(box) {
 
 // The notification sheet only interrupts the menus, never a hand in progress.
 const inMenus = () => !document.body.classList.contains('game-mode') && !document.body.classList.contains('tier-mode');
+// …and only once the player has finished a round and today's pay sheet is out of the way, so a
+// new player's first screen is the free chips, not a permission prompt.
+const askReady = () => Boolean(state) && !dailyDue(state) && Object.values(state.user?.stats || {}).some(s => s.rounds > 0);
 
 // ---------- account ----------
 function signedIn(next) {
   shownWallet = null;
   applyState(next);
-  startNotifications(inMenus);
+  startNotifications(inMenus, askReady);
   startNews();
   renderTiers();
   showSurface('lobby');
@@ -776,11 +788,12 @@ new MutationObserver(paintSound).observe(document.querySelector('[data-surface="
 paintSound();
 
 mountInstallButton(document.querySelector('[data-install]'));
+watchConnection(refresh);
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 renderLobby();
 showSurface('lobby');
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus); startNews(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); } });
 else openSignIn(signedIn);
 dealVignette();

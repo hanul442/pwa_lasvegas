@@ -296,7 +296,7 @@ export async function mountSeotda(ctx) {
   let prompted = ''; // the betting turn "Your action" was last called for
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(room.active ? room.idleActions() : t.idleActions('시작', deal));
+      t.setActions(room.active ? room.idleActions() : t.idleActions('시작', deal, { againLabel: '같은 베팅으로 한 판 더' }));
       return;
     }
     if (view.turn !== ME) {

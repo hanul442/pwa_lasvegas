@@ -119,7 +119,7 @@ export function createFriends(t, pk, bar, hooks) {
   chipEl.hidden = true;
   oval.append(chipEl);
   chipEl.addEventListener('click', async () => {
-    const line = `VEGAS 홀덤 방 코드 ${code} · Hold'em에서 "친구와 함께"를 누르고 코드로 입장해 주세요.`;
+    const line = `VEGAS 홀덤 방 코드 ${code} · 홀덤에서 "친구와 함께"를 누르고 코드로 입장해 주세요.`;
     try { await navigator.clipboard.writeText(line); t.toast('초대 문구를 복사했어요'); }
     catch { t.toast(`방 코드 ${code}`); }
   });

@@ -1,7 +1,8 @@
 // Friend duels and watching other players' tables.
 // A duel is a week of play against one friend, scored on profit or wins; the winner takes the prize.
 // Watching shows someone's blackjack hand as it stands: dealer's hole card stays face down.
-import { api, errorMessage, playerId } from './api.js';
+import { api, playerId } from './api.js';
+import { errorToast } from './notice.js';
 import { el, formatCH, sound } from './fx.js';
 import { placeCards } from './cards.js';
 
@@ -22,7 +23,8 @@ const scoreText = (metric, v) => metric === 'WINS' ? `${v}승` : `${v > 0 ? '+' 
 async function act(button, call, onChanged) {
   button.disabled = true;
   try { const out = await call(); sound.chip(); onChanged(out.state); }
-  catch (e) { button.disabled = false; alert(errorMessage(e)); }
+  // Each call is guarded on the server (one open duel per pair, answer once), so a retry is safe.
+  catch (e) { button.disabled = false; errorToast(e, () => act(button, call, onChanged)); }
 }
 
 function button(label, cls, onClick) {

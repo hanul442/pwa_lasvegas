@@ -1,0 +1,87 @@
+/* ================= 경마 ================= */
+.felt.felt--turf{--felt-a:#1d5e40;--felt-b:#103d29;--felt-c:#051b11}
+.table-screen--horses .felt-body{padding:52px 10px 12px;justify-content:flex-start}
+.table-screen--horses .felt-body>*{flex:1 1 auto}
+.hr{display:flex;flex-direction:column;gap:8px;min-height:100%}
+
+/* the track: a canvas, with the call and the controls laid over it */
+.hr-track{position:relative;flex:none;height:clamp(112px,17dvh,180px);border-radius:16px;overflow:hidden;background:#1d5b3c;box-shadow:0 0 0 1px #ffffff1f,0 10px 26px #0008;transition:height .45s var(--ease-out)}
+.hr[data-phase="race"] .hr-track,.hr[data-phase="result"] .hr-track{flex:1 1 auto;height:auto;min-height:300px}
+.hr-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hr-bar{display:none;flex:none;align-items:center;gap:8px;height:58px}
+.hr[data-phase="race"] .hr-bar{display:flex}
+.hr-call{flex:1;min-width:0;margin:0;padding:0 2px;max-height:100%;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;font:700 15px/1.3 var(--sans);letter-spacing:-.015em;color:var(--white);text-wrap:balance}
+.hr-call.is-new{animation:hr-call .35s var(--ease-out)}
+@keyframes hr-call{from{opacity:0;transform:translateY(6px)}}
+.hr-tools{flex:none;display:flex;gap:6px}
+.hr-tool{display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:50%;border:1px solid #ffffff59;background:#0a0b0d99;color:var(--white)}
+.hr-tool svg{width:18px;height:18px;fill:currentColor}
+.hr-tool[aria-pressed="true"]{background:var(--white);color:var(--ink);border-color:var(--white)}
+
+/* the finish: a shutter flash, and a frozen frame for a close one */
+.hr-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.hr-track.is-flash .hr-flash{animation:hr-flash .5s ease-out}
+@keyframes hr-flash{0%{opacity:.85}100%{opacity:0}}
+.hr-photo{position:absolute;top:38px;left:10px;padding:5px 11px;border-radius:6px;background:var(--white);color:var(--ink);font:800 13px var(--sans);letter-spacing:.02em;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s;pointer-events:none}
+.hr-track.is-photo .hr-photo{opacity:1;transform:none}
+.hr-track.is-photo .hr-canvas{filter:grayscale(1)}
+
+/* top three after the line */
+.hr-result{display:none;flex:none;margin:0;padding:4px 6px;list-style:none;border-radius:12px;background:#0a0b0dad;box-shadow:inset 0 0 0 1px #ffffff26}
+.hr[data-phase="result"] .hr-result{display:block}
+.hr-result.is-shown{animation:hr-call .35s var(--ease-out)}
+.hr-place{display:grid;grid-template-columns:34px 26px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 6px;border-radius:8px}
+.hr-place+.hr-place{border-top:1px solid var(--hair)}
+.hr-place.is-mine{background:#f4f5f714;box-shadow:inset 0 0 0 1px #f4f5f766}
+.hr-place-n{font:800 15px var(--display);font-stretch:112%}
+.hr-place b{font:700 15px var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr-time{font:600 13px var(--sans);font-variant-numeric:tabular-nums;color:var(--smoke)}
+
+/* the ticket shown while the race runs */
+.hr-ticket{display:none;align-items:center;gap:10px;padding:6px 6px 6px 10px;border-radius:12px;background:#0a0b0dad;box-shadow:inset 0 0 0 1px #ffffff26;font-size:14px}
+.hr[data-phase="race"] .hr-ticket,.hr[data-phase="result"] .hr-ticket{display:flex}
+.hr-ticket-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.hr-ticket b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-ticket-text span{color:var(--smoke);font-size:13px;white-space:nowrap}
+.hr-ticket .zone.hr-odds{width:64px;min-height:44px;pointer-events:none}
+
+/* the race card */
+.hr-card{flex:none}
+.hr[data-phase="race"] .hr-card,.hr[data-phase="result"] .hr-card{display:none}
+.hr-head{display:grid;grid-template-columns:minmax(0,1fr) 56px 56px;gap:6px;align-items:end;padding:0 2px 5px;border-bottom:1px solid #efe7d933;font-size:12px;color:#efe7d9b3}
+.hr-head>span:first-child{font:700 13px var(--sans);color:var(--white);letter-spacing:-.01em}
+.hr-col{text-align:center;font-weight:600}
+.hr-runners{margin:0;padding:0;list-style:none}
+.hr-runner{display:grid;grid-template-columns:26px minmax(0,1fr) 56px 56px;gap:6px;align-items:center;padding:4px 2px;border-bottom:1px solid #efe7d91f;transition:background .2s}
+.hr-runner.is-picked{background:linear-gradient(90deg,#f4f5f714,transparent 80%)}
+.hr-gate{position:relative;display:grid;place-items:center;width:26px;height:26px;border-radius:6px;background:var(--silk);color:var(--silk-ink);font:800 14px var(--display);box-shadow:inset 0 0 0 1px #ffffff40,0 1px 3px #0008;flex:none}
+.hr-info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.hr-name{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.hr-name b{font:700 15px/1.2 var(--sans);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr-tag i{display:inline-block;margin-right:6px;font:600 11px/1 var(--sans);font-style:normal;padding:2px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px #efe7d955;color:#efe7d9d9;vertical-align:1px}
+.hr-form{flex:none;display:flex;gap:2px}
+.hr-form span{display:grid;place-items:center;width:14px;height:16px;border-radius:3px;background:#0a0b0d66;font:700 11px/1 var(--sans);font-variant-numeric:tabular-nums;color:#efe7d9b3}
+.hr-form span.is-place{color:var(--white);background:#0a0b0d99}
+.hr-form span.is-win{background:var(--white);color:var(--ink)}
+.hr-tag{font-size:12px;line-height:1.3;color:#efe7d9a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zone.hr-odds{--size:20px;min-height:42px;padding:4px 2px;border-radius:9px}
+.zone.hr-odds strong{transition:transform .2s}
+.zone.hr-odds small{font-size:10px;line-height:1;color:#efe7d9b3}
+.zone.hr-odds.has-bet strong{transform:translateX(-6px)}
+.zone.hr-odds strong{font:700 16px var(--display);font-stretch:105%;font-variant-numeric:tabular-nums}
+.zone.hr-odds>.bet-stack{right:-7px;top:-8px;bottom:auto}
+
+@media (min-width:640px){
+  .hr-head{grid-template-columns:minmax(0,1fr) 76px 76px}
+  .hr-runner{padding:8px 2px}
+  .hr-runner{grid-template-columns:30px minmax(0,1fr) 76px 76px;gap:10px}
+  .hr-track{height:clamp(180px,28dvh,260px)}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .hr-track{height:120px}
+  .hr[data-phase="race"] .hr-track{min-height:200px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hr-track,.hr-result,.hr-photo{transition:none}
+  .hr-call.is-new,.hr-track.is-flash .hr-flash{animation:none}
+}

@@ -6,7 +6,7 @@ import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock, watchBlock } from './social.js';
 import { hotStatus, clock, pct, startTime } from './hot.js';
 
-const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Gostop: '고스톱', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯', Double: '묻고 더블' };
+const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Gostop: '고스톱', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯', 'Horse Racing': '경마', Double: '묻고 더블' };
 export const gameName = g => GAME_KO[g] || g || '';
 
 function storageGet(key) { try { return localStorage.getItem(key); } catch { return null; } }

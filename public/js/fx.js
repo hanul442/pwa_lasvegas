@@ -149,7 +149,15 @@ export const sound = {
     noiseBurst(ac, { length: 0.05, freq: 5200, q: 0.8, gain: 0.32 });
     noiseBurst(ac, { at: 0.03, length: 0.4, freq: 180, q: 0.7, gain: 0.4 });
     tone(ac, { at: 0.02, freq: 1760, length: 0.1, gain: 0.04, type: 'square' });
-  }
+  },
+  // The call to the post before a race: a short bugle fanfare.
+  bugle() {
+    const ac = audio(); if (!ac) return;
+    [[392, 0, 0.16], [523, 0.17, 0.16], [659, 0.34, 0.16], [784, 0.51, 0.3], [659, 0.84, 0.14], [784, 1.0, 0.5]]
+      .forEach(([freq, at, length]) => { tone(ac, { at, freq, length, gain: 0.07, type: 'triangle' }); tone(ac, { at, freq: freq * 2, length, gain: 0.018, type: 'square' }); });
+  },
+  // A camera shutter for the photo finish.
+  shutter() { const ac = audio(); if (!ac) return; noiseBurst(ac, { length: 0.03, freq: 3500, q: 1.2, gain: 0.3 }); noiseBurst(ac, { at: 0.07, length: 0.04, freq: 2200, q: 1.2, gain: 0.25 }); }
 };
 
 export function haptic(pattern = 8) {

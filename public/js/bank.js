@@ -256,7 +256,8 @@ function payBlock(state, onChanged) {
     catch (e) { btn.disabled = false; alert(errorMessage(e)); }
   };
   row('정부 지원금', '누구나 일주일에 한 번 · 월요일 0시에 새로 나와요', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
-  row('기초생활수급', `순자산 ${won(sup.welfare.below)} 미만이면 하루 한 번 생계급여`, sup.welfare.claimed ? '받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
+  const left = sup.welfare.perDay - sup.welfare.taken;
+  row('구제금융', `파산했거나 순자산이 ${won(sup.welfare.below)} 미만이면 하루 ${sup.welfare.perDay}번까지 · 받을수록 절반으로 줄어요 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
   box.append(list);
   return box;
 }

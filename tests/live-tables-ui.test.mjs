@@ -74,7 +74,7 @@ test('installable PWA never caches game or chip API responses', () => {
 
 test('chip tiers match server floor limits', () => {
   assert.equal(Object.keys(TIERS).length, FLOORS.length, 'one table per floor');
-  assert.equal(TIERS.corner.min, 10, 'the smallest bet is 10원');
+  assert.equal(TIERS['gold-room'].min, 1_000_000, 'the smallest bet is 100만');
   assert.equal(TIERS.vault.max, 1_000_000_000_000, 'The Vault goes up to 1조');
   // Every table's whole range must be accepted by its floor on the server.
   for (const tier of Object.values(TIERS)) {

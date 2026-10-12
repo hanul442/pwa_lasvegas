@@ -2,7 +2,7 @@
 // the lounge news feed and the floor-unlock moment.
 import { api, errorMessage, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
-import { createChip, TIERS } from './chips.js';
+import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock, watchBlock } from './social.js';
 
 const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Gostop: '고스톱', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯', Double: '묻고 더블' };
@@ -17,8 +17,8 @@ export async function chipsToWallet(from, amount) {
   if (!from || !wallet) return;
   const start = from.getBoundingClientRect();
   const target = wallet.getBoundingClientRect();
-  // Chips from the table whose rack suits the amount, so 300원 doesn't fly in as 5천만 chips.
-  const tier = Object.values(TIERS).filter(t => t.min * 5 <= amount).at(-1) || TIERS.corner;
+  // Chips from the table whose rack suits the amount, so 300만 doesn't fly in as 5억 plaques.
+  const tier = Object.values(TIERS).filter(t => t.min * 5 <= amount).at(-1) || FIRST_TIER;
   const denoms = tier.chips;
   const count = Math.min(10, 4 + Math.floor(Math.log10(Math.max(1, amount / tier.min)) * 2));
   const flights = [];

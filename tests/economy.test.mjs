@@ -9,16 +9,16 @@ function fresh(){return defaultState()}
 test('the seeded 10억 profile has every floor up to Salon Privé open but sits only at the top two',()=>{
   const s=fresh(),u=s.users.hanseo;
   assert.equal(u.account.available,1_000_000_000);
-  assert.deepEqual(u.account.unlockedFloors,['corner','main-street','house','downtown','strip','gold-room','high-limit','salon-prive']);
+  assert.deepEqual(u.account.unlockedFloors,['gold-room','high-limit','salon-prive']);
   const open=floorsFor(u).filter(f=>f.open).map(f=>f.slug);
   assert.deepEqual(open,['high-limit','salon-prive']);
 });
 
-test('a new player starts with nothing at The Corner',()=>{
+test('a new player starts with nothing in the Gold Room',()=>{
   const s=fresh(),u=newUser(s,'new','NEW');
   assert.equal(u.account.available,0);
-  assert.deepEqual(u.account.unlockedFloors,['corner']);
-  assert.deepEqual(floorsFor(u).filter(f=>f.open).map(f=>f.slug),['corner']);
+  assert.deepEqual(u.account.unlockedFloors,['gold-room']);
+  assert.deepEqual(floorsFor(u).filter(f=>f.open).map(f=>f.slug),['gold-room']);
 });
 
 test('locked bet conserves total balance until settlement',()=>{
@@ -64,12 +64,12 @@ test('admin grant changes bankroll but never qualified P/L',()=>{
   assert.equal(u.account.qualifiedPnl,0);
 });
 
-test('auto recharge only tops up to 500원',()=>{
+test('auto recharge only tops up to 5천만',()=>{
   const s=fresh(),u=s.users.hanseo;
-  u.account.available=120;
+  u.account.available=12_000_000;
   autoRecharge(s,u);
-  assert.equal(u.account.available,500);
-  assert.equal(u.recharge.total,380);
+  assert.equal(u.account.available,50_000_000);
+  assert.equal(u.recharge.total,38_000_000);
 });
 
 test('holding 100억 opens High Limit, and it stays open after losing it',()=>{

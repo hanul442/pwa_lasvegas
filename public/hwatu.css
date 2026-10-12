@@ -194,12 +194,12 @@
   .table-screen--matgo .felt-body{padding:10px 10px 8px}
   .table-screen--matgo .dealer-rack{display:none}
   .mg{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto 1fr;grid-template-areas:"opp ocaps" "board board" "me hand" "mcaps hand";gap:4px 14px;--hw-w:clamp(26px,4vw,40px)}
-  .mg>:nth-child(1){grid-area:opp}
-  .mg>:nth-child(2){grid-area:ocaps}
-  .mg>:nth-child(3){grid-area:board}
-  .mg>:nth-child(4){grid-area:mcaps}
-  .mg>:nth-child(5){grid-area:me}
-  .mg>:nth-child(6){grid-area:hand}
+  .mg:not(.gs)>:nth-child(1){grid-area:opp}
+  .mg:not(.gs)>:nth-child(2){grid-area:ocaps}
+  .mg:not(.gs)>:nth-child(3){grid-area:board}
+  .mg:not(.gs)>:nth-child(4){grid-area:mcaps}
+  .mg:not(.gs)>:nth-child(5){grid-area:me}
+  .mg:not(.gs)>:nth-child(6){grid-area:hand}
   .mg-caps{--cap-w:clamp(14px,2.4vw,22px)}
   .mg-board{--hw-w:clamp(28px,min(4.6vw,10dvh),44px);min-height:0;padding:2px 4px;gap:6px}
   .mg-hand{align-self:end;flex-wrap:nowrap;padding-top:12px;--hw-w:clamp(34px,min(6vw,13dvh),52px)}
@@ -214,7 +214,8 @@
   .sd-pot{grid-template-columns:auto auto;align-items:center;gap:6px 12px}
   .sd-pot .zone{width:auto;min-width:150px;min-height:52px}
   .sd-pot .zone small{display:none}
-  .sd-count{grid-column:1 / -1}
+  .sd-count{grid-column:1;grid-row:2}
+  .sd-pot .pk-friends-open{grid-column:2;grid-row:2;justify-self:start}
   .table-screen--seotda.is-playing .sd-count{display:none}
   .table-screen--seotda .felt-body{padding-top:6px;padding-bottom:6px}
   .table-screen--seotda .dealer-rack{display:none}
@@ -223,7 +224,7 @@
   .sd{--hw-w:clamp(36px,min(6vw,11dvh),56px)}
   .sd-seat--me{position:relative;gap:4px}
   .sd-seat--me .sd-hand-name{position:absolute;left:calc(50% + var(--hw-w) + 14px);top:calc(var(--hw-w) * .5)}
-  .sd-seat--opp .sd-hand-name{position:absolute;left:50%;top:calc(var(--opp-w) * 1.6 - 10px);z-index:3;transform:translateX(-50%)}
+  .sd-seat--opp .sd-hand-name{position:absolute;left:calc(50% + var(--opp-w) + 8px);top:calc(var(--opp-w) * .8);z-index:3;transform:translateY(-50%)}
 }
 @media (prefers-reduced-motion:reduce){
   .sheet,.coach-ring,.coach-bubble{transition:none}
@@ -300,3 +301,10 @@
 .rm-clock.is-short{color:#ff9585}
 .rm-clock.is-mine.is-short{background:#ff9585;color:var(--ink)}
 .table-screen.is-room .dealer-rack{visibility:hidden}
+/* 고스톱 on short phones: the rack folds away like 맞고's so my hand stays on the felt. */
+@media (max-width:759px) and (orientation:portrait) and (max-height:760px){
+  .table-screen--gostop .felt-body{padding-top:14px}
+  .table-screen--gostop .dealer-rack{display:none}
+  .gs{gap:6px}
+  .gs .mg-board{min-height:calc(var(--hw-w) * 3.2);padding:4px}
+}

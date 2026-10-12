@@ -14,6 +14,7 @@
 .table-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:560 clamp(18px,5.6vw,22px)/1.15 var(--display);font-stretch:125%;letter-spacing:-.02em}
 @media (max-width:519px){.table-name strong{font-size:clamp(16px,4.8vw,19px);font-stretch:108%}}
 .table-name span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
+.table-name span i{font-style:normal;white-space:nowrap}
 /* narrow phones: the subtitle (stakes, room, blinds) wraps to a second line instead of being cut off */
 @media (max-width:519px){.table-name span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;font-size:12px;line-height:1.25}}
 .table-balance{text-align:right;transition:color .4s}
@@ -213,6 +214,7 @@
 .side-circle{--size:20px;position:absolute;top:-4px;left:-6px;z-index:2;width:32px;height:32px;padding:0;display:grid;place-items:center;border-radius:50%;border:1px dashed #efe7d980;background:#0000002e;color:#efe7d9;transition:border-color .2s,box-shadow .3s,opacity .2s}
 .side-label{font:650 9px var(--display);font-stretch:112%;letter-spacing:.02em;opacity:.62;pointer-events:none}
 .side-circle--t3{left:auto;right:-6px}
+.side-circle::before{content:"";position:absolute;inset:-4px;border-radius:50%}
 .side-circle.has-bet .side-label{opacity:0}
 .side-circle.is-focus,.side-circle.is-hover{border-style:solid;border-color:var(--ivory)}
 .side-circle.is-won{border-style:solid;border-color:var(--star);box-shadow:0 0 0 3px #fff6dc2e,0 0 18px #fff6dc40}
@@ -516,7 +518,7 @@
 .pk-buyin{--size:46px;width:132px;height:132px;border-radius:50%;outline:1px solid #efe7d926;outline-offset:6px}
 .pk-opponents{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--smoke)}
 .pk-opponents span{margin-right:4px;white-space:nowrap}
-.pk-opponents button{width:34px;height:34px;border-radius:50%;border:1px solid #efe7d940;background:#0000002e;color:var(--white);font:650 13px var(--sans)}
+.pk-opponents button{width:40px;height:40px;border-radius:50%;border:1px solid #efe7d940;background:#0000002e;color:var(--white);font:650 13px var(--sans)}
 .pk-opponents button[aria-checked="true"]{background:var(--white);color:var(--ink);border-color:var(--white)}
 
 /* controls while seated: raise sizer replaces the chip tray */
@@ -615,6 +617,20 @@
   .table-screen--holdem.is-seated .table-controls{grid-template-columns:auto 1fr auto;grid-template-areas:"bet sizer act"}
   .pk-sizer{grid-template-columns:auto 1fr}
 }
+/* Before sitting down the buy-in, table size and "친구와 함께" sit low on the felt; on short
+   screens the hint line moves up out of their way instead of running through them. */
+@media (max-height:760px) and (orientation:portrait){
+  .table-screen--holdem:not(.is-seated) .pk-center{top:21%}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .table-screen--holdem:not(.is-seated) .pk-center{top:24%}
+  .table-screen--holdem:not(.is-seated) .pk-center:has(.pk-board:empty) :is(.pk-board,.pk-pot){display:none}
+  .table-screen--holdem:not(.is-seated) .pk-deck{visibility:hidden}
+  .pk-sitdown{grid-template-columns:auto auto;grid-template-areas:"buy opp" "buy fr";align-items:center;gap:10px 22px;bottom:16px}
+  .pk-buyin{grid-area:buy}
+  .pk-opponents{grid-area:opp}
+  .pk-sitdown .pk-friends-open{grid-area:fr;justify-self:start}
+}
 @media (prefers-reduced-motion:reduce){
   .pk-button,.pk-tag{transition:opacity .01ms}
   .pk-seat.is-thinking .pk-plate{animation:none}
@@ -661,5 +677,8 @@
   .toast{font-size:14px}
 }
 /* "친구와 함께" at the blackjack table, out of the way of the boxes */
-.bj-friends{position:absolute;left:12px;bottom:12px;z-index:6}
+.bj-friends{position:absolute;right:12px;top:calc(var(--card-w) * .82 + 30px);z-index:6}
+@media (orientation:landscape) and (max-height:520px){.bj-friends{top:62px}}
+/* a long dealer hand left on the felt after a round reaches under it on a phone */
+@media (max-width:519px){.bj:has([data-dealer]>:nth-child(4)) .bj-friends{visibility:hidden}}
 .bj-seat.is-friend .bj-seat-plate b{color:var(--white)}

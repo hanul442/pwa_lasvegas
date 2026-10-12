@@ -269,7 +269,7 @@
 .push-perks span{color:var(--smoke);font-size:14px;line-height:1.45}
 
 /* big-news banner (js/news.js) */
-.news-banner{position:fixed;z-index:120;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;width:min(440px,calc(100vw - 24px));display:flex;gap:12px;align-items:flex-start;padding:13px 16px 14px;border:1px solid var(--hair-strong);border-radius:16px;background:#121418;box-shadow:0 18px 40px #000a;transform:translate(-50%,calc(-100% - 24px));opacity:0;transition:transform .32s var(--ease-out),opacity .32s var(--ease-out);cursor:pointer}
+.news-banner{position:fixed;z-index:120;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;width:min(440px,calc(100vw - 24px));display:flex;gap:12px;align-items:flex-start;padding:13px 16px 14px;border:1px solid var(--hair-strong);border-radius:16px;background:#121418;box-shadow:0 18px 40px #000a;transform:translate(-50%,calc(-100% - 24px));opacity:0;touch-action:none;transition:transform .32s var(--ease-out),opacity .32s var(--ease-out);cursor:pointer}
 .news-banner.is-open{transform:translate(-50%,0);opacity:1}
 .news-star{flex:none;width:14px;height:14px;margin-top:4px;background:var(--star);clip-path:var(--star-shape)}
 .news-text{display:grid;gap:3px;min-width:0}

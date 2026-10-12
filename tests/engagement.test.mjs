@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { defaultState } from '../lib/state.mjs';
 import { settleHouseGame, totalBalance } from '../lib/economy.mjs';
 import { handleApi } from '../lib/api.mjs';
-import { dayKey, dailyStatus, claimDaily, DAILY_REWARDS, missionsFor, missionsStatus, claimMission, MISSIONS, MISSION_SWEEP_BONUS, weekBoundary, settleFinishedSeason, SEASON_PRIZES, rescueStatus, playRescue, onRoundSettled } from '../lib/engagement.mjs';
+import { tableBase } from '../lib/state.mjs';
+import { dayKey, dailyStatus, claimDaily, PAY, PAY_CYCLE, supportStatus, claimSupport, WELFARE_DAILY, missionsFor, missionsStatus, claimMission, MISSIONS, MISSION_SWEEP_BONUS, weekBoundary, settleFinishedSeason, SEASON_PRIZES, rescueStatus, playRescue, onRoundSettled } from '../lib/engagement.mjs';
 
 const DAY = 86_400_000;
 // 2026-10-14 12:00 in Seoul, a Wednesday.
@@ -14,23 +15,44 @@ test('days turn over at midnight in Seoul', () => {
   assert.equal(dayKey(Date.parse('2026-10-14T15:00:00Z')), '2026-10-15');
 });
 
-test('daily bonus pays once a day and climbs a 7-day streak that resets on a missed day', () => {
+test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th, and a missed day starts over', () => {
   const state = defaultState(); const u = state.users.hanseo;
+  const base = tableBase(u);
+  assert.equal(base, 10_000_000, 'the 10억 profile sits at High Limit at the cheapest');
   const start = u.account.available;
   const first = claimDaily(state, u, WED);
-  assert.equal(first.amount, DAILY_REWARDS[0]);
+  assert.equal(first.amount, PAY.daily * base);
   assert.throws(() => claimDaily(state, u, WED + 1000), /DAILY_ALREADY_CLAIMED/);
   assert.equal(dailyStatus(u, WED).claimed, true);
+  assert.equal(dailyStatus(u, WED).toWeekly, 6);
   for (let d = 1; d < 7; d++) claimDaily(state, u, WED + d * DAY);
   assert.equal(u.daily.streak, 7);
-  assert.equal(u.account.available, start + DAILY_REWARDS.reduce((a, b) => a + b, 0));
+  assert.equal(u.account.available, start + 7 * PAY.daily * base + PAY.weekly * base);
+  assert.equal(u.payStats.weeks, 1);
   assert.equal(state.feed[0].type, 'DAILY_STREAK');
-  // Day 8 starts the calendar over but keeps the streak.
-  assert.equal(dailyStatus(u, WED + 7 * DAY).day, 1);
-  assert.equal(claimDaily(state, u, WED + 7 * DAY).streak, 8);
+  for (let d = 7; d < PAY_CYCLE; d++) claimDaily(state, u, WED + d * DAY);
+  assert.equal(u.payStats.weeks, 4);
+  assert.equal(u.payStats.months, 1);
+  assert.ok(state.ledger.some(x => x.userId === 'hanseo' && x.type === 'MONTHLY_PAY' && x.amount === PAY.monthly * base));
+  // Day 29 starts the calendar over but keeps the streak.
+  assert.equal(dailyStatus(u, WED + PAY_CYCLE * DAY).day, 1);
+  assert.equal(claimDaily(state, u, WED + PAY_CYCLE * DAY).streak, PAY_CYCLE + 1);
   // Skipping a day drops the streak.
-  assert.equal(dailyStatus(u, WED + 9 * DAY).streak, 0);
-  assert.equal(dailyStatus(u, WED + 9 * DAY).reward, DAILY_REWARDS[0]);
+  assert.equal(dailyStatus(u, WED + (PAY_CYCLE + 2) * DAY).streak, 0);
+});
+
+test('정부 지원금 once a week for anyone; 기초생활수급 once a day for someone worth under 1천원', () => {
+  const state = defaultState(); const u = state.users.hanseo;
+  const grant = claimSupport(state, u, 'grant', WED);
+  assert.equal(grant.amount, 50 * tableBase(u));
+  assert.throws(() => claimSupport(state, u, 'grant', WED + DAY), /SUPPORT_ALREADY_CLAIMED/);
+  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 50 * tableBase(u), 'next week pays again');
+  assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
+  u.account.available = 200;
+  assert.equal(supportStatus(u, WED).welfare.qualified, true);
+  assert.equal(claimSupport(state, u, 'welfare', WED).amount, WELFARE_DAILY);
+  assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /SUPPORT_ALREADY_CLAIMED/);
+  assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, WELFARE_DAILY);
 });
 
 test('three missions a day, stable within the day, one of them general', () => {
@@ -52,9 +74,10 @@ test('settled rounds advance missions, and claiming all three adds the sweep bon
   const before = u.account.available;
   for (const id of ['rounds-any', 'wins-blackjack']) claimMission(state, u, id, WED);
   const last = claimMission(state, u, 'mult-5', WED);
-  assert.equal(last.bonus, MISSION_SWEEP_BONUS);
-  const rewards = ['rounds-any', 'wins-blackjack', 'mult-5'].reduce((a, id) => a + MISSIONS.find(m => m.id === id).reward, 0);
-  assert.equal(u.account.available, before + rewards + MISSION_SWEEP_BONUS);
+  const base = tableBase(u);
+  assert.equal(last.bonus, MISSION_SWEEP_BONUS * base);
+  const rewards = ['rounds-any', 'wins-blackjack', 'mult-5'].reduce((a, id) => a + MISSIONS.find(m => m.id === id).pays * base, 0);
+  assert.equal(u.account.available, before + rewards + MISSION_SWEEP_BONUS * base);
   assert.throws(() => claimMission(state, u, 'mult-5', WED), /MISSION_ALREADY_CLAIMED/);
   // The 35x roulette hit went to the lounge feed.
   assert.ok(state.feed.some(f => f.type === 'HOT_WIN' && f.game === 'Roulette' && f.multiple === 35));
@@ -86,14 +109,17 @@ test('a finished season pays its podium once and leaves a badge', () => {
   const win = (uid, pnl) => state.ledger.push({ id: `tx_${uid}_${pnl}`, userId: uid, type: pnl > 0 ? 'GAME_WIN' : 'GAME_LOSS', amount: pnl, rawPnlDelta: pnl, qualifiedPnlDelta: pnl, createdAt: at, metadata: { game: 'Baccarat', stake: 1_000_000 } });
   win('june', 9_000_000); win('min', 4_000_000); win('zero', 1_000_000); win('hanseo', -2_000_000);
   const before = { june: state.users.june.account.available, min: state.users.min.account.available, hanseo: state.users.hanseo.account.available };
+  // Prizes are counted in each winner's table base at the moment they are paid.
+  const prizes = { june: SEASON_PRIZES[0] * tableBase(state.users.june), min: SEASON_PRIZES[1] * tableBase(state.users.min) };
+  const prize = uid => prizes[uid];
   const result = settleFinishedSeason(state, WED);
   assert.deepEqual(result.podium.map(r => r.userId), ['june', 'min', 'zero']);
-  assert.equal(state.users.june.account.available, before.june + SEASON_PRIZES[0]);
-  assert.equal(state.users.min.account.available, before.min + SEASON_PRIZES[1]);
+  assert.equal(state.users.june.account.available, before.june + prize('june', 0));
+  assert.equal(state.users.min.account.available, before.min + prize('min', 1));
   assert.equal(state.users.hanseo.account.available, before.hanseo);
   assert.equal(state.users.june.badges[0].rank, 1);
   assert.equal(settleFinishedSeason(state, WED + 1000), null);
-  assert.equal(state.users.june.account.available, before.june + SEASON_PRIZES[0]);
+  assert.equal(state.users.june.account.available, before.june + prize('june', 0));
 });
 
 test('lucky card rescue only opens on an empty wallet while the recharge cools down', () => {
@@ -128,7 +154,7 @@ test('API exposes engagement and the claim routes', async () => {
   assert.equal((await call('POST', '/api/missions/claim', { missionId: 'nope' })).status, 404);
   assert.equal((await call('POST', '/api/rescue', { pick: 0 })).status, 409);
   // Settling a round shows up in the weekly season board.
-  await call('POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'downtown', betType: 'BIG' });
+  await call('POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BIG' });
   const after = await call('GET', '/api/state');
   const me = after.data.rankings.season.highRoller.find(r => r.id === 'hanseo');
   assert.equal(me.value, 10_000_000);

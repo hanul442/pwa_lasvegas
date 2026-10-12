@@ -1,14 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../lib/store.mjs';
-import { addLedger, autoRecharge, lockBet, settleHouseGame, settleLockedHouseGame, requestRecharge, reviewRecharge } from '../lib/economy.mjs';
+import { newUser } from '../lib/state.mjs';
+import { floorsFor, addLedger, autoRecharge, lockBet, settleHouseGame, settleLockedHouseGame, requestRecharge, reviewRecharge } from '../lib/economy.mjs';
 
 function fresh(){return defaultState()}
 
-test('new user starts at 10억 and Strip is unlocked',()=>{
+test('the seeded 10억 profile has every floor up to Salon Privé open but sits only at the top two',()=>{
   const s=fresh(),u=s.users.hanseo;
   assert.equal(u.account.available,1_000_000_000);
-  assert.deepEqual(u.account.unlockedFloors,['downtown','strip']);
+  assert.deepEqual(u.account.unlockedFloors,['corner','main-street','house','downtown','strip','gold-room','high-limit','salon-prive']);
+  const open=floorsFor(u).filter(f=>f.open).map(f=>f.slug);
+  assert.deepEqual(open,['high-limit','salon-prive']);
+});
+
+test('a new player starts with nothing at The Corner',()=>{
+  const s=fresh(),u=newUser(s,'new','NEW');
+  assert.equal(u.account.available,0);
+  assert.deepEqual(u.account.unlockedFloors,['corner']);
+  assert.deepEqual(floorsFor(u).filter(f=>f.open).map(f=>f.slug),['corner']);
 });
 
 test('locked bet conserves total balance until settlement',()=>{
@@ -54,12 +64,12 @@ test('admin grant changes bankroll but never qualified P/L',()=>{
   assert.equal(u.account.qualifiedPnl,0);
 });
 
-test('auto recharge only tops up to 5억',()=>{
+test('auto recharge only tops up to 500원',()=>{
   const s=fresh(),u=s.users.hanseo;
-  u.account.available=120_000_000;
+  u.account.available=120;
   autoRecharge(s,u);
-  assert.equal(u.account.available,500_000_000);
-  assert.equal(u.recharge.total,380_000_000);
+  assert.equal(u.account.available,500);
+  assert.equal(u.recharge.total,380);
 });
 
 test('holding 100억 opens High Limit, and it stays open after losing it',()=>{
@@ -68,15 +78,15 @@ test('holding 100억 opens High Limit, and it stays open after losing it',()=>{
   settleHouseGame(s,u,{game:'Baccarat',stake:1_000_000_000,netPnl:9_000_000_000,roundId:'bigwin'});
   assert.equal(u.account.progressionValue,u.account.available+u.account.locked);
   assert.ok(u.account.progressionValue>=10_000_000_000);
-  assert.ok(u.account.unlockedFloors.includes('high-limit'));
+  assert.ok(u.account.unlockedFloors.includes('penthouse'));
   settleHouseGame(s,u,{game:'Baccarat',stake:6_000_000_000,netPnl:-6_000_000_000,roundId:'bigloss'});
   assert.ok(u.account.progressionValue<10_000_000_000);
-  assert.ok(u.account.unlockedFloors.includes('high-limit'));
+  assert.ok(u.account.unlockedFloors.includes('penthouse'));
 });
 
 test('chips from any source count toward the next floor',()=>{
   const s=fresh(),u=s.users.hanseo;
   addLedger(s,u,{type:'ADMIN_GRANT',amount:9_000_000_000,referenceType:'TEST'});
   assert.equal(u.account.progressionValue,u.account.available+u.account.locked);
-  assert.ok(u.account.unlockedFloors.includes('high-limit'));
+  assert.ok(u.account.unlockedFloors.includes('penthouse'));
 });

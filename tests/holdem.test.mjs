@@ -120,7 +120,7 @@ test('thousands of bot hands conserve every chip and always finish', () => {
 });
 
 test('the public view hides other hole cards until they are shown', () => {
-  const session = createHoldemSession({ userId: 'me', nickname: 'ME', buyIn: 50_000_000, tier: 'low', opponents: 3, floor: 'downtown' });
+  const session = createHoldemSession({ userId: 'me', nickname: 'ME', buyIn: 50_000_000, tier: 'high-limit', opponents: 3, floor: 'high-limit' });
   dealNextHand(session);
   const view = publicTable(session.table, 0);
   assert.equal(view.seats[0].cards.length, 2);
@@ -159,13 +159,13 @@ const call = (store, method, path, body, key = `k-holdem-${++n}`) =>
 test('sitting locks the buy-in, playing moves the stack and standing up settles the difference', async () => {
   const store = memoryStore();
   const start = store.peek().users.hanseo.account.available;
-  const sit = await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'downtown', opponents: 3 });
+  const sit = await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit', opponents: 3 });
   assert.equal(sit.status, 200, JSON.stringify(sit.data));
   assert.equal(sit.data.state.user.account.available, start - 50_000_000);
   assert.equal(sit.data.state.user.account.locked, 50_000_000);
   assert.equal(sit.data.session.table.seats.length, 4);
   assert.equal(sit.data.events[0].t, 'hand');
-  assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'downtown' })).data.error, 'OPEN_HOLDEM_SESSION');
+  assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit' })).data.error, 'OPEN_HOLDEM_SESSION');
 
   let session = sit.data.session;
   for (let hand = 0; hand < 4 && session.status === 'SEATED'; hand++) {
@@ -194,7 +194,7 @@ test('sitting locks the buy-in, playing moves the stack and standing up settles 
 
 test('a replayed action is applied once and a stale one is refused', async () => {
   const store = memoryStore();
-  const sit = await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'downtown', opponents: 1 });
+  const sit = await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit', opponents: 1 });
   let session = sit.data.session;
   // Heads-up hands can end before the person acts (bot folds); deal until it's our turn.
   while (session.table.handOver) session = (await call(store, 'POST', '/api/holdem/next', { sessionId: session.id, handNo: session.table.handNo })).data.session;
@@ -211,7 +211,7 @@ test('a replayed action is applied once and a stale one is refused', async () =>
 test('buy-ins outside the table limits are refused before any chips move', async () => {
   const store = memoryStore();
   const before = store.peek().users.hanseo.account.available;
-  const res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 1_000, floor: 'downtown' });
+  const res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 1_000, floor: 'high-limit' });
   assert.equal(res.status, 400);
   assert.equal(store.peek().users.hanseo.account.available, before);
 });

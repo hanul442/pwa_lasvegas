@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { blackjackActionFingerprint, blackjackStartFingerprint, findBlackjackStartReplay, isBlackjackCommandReplay, recordBlackjackCommand, tagBlackjackStart } from '../lib/blackjack-idempotency.mjs';
 
 test('blackjack start retries find the original round even after settlement',()=>{
-  const fingerprint=blackjackStartFingerprint({engineVersion:'MULTI_SPOT_V2',stake:1_000_000,spots:2,floor:'strip'});
+  const fingerprint=blackjackStartFingerprint({engineVersion:'MULTI_SPOT_V2',stake:1_000_000,spots:2,floor:'salon-prive'});
   const round={id:'bj2_1',game:'Blackjack',engineVersion:'MULTI_SPOT_V2',userId:'hanseo',status:'SETTLED'};
   tagBlackjackStart(round,'req-start-0001',fingerprint);
   const state={rounds:[round]};
@@ -11,8 +11,8 @@ test('blackjack start retries find the original round even after settlement',()=
 });
 
 test('reused blackjack start key with changed parameters fails closed',()=>{
-  const original=blackjackStartFingerprint({engineVersion:'MULTI_SPOT_V2',stake:1_000_000,spots:1,floor:'strip'});
-  const changed=blackjackStartFingerprint({engineVersion:'MULTI_SPOT_V2',stake:3_000_000,spots:1,floor:'strip'});
+  const original=blackjackStartFingerprint({engineVersion:'MULTI_SPOT_V2',stake:1_000_000,spots:1,floor:'salon-prive'});
+  const changed=blackjackStartFingerprint({engineVersion:'MULTI_SPOT_V2',stake:3_000_000,spots:1,floor:'salon-prive'});
   const round={id:'bj2_1',game:'Blackjack',engineVersion:'MULTI_SPOT_V2',userId:'hanseo'};
   tagBlackjackStart(round,'req-start-0002',original);
   assert.throws(()=>findBlackjackStartReplay({rounds:[round]},{userId:'hanseo',key:'req-start-0002',fingerprint:changed,engineVersion:'MULTI_SPOT_V2'}),/IDEMPOTENCY_CONFLICT/);

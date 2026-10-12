@@ -6,7 +6,10 @@ import { el, formatCH, sound } from './fx.js';
 import { placeCards } from './cards.js';
 
 const METRIC = { QUALIFIED_PROFIT: '수익', WINS: '승리' };
-const PRIZE = 100_000_000;
+// The winner gets 100 smallest bets of the cheapest table they may sit at (lib/social-competition.mjs);
+// shown here as this player's own amount.
+let PRIZE = 1_000;
+const notePrize = state => { if (state?.bank?.base) PRIZE = state.bank.base * 100; };
 
 function timeLeft(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());
@@ -97,6 +100,7 @@ function challengeForm(state, onChanged) {
 
 // The ranking screen's duel section.
 export function renderDuels(root, state, onChanged) {
+  notePrize(state);
   const list = state?.socialCompetition?.challenges || [];
   const order = { PENDING: 0, ACTIVE: 1 };
   const open = list.filter(c => c.status in order).sort((a, b) => order[a.status] - order[b.status] || (a.role === 'OPPONENT' ? -1 : 1));
@@ -118,6 +122,7 @@ export function renderDuels(root, state, onChanged) {
 
 // Lobby notice when a friend has thrown down a challenge.
 export function duelInviteBlock(state, onChanged) {
+  notePrize(state);
   const invites = (state?.socialCompetition?.challenges || []).filter(c => c.status === 'PENDING' && c.role === 'OPPONENT');
   if (!invites.length) return null;
   const box = el('section', 'lounge-block lounge-block--duel');

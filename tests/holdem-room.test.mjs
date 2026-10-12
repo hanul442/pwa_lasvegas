@@ -36,7 +36,7 @@ test('several people and bots play hands; every chip is accounted for when they 
   const { state } = w;
   const before = Object.fromEntries(Object.values(state.users).map(u => [u.id, u.account.available]));
   const startAvail = Object.values(state.users).reduce((a, u) => a + u.account.available, 0);
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 5 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 5 }, w.ctx());
   assert.match(room.code, /^[A-HJ-NP-Z2-9]{4}$/);
   joinRoom(state, state.users.min, room.code, w.ctx());
   joinRoom(state, state.users.june, room.code.toLowerCase(), w.ctx());
@@ -86,7 +86,7 @@ test('several people and bots play hands; every chip is accounted for when they 
 test('nobody can act out of turn, twice on the same seq, or see another hand', () => {
   const w = world(3);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   // Deal until a person holds the turn.
@@ -118,7 +118,7 @@ test('nobody can act out of turn, twice on the same seq, or see another hand', (
 test('a turn clock that runs out checks or folds for the player, lazily, and repeated no-shows stand up', () => {
   const w = world(5);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   for (let k = 0; k < 50 && !(room.table.hand && !room.table.hand.over); k++) { w.advance(NEXT_HAND_MS); tick(state, room, w.ctx()); }
   const h = room.table.hand;
@@ -144,7 +144,7 @@ test('a turn clock that runs out checks or folds for the player, lazily, and rep
 test('the next hand deals itself a few seconds after the last, and a mid-hand leaver folds out', () => {
   const w = world(9);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 4 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 4 }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   // Fold every human turn until a hand ends, then check the gap before the next deal.
@@ -175,7 +175,7 @@ test('the next hand deals itself a few seconds after the last, and a mid-hand le
 test('people join a running table: a free chair at once, otherwise at the next deal', () => {
   const w = world(13);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 6 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 6 }, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   assert.equal(room.table.seats.filter(s => s.kind === 'bot').length, 5);
   joinRoom(state, state.users.min, room.code, w.ctx());
@@ -213,16 +213,16 @@ const call = (store, player, method, path, body, key = `k-room-${++n}`) =>
 test('rooms over the API: create, list, join by code, poll with a cursor, act, leave', async () => {
   const store = memoryStore();
   const total = availableTotal(store.peek());
-  const made = await call(store, 'hanseo', 'POST', '/api/holdem/rooms', { buyIn: 50_000_000, floor: 'downtown', size: 3 });
+  const made = await call(store, 'hanseo', 'POST', '/api/holdem/rooms', { buyIn: 50_000_000, floor: 'high-limit', size: 3 });
   assert.equal(made.status, 201, JSON.stringify(made.data));
   const code = made.data.room.code;
   assert.equal(made.data.state.user.account.locked, 50_000_000);
-  assert.equal((await call(store, 'hanseo', 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'downtown' })).data.error, 'OPEN_HOLDEM_SESSION');
+  assert.equal((await call(store, 'hanseo', 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit' })).data.error, 'OPEN_HOLDEM_SESSION');
 
   const listed = await call(store, 'min', 'GET', '/api/holdem/rooms');
   assert.ok(listed.data.rooms.some(r => r.code === code && r.host === 'HANSEO'));
   // A room on a floor the viewer hasn't opened isn't offered, and its code doesn't let them in.
-  const vip = await call(store, 'zero', 'POST', '/api/holdem/rooms', { buyIn: 2_000_000_000, floor: 'high-limit' });
+  const vip = await call(store, 'zero', 'POST', '/api/holdem/rooms', { buyIn: 2_000_000_000, floor: 'penthouse' });
   assert.equal(vip.status, 201, JSON.stringify(vip.data));
   assert.ok(!(await call(store, 'min', 'GET', '/api/holdem/rooms')).data.rooms.some(r => r.code === vip.data.room.code));
   assert.equal((await call(store, 'min', 'POST', '/api/holdem/rooms/join', { code: vip.data.room.code })).data.error, 'FLOOR_LOCKED');
@@ -276,7 +276,7 @@ function finishHand(state, room, w) {
 test('after a hand a player can turn their cards up for the table, once', () => {
   const w = world(5);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   assert.throws(() => showCards(state, state.users.hanseo, room.code, w.ctx()), /HAND_NOT_ACTIVE/);
@@ -293,7 +293,7 @@ test('after a hand a player can turn their cards up for the table, once', () => 
 test('a player who lost everything keeps the chair until the next deal, then gets up', () => {
   const w = world(9);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   finishHand(state, room, w);

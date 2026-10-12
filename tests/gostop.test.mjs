@@ -160,11 +160,11 @@ test('고스톱 API locks a deposit, plays to the end against two AI and settles
   for (let game = 0; game < 4; game++) {
     const store = memoryStore();
     const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-    let res = await call(store, 'POST', '/api/gostop/start', { stake: 10_000_000, floor: 'downtown' });
+    let res = await call(store, 'POST', '/api/gostop/start', { stake: 10_000_000, floor: 'high-limit' });
     assert.equal(res.status, 200, JSON.stringify(res.data));
     if (res.data.round.status === 'PLAYING') {
       assert.equal(res.data.state.user.account.locked, 100_000_000);
-      assert.equal((await call(store, 'POST', '/api/gostop/start', { stake: 10_000_000, floor: 'downtown' })).status, 409);
+      assert.equal((await call(store, 'POST', '/api/gostop/start', { stake: 10_000_000, floor: 'high-limit' })).status, 409);
       const open = await call(store, 'GET', '/api/gostop/open');
       assert.equal(open.data.round.id, res.data.round.id);
       assert.equal(open.data.round.seats.length, 3);

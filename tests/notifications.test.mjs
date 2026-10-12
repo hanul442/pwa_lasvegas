@@ -112,7 +112,7 @@ test('the daily bonus reminder comes once in the morning, never at night or mid-
   assert.equal(messageFor(state, u, kst(9)), null); // too early for the morning slot
   const first = planPushes(state, kst(10));
   assert.equal(first.length, 1);
-  assert.match(first[0].message.title, /출석 보너스 3천만 원/);
+  assert.match(first[0].message.title, /오늘 일급 1억 원/);
   assert.equal(planPushes(state, kst(11)).length, 0); // once a day
   // Someone playing right now is left alone.
   const fresh = subscribedPlayer(kst(9, 0));
@@ -143,7 +143,7 @@ test('the evening slot offers unclaimed missions, then free chips, then the stre
   const streaky = subscribedPlayer(kst(8, -1));
   streaky.u.daily = { lastClaim: '2026-10-13', streak: 4 };
   planPushes(streaky.state, kst(10));
-  assert.match(planPushes(streaky.state, kst(21))[0].message.title, /4일 연속 출석이 끊기려고/);
+  assert.match(planPushes(streaky.state, kst(21))[0].message.title, /4일 연속 출근이 끊기려고/);
 });
 
 test('players who stay away get a come-back nudge every few days, then we stop', () => {

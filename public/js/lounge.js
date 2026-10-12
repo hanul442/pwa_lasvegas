@@ -1,8 +1,8 @@
-// The lobby's daily layer: attendance bonus, today's missions, the lucky-card rescue,
+// The lobby's daily layer: 일급·주급·월급, today's missions, the lucky-card rescue,
 // the lounge news feed and the floor-unlock moment.
 import { api, errorMessage, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
-import { createChip } from './chips.js';
+import { createChip, TIERS } from './chips.js';
 import { duelInviteBlock, watchBlock } from './social.js';
 
 const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Gostop: '고스톱', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯' };
@@ -17,8 +17,10 @@ export async function chipsToWallet(from, amount) {
   if (!from || !wallet) return;
   const start = from.getBoundingClientRect();
   const target = wallet.getBoundingClientRect();
-  const denoms = [5_000_000, 1_000_000, 2_500_000, 10_000_000, 500_000];
-  const count = Math.min(10, 4 + Math.floor(Math.log10(Math.max(1, amount / 1_000_000)) * 3));
+  // Chips from the table whose rack suits the amount, so 300원 doesn't fly in as 5천만 chips.
+  const tier = Object.values(TIERS).filter(t => t.min * 5 <= amount).at(-1) || TIERS.corner;
+  const denoms = tier.chips;
+  const count = Math.min(10, 4 + Math.floor(Math.log10(Math.max(1, amount / tier.min)) * 2));
   const flights = [];
   for (let i = 0; i < count; i++) {
     const chip = createChip(denoms[i % denoms.length]);
@@ -34,30 +36,44 @@ export async function chipsToWallet(from, amount) {
   animate(wallet, [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 360, fill: 'none' });
 }
 
-// ---------- daily bonus ----------
+// ---------- pay: 일급, 주급, 월급 ----------
+// This week of the 28-day pay calendar: seven days of 일급, with 주급 on the seventh and 월급
+// on the last day of the fourth week.
 function dayStrip(daily) {
   const strip = el('ol', 'daily-strip');
-  daily.rewards.forEach((amount, i) => {
-    const day = i + 1;
+  const first = daily.day - ((daily.day - 1) % 7);
+  for (let day = first; day < first + 7; day++) {
     const done = daily.claimed ? day <= daily.day : day < daily.day;
     const today = day === daily.day;
-    const li = el('li', `daily-day${done ? ' is-done' : ''}${today ? ' is-today' : ''}${day === daily.rewards.length ? ' is-vault' : ''}`);
-    li.innerHTML = `<span>${day}일</span><b>${formatCH(amount)}</b>`;
+    const weekly = day % 7 === 0, monthly = day === 28;
+    const amount = daily.rates.daily + (weekly ? daily.rates.weekly : 0) + (monthly ? daily.rates.monthly : 0);
+    const li = el('li', `daily-day${done ? ' is-done' : ''}${today ? ' is-today' : ''}${weekly ? ' is-vault' : ''}`);
+    li.innerHTML = `<span>${monthly ? '월급' : weekly ? '주급' : `${day - first + 1}일`}</span><b>${formatCH(amount)}</b>`;
     strip.append(li);
-  });
+  }
   return strip;
 }
 
-function openDailySheet(state, onChanged) {
+function weekDots(daily) {
+  const week = Math.ceil(daily.day / 7);
+  const dots = el('ol', 'pay-weeks');
+  dots.setAttribute('aria-label', `이번 달 ${week}주차, 4주를 채우면 월급`);
+  for (let w = 1; w <= 4; w++) dots.append(el('li', `${w < week || (w === week && daily.claimed && daily.day % 7 === 0) ? 'is-done' : ''}${w === week ? ' is-now' : ''}`, `${w}주`));
+  return dots;
+}
+
+export function openDailySheet(state, onChanged) {
   const daily = state.engagement.daily;
+  if (daily.claimed) return;
   const scrim = el('div', 'lounge-scrim');
   const sheet = el('section', 'lounge-sheet');
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-modal', 'true');
   sheet.setAttribute('aria-labelledby', 'daily-title');
-  const streakText = daily.streak > 0 ? `${daily.streak}일 연속 출석 중이에요.` : '오늘부터 연속 출석을 시작해요.';
-  sheet.innerHTML = `<p class="lounge-eyebrow">출석 보너스</p><h2 id="daily-title">${daily.day}일째 보너스 +${formatCH(daily.reward)}</h2><p class="lounge-note">${streakText} 7일째에는 금고가 열려요.</p>`;
-  sheet.append(dayStrip(daily));
+  const extra = daily.pay.monthly ? '오늘은 일급에 주급, 월급까지 나와요.' : daily.pay.weekly ? '오늘은 일급에 주급까지 나와요.' : `주급까지 ${daily.toWeekly}일, 월급까지 ${daily.toMonthly}일 남았어요.`;
+  const streakText = daily.streak > 0 ? `${daily.streak}일 연속 출근 중이에요. ` : '오늘부터 연속 출근을 시작해요. ';
+  sheet.innerHTML = `<p class="lounge-eyebrow">오늘의 급여</p><h2 id="daily-title">+${formatCH(daily.reward)}</h2><p class="lounge-note">${streakText}${extra} 하루라도 빠지면 처음부터 다시 세요.</p>`;
+  sheet.append(dayStrip(daily), weekDots(daily));
   const actions = el('div', 'lounge-sheet-actions');
   const later = el('button', 'pill-button', '나중에');
   const claim = el('button', 'pill-button pill-button--solid', `+${formatCH(daily.reward)} 받기`);
@@ -81,7 +97,7 @@ function openDailySheet(state, onChanged) {
       const out = await api.dailyClaim();
       const today = sheet.querySelector('.daily-day.is-today');
       today?.classList.add('is-done');
-      if (out.claim.day === daily.rewards.length) await vaultOpen(sheet);
+      if (out.claim.pay?.weekly) await vaultOpen(sheet);
       await chipsToWallet(today || claim, out.claim.amount);
       onChanged(out.state);
       await wait(250);
@@ -90,7 +106,7 @@ function openDailySheet(state, onChanged) {
   });
 }
 
-// Day 7: the vault door swings open before the chips pour out.
+// 주급 and 월급 days: the vault door swings open before the chips pour out.
 async function vaultOpen(sheet) {
   const door = el('div', 'vault-door', '<span></span>');
   sheet.append(door);
@@ -114,7 +130,7 @@ export function maybeOpenDaily(state, onChanged) {
 export function dailyButton(state, onChanged) {
   const daily = state?.engagement?.daily;
   if (!daily || daily.claimed) return null;
-  const b = el('button', 'pill-button pill-button--star', `출석 보너스 +${formatCH(daily.reward)}`);
+  const b = el('button', 'pill-button pill-button--star', `${daily.pay.monthly ? '월급' : daily.pay.weekly ? '주급' : '일급'} +${formatCH(daily.reward)}`);
   b.type = 'button';
   b.addEventListener('click', () => openDailySheet(state, onChanged));
   return b;
@@ -203,7 +219,10 @@ export function feedText(f) {
   switch (f.type) {
     case 'HOT_WIN': return f.multiple >= 5 ? `${who}님 대박! ${gameName(f.game)}에서 ${f.multiple}배 적중, ${formatMoney(f.amount)} 벌었어요` : `${who}님 대박! ${gameName(f.game)}에서 ${formatMoney(f.amount)} 벌었어요`;
     case 'JACKPOT': return `${who}님이 잭팟을 터뜨려 ${formatMoney(f.amount)} 벌었어요`;
-    case 'DAILY_STREAK': return `${who}님이 7일 출석으로 금고를 열었어요`;
+    case 'DAILY_STREAK': return `${who}님이 7일 연속 출근해서 주급을 받았어요`;
+    case 'MONTHLY_PAY': return `${who}님이 28일 개근으로 월급 ${formatMoney(f.amount)}을 받았어요`;
+    case 'PERSONAL_BANKRUPTCY': return `${who}님이 빚 ${formatMoney(f.amount)}을 안고 파산 신청했어요`;
+    case 'ACHIEVEMENT': return `${who}님이 업적 「${f.text}」을 달성했어요`;
     case 'SEASON_WINNER': return `${who}님이 ${f.season} 1위를 차지했어요`;
     case 'FLOOR_UNLOCK': return f.text?.replace(/^(.+) unlocked (.+)\.$/, '$1님이 $2 층에 올라섰어요') || '';
     case 'BANKRUPTCY': return f.amount ? `${who}님 파산! ${gameName(f.game)}에서 ${formatMoney(f.amount)} 날리고 빈털터리` : `${who}님이 파산했어요. 다시 일어설 수 있을까요?`;
@@ -235,10 +254,11 @@ function floorBlock(state) {
   const next = floors.find(f => !f.unlocked);
   const box = el('section', 'lounge-block lounge-block--floor');
   const top = [...floors].reverse().find(f => f.unlocked);
+  const open = floors.filter(f => f.open).map(f => f.name).join(' · ');
   if (!next) { box.innerHTML = `<header class="lounge-head"><h2>${top?.name}</h2><small>가장 높은 층에 있어요</small></header>`; return box; }
-  box.innerHTML = `<header class="lounge-head"><h2>다음 층 ${next.name}</h2><small>지금 ${top?.name || ''}</small></header>
+  box.innerHTML = `<header class="lounge-head"><h2>다음 층 ${next.name}</h2><small>지금 앉을 수 있는 곳 ${open}</small></header>
     <span class="mission-bar mission-bar--floor"><i style="width:${Math.round(next.progress * 100)}%"></i></span>
-    <p class="lounge-note">보유 칩이 ${formatCH(next.remaining)} 더 모이면 올라가요.</p>`;
+    <p class="lounge-note">순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이면 올라가요. 순자산이 테이블 최소 베팅의 1,000배가 되면 그 층은 졸업이에요.</p>`;
   return box;
 }
 

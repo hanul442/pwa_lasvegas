@@ -41,7 +41,9 @@ test('signing up creates a new player with the starting bankroll and a working s
   assert.ok(res.data.token);
   assert.equal(res.data.state.user.nickname, '민수');
   assert.equal(res.data.state.username, '민수');
-  assert.equal(res.data.state.user.account.available, 1_000_000_000);
+  // New players start with nothing; their first chips come from the bank or a handout.
+  assert.equal(res.data.state.user.account.available, 0);
+  assert.equal(res.data.state.bank.credit.grade, 6);
   const me = await call(store, 'GET', '/api/state', null, { token: res.data.token });
   assert.equal(me.status, 200);
   assert.equal(me.data.user.id, res.data.state.user.id);
@@ -100,10 +102,12 @@ test('two accounts play with separate wallets, and the ledger stays consistent',
   const store = memoryStore();
   const a = (await call(store, 'POST', '/api/auth/signup', { username: 'alpha', password: 'secret12' })).data;
   const b = (await call(store, 'POST', '/api/auth/signup', { username: 'bravo', password: 'secret12' })).data;
-  const play = await call(store, 'POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'downtown', betType: 'BIG' }, { token: a.token });
+  const loan = await call(store, 'POST', '/api/bank/borrow', { lender: 'shark', amount: 1_000, days: 3 }, { token: a.token });
+  assert.equal(loan.status, 200, JSON.stringify(loan.data));
+  const play = await call(store, 'POST', '/api/sicbo/play', { stake: 10, floor: 'corner', betType: 'BIG' }, { token: a.token });
   assert.equal(play.status, 200, JSON.stringify(play.data));
   const bState = (await call(store, 'GET', '/api/state', null, { token: b.token })).data;
-  assert.equal(bState.user.account.available, 1_000_000_000);
+  assert.equal(bState.user.account.available, 0);
   assert.ok(bState.users.some(u => u.nickname === 'alpha'), 'new players show up for everyone');
   const s = store.peek();
   for (const u of Object.values(s.users)) {
@@ -126,17 +130,17 @@ test('the operator can give and take back chips, recorded in the ledger; other p
   assert.equal(denied.status, 403);
   const give = await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: 500_000_000, note: '이벤트 보상' }, { token: admin.token });
   assert.equal(give.status, 200, JSON.stringify(give.data));
-  assert.equal(give.data.adjustment.available, 1_500_000_000);
+  assert.equal(give.data.adjustment.available, 500_000_000);
   assert.equal(give.data.state.adminLog[0].note, '이벤트 보상');
   const take = await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: -200_000_000 }, { token: admin.token });
-  assert.equal(take.data.adjustment.available, 1_300_000_000);
+  assert.equal(take.data.adjustment.available, 300_000_000);
   assert.equal((await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: -9_990_000_000 }, { token: admin.token })).data.error, 'INSUFFICIENT_BANKROLL');
   assert.equal((await call(store, 'POST', '/api/admin/adjust', { userId: gid, amount: 1.5 }, { token: admin.token })).data.error, 'INVALID_AMOUNT');
   const g = (await call(store, 'GET', '/api/state', null, { token: guest.token })).data;
-  assert.equal(g.user.account.available, 1_300_000_000);
+  assert.equal(g.user.account.available, 300_000_000);
   assert.equal(g.user.account.qualifiedPnl, 0, 'grants are not winnings');
   assert.deepEqual(g.adminLog, [], 'only the operator sees the log');
   const s = store.peek();
   assert.deepEqual(s.ledger.filter(x => x.userId === gid).map(x => x.type), ['INITIAL_GRANT', 'ADMIN_GRANT', 'ADMIN_DEDUCT']);
-  assert.equal(s.ledger.filter(x => x.userId === gid).at(-1).availableAfter, 1_300_000_000);
+  assert.equal(s.ledger.filter(x => x.userId === gid).at(-1).availableAfter, 300_000_000);
 });

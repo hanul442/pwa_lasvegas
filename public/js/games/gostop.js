@@ -19,9 +19,10 @@ const byMonth = (a, b) => (isBombCard(a) ? 99 : monthOf(a)) - (isBombCard(b) ? 9
 // `event: 'tazza'` seats 타짜 나이트 (lib/events.mjs): 아귀 and 고광렬 at the table and every
 // hand starting at ×2.
 export async function mountGostop(ctx, { event = null } = {}) {
-  const ev = event === 'tazza' ? ctx.state?.events?.find(e => e.id === 'tazza') || null : null;
+  const tazzaInfo = ctx.state?.events?.find(e => e.id === 'tazza') || null;
+  let ev = event === 'tazza' ? tazzaInfo : null;
   const t = new Table({ ...ctx, game: 'gostop', title: ev ? ev.title : '고스톱', feltClass: `felt--hwatu${ev ? ' felt--tazza' : ''}` });
-  const baseNames = ev ? ['나', '아귀', '고광렬'] : ['나', '은하', '태오'];
+  let baseNames = ev ? ['나', '아귀', '고광렬'] : ['나', '은하', '태오'];
   const shown = times => (ev ? Math.max(2, times) : times);
   const caps = (seat, extra = '') => `<div class="mg-caps ${extra}" data-caps="${seat}">${GROUPS.map(([g, label]) => `<div class="mg-cap mg-cap--${g}" data-group="${g}"><span>${label}<b data-count>0</b></span><div class="mg-cap-cards"></div></div>`).join('')}</div>`;
   const opp = seat => `
@@ -65,7 +66,17 @@ export async function mountGostop(ctx, { event = null } = {}) {
     clear: () => clearFelt()
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
-  if (ev) { t.root.classList.add('is-event', 'is-event--tazza'); t.body.querySelector('[data-friends-open]').hidden = true; }
+  // 타짜 나이트 or the plain table; a resumed round is drawn as whichever kind it really is.
+  function setMode(tazza) {
+    ev = tazza ? tazzaInfo || { id: 'tazza', title: '타짜 나이트' } : null;
+    baseNames = ev ? ['나', '아귀', '고광렬'] : ['나', '은하', '태오'];
+    t.root.querySelector('.table-name strong').textContent = ev ? ev.title : '고스톱';
+    t.felt.classList.toggle('felt--tazza', Boolean(ev));
+    t.root.classList.toggle('is-event', Boolean(ev));
+    t.root.classList.toggle('is-event--tazza', Boolean(ev));
+    t.body.querySelector('[data-friends-open]').hidden = Boolean(ev);
+  }
+  if (ev) setMode(true);
 
   function paintNames() {
     OPPS.forEach(s => { $(`[data-name="${s}"]`).textContent = names[s]; $(`[data-opp-hand="${s}"]`).setAttribute('aria-label', `${names[s]} 패`); });
@@ -467,6 +478,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
     const open = await api.gostopOpen();
     carry = open.double || 1;
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
+      if ((open.round.event === 'tazza') !== Boolean(ev)) { setMode(open.round.event === 'tazza'); names = [...baseNames]; paintNames(); }
       await snapshot(open.round);
       t.toast('하던 고스톱 판을 이어서 해요');
     } else if (open.round) t.toast('다른 테이블에 진행 중인 고스톱 판이 있어요');

@@ -51,7 +51,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     const r = s?.royale;
     hud.hidden = !r;
     if (!r) return;
-    hud.innerHTML = `${r.bossName ? `<span>보스 <b>${r.bossName}</b></span>` : ''}<span><b>LEVEL ${r.level}</b> · ${formatCH(s.table.smallBlind)}/${formatCH(s.table.bigBlind)}</span><span>${r.handsToNext}핸드 뒤 ${formatCH(r.next.big)}</span>${r.bossName ? '' : `<span>남은 사람 <b>${r.left}/${r.seats}</b></span>`}<span>상금 <b>${formatCH(r.prize)}</b></span>`;
+    hud.innerHTML = `${r.bossName ? `<span>보스 <b>${r.bossName}</b></span>` : ''}<span><b>LV ${r.level}</b> · ${formatCH(s.table.smallBlind)}/${formatCH(s.table.bigBlind)}</span><span>${r.handsToNext}핸드 뒤 ${formatCH(r.next.big)}</span><span>${r.bossName ? '' : `<b>${r.left}/${r.seats}</b> · `}상금 <b>${formatCH(r.prize)}</b></span>`;
   }
   function useBlinds(table) {
     pk.bb = table.bigBlind;
@@ -299,6 +299,9 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
       // The other kind of table is still open: draw it as what it is.
       royale = Boolean(open.session.royale);
       tourney = open.session.royale?.event || (royale ? 'royale' : null);
+      t.root.querySelector('.table-name strong').textContent = royale ? evOf(tourney)?.title || 'Casino Royale' : "Hold'em";
+      t.felt.classList.remove('felt--royale', 'felt--rounders');
+      if (royale) t.felt.classList.add('felt--royale', `felt--${tourney}`);
       if (royale) setupRoyale(); else { t.root.classList.remove('is-royale'); pk.sitdown.querySelector('.royale-entry')?.remove(); [...pk.sitdown.children].forEach(c => { c.hidden = false; }); }
     }
     if (open.session) {

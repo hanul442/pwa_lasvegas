@@ -5,9 +5,12 @@ import { el, formatCH, sound } from './fx.js';
 export const eventInfo = (state, id) => state?.events?.find(e => e.id === id) || null;
 
 export function createStreakMeter(t, ev, start = 0) {
-  const node = el('div', 'ev-meter');
+  // The run sits in the table's subtitle, where it never covers the felt: "High Limit · 금고 ●●○○○".
+  const node = el('span', 'ev-meter');
   node.setAttribute('aria-live', 'polite');
-  t.felt.append(node);
+  const host = t.root.querySelector('.table-name span');
+  host.textContent = `${t.tier.name} · `;
+  host.append(node);
   const need = ev.streak.need;
   const paint = streak => {
     node.innerHTML = `<span class="ev-meter-label">${ev.streak.label}</span><span class="ev-meter-pips">${Array.from({ length: need }, (_, i) => `<i class="${i < streak ? 'is-on' : ''}"></i>`).join('')}</span><b>${streak}/${need}</b>`;

@@ -18,8 +18,19 @@ export function clearSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
 }
 
-function key() {
+// A fresh idempotency key. Instant rounds keep theirs across a retry (Table.roundKey), so a round
+// whose answer was lost on the way back is replayed by the server, not played twice.
+export function newKey() {
   return (crypto.randomUUID?.() || `k${Date.now()}${Math.random().toString(16).slice(2)}`).replace(/^[^A-Za-z0-9]/, 'k');
+}
+
+// The connection banner (notice.js) listens: a request that never reached the server, and the
+// first one that does again.
+let offline = false;
+function reportNetwork(ok) {
+  if (ok === !offline) return;
+  offline = !ok;
+  dispatchEvent(new CustomEvent('vegas:network', { detail: { ok } }));
 }
 
 export class ApiError extends Error {
@@ -28,8 +39,9 @@ export class ApiError extends Error {
 
 // The bet scale this build was made for (lib/economy-upgrade.mjs). A page left open across a
 // rescale would keep offering the old chips and every bet would bounce off the table limits, so
-// it reloads once to pick up the new build.
-export const ECONOMY = 3;
+// it reloads once to pick up the new build. Keep it equal to ECONOMY_VERSION: a build that lags
+// reloads every new tab on its first answer, which threw away the first-visit pay sheet.
+export const ECONOMY = 4;
 function checkEconomy(server) {
   if (!server || server === ECONOMY) return;
   const mark = `vegas:reloaded-for-economy:${server}`;
@@ -37,17 +49,19 @@ function checkEconomy(server) {
   location.reload();
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+async function request(path, { method = 'GET', body, key = null } = {}) {
   const headers = {};
   const token = sessionToken();
   if (token) headers.authorization = `Bearer ${token}`;
-  if (method !== 'GET') { headers['content-type'] = 'application/json'; headers['x-idempotency-key'] = key(); }
+  if (method !== 'GET') { headers['content-type'] = 'application/json'; headers['x-idempotency-key'] = key || newKey(); }
   let res;
   try {
     res = await fetch(API_BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   } catch {
+    reportNetwork(false);
     throw new ApiError('NETWORK', 0);
   }
+  reportNetwork(true);
   const data = await res.json().catch(() => ({}));
   checkEconomy(data.economy ?? data.state?.economy);
   if (!res.ok) {
@@ -93,12 +107,13 @@ export const api = {
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
   // sideBets: { PLAYER_PAIR?: stake, BANKER_PAIR?: stake } riding alongside the main bet.
   double: (roundId, pick) => request('/api/double', { method: 'POST', body: { roundId, pick } }),
-  baccarat: (stake, floor, betType, sideBets, event) => request('/api/baccarat/play', { method: 'POST', body: { stake, floor, betType, sideBets, ...(event ? { event } : {}) } }),
+  // Instant rounds take an optional idempotency `key`: a retry of the same bet passes the same one.
+  baccarat: (stake, floor, betType, sideBets, event, key) => request('/api/baccarat/play', { method: 'POST', key, body: { stake, floor, betType, sideBets, ...(event ? { event } : {}) } }),
   // bets: [{ betType, target?, stake }], one per spot on the layout.
-  rouletteSpin: (bets, floor, lightning = false) => request('/api/roulette/spin', { method: 'POST', body: { bets, floor, ...(lightning ? { lightning: true } : {}) } }),
+  rouletteSpin: (bets, floor, lightning = false, key) => request('/api/roulette/spin', { method: 'POST', key, body: { bets, floor, ...(lightning ? { lightning: true } : {}) } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
-  sicbo: (stake, floor, betType, target) => request('/api/sicbo/play', { method: 'POST', body: { stake, floor, betType, target } }),
-  slots: (stake, floor) => request('/api/slots/spin', { method: 'POST', body: { stake, floor } }),
+  sicbo: (stake, floor, betType, target, key) => request('/api/sicbo/play', { method: 'POST', key, body: { stake, floor, betType, target } }),
+  slots: (stake, floor, key) => request('/api/slots/spin', { method: 'POST', key, body: { stake, floor } }),
   horsesCard: () => request('/api/horses/card'),
   horsesRace: (stake, floor, cardId, betType, pick) => request('/api/horses/race', { method: 'POST', body: { stake, floor, cardId, betType, pick } }),
   matgoOpen: () => request('/api/matgo/open'),

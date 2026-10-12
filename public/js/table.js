@@ -2,6 +2,7 @@
 import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
+import { errorMessage, newKey } from './api.js';
 
 // The tallest stack drawn under a tray chip; past it a count says how many there are.
 const STACK_CAP = 10;
@@ -489,7 +490,8 @@ export class Table {
 
   // Idle action row shared by every game: clear, rebet, and the primary deal/spin/roll.
   // With nothing on the felt after a round, the primary button replays the last bet in one tap.
-  idleActions(label, go) {
+  // againLabel names the one-tap repeat where "같은 베팅으로 <label>" would read oddly.
+  idleActions(label, go, { againLabel = `같은 베팅으로 ${label}` } = {}) {
     const again = !this.total && this.lastBet;
     // After a push: leave the chips where they were and double them for the next hand.
     if (again && this.pushed && this.pushDouble) return [
@@ -498,7 +500,7 @@ export class Table {
     ];
     if (again) return [
       { label: '다시 베팅', ghost: true, onClick: () => this.rebet() },
-      { label: `같은 베팅으로 ${label}`, key: '↵', primary: true, onClick: async () => { await this.rebet(); if (this.betReady) await go(); } }
+      { label: againLabel, key: '↵', primary: true, onClick: async () => { await this.rebet(); if (this.betReady) await go(); } }
     ];
     return [
       { label: '지우기', ghost: true, disabled: !this.total, onClick: () => this.clearBet() },
@@ -655,12 +657,38 @@ export class Table {
     this.bannerTimer = setTimeout(() => node.classList.remove('is-shown'), ms(1800));
   }
 
-  toast(text) {
+  // action/onAction: one button in the toast (다시 시도); it then stays up a little longer.
+  toast(text, { action = '', onAction = null } = {}) {
     const node = this.root.querySelector('[data-toast]');
     node.textContent = text;
+    node.classList.toggle('has-action', Boolean(action && onAction));
+    if (action && onAction) {
+      const b = el('button', 'toast-action', action);
+      b.type = 'button';
+      b.addEventListener('click', () => { node.classList.remove('is-shown', 'has-action'); onAction(); });
+      node.append(b);
+    }
     node.classList.add('is-shown');
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => node.classList.remove('is-shown'), 2600);
+    this.toastTimer = setTimeout(() => node.classList.remove('is-shown', 'has-action'), action ? 7000 : 2600);
+  }
+
+  // ---------- instant rounds over a shaky connection ----------
+  // Instant rounds are idempotent by key (lib/instant-idempotency.mjs). The same bet sent again
+  // after a dropped connection goes out under the same key, so if the first one did land the
+  // server answers with that round instead of playing a second. A changed bet gets a new key.
+  roundKey(extra = '') {
+    const fp = JSON.stringify([this.betZones.map(z => [z, this.zoneTotal(z)]), extra]);
+    if (this.pendingRound?.fp !== fp) this.pendingRound = { fp, key: newKey() };
+    return this.pendingRound.key;
+  }
+  roundDone() { this.pendingRound = null; }
+  // The request failed: chips stay on the felt; a dropped connection offers 다시 시도 (same key).
+  roundFailed(err, retry) {
+    this.locked = false;
+    this.root.classList.remove('is-playing');
+    if (err?.code === 'NETWORK' && retry) this.toast(errorMessage(err), { action: '다시 시도', onAction: () => this.run(retry) });
+    else { this.pendingRound = null; this.toast(errorMessage(err)); }
   }
 
   bigWin(amount, { title, subtitle } = {}) {

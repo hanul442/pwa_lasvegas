@@ -2,7 +2,8 @@
 // government support, and bankruptcy. Every number comes from the server (lib/bank.mjs).
 import { api, errorMessage } from './api.js';
 import { el, formatCH, formatMoney, sound } from './fx.js';
-import { chipsToWallet, openDailySheet } from './lounge.js';
+import { chipsToWallet, claimDaily } from './lounge.js';
+import { errorToast } from './notice.js';
 
 const DAY = 86_400_000;
 const pct = rate => `${+(rate * 100).toFixed(2)}%`;
@@ -238,6 +239,29 @@ function lendersBlock(state, onChanged) {
   return box;
 }
 
+// The server pays each support at most once per period, so retrying after a dropped connection
+// can't pay twice.
+async function claimSupport(kind, btn, onChanged) {
+  btn.disabled = true;
+  try { const out = await api.supportClaim(kind); await chipsToWallet(btn, out.claim.amount); onChanged(out.state); }
+  catch (e) { btn.disabled = false; errorToast(e, () => claimSupport(kind, btn, onChanged)); }
+}
+
+// The free support a broke player can take right now, as solid lobby buttons (구제금융 first).
+export function supportButtons(state, onChanged) {
+  const sup = state?.engagement?.support;
+  if (!sup) return [];
+  const free = [];
+  if (sup.welfare?.qualified && !sup.welfare.claimed) free.push(['welfare', `구제금융 +${formatCH(sup.welfare.amount)}`]);
+  if (sup.grant && !sup.grant.claimed) free.push(['grant', `정부 지원금 +${formatCH(sup.grant.amount)}`]);
+  return free.map(([kind, label]) => {
+    const b = el('button', 'pill-button pill-button--solid', label);
+    b.type = 'button';
+    b.addEventListener('click', () => claimSupport(kind, b, onChanged));
+    return b;
+  });
+}
+
 function payBlock(state, onChanged) {
   const eng = state.engagement, daily = eng.daily, sup = eng.support;
   const box = el('section', 'bank-block');
@@ -254,12 +278,8 @@ function payBlock(state, onChanged) {
     list.append(li);
   };
   row('일급', `${daily.streak}일 연속 · 주급까지 ${daily.toWeekly}일 · 월급까지 ${daily.toMonthly}일<br>일급 ${won(daily.rates.daily)} · 주급 ${won(daily.rates.weekly)} · 월급 ${won(daily.rates.monthly)}`,
-    daily.claimed ? '받음' : `+${formatCH(daily.reward)}`, !daily.claimed, () => openDailySheet(state, onChanged));
-  const claim = kind => async btn => {
-    btn.disabled = true;
-    try { const out = await api.supportClaim(kind); await chipsToWallet(btn, out.claim.amount); onChanged(out.state); }
-    catch (e) { btn.disabled = false; alert(errorMessage(e)); }
-  };
+    daily.claimed ? '받음' : `+${formatCH(daily.reward)}`, !daily.claimed, btn => claimDaily(btn, onChanged));
+  const claim = kind => btn => claimSupport(kind, btn, onChanged);
   row('정부 지원금', '누구나 일주일에 한 번 · 월요일 0시에 새로 나와요', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
   const left = sup.welfare.perDay - sup.welfare.taken;
   row('구제금융', `파산했거나 순자산이 ${won(sup.welfare.below)} 미만이면 하루 ${sup.welfare.perDay}번까지 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));

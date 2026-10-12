@@ -1,13 +1,14 @@
 // The lobby's daily layer: 일급·주급·월급, today's missions, the lucky-card rescue,
 // the lounge news feed and the floor-unlock moment.
-import { api, errorMessage, playerId } from './api.js';
+import { api, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock, watchBlock } from './social.js';
 import { hotStatus, clock, pct, startTime } from './hot.js';
+import { errorToast } from './notice.js';
+import { gameName } from './names.js';
 
-const GAME_KO = { Blackjack: '블랙잭', Baccarat: '바카라', Roulette: '룰렛', 'Sic Bo': '식보', Matgo: '맞고', Gostop: '고스톱', Seotda: '섯다', "Hold'em": '홀덤', Slots: '슬롯', 'Horse Racing': '경마', Double: '묻고 더블' };
-export const gameName = g => GAME_KO[g] || g || '';
+export { gameName };
 
 function storageGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
 function storageSet(key, value) { try { localStorage.setItem(key, value); } catch {} }
@@ -63,9 +64,9 @@ function weekDots(daily) {
   return dots;
 }
 
-export function openDailySheet(state, onChanged) {
+export function openDailySheet(state, onChanged, { onClose } = {}) {
   const daily = state.engagement.daily;
-  if (daily.claimed) return;
+  if (daily.claimed) return false;
   const scrim = el('div', 'lounge-scrim');
   const sheet = el('section', 'lounge-sheet');
   sheet.setAttribute('role', 'dialog');
@@ -83,10 +84,13 @@ export function openDailySheet(state, onChanged) {
   sheet.append(actions);
   document.body.append(scrim, sheet);
   requestAnimationFrame(() => { scrim.classList.add('is-open'); sheet.classList.add('is-open'); claim.focus({ preventScroll: true }); });
+  let closed = false;
   const close = () => {
+    if (closed) return;
+    closed = true;
     scrim.classList.remove('is-open'); sheet.classList.remove('is-open');
     removeEventListener('keydown', onKey, true);
-    setTimeout(() => { scrim.remove(); sheet.remove(); }, 320);
+    setTimeout(() => { scrim.remove(); sheet.remove(); onClose?.(); }, 320);
   };
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
   addEventListener('keydown', onKey, true);
@@ -103,8 +107,9 @@ export function openDailySheet(state, onChanged) {
       onChanged(out.state);
       await wait(250);
       close();
-    } catch (e) { claim.disabled = false; alert(errorMessage(e)); }
+    } catch (e) { claim.disabled = false; errorToast(e, () => claim.click()); }
   });
+  return true;
 }
 
 // 주급 and 월급 days: the vault door swings open before the chips pour out.
@@ -118,22 +123,40 @@ async function vaultOpen(sheet) {
   door.remove();
 }
 
-export function maybeOpenDaily(state, onChanged) {
+// The pay sheet opens by itself once a day, before anything else in the lobby; the push-permission
+// ask waits until dailyDue() is false. It counts as seen only once it has closed, so a reload while
+// it is up shows it again rather than losing today's pay behind another sheet.
+const dailySeenKey = () => `vegas:daily-seen:${playerId()}`;
+let dailyOpen = false;
+export function dailyDue(state) {
   const daily = state?.engagement?.daily;
-  if (!daily || daily.claimed) return;
-  const key = `vegas:daily-seen:${playerId()}`;
-  const today = daily.nextAt;
-  if (storageGet(key) === today) return;
-  storageSet(key, today);
-  openDailySheet(state, onChanged);
+  return Boolean(daily && !daily.claimed && (dailyOpen || storageGet(dailySeenKey()) !== daily.nextAt));
 }
 
-export function dailyButton(state, onChanged) {
+export function maybeOpenDaily(state, onChanged) {
+  // Never two sheets at once: if the push ask is already up, the next state refresh tries again.
+  if (dailyOpen || !dailyDue(state) || document.querySelector('.push-ask')) return;
+  const today = state.engagement.daily.nextAt;
+  dailyOpen = openDailySheet(state, onChanged, { onClose: () => { dailyOpen = false; storageSet(dailySeenKey(), today); } });
+}
+
+// One tap: the lobby pill and the bank row pay out where they sit. The sheet with the week's
+// calendar still opens by itself once a day.
+export async function claimDaily(from, onChanged) {
+  from.disabled = true;
+  try {
+    const out = await api.dailyClaim();
+    await chipsToWallet(from, out.claim.amount);
+    onChanged(out.state);
+  } catch (e) { from.disabled = false; errorToast(e, () => claimDaily(from, onChanged)); }
+}
+
+export function dailyButton(state, onChanged, { solid = false } = {}) {
   const daily = state?.engagement?.daily;
   if (!daily || daily.claimed) return null;
-  const b = el('button', 'pill-button pill-button--star', `${daily.pay.monthly ? '월급' : daily.pay.weekly ? '주급' : '일급'} +${formatCH(daily.reward)}`);
+  const b = el('button', `pill-button ${solid ? 'pill-button--solid' : 'pill-button--star'}`, `${daily.pay.monthly ? '월급' : daily.pay.weekly ? '주급' : '일급'} +${formatCH(daily.reward)}`);
   b.type = 'button';
-  b.addEventListener('click', () => openDailySheet(state, onChanged));
+  b.addEventListener('click', () => claimDaily(b, onChanged));
   return b;
 }
 
@@ -162,7 +185,7 @@ function missionsBlock(state, onChanged) {
           const out = await api.missionClaim(m.id);
           await chipsToWallet(b, out.claim.amount + out.claim.bonus);
           onChanged(out.state);
-        } catch (e) { b.disabled = false; alert(errorMessage(e)); }
+        } catch (e) { b.disabled = false; errorToast(e, () => b.click()); }
       });
       li.append(b);
     } else {
@@ -197,7 +220,7 @@ function rescueBlock(state, onChanged) {
         await wait(500);
         await chipsToWallet(c, out.rescue.amount);
         onChanged(out.state);
-      } catch (e) { cards.forEach(x => { x.disabled = false; }); alert(errorMessage(e)); }
+      } catch (e) { cards.forEach(x => { x.disabled = false; }); errorToast(e, () => c.click()); }
     });
     row.append(c);
     return c;

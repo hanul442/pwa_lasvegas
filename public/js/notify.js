@@ -1,7 +1,9 @@
 // Push notifications on this device. Until the player allows them, a sheet keeps asking:
 // every time the app opens, every time they come back to the lobby, and every few minutes
-// while they browse the menus (never over a table mid-game). Once allowed, the device's
-// subscription is kept on the server so the hourly reminders can reach it.
+// while they browse the menus (never over a table mid-game). It waits until the app says the
+// player is ready (a first round played, today's pay sheet closed), and the "blocked" variant,
+// which can only send them to browser settings, never opens unless they tap for it. Once allowed,
+// the device's subscription is kept on the server so the hourly reminders can reach it.
 import { api } from './api.js';
 import { el } from './fx.js';
 import { isIOS, standalone, openInstallGuide } from './install.js';
@@ -93,7 +95,7 @@ const ASKS = [
 ];
 const LATER = ['나중에', '그래도 나중에', '다음에 진짜로', '조금만 더 생각해 볼게요'];
 
-let sheet = null, lastClosed = 0, timer = null, synced = false, isLobby = () => true;
+let sheet = null, lastClosed = 0, timer = null, synced = false, isLobby = () => true, isReady = () => true;
 
 const nagCount = () => { try { return Number(localStorage.getItem(COUNT_KEY)) || 0; } catch { return 0; } };
 const bumpNag = () => { try { localStorage.setItem(COUNT_KEY, String(nagCount() + 1)); } catch {} };
@@ -157,7 +159,7 @@ function open(state) {
       if (r.ok) { close(); return; }
       go.disabled = false;
       go.textContent = c.action;
-      if (r.reason === 'denied') { close(); setTimeout(() => maybeAsk({ force: true }), 400); }
+      if (r.reason === 'denied') { close(); setTimeout(() => maybeAsk({ force: true, user: true }), 400); }
       else note.textContent = failureText(r);
     });
   }
@@ -171,20 +173,23 @@ function open(state) {
   requestAnimationFrame(() => { scrim.classList.add('is-open'); node.classList.add('is-open'); node.querySelector('.pill-button--solid, .pill-button')?.focus({ preventScroll: true }); });
 }
 
-// Shows the sheet if notifications are off and nothing else is on screen. The daily-bonus
-// sheet goes first; we try again shortly after it closes.
-export function maybeAsk({ force = false } = {}) {
+// Shows the sheet if notifications are off and nothing else is on screen. The daily-pay sheet
+// goes first; we try again shortly after it closes. `user`: the player tapped for it themselves.
+export function maybeAsk({ force = false, user = false } = {}) {
   const state = pushState();
   if (state === 'on') { if (!synced) syncDevice().then(() => { synced = true; }, () => {}); return; }
   if (state === 'none' || sheet || document.hidden || !isLobby()) return;
+  if (!user && (state === 'blocked' || !isReady())) return;
   if (!force && Date.now() - lastClosed < NAG_GAP) return;
-  if (document.querySelector('.lounge-sheet, .auth-gate, .bigwin, dialog[open]')) { setTimeout(() => maybeAsk(), 4000); return; }
+  if (document.querySelector('.lounge-sheet, .auth-gate, .bigwin, dialog[open]')) { setTimeout(() => maybeAsk({ user }), 4000); return; }
   open(state);
 }
 
-// Call once after the player is signed in. `inMenus` says whether the player is off the tables.
-export function startNotifications(inMenus) {
+// Call once after the player is signed in. `inMenus` says whether the player is off the tables;
+// `ready` whether the app may ask yet.
+export function startNotifications(inMenus, ready) {
   if (inMenus) isLobby = inMenus;
+  if (ready) isReady = ready;
   synced = false;
   if (pushState() === 'on') { syncDevice().then(() => { synced = true; }, () => {}); return; }
   setTimeout(() => maybeAsk({ force: true }), 1500);
@@ -233,7 +238,7 @@ export function notifyRow(row) {
       if (!res.ok && res.reason !== 'denied') setNote(failureText(res));
     }
     else if (s === 'install') openInstallGuide(button);
-    else maybeAsk({ force: true });
+    else maybeAsk({ force: true, user: true });
   });
   return r;
 }

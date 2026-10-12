@@ -6,6 +6,7 @@ import { api, errorMessage } from '../api.js';
 import { wait, formatCH, flyFrom, flyTo, animate, sound, el } from '../fx.js';
 import { createChip, breakdown } from '../chips.js';
 import { Table } from '../table.js';
+import { gameName } from '../names.js';
 import { voice } from '../voice.js';
 import { eventResult } from '../event-result.js';
 import { createPokerFelt, createActionBar } from './holdem-view.js';
@@ -18,7 +19,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
   let tourney = royaleMode ? 'royale' : tourneyMode;
   let royale = Boolean(tourney);
   const evOf = id => ctx.state?.events?.find(e => e.id === id) || null;
-  const t = new Table({ ...ctx, game: 'holdem', title: royale ? evOf(tourney)?.title || 'Casino Royale' : "Hold'em", feltClass: `felt--poker${royale ? ` felt--royale felt--${tourney}` : ''}` });
+  const t = new Table({ ...ctx, game: 'holdem', title: royale ? evOf(tourney)?.title || 'Casino Royale' : gameName('poker'), feltClass: `felt--poker${royale ? ` felt--royale felt--${tourney}` : ''}` });
   const pk = createPokerFelt(t, { sitdown: `
     <button type="button" class="zone pk-buyin" data-zone="buyin"><strong>Buy-in</strong><small data-blinds></small></button>
     <div class="pk-opponents" role="radiogroup" aria-label="상대 수">
@@ -263,7 +264,11 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     if (busted) {
       sizer.hidden = true;
       t.hint('칩을 모두 잃었어요');
-      t.setActions([...showAction(), { label: '나가기', key: '↵', primary: true, disabled: pk.animating, onClick: getUp }]);
+      // Busted at a cash table: get up, or buy in again for what you sat down with, in one tap.
+      const again = !royale && t.lastBet && t.available >= t.tier.min;
+      t.setActions([...showAction(),
+        { label: '나가기', key: again ? undefined : '↵', ghost: again, primary: !again, disabled: pk.animating, onClick: getUp },
+        ...(again ? [{ label: '같은 바이인으로 다시 앉기', key: '↵', primary: true, disabled: pk.animating, onClick: async () => { await getUp(); await t.rebet(); if (t.betReady) await sit(); } }] : [])]);
       return;
     }
     if (!session) {
@@ -271,7 +276,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
       if (royale) t.setActions([{ label: `참가 · ${formatCH(entry)}`, key: '↵', primary: true, disabled: t.available < entry, onClick: sit }]);
       else {
         // Below the minimum buy-in, 앉기 stays off and says what it takes, before any tap.
-        const acts = t.idleActions('앉기', sit);
+        const acts = t.idleActions('앉기', sit, { againLabel: '같은 바이인으로 다시 앉기' });
         const min = pk.bb * 5;
         const go = acts.find(a => a.primary);
         if (t.total > 0 && t.total < min && go) {
@@ -326,7 +331,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
       // The other kind of table is still open: draw it as what it is.
       royale = Boolean(open.session.royale);
       tourney = open.session.royale?.event || (royale ? 'royale' : null);
-      t.root.querySelector('.table-name strong').textContent = royale ? evOf(tourney)?.title || 'Casino Royale' : "Hold'em";
+      t.root.querySelector('.table-name strong').textContent = royale ? evOf(tourney)?.title || 'Casino Royale' : gameName('poker');
       t.felt.classList.remove('felt--royale', 'felt--rounders');
       if (royale) t.felt.classList.add('felt--royale', `felt--${tourney}`);
       if (royale) setupRoyale(); else { t.root.classList.remove('is-royale'); pk.sitdown.querySelector('.royale-entry')?.remove(); [...pk.sitdown.children].forEach(c => { c.hidden = false; }); }

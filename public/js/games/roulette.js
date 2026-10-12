@@ -1,5 +1,6 @@
 // European roulette: the rotor and ball are animated to land on the server's number.
-import { api, errorMessage } from '../api.js';
+import { api } from '../api.js';
+import { gameName } from '../names.js';
 import { sound, haptic, reducedMotion, wait } from '../fx.js';
 import { Table } from '../table.js';
 import { seatCrowd } from '../npc.js';
@@ -116,7 +117,7 @@ function crowdPlan(npc, t) {
 
 export async function mountRoulette(ctx) {
   // Chips go on as many spots as you like before the spin, like a real layout.
-  const t = new Table({ ...ctx, game: 'roulette', title: 'Roulette', feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당' });
+  const t = new Table({ ...ctx, game: 'roulette', title: gameName('roulette'), feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당' });
   t.body.innerHTML = `
     <div class="rl">
       <div class="rl-top">
@@ -265,13 +266,15 @@ export async function mountRoulette(ctx) {
   async function spin() {
     if (!t.betReady) return;
     const bets = t.betZones.map(zone => ({ zone, ...zoneBet(zone), stake: t.zoneTotal(zone) }));
+    const key = t.roundKey(mode);
     t.lock();
     lockMode(true);
     clearStrikes();
     await crowd.close();
     let res;
-    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning'); }
-    catch (e) { t.locked = false; t.root.classList.remove('is-playing'); lockMode(false); t.toast(errorMessage(e)); return; }
+    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning', key); }
+    catch (e) { lockMode(false); t.roundFailed(e, spin); return; }
+    t.roundDone();
     t.setServerState(res.state);
     voice.say('no-more-bets', { cut: true });
     const strikes = res.round.lightning || null;

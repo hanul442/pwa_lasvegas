@@ -414,7 +414,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
           target.node.append(name);
         }
         // A full house or better at showdown is a moment.
-        if (ev.seat === me && BIG_HANDS.has(ev.hand)) await t.bigWin(ev.amount, { title: ev.hand, subtitle: "Hold'em" });
+        if (ev.seat === me && BIG_HANDS.has(ev.hand)) await t.bigWin(ev.amount, { title: ev.hand, subtitle: '홀덤' });
         break;
       }
       case 'end': {

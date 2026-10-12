@@ -1,7 +1,8 @@
 // Sic Bo: three dice shaken under the dome, tumbling to the server's roll.
-import { api, errorMessage } from '../api.js';
+import { api } from '../api.js';
 import { animate, sound, haptic, wait, reducedMotion } from '../fx.js';
 import { Table } from '../table.js';
+import { gameName } from '../names.js';
 import { seatCrowd } from '../npc.js';
 import { voice, sicboLine } from '../voice.js';
 
@@ -41,7 +42,7 @@ function crowdPlan(npc, t) {
 }
 
 export async function mountDice(ctx) {
-  const t = new Table({ ...ctx, game: 'dice', title: 'Sic Bo', feltClass: 'felt--red' });
+  const t = new Table({ ...ctx, game: 'dice', title: gameName('dice'), feltClass: 'felt--red' });
   const totals = Object.entries(TOTAL_PAY).map(([n, p]) => `<button type="button" class="zone zone--total" data-zone="T${n}"><strong>${n}</strong><small>${p}:1</small></button>`).join('');
   t.body.innerHTML = `
     <div class="sb">
@@ -114,11 +115,13 @@ export async function mountDice(ctx) {
     const zone = t.bet.zone;
     const betType = zone.startsWith('T') ? 'TOTAL' : zone;
     const target = zone.startsWith('T') ? Number(zone.slice(1)) : undefined;
+    const key = t.roundKey();
     t.lock();
     await crowd.close();
     let res;
-    try { res = await api.sicbo(t.total, t.tier.floor, betType, target); }
-    catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
+    try { res = await api.sicbo(t.total, t.tier.floor, betType, target, key); }
+    catch (e) { t.roundFailed(e, go); return; }
+    t.roundDone();
     t.setServerState(res.state);
     voice.say('no-more-bets', { cut: true });
     await roll(res.round.dice);

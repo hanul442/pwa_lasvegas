@@ -1,8 +1,12 @@
 // Slot machine: three reels behind glass, a pull handle and the floor's progressive jackpot.
 // The reels spin to the stops the server drew; the VEGAS star is wild and three take the pot.
-import { api, errorMessage } from '../api.js';
+import { api } from '../api.js';
 import { animate, sound, haptic, formatCH, formatFull, rollNumber, wait, ms, reducedMotion, el } from '../fx.js';
 import { Table } from '../table.js';
+import { isBigWin } from '../bigwin.js';
+import { gameName } from '../names.js';
+
+const AUTO_COUNTS = [10, 25, 50];
 
 // Same weights and strip order as lib/slots.mjs, so a stop index lands on the same symbol.
 const WEIGHTS = { STAR: 2, SEVEN: 3, BAR3: 5, BAR2: 7, BAR1: 9, S: 9, H: 9, D: 10, C: 10 };
@@ -35,7 +39,7 @@ function symbol(s) {
 const randomSymbol = () => STRIP[Math.floor(Math.random() * STRIP.length)];
 
 export async function mountSlots(ctx) {
-  const t = new Table({ ...ctx, game: 'slots', title: 'Slots', feltClass: 'felt--slots', skin: false });
+  const t = new Table({ ...ctx, game: 'slots', title: gameName('slots'), feltClass: 'felt--slots', skin: false });
   t.body.innerHTML = `
     <div class="slot">
       <div class="slot-jackpot"><span>PROGRESSIVE JACKPOT</span><strong data-pool>—</strong></div>
@@ -46,6 +50,7 @@ export async function mountSlots(ctx) {
         </div>
         <button type="button" class="slot-lever" data-lever aria-label="레버 당겨서 돌리기"><span class="slot-lever-arm"><i></i></span></button>
       </div>
+      <div class="slot-auto" role="group" aria-label="자동 스핀"><span>자동</span>${AUTO_COUNTS.map(n => `<button type="button" data-auto="${n}" aria-label="자동 ${n}번 스핀">${n}</button>`).join('')}</div>
       <div class="slot-result" data-result aria-live="polite"></div>
       <button type="button" class="zone slot-coin" data-zone="LINE"><strong>베팅</strong><small>칩을 놓고 레버를 당기세요</small></button>
       <details class="slot-pays"><summary>배당표</summary><table>${PAYS.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table><p>잭팟은 테이블 최대 베팅일 때 전부, 그보다 적으면 베팅 비율만큼 받아요.</p></details>
@@ -74,7 +79,7 @@ export async function mountSlots(ctx) {
     api.state().then(s => { if (s?.jackpot) setPool(s.jackpot.pool); }).catch(() => {});
   }, 15000);
   const destroy = t.destroy.bind(t);
-  t.destroy = () => { clearInterval(drift); destroy(); };
+  t.destroy = () => { stopAuto(); clearInterval(drift); destroy(); };
 
   async function spinReel(i, stop, { tease = false } = {}) {
     const reel = reels[i], strip = reel.firstElementChild;
@@ -102,22 +107,76 @@ export async function mountSlots(ctx) {
     sound.tick();
   }
 
+  const autoButtons = [...t.body.querySelectorAll('[data-auto]')];
   function refreshActions() {
-    t.setActions(t.idleActions('스핀', go));
-    lever.disabled = t.locked || !(t.betReady || (!t.total && t.lastBet));
+    if (auto) {
+      t.setActions([{ label: `자동 ${auto.done}/${auto.total} · 멈추기`, primary: true, onClick: () => stopAuto('자동 스핀을 멈췄어요') }]);
+      // The stop button stays live while a spin runs.
+      t.actions.querySelectorAll('button').forEach(b => { b.disabled = false; });
+    } else t.setActions(t.idleActions('스핀', go));
+    lever.disabled = Boolean(auto) || t.locked || !(t.betReady || (!t.total && t.lastBet));
+    const canAuto = !auto && !t.locked && !t.busy && (t.betReady || (!t.total && t.lastBet));
+    autoButtons.forEach(b => { b.disabled = !canAuto; b.setAttribute('aria-pressed', String(Boolean(auto && auto.total === Number(b.dataset.auto)))); });
   }
   t.refreshActions = refreshActions;
   t.onBetChange = refreshActions;
 
+  // ---------- auto-spin ----------
+  // 10, 25 or 50 spins of the same bet, one after another, each its own round through the API
+  // with its own idempotency key. It stops on a big win or jackpot, when the chips no longer
+  // cover the bet, on any tap, on a lost connection, or when the player leaves or hides the app.
+  let auto = null;
+  function stopAuto(message = '') {
+    if (!auto) return;
+    const was = auto;
+    auto = null;
+    removeEventListener('pointerdown', was.onTap, true);
+    document.removeEventListener('visibilitychange', was.onHide);
+    if (message && t.root.isConnected) t.toast(message);
+    if (t.root.isConnected) refreshActions();
+  }
+  async function startAuto(total) {
+    if (auto || t.locked || t.busy) return;
+    if (!t.total && t.lastBet) await t.rebet();
+    if (!t.betReady) { t.toast('먼저 칩을 놓아 주세요'); return; }
+    const stake = t.total;
+    const run = { total, done: 0, onTap: null, onHide: null };
+    // Any tap stops it, the stop button included; armed after this tap has finished.
+    run.onTap = () => stopAuto('자동 스핀을 멈췄어요');
+    run.onHide = () => { if (document.hidden) stopAuto(); };
+    auto = run;
+    setTimeout(() => { if (auto === run) addEventListener('pointerdown', run.onTap, true); }, 0);
+    document.addEventListener('visibilitychange', run.onHide);
+    sound.tick();
+    while (auto === run && run.done < run.total) {
+      if (!t.total) await t.rebet();
+      if (auto !== run) break;
+      if (t.available < stake || !t.betReady) { stopAuto('칩이 베팅보다 적어서 자동 스핀을 멈췄어요'); break; }
+      run.done += 1;
+      refreshActions();
+      const out = await go();
+      if (auto !== run) break;
+      if (!out) { stopAuto(); break; }
+      if (out.big) { stopAuto(out.jackpot ? '잭팟! 자동 스핀을 멈췄어요' : '큰 승리! 자동 스핀을 멈췄어요'); break; }
+      await wait(250);
+    }
+    if (auto === run) stopAuto(`자동 ${run.total}번을 모두 돌렸어요`);
+  }
+  autoButtons.forEach(b => b.addEventListener('click', () => startAuto(Number(b.dataset.auto))));
+
+  // One spin. Resolves to { big, jackpot } once settled, or null if the request failed.
   async function go() {
-    if (!t.betReady) return;
+    if (!t.betReady) return null;
+    const key = t.roundKey();
+    const stake = t.total;
     t.lock();
     refreshActions();
     resultEl.classList.remove('is-shown');
     pull();
     let res;
-    try { res = await api.slots(t.total, t.tier.floor); }
-    catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); refreshActions(); return; }
+    try { res = await api.slots(stake, t.tier.floor, key); }
+    catch (e) { t.roundFailed(e, go); refreshActions(); return null; }
+    t.roundDone();
     t.setServerState(res.state);
     const { stops, reels: faces, line, netPnl: net, jackpot } = res.round;
     const ticker = setInterval(() => sound.tick(), ms(110));
@@ -138,6 +197,7 @@ export async function mountSlots(ctx) {
     await t.settle(net + (hot?.bonus || 0), { label: line ? LINE_LABEL[line] : net ? '' : '본전', big, hot });
     await t.syncBalance();
     refreshActions();
+    return { big: jackpot > 0 || isBigWin(net, stake), jackpot: jackpot > 0 };
   }
 
   // Drag the handle down (or tap it) to spin.
@@ -146,13 +206,17 @@ export async function mountSlots(ctx) {
   lever.addEventListener('pointerup', async e => {
     if (dragY === null) return;
     dragY = null;
-    if (t.locked || t.busy) return;
+    if (auto || t.locked || t.busy) return;
     if (!t.total && t.lastBet) { await t.rebet(); }
     if (t.betReady) t.run(go);
   });
-  lever.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && t.betReady) { e.preventDefault(); t.run(go); } });
+  lever.addEventListener('keydown', e => { if (!auto && (e.key === 'Enter' || e.key === ' ') && t.betReady) { e.preventDefault(); t.run(go); } });
 
-  t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
+  t.onKey(e => {
+    if (auto) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); stopAuto('자동 스핀을 멈췄어요'); } return; }
+    const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction();
+    if (a) { e.preventDefault(); t.run(a.onClick); }
+  });
   refreshActions();
   return t;
 }

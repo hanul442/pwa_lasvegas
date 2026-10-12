@@ -1,5 +1,6 @@
 // Baccarat: back a side, then watch the cards get squeezed and the third-card rule play out.
-import { api, errorMessage } from '../api.js';
+import { api } from '../api.js';
+import { gameName } from '../names.js';
 import { dealCard, flipCard, sweepCards, parseCard } from '../cards.js';
 import { wait, formatCH, animate } from '../fx.js';
 import { Table } from '../table.js';
@@ -44,7 +45,7 @@ function crowdPlan(last) {
 export async function mountBaccarat(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
   // Multi-zone for the pair side bets; the main bet still sits on exactly one of Player/Banker/Tie.
-  const t = new Table({ ...ctx, game: 'baccarat', title: ev ? ev.title : 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true, hot: !ev });
+  const t = new Table({ ...ctx, game: 'baccarat', title: ev ? ev.title : gameName('baccarat'), feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true, hot: !ev });
   const don = createDoubleOrNothing(t);
   const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
   if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
@@ -125,6 +126,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     const betType = mainZone();
     const sideBets = Object.fromEntries(PAIRS.filter(z => t.zoneTotal(z)).map(z => [z, t.zoneTotal(z)]));
     const zones = t.betZones;
+    const key = t.roundKey(ev?.id || '');
     t.lock();
     await Promise.all([
       crowd.close(),
@@ -132,8 +134,9 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     ]);
     ['PLAYER', 'BANKER'].forEach(s => { score(s).textContent = '–'; side(s).classList.remove('is-winner'); });
     let res;
-    try { res = await api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined, ev?.id); }
-    catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
+    try { res = await api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined, ev?.id, key); }
+    catch (e) { t.roundFailed(e, deal); return; }
+    t.roundDone();
     t.setServerState(res.state);
     const r = res.round;
     // Deal P, B, P, B face down, then turn them — the bettor's side gets the slow squeeze.

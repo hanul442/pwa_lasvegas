@@ -3,8 +3,8 @@
 // on here.
 import { api, errorMessage } from '../api.js';
 import { el, sound } from '../fx.js';
+import { gameName } from '../names.js';
 
-const NAMES = { holdem: '홀덤', seotda: '섯다', gostop: '고스톱', matgo: '맞고', blackjack: '블랙잭' };
 const SCREEN = { holdem: 'poker' }; // the lobby's id for a room game, where it differs
 
 // t: the table; e: the ApiError; retry(): what the person was trying to do.
@@ -14,7 +14,7 @@ export function seatedElsewhere(t, e, retry, goHere = null) {
   const where = e?.code === 'ALREADY_IN_ROOM' && e.where;
   if (!where?.code) return false;
   t.felt.querySelector('.rm-elsewhere')?.remove();
-  const name = NAMES[where.game] || '다른 게임';
+  const name = (where.game && gameName(where.game)) || '다른 게임';
   const box = el('div', 'pk-lobby rm-elsewhere');
   box.setAttribute('role', 'alertdialog');
   box.setAttribute('aria-modal', 'true');

@@ -18,7 +18,7 @@ test('the dealer never falls behind the bots, and bots speak one at a time', asy
   const view = await read('js/games/holdem-view.js');
   const npc = await read('js/npc.js');
   assert.match(voice, /if \(drop && this\.busy\) return;/);
-  assert.match(view, /voice\.idle\(900\)/, 'a bot waits for the dealer to finish before acting');
+  assert.doesNotMatch(view, /voice\.idle/, 'the table never waits on the dealer\'s voice');
   assert.doesNotMatch(view, /betLine\(ev\.action, ev\.bet\)\)\s*;?\s*\n\s*if \(ev\.action === 'FOLD'\)/);
   assert.match(view, /quietUntil/);
   assert.match(npc, /quietUntil/);

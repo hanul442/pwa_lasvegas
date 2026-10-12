@@ -254,8 +254,9 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         break;
       }
       case 'act': {
-        // A bot thinks for a beat, and never talks over the dealer: it waits for him to finish.
-        if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await Promise.all([wait(ev.timeout ? 200 : 380 + Math.random() * 320), voice.idle(900)]); seatEls[ev.seat].node.classList.remove('is-thinking'); }
+        // A bot thinks for a short beat. The table never waits on the dealer's voice: a call-out
+        // he has no time for is simply skipped (see the drop option below).
+        if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(ev.timeout ? 200 : 320 + Math.random() * 280); seatEls[ev.seat].node.classList.remove('is-thinking'); }
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);

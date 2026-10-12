@@ -1,7 +1,10 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, moneyResult, rollNumber, el, wait, ms } from './fx.js';
-import { createChip, breakdown, TIERS } from './chips.js';
+import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
+
+// The tallest stack drawn under a tray chip; past it a count says how many there are.
+const STACK_CAP = 10;
 
 // Narrow phones show the balance as 12억 5천만 so the top bar keeps room for its buttons.
 const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
@@ -109,15 +112,44 @@ export class Table {
     }));
   }
 
+  // Each tray chip sits on top of my own stack of that chip: what I hold, sorted by colour the
+  // way chips sit in front of a player. The stacks follow the balance as I bet and get paid.
   renderTray() {
     this.tray.replaceChildren(...this.tier.chips.map(value => {
+      const slot = el('div', 'tray-slot');
       const chip = createChip(value, 'button');
       chip.type = 'button';
       chip.setAttribute('aria-label', `${formatCH(value)} 칩`);
       chip.setAttribute('aria-pressed', String(value === this.selected));
       this.bindChip(chip, value);
-      return chip;
+      const stack = el('span', 'tray-stack');
+      stack.setAttribute('aria-hidden', 'true');
+      slot.append(chip, stack, el('span', 'tray-count'));
+      return slot;
     }));
+    this.paintStacks(this.shownBalance);
+  }
+
+  paintStacks(balance) {
+    const counts = holding(balance, this.tier.chips);
+    this.tray.querySelectorAll('.tray-slot').forEach((slot, k) => {
+      const value = this.tier.chips[k], n = counts[k];
+      const shown = Math.min(n, STACK_CAP);
+      const stack = slot.querySelector('.tray-stack');
+      const under = Math.max(0, shown - 1);
+      while (stack.children.length > under) stack.lastChild.remove();
+      while (stack.children.length < under) {
+        const c = createChip(value);
+        delete c.dataset.value;
+        c.style.setProperty('--i', stack.children.length);
+        stack.append(c);
+      }
+      slot.style.setProperty('--n', under);
+      slot.classList.toggle('is-empty', n === 0);
+      slot.classList.toggle('is-short', value > balance);
+      slot.querySelector('.tray-count').textContent = n > STACK_CAP ? `×${formatCH(n)}` : '';
+      slot.title = `${formatCH(value)} 칩 ${n.toLocaleString('ko-KR')}개`;
+    });
   }
 
   bindChip(chip, value) {
@@ -169,7 +201,7 @@ export class Table {
   select(value) {
     this.selected = value;
     remember(memoryKey(this.game, this.tier.slug, 'chip'), value);
-    this.tray.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(Number(c.dataset.value) === value)));
+    this.tray.querySelectorAll('button.chip').forEach(c => c.setAttribute('aria-pressed', String(Number(c.dataset.value) === value)));
   }
 
   tapChip(value, chip) {
@@ -530,6 +562,7 @@ export class Table {
   async setBalance(value, { roll = true } = {}) {
     const from = this.shownBalance;
     this.shownBalance = value;
+    this.paintStacks(value);
     if (roll) {
       this.balanceEl.parentElement.classList.toggle('is-up', value > from);
       this.balanceEl.parentElement.classList.toggle('is-down', value < from);

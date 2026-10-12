@@ -60,8 +60,8 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
   u.account.available = 200_000;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
-  // Five a day, 100억 first and half as much each time after.
-  assert.deepEqual(WELFARE_STEPS, [10_000_000_000, 5_000_000_000, 2_500_000_000, 1_250_000_000, 625_000_000]);
+  // Ten a day, 100억 each.
+  assert.deepEqual(WELFARE_STEPS, Array(10).fill(10_000_000_000));
   assert.equal(claimSupport(state, u, 'welfare', WED).amount, 10_000_000_000);
   assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /WELFARE_NOT_QUALIFIED/, 'only while broke');
   for (const step of WELFARE_STEPS.slice(1)) {
@@ -74,7 +74,7 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   // A new day starts back at 100억, and a save from before (only the day) counts as one taken.
   assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, 10_000_000_000);
   u.support.welfare = dayKey(WED + 2 * DAY); u.account.available = 0;
-  assert.equal(supportStatus(u, WED + 2 * DAY).welfare.amount, 5_000_000_000);
+  assert.equal(supportStatus(u, WED + 2 * DAY).welfare.taken, 1);
 });
 
 test('three missions a day, stable within the day, one of them general', () => {

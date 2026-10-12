@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
+import { during } from './event-clock.mjs';
 import { createHoldemSession, dealNextHand, heroAction, royaleAfterHand, royaleRebuy, royaleBlinds, ROYALE, holdemPublic, standUp } from '../lib/holdem-session.mjs';
 
 function seededRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -30,7 +31,7 @@ test('Casino Royale seats five named rivals with equal stacks and rising blinds'
   assert.ok(royaleBlinds(1_000_000, 3).big > royaleBlinds(1_000_000, 2).big);
   assert.equal(royaleBlinds(100, 1).big % 2, 0, 'blinds stay even so the small blind splits');
   const v = holdemPublic(s);
-  assert.equal(v.royale.prize, 6_000_000);
+  assert.equal(v.royale.prize, 10_000_000, 'the pot of six buy-ins plus the champion bonus of four');
   assert.equal(v.royale.level, 1);
 });
 
@@ -69,18 +70,17 @@ let n = 0;
 const call = (store, method, path, body) =>
   handleApi({ method, header: h => (h === 'x-idempotency-key' ? `k-room-${++n}` : undefined), body: async () => body ?? {} }, new URL(`http://x${path}`), store, { NODE_ENV: 'production' });
 
-test('the Royale API takes the floor maximum as the entry and settles the ledger cleanly', async () => {
+test('the Royale API takes the floor maximum as the entry and settles the ledger cleanly', during('royale', async () => {
   const store = memoryStore();
   const first = (await call(store, 'GET', '/api/state')).data;
   assert.ok(Array.isArray(first.events));
-  if (!first.events.some(e => e.id === 'royale')) return;
   const start = first.user.account.available;
   assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit', royale: true })).status, 400, 'entry must be the maximum');
   let res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 100_000_000, floor: 'high-limit', royale: true });
   assert.equal(res.status, 200, JSON.stringify(res.data));
-  assert.equal(res.data.session.royale.prize, 600_000_000);
+  assert.equal(res.data.session.royale.prize, 1_000_000_000);
   res = await call(store, 'POST', '/api/holdem/leave', { sessionId: res.data.session.id });
   assert.equal(res.status, 200, JSON.stringify(res.data));
   assert.equal(res.data.state.user.account.locked, 0);
   assert.equal(res.data.state.user.account.available, start - 100_000_000);
-});
+}));

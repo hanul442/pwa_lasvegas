@@ -173,7 +173,7 @@ button:disabled{cursor:not-allowed}
 .set-danger.is-armed{border-color:#ff7b72;color:#ff9b94}
 
 /* ---------- bottom nav ---------- */
-.bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;min-height:calc(var(--nav-h) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);padding:0 max(8px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px,env(safe-area-inset-left));background:#0a0b0df5;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--hair)}
+.bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;min-height:calc(var(--nav-h) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr);padding:0 max(8px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px,env(safe-area-inset-left));background:#0a0b0df5;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--hair)}
 .nav-item{position:relative;min-height:var(--nav-h);border:0;background:none;color:var(--taupe);font-size:14px;font-weight:500;display:grid;place-items:center}
 .nav-item span{display:none}
 .nav-item.is-active{color:var(--ivory)}
@@ -190,7 +190,7 @@ button:disabled{cursor:not-allowed}
 @media (min-width:980px){
   :root{--nav-h:0px}
   .app-shell{padding-left:120px}
-  .bottom-nav{top:0;right:auto;width:120px;grid-template-columns:1fr;grid-template-rows:repeat(5,56px);align-content:center;border-top:0;border-right:1px solid var(--hair);padding:0}
+  .bottom-nav{top:0;right:auto;width:120px;grid-template-columns:1fr;grid-template-rows:repeat(6,56px);align-content:center;border-top:0;border-right:1px solid var(--hair);padding:0}
   .nav-item{min-height:56px;justify-items:start;padding-left:32px}
   .nav-item.is-active::before{top:auto;left:18px}
   .game-mode .app-shell{padding-left:0}
@@ -262,7 +262,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .admin-log-head{margin:20px 0 6px;font-size:14px;color:var(--smoke);font-weight:600}
 
 /* ---------- event banners in the lobby ---------- */
-.event-banners{display:grid;grid-auto-flow:column;grid-auto-columns:min(86%,420px);gap:10px;margin:4px -16px 18px;padding:0 16px 4px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.event-banners{display:grid;grid-auto-flow:column;grid-auto-columns:100%;gap:10px;margin:4px -16px 18px;padding:0 16px 4px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .event-banners::-webkit-scrollbar{display:none}
 .event-banner{scroll-snap-align:start}
 .event-banners[hidden]{display:none}
@@ -278,3 +278,21 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .event-banner--oceans{background:radial-gradient(120% 140% at 100% 0,#1d2f4f 0,#0a0b0d 62%)}
 .event-banner--rounders{background:radial-gradient(120% 140% at 100% 0,#3a2f22 0,#0a0b0d 62%)}
 .event-banner--montecarlo{background:radial-gradient(120% 140% at 100% 0,#2d2346 0,#0a0b0d 62%)}
+/* Lobby teaser: one slim line for this week's event */
+.event-banner--teaser{grid-template-columns:1fr auto;align-items:center;gap:4px 12px;padding:14px 16px}
+.event-banner--teaser .event-kicker{grid-column:1 / -1}
+.event-banner--teaser .event-title{font-size:clamp(22px,6vw,28px)}
+.event-banner--teaser .event-cta{margin:0}
+/* 이벤트 tab */
+.event-week{margin:8px 0 6px}
+.event-card{cursor:default}
+.event-card:hover{border-color:var(--hair-strong)}
+.event-card.is-upcoming{opacity:.78}
+.event-rules{display:grid;gap:4px;margin:6px 0 2px;padding:0;list-style:none;font:500 14px/1.45 var(--sans);color:#d9dde2}
+.event-rules li::before{content:"·";margin-right:8px;color:var(--smoke)}
+.event-section{margin:22px 0 4px;font:700 13px/1 var(--sans);letter-spacing:.12em;color:var(--smoke)}
+.event-schedule{display:grid;gap:8px;margin:8px 0 24px;padding:0;list-style:none}
+.event-schedule-row{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;align-items:baseline;padding:12px 16px;border:1px solid var(--hair);border-radius:12px}
+.event-schedule-row span{grid-row:span 2;font:600 13px/1.3 var(--sans);color:var(--smoke);white-space:nowrap}
+.event-schedule-row b{font:700 16px/1.2 var(--sans);color:var(--white)}
+.event-schedule-row small{font:500 13px/1.2 var(--sans);color:var(--dim)}

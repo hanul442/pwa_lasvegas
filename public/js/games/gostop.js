@@ -344,6 +344,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
         note = r.gobak === ME ? '고박: 고를 불렀다 져서 두 사람 몫을 혼자 내요.' : r.gobak !== null ? `${names[r.gobak]} 고박: 내 몫까지 ${names[r.gobak]}가 내요.` : `${names[r.winner]} ${r.base}점${r.go ? ` · ${r.go}고` : ''} — ${shareText}`;
       }
     }
+    if (v.bonus) note = `타짜 보너스 +${formatCH(v.bonus)} · ${note}`;
     t.toast(note);
     if (r.winner === ME) voice.say('you-win');
     const big = net > 0 && (r.go >= 3 || r.points >= 10)

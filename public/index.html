@@ -59,6 +59,16 @@
         <ul class="game-menu" data-floor-list></ul>
       </section>
 
+      <section class="surface" data-surface="events" aria-labelledby="events-title">
+        <h1 id="events-title">이벤트</h1>
+        <p class="lede">매주 월요일 0시에 이벤트 테이블이 하나씩 바뀌어요. 이번 주에 놓치면 다섯 주 뒤에 다시 와요.</p>
+        <div class="event-week" data-event-now></div>
+        <h2 class="event-section">다음 주</h2>
+        <div class="event-week" data-event-next></div>
+        <h2 class="event-section">이후 일정</h2>
+        <ol class="event-schedule" data-event-schedule></ol>
+      </section>
+
       <section class="surface" data-surface="ranking" aria-labelledby="ranking-title">
         <h1 id="ranking-title">랭킹</h1>
         <div class="segmented segmented--two" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
@@ -101,6 +111,7 @@
     <nav class="bottom-nav" aria-label="주요 메뉴">
       <button class="nav-item is-active" type="button" data-nav="lobby">로비</button>
       <button class="nav-item" type="button" data-nav="games">게임</button>
+      <button class="nav-item" type="button" data-nav="events">이벤트</button>
       <button class="nav-item" type="button" data-nav="bank">은행</button>
       <button class="nav-item" type="button" data-nav="ranking">랭킹</button>
       <button class="nav-item" type="button" data-nav="profile">프로필</button>

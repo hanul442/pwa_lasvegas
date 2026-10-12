@@ -175,13 +175,13 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     catch (e) { await resync(errorMessage(e)); return; }
     apply(res);
     if (res.events.length) await playEvents(res.events, session);
-    await cashOut(session.cashOut ?? 0, session.netPnl ?? 0);
+    await cashOut(session.cashOut ?? 0, session.netPnl ?? 0, session.royale);
     session = null;
     refreshActions();
   }
 
   // Whatever is left of the stack flies back to the wallet and the felt is cleared.
-  async function cashOut(cash, net) {
+  async function cashOut(cash, net, r = null) {
     const hero = seatEls[pk.me];
     if (cash > 0 && hero) {
       const values = breakdown(cash, pk.chipSet, 8);
@@ -195,7 +195,10 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     }
     const won = tourney === 'rounders' ? '보스 격파' : 'Casino Royale 우승';
     t.banner(royale ? (cash > 0 ? won : '토너먼트를 마쳤어요') : cash > 0 ? '일어났어요' : '칩을 모두 잃었어요', net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
-    if (royale && cash > 0 && net > 0) await t.bigWin(net, tourney === 'rounders' ? { title: 'BOSS DOWN', subtitle: '다음 보스가 기다려요' } : { title: 'CASINO ROYALE', subtitle: '마지막 한 사람' });
+    // The house's event prize on top of the pot: the champion's bonus, the runner-up's buy-in back, the boss bounty.
+    const extra = (r?.bonus || 0) + (r?.bounty || 0);
+    if (royale && cash > 0 && net > 0) await t.bigWin(net + extra, tourney === 'rounders' ? { title: 'BOSS DOWN', subtitle: `현상금 ${formatCH(extra)} 포함 · 다음 보스가 기다려요` } : { title: 'CASINO ROYALE', subtitle: `우승 보너스 ${formatCH(extra)} 포함` });
+    else if (extra > 0) t.toast(`${r.place}위 상금 ${formatCH(extra)}원을 받았어요`);
     hud.hidden = true;
     t.locked = false;
     t.root.classList.remove('is-playing');
@@ -213,14 +216,14 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
       session = null;
       // Out of chips: the showdown stays on the felt until the player gets up.
       if (!(s.cashOut > 0)) { busted = s; return refreshActions(); }
-      return cashOut(s.cashOut ?? 0, s.netPnl ?? 0).then(refreshActions);
+      return cashOut(s.cashOut ?? 0, s.netPnl ?? 0, s.royale).then(refreshActions);
     }
     refreshActions();
   }
   let busted = null;
   async function getUp() {
     const s = busted; busted = null;
-    await cashOut(0, s.netPnl ?? 0);
+    await cashOut(0, s.netPnl ?? 0, s.royale);
     refreshActions();
   }
   // After the hand, the hero may turn their cards up for the table (a folded hand, or a pot nobody called).

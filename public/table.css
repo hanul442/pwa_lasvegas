@@ -665,7 +665,7 @@
 .bj-seat.is-friend .bj-seat-plate b{color:var(--white)}
 
 /* ---------- 묻고 더블로 가 ---------- */
-.dd-stamp{position:absolute;left:50%;top:46%;z-index:40;display:grid;justify-items:center;gap:4px;padding:16px 26px 14px;border:3px solid var(--white);border-radius:6px;background:#0a0b0de6;color:var(--white);pointer-events:none;box-shadow:0 0 0 1px #0008,0 24px 60px #000c;transform:translate(-50%,-50%) rotate(-4deg)}
+.dd-stamp{position:absolute;left:50%;top:46%;z-index:60;display:grid;justify-items:center;gap:4px;padding:16px 26px 14px;border:3px solid var(--white);border-radius:6px;background:#0a0b0de6;color:var(--white);pointer-events:none;box-shadow:0 0 0 1px #0008,0 24px 60px #000c;transform:translate(-50%,-50%) rotate(-4deg)}
 .dd-stamp-line{font:800 clamp(22px,6.4vw,34px)/1 var(--display);font-stretch:118%;letter-spacing:-.03em;white-space:nowrap}
 .dd-stamp-times{font:800 clamp(40px,13vw,68px)/.9 var(--display);font-stretch:125%;letter-spacing:-.04em;color:var(--star)}
 .dd-stamp-times--text{font-size:clamp(16px,4.6vw,22px);letter-spacing:0}

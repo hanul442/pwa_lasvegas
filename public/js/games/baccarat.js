@@ -4,6 +4,7 @@ import { dealCard, flipCard, sweepCards, parseCard } from '../cards.js';
 import { wait, formatCH, animate } from '../fx.js';
 import { Table } from '../table.js';
 import { createDoubleOrNothing } from '../double-or-nothing.js';
+import { eventInfo, createStreakMeter } from '../event-table.js';
 import { seatCrowd } from '../npc.js';
 import { voice } from '../voice.js';
 
@@ -38,10 +39,14 @@ function crowdPlan(last) {
   };
 }
 
-export async function mountBaccarat(ctx) {
+// `event: 'montecarlo'` seats the Monte Carlo Gala (lib/events.mjs): a bonus after three wins in a row.
+export async function mountBaccarat(ctx, { event = null } = {}) {
+  const ev = event ? eventInfo(ctx.state, event) : null;
   // Multi-zone for the pair side bets; the main bet still sits on exactly one of Player/Banker/Tie.
-  const t = new Table({ ...ctx, game: 'baccarat', title: 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true });
+  const t = new Table({ ...ctx, game: 'baccarat', title: ev ? ev.title : 'Baccarat', feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true });
   const don = createDoubleOrNothing(t);
+  const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
+  if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
   t.body.innerHTML = `
     <div class="bac">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
@@ -126,7 +131,7 @@ export async function mountBaccarat(ctx) {
     ]);
     ['PLAYER', 'BANKER'].forEach(s => { score(s).textContent = '–'; side(s).classList.remove('is-winner'); });
     let res;
-    try { res = await api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined); }
+    try { res = await api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined, ev?.id); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     const r = res.round;
@@ -169,6 +174,7 @@ export async function mountBaccarat(ctx) {
     await Promise.all([t.settle(net, { label, zones: nets }), crowd.settle((zone, stake) => betNet(zone, stake, r))]);
     await t.syncBalance();
     crowd.open();
+    if (res.eventStreak) await meter?.update(res.eventStreak);
     if (net > 0 && r.id) don.offer(r.id, net);
   }
 

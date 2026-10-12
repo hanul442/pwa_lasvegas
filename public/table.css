@@ -700,7 +700,7 @@
 .chip-tray .chip--plaque[aria-pressed="true"]::after{top:auto}
 
 /* ---------- Casino Royale event table: midnight felt, tuxedo-black rail ---------- */
-.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
+.felt.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
 .table-screen.is-royale .chip-tray,.table-screen.is-royale .bet-tools{display:none}
 .table-screen.is-royale .pk-sitdown>:not(.royale-entry),.table-screen.is-royale .pk-hint{display:none!important}
 .royale-entry{display:grid;justify-items:center;gap:5px;padding:14px 18px 12px;border:1px solid #ffffff38;border-radius:14px;background:#050607e6;box-shadow:0 24px 50px #000b;text-align:center;color:var(--white)}
@@ -760,3 +760,16 @@
 .chip-label{text-shadow:0 1px 0 color-mix(in srgb,var(--c) 60%,transparent)}
 .toast{font-size:15px;font-weight:600}
 .banner-head{letter-spacing:-.01em}
+
+/* ---------- other event tables ---------- */
+.felt.felt--tazza{--felt-a:#3b1518;--felt-b:#260c0f;--felt-c:#0d0405}
+.is-event--oceans .felt{--felt-a:#1b3557;--felt-b:#0f2240;--felt-c:#050c18}
+.felt.felt--rounders{--felt-a:#3a2c1c;--felt-b:#241a10;--felt-c:#0c0805}
+.is-event--montecarlo .felt{--felt-a:#2f2450;--felt-b:#1c1534;--felt-c:#080611}
+.royale-boss{font:600 14px/1.2 var(--sans);color:#d9dde2}
+.royale-boss b{color:var(--white);font-weight:800}
+.ev-meter{position:absolute;right:8px;bottom:8px;z-index:8;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:600 12px/1 var(--sans)}
+.ev-meter b{color:var(--white);font-variant-numeric:tabular-nums}
+.ev-meter-pips{display:flex;gap:4px}
+.ev-meter-pips i{width:9px;height:9px;border-radius:50%;border:1px solid #ffffff70}
+.ev-meter-pips i.is-on{background:var(--star);border-color:var(--star)}

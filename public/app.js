@@ -40,7 +40,11 @@ const GAMES = [
   { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
   { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
   // Event tables (lib/events.mjs) appear only while their event runs.
-  { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) }
+  { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
+  { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
+  { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: ctx => mountBlackjack(ctx, { event: 'oceans' }) },
+  { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: ctx => mountHoldem(ctx, { tourney: 'rounders' }) },
+  { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: ctx => mountBaccarat(ctx, { event: 'montecarlo' }) }
 ];
 const eventOf = g => (g.event ? state?.events?.find(e => e.id === g.event) || null : null);
 const playable = g => !g.event || Boolean(eventOf(g));

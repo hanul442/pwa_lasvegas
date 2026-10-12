@@ -7,6 +7,7 @@ import { animate, flyFrom, wait, sound, haptic, formatCH, el, ms } from '../fx.j
 import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
 import { createRoomClient } from './room-client.js';
+import { doubleStamp, doubleBadge, doubleActions } from '../double-down.js';
 
 const ME = 0, OPP = 1;
 const GROUPS = [['gwang', '광'], ['yeol', '끗'], ['tti', '띠'], ['pi', '피']];
@@ -34,6 +35,8 @@ export async function mountMatgo(ctx) {
   const $ = s => t.body.querySelector(s);
   const zone = t.addZone($('[data-zone="POINT"]'));
   const board = $('[data-board]'), pile = $('[data-pile]'), handEl = $('[data-hand]'), oppHand = $('[data-opp-hand]');
+  const dd = doubleBadge(board);
+  let carry = 1; // 묻고 더블로 가 on offer after a solo 나가리
   const callout = $('[data-callout]');
   const nodes = new Map();
   let pileBack = null;
@@ -289,13 +292,16 @@ export async function mountMatgo(ctx) {
   async function finish(v, net) {
     const r = v.result;
     let label;
-    if (r.winner === null) label = '나가리 · 무승부';
+    if (r.winner === null) {
+      label = `나가리 · 다음 판 ×${r.nextDouble}`;
+      if (!room.active) carry = r.nextDouble;
+    }
     else {
       const extras = r.multipliers.map(x => x.label).join(' ');
       label = `${r.winner === ME ? '승리' : '패배'} ${r.points}점${extras ? ` (${extras})` : ''}`;
     }
     if (r.winner === ME) voice.say('you-win');
-    t.toast(r.winner === null ? '아무도 스톱하지 못했어요. 판돈은 그대로예요.' : r.lines?.map(l => `${l.label} ${l.points}`).join(' · ') || '');
+    t.toast(r.winner === null ? (room.active ? `나가리! 다음 판은 묻고 더블 ×${r.nextDouble}로 가요.` : `나가리! 묻고 더블로 가면 다음 판은 ×${r.nextDouble}이에요.`) : r.lines?.map(l => `${l.label} ${l.points}`).join(' · ') || '');
     // Three go's or a ten-point hand stop the table.
     const goes = r.multipliers?.find(x => /고$/.test(x.label) && x.label !== '고박');
     const big = r.winner === ME && (goes || r.points >= 10) ? { title: goes ? goes.label : `${r.points}점`, subtitle: goes ? '고 · 고 · 고' : '큰 판' } : null;
@@ -305,13 +311,14 @@ export async function mountMatgo(ctx) {
   }
 
   // ---------- round start ----------
-  async function deal() {
+  async function deal(double = false) {
     if (!t.betReady) return;
     t.lock();
     let res;
-    try { res = await api.matgoStart(t.total, t.tier.floor); }
+    try { res = await api.matgoStart(t.total, t.tier.floor, double === true); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
+    carry = 1;
     await begin(res);
   }
 
@@ -321,6 +328,8 @@ export async function mountMatgo(ctx) {
     paintOpp(res.round);
     await t.syncBalance();
     zone.hidden = true;
+    dd.set(res.round.double || 1);
+    if (res.round.double > 1) await doubleStamp(t.body, res.round.double);
     // Clear last game's cards, then deal: floor, me, opponent, in two passes like a real dealer.
     nodes.forEach(n => n.remove()); nodes.clear();
     board.querySelectorAll('.mg-slot').forEach(s => s.remove());
@@ -352,7 +361,7 @@ export async function mountMatgo(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(room.active ? room.idleActions() : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, carry, deal) : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * 10)}` : '시작', deal));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {
@@ -390,6 +399,7 @@ export async function mountMatgo(ctx) {
     if (room.active) t.locked = true; else t.lock();
     t.root.classList.add('is-playing');
     zone.hidden = true;
+    dd.set(view.double || 1);
     t.placeLocked('POINT', view.stake); t.refreshBet();
     model = toModel(view);
     await layout(model);
@@ -402,6 +412,7 @@ export async function mountMatgo(ctx) {
     view = null; selected = null; options = null; prompt = null;
     t.resetRound();
     zone.hidden = false;
+    dd.set(1);
     paintOpp(null);
     model = { hand: [], opp: 0, floor: [], pileCount: 48, captured: [[], []], ppeok: [] };
     await layout(model, { duration: 0 });
@@ -411,6 +422,7 @@ export async function mountMatgo(ctx) {
   // Resume a game left mid-way.
   try {
     const open = await api.matgoOpen();
+    carry = open.double || 1;
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
       await snapshot(open.round);
       t.toast('하던 맞고 판을 이어서 해요');

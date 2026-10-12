@@ -38,8 +38,16 @@ const GAMES = [
   { id: 'gostop', name: '고스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
   { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
   { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
-  { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots }
+  { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
+  // Event tables (lib/events.mjs) appear only while their event runs.
+  { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
+  { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
+  { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: ctx => mountBlackjack(ctx, { event: 'oceans' }) },
+  { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: ctx => mountHoldem(ctx, { tourney: 'rounders' }) },
+  { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: ctx => mountBaccarat(ctx, { event: 'montecarlo' }) }
 ];
+const eventOf = g => (g.event ? state?.events?.find(e => e.id === g.event) || null : null);
+const playable = g => !g.event || Boolean(eventOf(g));
 
 const surfaces = [...document.querySelectorAll('[data-surface]')];
 const navItems = [...document.querySelectorAll('[data-nav]')];
@@ -90,9 +98,9 @@ async function openTable(tier) {
   history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
   showSurface('table');
   closeTable();
-  voice.preload(selectedGame.id);
+  voice.preload(selectedGame.guide || selectedGame.id);
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
-  attachGuide(activeTable, selectedGame.id);
+  attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
@@ -149,6 +157,7 @@ function applyState(next) {
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
   renderRecharge();
+  renderGameLists();
   maybeBust(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState);
   if (isActive('ranking')) renderRanking();
@@ -163,7 +172,7 @@ const LAST_TABLE_KEY = 'vegas:last-table';
 function lastTable() {
   try {
     const t = JSON.parse(localStorage.getItem(LAST_TABLE_KEY) || 'null');
-    return t && GAMES.some(g => g.id === t.game) && TIERS[t.tier] ? t : null;
+    return t && GAMES.some(g => g.id === t.game && playable(g)) && TIERS[t.tier] ? t : null;
   } catch { return null; }
 }
 
@@ -218,15 +227,38 @@ function gameRow(g) {
   b.type = 'button';
   b.dataset.game = g.id;
   if (g.soon) b.setAttribute('aria-disabled', 'true');
-  b.innerHTML = `<span class="game-row-name">${g.name}</span><span class="game-row-stake">${g.soon ? '준비 중' : `${formatCH(TIERS.corner.min)}원부터`}</span><span class="game-row-desc">${g.blurb}</span>`;
+  if (g.event) b.classList.add('is-event');
+  b.innerHTML = `<span class="game-row-name">${g.name}</span><span class="game-row-stake">${g.soon ? '준비 중' : g.event ? '이벤트' : `${formatCH(TIERS.corner.min)}원부터`}</span><span class="game-row-desc">${g.blurb}</span>`;
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
   return li;
 }
 
+function renderGameLists() {
+  const games = GAMES.filter(playable);
+  document.querySelector('[data-game-grid]').replaceChildren(...games.map(gameRow));
+  document.querySelector('[data-floor-list]').replaceChildren(...games.map(gameRow));
+  renderEvents();
+}
+
+// Live events get a banner at the top of the lobby: what it is, how long it runs, a way in.
+function renderEvents() {
+  const slot = document.querySelector('[data-events]');
+  const live = GAMES.filter(g => g.event && eventOf(g));
+  slot.replaceChildren(...live.map(g => {
+    const ev = eventOf(g);
+    const b = el('button', `event-banner event-banner--${g.id}`);
+    b.type = 'button';
+    b.dataset.game = g.id;
+    b.innerHTML = `<span class="event-kicker">${ev.kicker} · ${timeLeft(ev.until)} 남음</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><span class="event-cta">테이블 고르기</span>`;
+    b.addEventListener('click', () => chooseGame(b));
+    return b;
+  }));
+  slot.hidden = !live.length;
+}
+
 function renderLobby() {
-  document.querySelector('[data-game-grid]').replaceChildren(...GAMES.map(gameRow));
-  document.querySelector('[data-floor-list]').replaceChildren(...GAMES.map(gameRow));
+  renderGameLists();
   const vignette = document.querySelector('[data-vignette]');
   vignette.addEventListener('click', () => chooseGame(vignette));
 }

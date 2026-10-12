@@ -9,6 +9,8 @@ import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../f
 import { settings, onSettings } from '../settings.js';
 import { basicStrategy } from '../bj-strategy.js';
 import { Table } from '../table.js';
+import { createDoubleOrNothing } from '../double-or-nothing.js';
+import { eventInfo, createStreakMeter } from '../event-table.js';
 import { voice } from '../voice.js';
 import { createRoomClient } from './room-client.js';
 
@@ -41,8 +43,12 @@ const HINT_KEY = 'vegas:bj-strategy';
 function hintRecord() { try { const r = JSON.parse(localStorage.getItem(HINT_KEY) || 'null'); return r && r.total >= 0 ? r : { right: 0, total: 0 }; } catch { return { right: 0, total: 0 }; } }
 function saveHint(r) { try { localStorage.setItem(HINT_KEY, JSON.stringify(r)); } catch {} }
 
-export async function mountBlackjack(ctx) {
-  const t = new Table({ ...ctx, game: 'blackjack', title: 'Blackjack', multi: true });
+// `event: 'oceans'` seats Ocean's Heist (lib/events.mjs): the crew at the table and a vault
+// that opens after five winning hands in a row.
+export async function mountBlackjack(ctx, { event = null } = {}) {
+  const ev = event ? eventInfo(ctx.state, event) : null;
+  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : 'Blackjack', multi: true, pushDouble: true });
+  const don = createDoubleOrNothing(t);
   t.body.innerHTML = `
     <div class="bj">
       <div class="shoe" data-shoe aria-hidden="true"><span></span></div>
@@ -356,7 +362,7 @@ export async function mountBlackjack(ctx) {
     t.lock();
     await clearFelt();
     let res;
-    try { res = await api.blackjackStart(stakes, t.tier.floor, sides); }
+    try { res = await api.blackjackStart(stakes, t.tier.floor, ev ? { ...sides, event: ev.id } : sides); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     spotBox = boxes;
@@ -466,6 +472,8 @@ export async function mountBlackjack(ctx) {
     await t.settle(net, { label: `${headline}`, zones, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     await t.syncBalance();
     refreshActions();
+    if (res.eventStreak) await meter?.update(res.eventStreak);
+    if (net > 0 && round.id && !room.active) don.offer(round.id, net);
   }
 
   // Resume an unfinished round so locked chips are never stranded.
@@ -673,6 +681,8 @@ export async function mountBlackjack(ctx) {
     clear: async () => { await roomClear(); }
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
+  const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
+  if (ev) { t.root.classList.add('is-event', `is-event--${ev.id}`); t.body.querySelector('[data-friends-open]').hidden = true; }
   const destroyRoom = t.destroy.bind(t);
   t.destroy = () => { room.stop(); return destroyRoom(); };
 

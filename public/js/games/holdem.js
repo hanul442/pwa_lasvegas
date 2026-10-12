@@ -3,15 +3,21 @@
 // and plays the bots; this screen replays its events one by one so every move is visible.
 // The felt itself lives in holdem-view.js; "친구와 함께" seats friends at it (holdem-room.js).
 import { api, errorMessage } from '../api.js';
-import { wait, formatCH, flyFrom, flyTo, animate, sound } from '../fx.js';
+import { wait, formatCH, flyFrom, flyTo, animate, sound, el } from '../fx.js';
 import { createChip, breakdown } from '../chips.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
 import { createPokerFelt, createActionBar } from './holdem-view.js';
 import { createFriends } from './holdem-room.js';
 
-export async function mountHoldem(ctx) {
-  const t = new Table({ ...ctx, game: 'holdem', title: "Hold'em", feltClass: 'felt--poker' });
+// `royale` seats the Casino Royale event table (lib/events.mjs): a six-seat tournament against
+// named high rollers whose entry is the floor's maximum bet.
+// `tourney: 'rounders'` seats 라운더스 헤즈업 the same way: one boss at a time, heads-up.
+export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: tourneyMode = null } = {}) {
+  let tourney = royaleMode ? 'royale' : tourneyMode;
+  let royale = Boolean(tourney);
+  const evOf = id => ctx.state?.events?.find(e => e.id === id) || null;
+  const t = new Table({ ...ctx, game: 'holdem', title: royale ? evOf(tourney)?.title || 'Casino Royale' : "Hold'em", feltClass: `felt--poker${royale ? ` felt--royale felt--${tourney}` : ''}` });
   const pk = createPokerFelt(t, { sitdown: `
     <button type="button" class="zone pk-buyin" data-zone="buyin"><strong>Buy-in</strong><small data-blinds></small></button>
     <div class="pk-opponents" role="radiogroup" aria-label="상대 수">
@@ -19,6 +25,38 @@ export async function mountHoldem(ctx) {
     </div>
     <button type="button" class="pk-friends-open" data-friends-open>친구와 함께</button>` });
   t.body.querySelector('[data-blinds]').textContent = `블라인드 ${formatCH(pk.bb / 2)} / ${formatCH(pk.bb)}`;
+  const entry = t.tier.max;
+  const hud = el('div', 'royale-hud');
+  hud.hidden = true;
+  t.body.querySelector('.pk').append(hud);
+  if (royale) setupRoyale();
+  function setupRoyale() {
+    t.root.classList.add('is-royale');
+    pk.sitdown.querySelector('.royale-entry')?.remove();
+    const ev = evOf(tourney);
+    const boss = tourney === 'rounders' ? ctx.state?.rounders : null;
+    [...pk.sitdown.children].forEach(c => { c.hidden = true; });
+    pk.sitdown.insertAdjacentHTML('beforeend', `
+      <div class="royale-entry">
+        <span class="royale-kicker">${ev?.kicker || ''}</span>
+        <strong class="royale-title">${(ev?.title || 'Casino Royale').toUpperCase()}</strong>
+        ${boss ? `<span class="royale-boss">${boss.level + 1}단계 보스 · <b>${boss.boss}</b></span>` : ''}
+        <span class="royale-buyin"><small>바이인</small>${formatCH(entry)}원</span>
+        <ul class="royale-rules">${(ev?.rules || []).map(r => `<li>${r}</li>`).join('')}</ul>
+      </div>`);
+    pk.hintLine.textContent = tourney === 'rounders' ? '보스가 기다리고 있어요' : '하이롤러 다섯 명이 기다리고 있어요';
+  }
+  // The tournament's state over the felt: level, blinds, who is left, what it pays.
+  function paintHud(s) {
+    const r = s?.royale;
+    hud.hidden = !r;
+    if (!r) return;
+    hud.innerHTML = `${r.bossName ? `<span>보스 <b>${r.bossName}</b></span>` : ''}<span><b>LV ${r.level}</b> · ${formatCH(s.table.smallBlind)}/${formatCH(s.table.bigBlind)}</span><span>${r.handsToNext}핸드 뒤 ${formatCH(r.next.big)}</span><span>${r.bossName ? '' : `<b>${r.left}/${r.seats}</b> · `}상금 <b>${formatCH(r.prize)}</b></span>`;
+  }
+  function useBlinds(table) {
+    pk.bb = table.bigBlind;
+    pk.chipSet = [pk.bb, ...t.tier.chips.filter(v => v > pk.bb)];
+  }
   t.addZone(t.body.querySelector('[data-zone="buyin"]'));
   const { seatEls, sitdown, hintLine, rectOf } = pk;
   const readoutLabel = t.root.querySelector('.bet-readout span');
@@ -34,11 +72,26 @@ export async function mountHoldem(ctx) {
   let session = null; // last server view
   let prompted = ''; // the hand and turn "Your action" was last called for
 
+  const ROYALE_EVENTS = new Set(['level', 'rebuy', 'out', 'royale-end']);
   async function playEvents(events, view) {
     pk.animating = true;
     refreshActions();
+    if (view.royale) useBlinds(view.table);
+    for (const e of events.filter(e => e.t === 'level' || e.t === 'rebuy')) await royaleNote(e);
     // A finished session's table is stored without its last hand: keep the felt as the hand left it.
-    await pk.playEvents(events, view.table, { snap: view.status !== 'SETTLED' });
+    await pk.playEvents(events.filter(e => !ROYALE_EVENTS.has(e.t)), view.table, { snap: view.status !== 'SETTLED' });
+    for (const e of events.filter(e => e.t === 'out' || e.t === 'royale-end')) await royaleNote(e);
+    paintHud(view);
+  }
+  async function royaleNote(e) {
+    if (e.t === 'level') { t.banner(`Level ${e.level}`, 'push'); t.toast(`블라인드가 ${formatCH(e.small)}/${formatCH(e.big)}로 올랐어요`); sound.tick(); await wait(700); }
+    else if (e.t === 'rebuy') { t.toast(`리바이 · ${formatCH(e.stack)} 다시 받았어요`); sound.chips(3); }
+    else if (e.t === 'out') { t.toast(`${e.name} 탈락 · ${e.place}위`); await wait(600); }
+    else if (e.t === 'royale-end') {
+      if (e.place === 1) t.banner(tourney === 'rounders' ? '보스 격파' : 'Casino Royale 우승', 'win');
+      else t.banner(`${e.place}위로 마쳤어요`, 'lose');
+      await wait(900);
+    }
   }
 
   // ---------- server calls ----------
@@ -56,15 +109,16 @@ export async function mountHoldem(ctx) {
   }
 
   async function sit() {
-    if (!t.betReady) return;
-    const buyIn = t.total;
+    if (!royale && !t.betReady) return;
+    const buyIn = royale ? entry : t.total;
     let res;
-    try { res = await api.holdemSit(buyIn, t.tier.floor, opponents); }
+    try { res = await api.holdemSit(buyIn, t.tier.floor, opponents, tourney === 'royale', tourney === 'rounders' ? 'rounders' : null); }
     catch (e) { t.toast(errorMessage(e)); return; }
     t.lock();
     // The buy-in leaves the cloth and becomes the person's stack.
     apply(res);
     pk.me = 0;
+    if (res.session.royale) useBlinds(res.session.table);
     pk.buildSeats(res.session.table);
     res.session.table.seats.forEach((_, i) => { seatEls[i].cards.replaceChildren(); pk.paintBet(i, 0); });
     showSeated(true);
@@ -101,8 +155,21 @@ export async function mountHoldem(ctx) {
     afterEvents();
   }
 
+  async function rebuy() {
+    if (!session) return;
+    let res;
+    try { res = await api.holdemRebuy(session.id); }
+    catch (e) { await resync(errorMessage(e)); return; }
+    apply(res);
+    pk.render(session.table);
+    await playEvents(res.events, res.session);
+    await t.syncBalance();
+    afterEvents();
+  }
+
   async function leave() {
     if (!session) return;
+    if (session.royale && session.royale.place === null && !confirm('지금 일어나면 기권이에요. 테이블에 있는 칩은 돌려받지 못해요. 그래도 일어날까요?')) return;
     let res;
     try { res = await api.holdemLeave(session.id); }
     catch (e) { await resync(errorMessage(e)); return; }
@@ -126,7 +193,10 @@ export async function mountHoldem(ctx) {
         return flyFrom(c, from, { duration: 520, delay: k * 50, lift: 50 }).then(() => c.remove());
       }));
     }
-    t.banner(cash > 0 ? '일어났어요' : '칩을 모두 잃었어요', net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
+    const won = tourney === 'rounders' ? '보스 격파' : 'Casino Royale 우승';
+    t.banner(royale ? (cash > 0 ? won : '토너먼트를 마쳤어요') : cash > 0 ? '일어났어요' : '칩을 모두 잃었어요', net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
+    if (royale && cash > 0 && net > 0) await t.bigWin(net, tourney === 'rounders' ? { title: 'BOSS DOWN', subtitle: '다음 보스가 기다려요' } : { title: 'CASINO ROYALE', subtitle: '마지막 한 사람' });
+    hud.hidden = true;
     t.locked = false;
     t.root.classList.remove('is-playing');
     await pk.sweep();
@@ -181,7 +251,17 @@ export async function mountHoldem(ctx) {
     }
     if (!session) {
       sizer.hidden = true;
-      t.setActions(t.idleActions('앉기', sit));
+      if (royale) t.setActions([{ label: `참가 · ${formatCH(entry)}`, key: '↵', primary: true, disabled: t.available < entry, onClick: sit }]);
+      else t.setActions(t.idleActions('앉기', sit));
+      return;
+    }
+    if (session.royale?.canRebuy) {
+      sizer.hidden = true;
+      t.hint('칩을 모두 잃었어요. 리바이는 한 번 할 수 있어요');
+      t.setActions([
+        { label: '기권하고 나가기', ghost: true, disabled: pk.animating, onClick: leave },
+        { label: `리바이 · ${formatCH(session.royale.entry)}`, key: '↵', primary: true, disabled: pk.animating || t.available < session.royale.entry, onClick: rebuy }
+      ]);
       return;
     }
     const hero = session.table.seats[0];
@@ -215,10 +295,21 @@ export async function mountHoldem(ctx) {
   try {
     const open = await api.holdemOpen();
     t.setServerState(open.state);
+    if (open.session && (open.session.royale ? open.session.royale.event || 'royale' : null) !== tourney) {
+      // The other kind of table is still open: draw it as what it is.
+      royale = Boolean(open.session.royale);
+      tourney = open.session.royale?.event || (royale ? 'royale' : null);
+      t.root.querySelector('.table-name strong').textContent = royale ? evOf(tourney)?.title || 'Casino Royale' : "Hold'em";
+      t.felt.classList.remove('felt--royale', 'felt--rounders');
+      if (royale) t.felt.classList.add('felt--royale', `felt--${tourney}`);
+      if (royale) setupRoyale(); else { t.root.classList.remove('is-royale'); pk.sitdown.querySelector('.royale-entry')?.remove(); [...pk.sitdown.children].forEach(c => { c.hidden = false; }); }
+    }
     if (open.session) {
       session = open.session;
       showSeated(true);
+      if (session.royale) useBlinds(session.table);
       pk.render(session.table);
+      paintHud(session);
       t.toast('앉아 있던 테이블로 돌아왔어요');
     } else await friends.resume();
     await t.syncBalance();
@@ -231,7 +322,8 @@ export async function mountHoldem(ctx) {
   const destroy = t.destroy.bind(t);
   t.destroy = () => {
     friends.stop();
-    const open = session && session.status === 'SEATED' ? session.id : null;
+    // A tournament seat is kept: closing the screen must not forfeit it. Reopening resumes it.
+    const open = session && session.status === 'SEATED' && !session.royale ? session.id : null;
     destroy();
     if (!open) return null;
     session = null;

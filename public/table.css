@@ -13,9 +13,9 @@
 .table-name{min-width:0}
 .table-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:560 clamp(18px,5.6vw,22px)/1.15 var(--display);font-stretch:125%;letter-spacing:-.02em}
 @media (max-width:519px){.table-name strong{font-size:clamp(16px,4.8vw,19px);font-stretch:108%}}
-.table-name span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
+.table-name>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
 /* narrow phones: the subtitle (stakes, room, blinds) wraps to a second line instead of being cut off */
-@media (max-width:519px){.table-name span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;font-size:12px;line-height:1.25}}
+@media (max-width:519px){.table-name>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;font-size:12px;line-height:1.25}}
 .table-balance{text-align:right;transition:color .4s}
 .table-balance span{display:block;font-size:12px;color:var(--taupe)}
 .table-balance strong{font:600 17px var(--sans);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
@@ -700,7 +700,7 @@
 .chip-tray .chip--plaque[aria-pressed="true"]::after{top:auto}
 
 /* ---------- Casino Royale event table: midnight felt, tuxedo-black rail ---------- */
-.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
+.felt.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
 .table-screen.is-royale .chip-tray,.table-screen.is-royale .bet-tools{display:none}
 .table-screen.is-royale .pk-sitdown>:not(.royale-entry),.table-screen.is-royale .pk-hint{display:none!important}
 .royale-entry{display:grid;justify-items:center;gap:5px;padding:14px 18px 12px;border:1px solid #ffffff38;border-radius:14px;background:#050607e6;box-shadow:0 24px 50px #000b;text-align:center;color:var(--white)}
@@ -709,7 +709,7 @@
 .royale-buyin{display:flex;align-items:baseline;gap:8px;font:800 20px/1.1 var(--display);font-variant-numeric:tabular-nums;color:var(--star)}
 .royale-buyin small{font:600 12px var(--sans);color:var(--smoke)}
 .royale-rules{display:grid;gap:2px;margin:2px 0 0;padding:0;list-style:none;font:500 12.5px/1.35 var(--sans);color:#d9dde2}
-.royale-hud{position:absolute;left:6px;top:2px;z-index:7;display:grid;gap:2px;padding:7px 10px;border-radius:10px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:500 11.5px/1.3 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.royale-hud{position:absolute;left:6px;bottom:6px;z-index:7;display:grid;gap:2px;padding:5px 8px;border-radius:8px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:500 10.5px/1.3 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
 .royale-hud[hidden]{display:none}
 .royale-hud b{color:var(--white);font-weight:800}
 
@@ -760,3 +760,16 @@
 .chip-label{text-shadow:0 1px 0 color-mix(in srgb,var(--c) 60%,transparent)}
 .toast{font-size:15px;font-weight:600}
 .banner-head{letter-spacing:-.01em}
+
+/* ---------- other event tables ---------- */
+.felt.felt--tazza{--felt-a:#3b1518;--felt-b:#260c0f;--felt-c:#0d0405}
+.is-event--oceans .felt{--felt-a:#1b3557;--felt-b:#0f2240;--felt-c:#050c18}
+.felt.felt--rounders{--felt-a:#3a2c1c;--felt-b:#241a10;--felt-c:#0c0805}
+.is-event--montecarlo .felt{--felt-a:#2f2450;--felt-b:#1c1534;--felt-c:#080611}
+.royale-boss{font:600 14px/1.2 var(--sans);color:#d9dde2}
+.royale-boss b{color:var(--white);font-weight:800}
+.ev-meter{display:inline-flex;align-items:center;gap:6px;color:#d9dde2;font-weight:600;vertical-align:middle;white-space:nowrap}
+.ev-meter b{color:var(--white);font-variant-numeric:tabular-nums}
+.ev-meter-pips{display:flex;gap:4px}
+.ev-meter-pips i{width:8px;height:8px;border-radius:50%;border:1px solid #ffffff70}
+.ev-meter-pips i.is-on{background:var(--star);border-color:var(--star)}

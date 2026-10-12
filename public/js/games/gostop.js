@@ -16,8 +16,14 @@ const groupOf = id => { const c = hwatu(id); return c.kind === 'yeol' ? 'yeol' :
 const piValue = ids => ids.reduce((n, id) => { const c = hwatu(id); return n + (c.kind === 'pi' ? (c.double ? 2 : 1) : 0); }, 0);
 const byMonth = (a, b) => (isBombCard(a) ? 99 : monthOf(a)) - (isBombCard(b) ? 99 : monthOf(b)) || a.localeCompare(b);
 
-export async function mountGostop(ctx) {
-  const t = new Table({ ...ctx, game: 'gostop', title: '고스톱', feltClass: 'felt--hwatu' });
+// `event: 'tazza'` seats 타짜 나이트 (lib/events.mjs): 아귀 and 고광렬 at the table and every
+// hand starting at ×2.
+export async function mountGostop(ctx, { event = null } = {}) {
+  const tazzaInfo = ctx.state?.events?.find(e => e.id === 'tazza') || null;
+  let ev = event === 'tazza' ? tazzaInfo : null;
+  const t = new Table({ ...ctx, game: 'gostop', title: ev ? ev.title : '고스톱', feltClass: `felt--hwatu${ev ? ' felt--tazza' : ''}` });
+  let baseNames = ev ? ['나', '아귀', '고광렬'] : ['나', '은하', '태오'];
+  const shown = times => (ev ? Math.max(2, times) : times);
   const caps = (seat, extra = '') => `<div class="mg-caps ${extra}" data-caps="${seat}">${GROUPS.map(([g, label]) => `<div class="mg-cap mg-cap--${g}" data-group="${g}"><span>${label}<b data-count>0</b></span><div class="mg-cap-cards"></div></div>`).join('')}</div>`;
   const opp = seat => `
     <div class="gs-opp" data-seat="${seat}">
@@ -46,7 +52,7 @@ export async function mountGostop(ctx) {
   const callout = $('[data-callout]');
   const nodes = new Map();
   let pileBack = null;
-  let names = ['나', '은하', '태오'];
+  let names = [...baseNames];
   let view = null;      // last authoritative view from the server
   let model = null;     // what the felt currently shows while events play out
   let selected = null;
@@ -60,6 +66,17 @@ export async function mountGostop(ctx) {
     clear: () => clearFelt()
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
+  // 타짜 나이트 or the plain table; a resumed round is drawn as whichever kind it really is.
+  function setMode(tazza) {
+    ev = tazza ? tazzaInfo || { id: 'tazza', title: '타짜 나이트' } : null;
+    baseNames = ev ? ['나', '아귀', '고광렬'] : ['나', '은하', '태오'];
+    t.root.querySelector('.table-name strong').textContent = ev ? ev.title : '고스톱';
+    t.felt.classList.toggle('felt--tazza', Boolean(ev));
+    t.root.classList.toggle('is-event', Boolean(ev));
+    t.root.classList.toggle('is-event--tazza', Boolean(ev));
+    t.body.querySelector('[data-friends-open]').hidden = Boolean(ev);
+  }
+  if (ev) setMode(true);
 
   function paintNames() {
     OPPS.forEach(s => { $(`[data-name="${s}"]`).textContent = names[s]; $(`[data-opp-hand="${s}"]`).setAttribute('aria-label', `${names[s]} 패`); });
@@ -342,7 +359,7 @@ export async function mountGostop(ctx) {
     if (!t.betReady) return;
     t.lock();
     let res;
-    try { res = await api.gostopStart(t.total, t.tier.floor, double === true); }
+    try { res = await api.gostopStart(t.total, t.tier.floor, double === true, ev?.id); }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     carry = 1;
@@ -393,7 +410,7 @@ export async function mountGostop(ctx) {
   // ---------- actions ----------
   function refreshActions() {
     if (!view || view.status !== 'PLAYING') {
-      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, carry, deal) : t.idleActions(t.total ? `시작 · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
+      t.setActions(room.active ? room.idleActions() : carry > 1 ? doubleActions(t, shown(carry), deal) : t.idleActions(t.total ? `시작${ev ? ' ×2' : ''} · 보증금 ${formatCH(t.total * DEPOSIT_POINTS)}` : '시작', deal));
       return;
     }
     if (view.phase === 'GO_STOP' && view.actor === ME) {
@@ -446,7 +463,7 @@ export async function mountGostop(ctx) {
     t.resetRound();
     zone.hidden = false;
     dd.set(1);
-    names = ['나', '은하', '태오'];
+    names = [...baseNames];
     paintNames();
     model = { hand: [], opp: [0, 0, 0], floor: [], pileCount: 48, captured: [[], [], []], ppeok: [] };
     await layout(model, { duration: 0 });
@@ -461,6 +478,7 @@ export async function mountGostop(ctx) {
     const open = await api.gostopOpen();
     carry = open.double || 1;
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
+      if ((open.round.event === 'tazza') !== Boolean(ev)) { setMode(open.round.event === 'tazza'); names = [...baseNames]; paintNames(); }
       await snapshot(open.round);
       t.toast('하던 고스톱 판을 이어서 해요');
     } else if (open.round) t.toast('다른 테이블에 진행 중인 고스톱 판이 있어요');

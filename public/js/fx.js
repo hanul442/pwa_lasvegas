@@ -142,7 +142,14 @@ export const sound = {
   dice() { const ac = audio(); if (!ac) return; for (let i = 0; i < 6; i++) noiseBurst(ac, { at: i * 0.07 + Math.random() * 0.03, length: 0.035, freq: 1400 + Math.random() * 900, q: 2, gain: 0.3 }); },
   win() { const ac = audio(); if (!ac) return; [523, 659, 784, 1047].forEach((f, i) => tone(ac, { at: i * 0.09, freq: f, length: 0.32, gain: 0.09 })); },
   lose() { const ac = audio(); if (!ac) return; tone(ac, { freq: 220, length: 0.28, gain: 0.06, type: 'triangle' }); tone(ac, { at: 0.12, freq: 174, length: 0.36, gain: 0.05, type: 'triangle' }); },
-  push() { const ac = audio(); if (ac) tone(ac, { freq: 440, length: 0.2, gain: 0.06 }); }
+  push() { const ac = audio(); if (ac) tone(ac, { freq: 440, length: 0.2, gain: 0.06 }); },
+  // A lightning strike: a dry crack, then a low roll under it.
+  strike() {
+    const ac = audio(); if (!ac) return;
+    noiseBurst(ac, { length: 0.05, freq: 5200, q: 0.8, gain: 0.32 });
+    noiseBurst(ac, { at: 0.03, length: 0.4, freq: 180, q: 0.7, gain: 0.4 });
+    tone(ac, { at: 0.02, freq: 1760, length: 0.1, gain: 0.04, type: 'square' });
+  }
 };
 
 export function haptic(pattern = 8) {

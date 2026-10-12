@@ -50,3 +50,29 @@ test('public instant round omits server-only retry and ownership metadata',()=>{
   const view=instantPublicRound({id:'rou_1',game:'Roulette',stake:1_000_000,number:7,color:'RED',netPnl:1_000_000,userId:'hanseo',floor:'salon-prive',status:'SETTLED',createdAt:'now',idempotency:{key:'req-roulette-0001',fingerprint:'fp'}});
   assert.deepEqual(view,{id:'rou_1',game:'Roulette',stake:1_000_000,number:7,color:'RED',netPnl:1_000_000});
 });
+
+test('roulette fingerprints carry the lightning mode, and leave plain spins as they were',async()=>{
+  const { rouletteSpinFingerprint }=await import('../lib/instant-idempotency.mjs');
+  const bets=[{betType:'NUMBER',target:17,stake:1_000_000},{betType:'RED',target:null,stake:2_000_000}];
+  const plain=rouletteSpinFingerprint({floor:'strip',bets});
+  const lit=rouletteSpinFingerprint({floor:'strip',bets,lightning:true});
+  // The exact string the spin route wrote before lightning existed.
+  assert.equal(plain,JSON.stringify({game:'Roulette',floor:'strip',bets:bets.map(x=>[x.betType,x.target,x.stake])}));
+  assert.equal(rouletteSpinFingerprint({floor:'strip',bets,lightning:false}),plain);
+  assert.notEqual(lit,plain);
+  assert.equal(JSON.parse(lit).lightning,true);
+  const single=instantRequestFingerprint({game:'Roulette',stake:1,floor:'strip',betType:'NUMBER',target:7});
+  assert.equal(JSON.parse(single).lightning,undefined);
+  assert.notEqual(instantRequestFingerprint({game:'Roulette',stake:1,floor:'strip',betType:'NUMBER',target:7,lightning:true}),single);
+
+  // A retry that flips the mode under the same key is a conflict, not a second round.
+  const state={rounds:[]};
+  const make=()=>({id:'rou_lit',game:'Roulette',stake:3_000_000,bets:[],number:17,color:'BLACK',lightning:[{number:17,multiplier:100}],netPnl:0,userId:'hanseo'});
+  const first=idempotentInstantRound(state,{userId:'hanseo',game:'Roulette',key:'req-lightning-01',fingerprint:lit,create:make});
+  const again=idempotentInstantRound(state,{userId:'hanseo',game:'Roulette',key:'req-lightning-01',fingerprint:lit,create:()=>assert.fail('created twice')});
+  assert.equal(first.replayed,false);
+  assert.equal(again.replayed,true);
+  assert.deepEqual(again.round.lightning,[{number:17,multiplier:100}]);
+  assert.throws(()=>idempotentInstantRound(state,{userId:'hanseo',game:'Roulette',key:'req-lightning-01',fingerprint:plain,create:make}),/IDEMPOTENCY_CONFLICT/);
+  assert.equal(state.rounds.length,1);
+});

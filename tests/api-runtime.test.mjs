@@ -113,3 +113,26 @@ test('baccarat takes optional pair side bets in the same round and ledger entry'
   const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, stake: 100_000_000, sideBets: { PLAYER_PAIR: 100_000_000, BANKER_PAIR: 100_000_000 } }, {})).status, before < 300_000_000 ? 409 : 200);
 });
+
+test('lightning roulette spin: the server strikes the numbers and a retry replays them', async () => {
+  const store = memoryStore();
+  const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
+  const body = { floor: 'high-limit', lightning: true, bets: [{ betType: 'NUMBER', target: 17, stake: 10_000_000 }, { betType: 'RED', stake: 10_000_000 }] };
+  const res = await call(store, 'POST', '/api/roulette/spin', body, { 'x-idempotency-key': 'k-lightning-1' });
+  assert.equal(res.status, 200);
+  const r = res.data.round;
+  assert.ok(r.lightning.length >= 1 && r.lightning.length <= 5);
+  const hit = r.lightning.find(s => s.number === 17);
+  assert.equal(r.bets[0].netPnl, r.number !== 17 ? -10_000_000 : hit ? 10_000_000 * hit.multiplier - 10_000_000 : 290_000_000);
+  assert.equal(res.data.state.user.account.available, start + r.netPnl);
+  const replay = await call(store, 'POST', '/api/roulette/spin', body, { 'x-idempotency-key': 'k-lightning-1' });
+  assert.equal(replay.data.replayed, true);
+  assert.deepEqual(replay.data.round.lightning, r.lightning);
+  assert.equal(replay.data.state.user.account.available, res.data.state.user.account.available);
+  // The same key with the mode switched off is a different request.
+  const flipped = await call(store, 'POST', '/api/roulette/spin', { ...body, lightning: false }, { 'x-idempotency-key': 'k-lightning-1' });
+  assert.equal(flipped.status, 409);
+  // Without the flag the table is the plain one.
+  const plain = await call(store, 'POST', '/api/roulette/spin', { ...body, lightning: undefined }, { 'x-idempotency-key': 'k-lightning-2' });
+  assert.equal(plain.data.round.lightning, undefined);
+});

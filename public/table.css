@@ -698,3 +698,16 @@
 .chip--plaque .chip-label{font-size:calc(var(--size) * .25);translate:0 calc(var(--size) * .03)}
 .chip--plaque .chip-label--long{font-size:calc(var(--size) * .2)}
 .chip-tray .chip--plaque[aria-pressed="true"]::after{top:auto}
+
+/* ---------- Casino Royale event table: midnight felt, tuxedo-black rail ---------- */
+.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
+.table-screen.is-royale .chip-tray,.table-screen.is-royale .bet-tools{display:none}
+.royale-entry{display:grid;justify-items:center;gap:6px;padding:18px 22px 16px;border:1px solid #ffffff38;border-radius:14px;background:#050607e6;box-shadow:0 24px 50px #000b;text-align:center;color:var(--white)}
+.royale-kicker{font:700 12px/1 var(--sans);letter-spacing:.14em;color:var(--smoke)}
+.royale-title{font:800 clamp(24px,7vw,34px)/1 var(--display);font-stretch:125%;letter-spacing:.06em}
+.royale-buyin{display:flex;align-items:baseline;gap:8px;font:800 20px/1.1 var(--display);font-variant-numeric:tabular-nums;color:var(--star)}
+.royale-buyin small{font:600 12px var(--sans);color:var(--smoke)}
+.royale-rules{display:grid;gap:3px;margin:4px 0 0;padding:0;list-style:none;font:500 13px/1.35 var(--sans);color:#d9dde2}
+.royale-hud{position:absolute;left:50%;top:4px;z-index:7;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;max-width:calc(100% - 16px);padding:6px 12px;border-radius:999px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:500 12px/1.3 var(--sans);font-variant-numeric:tabular-nums;transform:translateX(-50%);white-space:nowrap}
+.royale-hud[hidden]{display:none}
+.royale-hud b{color:var(--white);font-weight:800}

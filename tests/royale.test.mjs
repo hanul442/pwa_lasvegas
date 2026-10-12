@@ -72,8 +72,8 @@ const call = (store, method, path, body) =>
 test('the Royale API takes the floor maximum as the entry and settles the ledger cleanly', async () => {
   const store = memoryStore();
   const first = (await call(store, 'GET', '/api/state')).data;
-  assert.equal(typeof first.events.royale.open, 'boolean');
-  if (!first.events.royale.open) return;
+  assert.ok(Array.isArray(first.events));
+  if (!first.events.some(e => e.id === 'royale')) return;
   const start = first.user.account.available;
   assert.equal((await call(store, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit', royale: true })).status, 400, 'entry must be the maximum');
   let res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 100_000_000, floor: 'high-limit', royale: true });

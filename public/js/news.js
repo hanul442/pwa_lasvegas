@@ -6,6 +6,7 @@ import { el, haptic } from './fx.js';
 
 const POLL = 20_000;
 const SHOW = 5200;
+const SHOW_AT_TABLE = 3400;
 const BACKLOG = 3; // at most this many banners for what happened while you were away
 const keyFor = () => `vegas:news-at:${playerId()}`;
 
@@ -50,7 +51,11 @@ function next() {
     setTimeout(() => { banner.remove(); showing = false; next(); }, 300);
   };
   banner.addEventListener('click', close);
-  setTimeout(close, SHOW);
+  // Flick it up and away; at a table it also leaves sooner, since it covers the back button.
+  let startY = null;
+  banner.addEventListener('pointerdown', e => { startY = e.clientY; });
+  banner.addEventListener('pointermove', e => { if (startY !== null && e.clientY - startY < -16) close(); });
+  setTimeout(close, document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW);
 }
 
 export function startNews() {

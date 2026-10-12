@@ -16,6 +16,8 @@ function row(label, note, control) {
   text.append(el('span', 'set-label', label));
   if (note) text.append(el('small', 'set-note', note));
   r.append(text, control);
+  // A switch is small: the row's words flip it too.
+  if (control.classList?.contains('switch')) { r.classList.add('set-row--switch'); text.addEventListener('click', () => control.click()); }
   return r;
 }
 

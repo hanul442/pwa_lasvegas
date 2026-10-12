@@ -55,3 +55,22 @@ export function breakdown(amount, denoms, cap = 10) {
   if (!out.length && amount > 0) out.push(sorted[sorted.length - 1]);
   return out;
 }
+
+// How a balance sits in front of a player as the table's chips: mostly the biggest chip, with
+// a few of each smaller one broken out for change, as a cashier would hand it over. Returns a
+// count per chip in the order given (smallest first). Anything under the smallest chip is loose.
+const CHANGE = [4, 3, 3];
+export function holding(amount, chips) {
+  const counts = chips.map(() => 0);
+  let rest = Math.max(0, Math.floor(amount));
+  for (let k = chips.length - 1; k >= 0; k--) { counts[k] = Math.floor(rest / chips[k]); rest -= counts[k] * chips[k]; }
+  // Break bigger chips into smaller ones until each smaller chip has a little change.
+  for (let k = chips.length - 1; k > 0; k--) {
+    while (counts[k] > 0 && counts[k - 1] < (CHANGE[k - 1] ?? 3)) {
+      counts[k]--;
+      let left = chips[k];
+      for (let j = k - 1; j >= 0 && left > 0; j--) { const n = Math.floor(left / chips[j]); counts[j] += n; left -= n * chips[j]; }
+    }
+  }
+  return counts;
+}

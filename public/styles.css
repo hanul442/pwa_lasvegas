@@ -309,3 +309,17 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 /* profile stats as one card with hairline cells */
 .stat-grid{gap:1px;border:1px solid var(--hair);border-radius:16px;background:var(--hair);overflow:hidden}
 .stat-grid div{padding:14px 14px 12px;background:#0d0e10;min-width:0}
+/* Desktop: the lobby opens with the table picture beside the headline and this week's event,
+   then the games run the full width underneath. The side rail starts at the top. */
+@media (min-width:980px){
+  .surface-stack{width:min(1240px,100%);padding-left:48px;padding-right:48px}
+  .bottom-nav{align-content:start;padding-top:96px}
+  .lobby-split{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"vig hero" "vig events" "games games";column-gap:56px;row-gap:0}
+  .lobby-split>div{display:contents}
+  .lobby-split .vignette{grid-area:vig;align-self:start}
+  .lobby-split .hero{grid-area:hero}
+  .lobby-split .event-banners{grid-area:events;align-self:start}
+  .lobby-split .game-menu{grid-area:games;margin-top:36px;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .game-row{min-height:150px;padding:20px 20px 18px}
+  .game-row-desc{font-size:14px}
+}

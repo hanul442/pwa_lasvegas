@@ -254,7 +254,7 @@
 .gs-opp-hand .hw+.hw{margin-left:-8px}
 /* AI capture piles: tiny overlapping cards per group with the count on top */
 .gs-mini{--cap-w:clamp(11px,3vw,18px);gap:2px;min-height:calc(var(--cap-w) * 1.6 + 15px)}
-.gs-mini .mg-cap>span{font-size:11px}
+.gs-mini .mg-cap>span{font-size:12px}
 .gs-mini .mg-cap-cards .hw+.hw{margin-left:calc(var(--cap-w) * -.78)}
 .gs-mini .mg-cap--pi .mg-cap-cards .hw+.hw{margin-left:calc(var(--cap-w) * -.86)}
 .gs-mini .hw-face{box-shadow:inset 0 0 0 1px #0000002a,0 1px 0 #0007}

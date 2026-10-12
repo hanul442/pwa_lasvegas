@@ -297,7 +297,7 @@
 .wheel-result.is-shown{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .wheel-result--red{background:#8f2a2a}.wheel-result--black{background:#1a1714}.wheel-result--green{background:#2e5e45}
 .rl-history{display:flex;gap:4px;list-style:none;margin:0;padding:0;min-height:22px}
-.hist{min-width:24px;height:22px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font-size:11px}
+.hist{min-width:26px;height:24px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font-size:12px}
 .hist--red{background:#8f2a2a}.hist--black{background:#1a1714;box-shadow:inset 0 0 0 1px #fff2}.hist--green{background:#2e5e45}
 .hist:first-child{box-shadow:0 0 0 1px var(--ivory)}
 .rl-layout{display:grid;gap:6px}
@@ -344,7 +344,7 @@
 .sb-totals{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .zone--total{--size:26px;min-height:50px;padding:4px 2px;border-radius:10px}
 .zone--total strong{font-size:18px}
-.zone--total small{font-size:10px}
+.zone--total small{font-size:12px}
 
 /* ================= responsive ================= */
 @media (min-width:760px){
@@ -398,7 +398,7 @@
   .bj-insurance{height:26px;padding:0 8px}
   .bj-insurance>span:first-child{font-size:8px;letter-spacing:.1em}
   .bet-circle{width:60px;height:60px;--size:30px;margin:2px 0}
-  .zone-amount{top:calc(100% + 4px);font-size:11px}
+  .zone-amount{top:calc(100% + 4px);font-size:12px}
   .shoe{width:40px;height:40px;top:8px}.discard{width:30px;height:42px;top:8px}
 }
 /* Short screens: drop the printed arc so all three boxes stay on the felt. */
@@ -515,7 +515,7 @@
 .pk-tag.is-aggr,.pk-tag.is-win{background:var(--white);color:var(--ink);border-color:var(--white)}
 .pk-tag.is-fold{color:var(--smoke)}
 .pk-seat--hero .pk-tag{top:50%;bottom:auto;left:calc(100% + 8px);transform:translateY(-50%)}
-.pk-handname{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);padding:2px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:650 11px var(--sans);white-space:nowrap;box-shadow:0 6px 14px #0008;z-index:3}
+.pk-handname{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);padding:2px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:650 12px var(--sans);white-space:nowrap;box-shadow:0 6px 14px #0008;z-index:3}
 
 /* bets in front of each seat */
 .pk-bet{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;visibility:hidden;z-index:3;pointer-events:none}
@@ -688,9 +688,9 @@
 .bet-tool:disabled{opacity:.4}
 @media (max-width:519px){
   .num{font-size:clamp(13px,3.6vw,16px);letter-spacing:-.04em}
-  .zone--total small{font-size:11px;color:#efe7d9d9}
+  .zone--total small{font-size:12px;color:#efe7d9d9}
   .zone small{color:#efe7d9d9}
-  .side-label{font-size:10px;opacity:.85;white-space:nowrap;letter-spacing:-.02em}
+  .side-label{font-size:11px;opacity:.92;white-space:nowrap;letter-spacing:-.02em}
   .toast{font-size:14px}
 }
 /* "친구와 함께" at the blackjack table, out of the way of the boxes */

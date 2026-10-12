@@ -128,7 +128,7 @@ test('맞고 and 섯다 tables are in the lobby and play through the server API'
 
 test('every lobby game has an interactive guide and a rules sheet', async () => {
   const guides = await read('js/guides.js');
-  assert.match(app, /attachGuide\(activeTable, selectedGame\.id\)/);
+  assert.match(app, /attachGuide\(activeTable, selectedGame\.guide \|\| selectedGame\.id\)/);
   for (const id of ['blackjack', 'baccarat', 'roulette', 'dice', 'matgo', 'seotda']) {
     assert.match(guides, new RegExp(`\\n  ${id}: \\{\\n    id: '${id}'`), id);
   }

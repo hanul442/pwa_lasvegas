@@ -712,3 +712,51 @@
 .royale-hud{position:absolute;left:6px;top:2px;z-index:7;display:grid;gap:2px;padding:7px 10px;border-radius:10px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:500 11.5px/1.3 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
 .royale-hud[hidden]{display:none}
 .royale-hud b{color:var(--white);font-weight:800}
+
+/* ---------- premium pass: chips and cards ----------
+   Chips: three-stripe edge inserts, a matte body that darkens toward the rim, and an inlay
+   framed by a fine silver line. Cards: warm ivory stock with a printed inner frame, framed
+   court panels, and a black lacquer back with a guilloche rosette and the VEGAS star. */
+.chip:not(.chip--plaque){
+  background:
+    radial-gradient(circle,transparent 0 57%,color-mix(in srgb,var(--rim) 70%,#000) 57.5% 59%,transparent 59.5%),
+    radial-gradient(circle,var(--c) 0 50%,color-mix(in srgb,var(--c) 88%,#000) 57%,transparent 57.5%),
+    radial-gradient(circle,transparent 0 92%,#0000002e 97%),
+    repeating-conic-gradient(var(--edge) 0 2.6deg,var(--rim) 2.6deg 4.4deg,var(--edge) 4.4deg 7deg,var(--rim) 7deg 9deg,var(--edge) 9deg 11.6deg,var(--rim) 11.6deg 45deg)}
+.chip:not(.chip--plaque)::before{inset:22%;border:max(1px,calc(var(--size) * .018)) solid color-mix(in srgb,var(--ink) 30%,transparent);box-shadow:0 0 0 max(1px,calc(var(--size) * .012)) #ffffff2e,inset 0 0 0 max(1px,calc(var(--size) * .03)) color-mix(in srgb,var(--c) 80%,#fff)}
+.chip-label{font-weight:750;font-variant-numeric:tabular-nums}
+.chip--plaque .chip-label{display:grid;justify-items:center;line-height:1}
+.chip--plaque .chip-label::after{content:"VEGAS";margin-top:calc(var(--size) * .04);font:700 calc(var(--size) * .075)/1 var(--display);font-stretch:125%;letter-spacing:.32em;opacity:.55}
+.pk-pot-stack .chip-label,.pk-bet-stack .chip-label,.rack-col .chip-label,.bj-seat-chips .chip-label,.chip-flyer .chip-label,.pk-flying .chip-label{display:none}
+
+.card-face{background:
+    repeating-linear-gradient(0deg,#00000005 0 1px,transparent 1px 3px),
+    repeating-linear-gradient(90deg,#00000004 0 1px,transparent 1px 3px),
+    linear-gradient(165deg,#fffdf8,#f3eee3);
+  box-shadow:inset 0 0 0 1px #00000024,inset 0 0 0 calc(var(--card-w) * .02) #fffdf8,0 1px 1px #0005,0 10px 22px #0007}
+.card-face::before{content:"";position:absolute;inset:3.2%;border:1px solid #1a171414;border-radius:6%/4.4%;pointer-events:none}
+.card-court{inset:17% 19%;border:1px solid currentColor;border-radius:5%;outline:1px solid color-mix(in srgb,currentColor 35%,transparent);outline-offset:calc(var(--card-w) * -.04);
+  background:repeating-linear-gradient(45deg,color-mix(in srgb,currentColor 7%,transparent) 0 1px,transparent 1px 4px),repeating-linear-gradient(-45deg,color-mix(in srgb,currentColor 7%,transparent) 0 1px,transparent 1px 4px),#f7f4ee}
+.card-ace::before{content:"";position:absolute;left:50%;top:50%;width:1.45em;height:1.45em;transform:translate(-50%,-50%);border:1px solid color-mix(in srgb,currentColor 30%,transparent);border-radius:50%;font-size:1em}
+.card-back{
+  background:
+    radial-gradient(circle at 50% 50%,#0a0b0d 0 14%,transparent 14.5%),
+    repeating-radial-gradient(circle at 50% 50%,#ffffff16 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(60deg,#ffffff0d 0 1px,transparent 1px 6px),
+    repeating-linear-gradient(-60deg,#ffffff0d 0 1px,transparent 1px 6px),
+    linear-gradient(160deg,#1c1f24,#08090b);
+  box-shadow:inset 0 0 0 calc(var(--card-w) * .04) #f4f5f7,inset 0 0 0 calc(var(--card-w) * .05) #08090b,inset 0 0 0 calc(var(--card-w) * .058) #ffffff55,inset 0 0 0 calc(var(--card-w) * .075) #08090b,inset 0 0 0 calc(var(--card-w) * .08) #ffffff26,0 1px 1px #0005,0 10px 22px #0007}
+.card-back::after{content:"";width:1.5em;height:1.5em;border-radius:0;background:#f4f5f7;box-shadow:none;clip-path:var(--star-shape)}
+.card-back::before{content:"";position:absolute;left:50%;top:50%;width:2.3em;height:2.3em;transform:translate(-50%,-50%);border:1px solid #ffffff59;border-radius:50%}
+
+/* ---------- visibility pass: brighter secondary text, buttons that read as buttons ---------- */
+.action{font-weight:600}
+.action--ghost{color:#e4e7eb;border-color:var(--hair)}
+.action:disabled{opacity:.5}
+.bet-tool{font-size:15px;font-weight:600;color:var(--white)}
+.bet-tool:disabled{opacity:.45}
+.bet-readout span,.table-balance span{color:#cfd3d8}
+.bet-readout strong{color:var(--white)}
+.chip-label{text-shadow:0 1px 0 color-mix(in srgb,var(--c) 60%,transparent)}
+.toast{font-size:15px;font-weight:600}
+.banner-head{letter-spacing:-.01em}

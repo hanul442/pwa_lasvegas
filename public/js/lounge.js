@@ -256,9 +256,9 @@ function floorBlock(state) {
   const top = [...floors].reverse().find(f => f.unlocked);
   const open = floors.filter(f => f.open).map(f => f.name).join(' · ');
   if (!next) { box.innerHTML = `<header class="lounge-head"><h2>${top?.name}</h2><small>가장 높은 층에 있어요</small></header>`; return box; }
-  box.innerHTML = `<header class="lounge-head"><h2>다음 층 ${next.name}</h2><small>지금 앉을 수 있는 곳 ${open}</small></header>
+  box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 층</small>${next.name}</h2><small>${Math.round(next.progress * 100)}%</small></header>
     <span class="mission-bar mission-bar--floor"><i style="width:${Math.round(next.progress * 100)}%"></i></span>
-    <p class="lounge-note">순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이면 올라가요. 순자산이 테이블 최소 베팅의 1,000배가 되면 그 층은 졸업이에요.</p>`;
+    <p class="lounge-note">순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이면 올라가요. 지금 앉을 수 있는 곳은 ${open}이에요.</p>`;
   return box;
 }
 

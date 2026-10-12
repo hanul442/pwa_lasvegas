@@ -7,10 +7,20 @@ const read = path => readFile(new URL(`../public/${path}`, import.meta.url), 'ut
 test('event tables switch the music to the noir theme and back', async () => {
   const app = await read('app.js');
   const music = await read('js/music.js');
-  assert.match(app, /music\.theme\(selectedGame\.event \? 'noir' : 'lounge'\)/);
+  assert.match(app, /music\.theme\(selectedGame\.event \? 'noir' : selectedGame\.id\)/);
   assert.match(app, /voice\.hush\(\);\n  music\.theme\('lounge'\)/, 'leaving a table brings the big band back');
   assert.match(music, /function scheduleNoirBar/);
   assert.match(music, /theme\(name\)/);
+});
+
+test('the lobby and every game have their own music', async () => {
+  const app = await read('app.js');
+  const music = await read('js/music.js');
+  const themes = music.slice(music.indexOf('const THEMES = {'));
+  const games = [...app.matchAll(/^  \{ id: '(\w+)', name:/gm)].map(m => m[1]);
+  assert.ok(games.length >= 9, 'found the game list');
+  for (const id of ['lounge', 'noir', ...games]) assert.match(themes, new RegExp(`\\n  ${id}: \\{ tempo: \\d+, bar:`), `${id} has a theme`);
+  assert.match(music, /if \(!THEMES\[name\]\) name = 'lounge';/, 'an unknown game falls back to the lobby band');
 });
 
 test('the dealer never falls behind the bots, and bots speak one at a time', async () => {

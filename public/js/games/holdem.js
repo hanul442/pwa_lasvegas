@@ -117,6 +117,8 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
   async function sit() {
     if (!royale && !t.betReady) return;
     const buyIn = royale ? entry : t.total;
+    // Five big blinds deep at least (lib/holdem-session.mjs): 1,000만 at the 100만/200만 tables.
+    if (!royale && buyIn < pk.bb * 5) { t.toast(`바이인은 최소 ${formatCH(pk.bb * 5)}이에요 (블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)})`); return; }
     let res;
     try { res = await api.holdemSit(buyIn, t.tier.floor, opponents, tourney === 'royale', tourney && tourney !== 'royale' ? tourney : null); }
     catch (e) { t.toast(errorMessage(e)); return; }

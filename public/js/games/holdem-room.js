@@ -128,6 +128,7 @@ export function createFriends(t, pk, bar, hooks) {
 
   async function create() {
     if (!t.betReady) return;
+    if (t.total < pk.bb * 5) { t.toast(`바이인은 최소 ${formatCH(pk.bb * 5)}이에요 (블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)})`); return; }
     let res;
     try { res = await api.holdemRoomCreate(t.total, t.tier.floor, size); }
     catch (e) { if (!blocked(e, create)) t.toast(errorMessage(e)); return; }

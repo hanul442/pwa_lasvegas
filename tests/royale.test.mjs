@@ -23,15 +23,16 @@ function playOut(seed, { rebuy = true } = {}) {
 }
 
 test('Casino Royale seats five named rivals with equal stacks and rising blinds', () => {
-  const s = createHoldemSession({ userId: 'u1', nickname: '본드', buyIn: 1_000_000, tier: 'gold-room', floor: 'gold-room', royale: true }, seededRand(1));
+  const s = createHoldemSession({ userId: 'u1', nickname: '본드', buyIn: 100_000_000, tier: 'salon-prive', floor: 'salon-prive', royale: true }, seededRand(1));
   assert.equal(s.table.seats.length, 6);
-  assert.ok(s.table.seats.every(x => x.stack === 1_000_000));
+  assert.ok(s.table.seats.every(x => x.stack === 100_000_000));
   assert.equal(s.table.seats[1].name, '르 시프르');
-  assert.equal(s.table.bigBlind, 1_000_000 / ROYALE.depth);
-  assert.ok(royaleBlinds(1_000_000, 3).big > royaleBlinds(1_000_000, 2).big);
-  assert.equal(royaleBlinds(100, 1).big % 2, 0, 'blinds stay even so the small blind splits');
+  assert.equal(s.table.bigBlind, 100_000_000 / ROYALE.depth);
+  assert.ok(royaleBlinds(100_000_000, 3).big > royaleBlinds(100_000_000, 2).big);
+  assert.equal(royaleBlinds(100_000_000, 1).big % 2_000_000, 0, 'blinds stay in 200만s so the small blind is a whole 100만');
+  assert.equal(royaleBlinds(1_000_000, 0).big, 2_000_000, 'never under 100만/200만');
   const v = holdemPublic(s);
-  assert.equal(v.royale.prize, 10_000_000, 'the pot of six buy-ins plus the champion bonus of four');
+  assert.equal(v.royale.prize, 1_000_000_000, 'the pot of six buy-ins plus the champion bonus of four');
   assert.equal(v.royale.level, 1);
 });
 

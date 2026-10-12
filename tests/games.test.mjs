@@ -87,8 +87,11 @@ test('baccarat tie pushes non-tie bets and banker win applies commission',()=>{
     {r:'K',s:'♣'},{r:'9',s:'♦'},
     {r:'K',s:'♥'},{r:'8',s:'♠'}
   ];
-  const banker=resolveBaccarat(1_000_000,'BANKER',bankerDeck);
-  assert.equal(banker.winner,'BANKER');assert.equal(banker.netPnl,950_000);assert.equal(banker.trace.payoutRule,'BANKER_0_95_TO_1');
+  const banker=resolveBaccarat(20_000_000,'BANKER',bankerDeck);
+  assert.equal(banker.winner,'BANKER');assert.equal(banker.netPnl,19_000_000);
+  // In 100만s the 5% commission rounds to the nearest 100만: 100만 on the banker wins 100만, 1천만 wins 900만.
+  assert.equal(resolveBaccarat(1_000_000,'BANKER',bankerDeck).netPnl,1_000_000);
+  assert.equal(resolveBaccarat(10_000_000,'BANKER',bankerDeck).netPnl,9_000_000);assert.equal(banker.trace.payoutRule,'BANKER_0_95_TO_1');
 });
 
 test('roulette result always 0..36',()=>{
@@ -126,14 +129,14 @@ test('baccarat pair side bets read the first two cards of each side and pay 11:1
   assert.equal(isBaccaratPair([{ r: '10', s: '♠' }, { r: 'J', s: '♠' }]), false);
   // Cards come off the end: player 7-7, banker K-9 (banker natural 9, player 4 stands).
   const deck = [{ r: '2', s: '♣' }, { r: '3', s: '♣' }, { r: '9', s: '♦' }, { r: 'K', s: '♣' }, { r: '7', s: '♥' }, { r: '7', s: '♠' }];
-  const r = resolveBaccarat(1_000_000, 'BANKER', deck, { PLAYER_PAIR: 200_000, BANKER_PAIR: 100_000 });
+  const r = resolveBaccarat(20_000_000, 'BANKER', deck, { PLAYER_PAIR: 200_000, BANKER_PAIR: 100_000 });
   assert.equal(r.winner, 'BANKER');
   assert.deepEqual(r.pairs, { PLAYER_PAIR: true, BANKER_PAIR: false });
-  assert.equal(r.mainPnl, 950_000);
+  assert.equal(r.mainPnl, 19_000_000);
   assert.deepEqual(r.sideBets.map(b => [b.betType, b.won, b.netPnl]), [['BANKER_PAIR', false, -100_000], ['PLAYER_PAIR', true, 2_200_000]]);
-  assert.equal(r.stake, 1_300_000);
-  assert.equal(r.mainStake, 1_000_000);
-  assert.equal(r.netPnl, 950_000 + 2_200_000 - 100_000);
+  assert.equal(r.stake, 20_300_000);
+  assert.equal(r.mainStake, 20_000_000);
+  assert.equal(r.netPnl, 19_000_000 + 2_200_000 - 100_000);
   // Without side bets the round reads exactly as before.
   const plain = resolveBaccarat(1_000_000, 'PLAYER', deck);
   assert.equal(plain.netPnl, -1_000_000);

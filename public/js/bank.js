@@ -57,8 +57,12 @@ function showError(body, e) {
   note.textContent = errorMessage(e);
 }
 
+// Every amount moves in whole 100만s (lib/bank.mjs); `exact` is one odd amount still allowed
+// (paying off a loan to the last won).
+const UNIT = 1_000_000;
+const inUnits = (v, exact) => v > 0 && (v % UNIT === 0 || v === exact);
 // Amount field with quick picks; onInput gets the whole-number amount.
-function amountField(max, start, onInput) {
+function amountField(max, start, onInput, exact = null) {
   const wrap = el('div', 'bank-amount');
   const label = el('label', 'bank-label', '금액');
   const row = el('div', 'bank-amount-row');
@@ -75,7 +79,7 @@ function amountField(max, start, onInput) {
   for (const [text, share] of [['25%', 0.25], ['절반', 0.5], ['최대', 1]]) {
     const b = el('button', 'pill-button', text);
     b.type = 'button';
-    b.addEventListener('click', () => { input.value = String(Math.max(1, Math.floor(max * share))); update(); });
+    b.addEventListener('click', () => { input.value = String(share === 1 && max === exact ? max : Math.max(UNIT, Math.floor(max * share / UNIT) * UNIT)); update(); });
     picks.append(b);
   }
   const value = () => Number(String(input.value).replace(/[^\d]/g, '')) || 0;
@@ -113,9 +117,10 @@ function borrowSheet(state, offer, onChanged) {
         buttons.forEach(([t, b]) => b.setAttribute('aria-checked', String(t.days === days)));
         let owe = amount;
         for (let k = 0; k < days; k++) owe = Math.ceil(owe * (1 + rate));
+        owe = Math.max(UNIT, Math.floor(owe / UNIT) * UNIT);
         preview.innerHTML = `하루 <b>${pct(rate)}</b> 복리 · 자정마다 이자가 붙어요<br>${days}일 뒤 갚을 돈 약 <b>${won(owe)}</b>. 못 갚으면 들어오는 칩에서 자동으로 가져가고 신용이 떨어져요.`;
-        const bad = amount <= 0 || amount > offer.limit;
-        setGo({ text: bad ? (amount > offer.limit ? '한도를 넘었어요' : '금액을 넣어 주세요') : `${won(amount)} 빌리기`, disabled: bad });
+        const bad = !inUnits(amount) || amount > offer.limit;
+        setGo({ text: bad ? (amount > offer.limit ? '한도를 넘었어요' : amount > 0 ? '100만 원 단위로 넣어 주세요' : '금액을 넣어 주세요') : `${won(amount)} 빌리기`, disabled: bad });
       }
       return draw;
     },
@@ -130,7 +135,7 @@ function borrowSheet(state, offer, onChanged) {
 
 function repaySheet(state, loan, onChanged) {
   const available = state.user.account.available;
-  const max = Math.min(loan.balance, available);
+  const max = available >= loan.balance ? loan.balance : Math.floor(available / UNIT) * UNIT;
   let amount = max;
   openSheet({
     eyebrow: `${loan.lenderName} · ${loan.house}`,
@@ -138,11 +143,11 @@ function repaySheet(state, loan, onChanged) {
     build(body, setGo) {
       const note = el('p', 'bank-preview');
       note.innerHTML = loan.overdue ? '연체된 대출이에요. 다 갚아도 신용은 오르지 않아요.' : '만기 전에 다 갚으면 신용 점수가 올라요 (하루 한 번, 이자가 하루 이상 붙은 대출만).';
-      const field = amountField(max, amount, v => { amount = v; draw(); });
+      const field = amountField(max, amount, v => { amount = v; draw(); }, loan.balance);
       body.append(field.node, note);
       function draw() {
-        const bad = amount <= 0 || amount > max;
-        setGo({ text: bad ? (available <= 0 ? '갚을 칩이 없어요' : `최대 ${won(max)}까지 갚을 수 있어요`) : amount === loan.balance ? `${won(amount)} 다 갚기` : `${won(amount)} 갚기`, disabled: bad });
+        const bad = !inUnits(amount, loan.balance) || amount > max;
+        setGo({ text: bad ? (max <= 0 ? '갚을 칩이 없어요' : amount > max ? `최대 ${won(max)}까지 갚을 수 있어요` : '100만 원 단위로 넣어 주세요') : amount === loan.balance ? `${won(amount)} 다 갚기` : `${won(amount)} 갚기`, disabled: bad });
       }
       return draw;
     },

@@ -29,6 +29,7 @@ import { maybeBust } from './js/bust.js';
 import { renderBank } from './js/bank.js';
 import { hotStatus, clock, pct } from './js/hot.js';
 import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet } from './js/shop.js';
+import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -87,33 +88,106 @@ function showSurface(name, { focus = false } = {}) {
 
 navItems.forEach(item => item.addEventListener('click', () => showSurface(item.dataset.nav, { focus: true })));
 
+// Where the tier picker and a table go back to: the screen the game was picked on.
+let returnSurface = 'games';
+const BACK_TO = { lobby: '로비', games: '게임 목록', events: '이벤트' };
+function setReturn(from) {
+  returnSurface = BACK_TO[from] ? from : 'lobby';
+  document.querySelector('[data-tier-back]').textContent = BACK_TO[returnSurface];
+}
+function setTierHeader(game) {
+  document.querySelector('#tiers-title').textContent = game.name;
+  document.querySelector('#tier-game-name').textContent = `${game.blurb} 앉을 테이블을 골라 주세요.`;
+}
+
+// Tables this player can sit at right now, by the tier picker's rules.
+function sittableTiers(game) {
+  const available = state?.user?.account?.available ?? 0;
+  if (game.event) { const e = eventEntry(eventOf(game)); return e?.open ? [e.tier.slug] : []; }
+  return Object.values(TIERS).filter(t => {
+    const f = state?.floors?.find(x => x.slug === t.floor);
+    return (f ? f.unlocked && !f.outgrown : t === FIRST_TIER) && available >= t.min;
+  }).map(t => t.slug);
+}
+// Straight to a table: the one last used for this game while it is still open, else the only open one.
+function quickTier(game) {
+  if (!state) return null;
+  const open = sittableTiers(game);
+  const last = lastTier(game.id);
+  if (last && open.includes(last)) return last;
+  return open.length === 1 ? open[0] : null;
+}
+
 function chooseGame(button) {
   const game = GAMES.find(g => g.id === button.dataset.game);
   if (!game || game.soon) return;
   lastLobbyTrigger = button;
+  setReturn(button.closest('[data-surface]')?.dataset.surface);
   selectedGame = game;
-  document.querySelector('#tiers-title').textContent = game.name;
-  document.querySelector('#tier-game-name').textContent = `${game.blurb} 앉을 테이블을 골라 주세요.`;
+  setTierHeader(game);
   renderTiers();
+  const quick = quickTier(game);
+  if (quick) { openTable(quick); return; }
   history.pushState({ vegasSurface: 'tiers' }, '', `#tiers-${game.id}`);
   showSurface('tiers', { focus: true });
+}
+
+// From a table: the tier picker for the game now selected.
+function toTierPicker() {
+  setTierHeader(selectedGame);
+  renderTiers();
+  if (history.state?.vegasSurface === 'table' && tableOverTiers) { history.back(); return; }
+  history.replaceState({ vegasSurface: 'tiers' }, '', `#tiers-${selectedGame.id}`);
+  showSurface('tiers', { focus: true });
+}
+
+// The table name opens a sheet to move to another table or game without leaving.
+function openSwitcher() {
+  if (!selectedGame || !activeTable) return;
+  openTableSwitcher({
+    games: GAMES.filter(g => !g.event),
+    current: selectedGame,
+    currentTier: activeTier,
+    tierFor: quickTier,
+    tiersOf: game => {
+      const open = sittableTiers(game);
+      return Object.values(TIERS).filter(t => open.includes(t.slug) || t.slug === activeTier).map(t => ({ ...t, open: open.includes(t.slug) }));
+    },
+    onTier: slug => openTable(slug),
+    onAllTiers: toTierPicker,
+    onGame: game => {
+      selectedGame = game;
+      const quick = quickTier(game);
+      if (quick) openTable(quick); else toTierPicker();
+    }
+  });
 }
 
 // A floor this player has outgrown (net worth above 100× its minimum) stays shut; only a seat they
 // already hold in a room there can bring them back.
 const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[slug]?.floor)?.outgrown);
 
+// Whether the table's history entry sits on the tier picker's (so ← lands there), and which table is open.
+let tableOverTiers = false;
+let activeTier = null;
 async function openTable(tier, { seated = false } = {}) {
   if (!selectedGame) return;
-  if (!seated && outgrownTier(tier)) { renderTiers(); showSurface('tiers', { focus: true }); return; }
-  try { localStorage.setItem(LAST_TABLE_KEY, JSON.stringify({ game: selectedGame.id, tier })); } catch {}
-  history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
+  if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
+  rememberTable(selectedGame.id, tier);
+  activeTier = tier;
+  // Moving between tables replaces the table entry, so ← still goes back where the player came from.
+  if (history.state?.vegasSurface === 'table') history.replaceState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
+  else {
+    tableOverTiers = history.state?.vegasSurface === 'tiers';
+    history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
+  }
   showSurface('table');
   closeTable();
   voice.preload(selectedGame.guide || selectedGame.id);
   // Event tables play the tense 'noir' cue; every other game has its own band.
   music.theme(selectedGame.event ? 'noir' : selectedGame.id);
-  activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
+  const backLabel = tableOverTiers ? '테이블 고르기로 나가기' : `${BACK_TO[returnSurface]}${returnSurface === 'lobby' ? '로' : '으로'} 나가기`;
+  activeTable = await selectedGame.mount({ mount: tableMount, tier, state, backLabel, onSwitch: openSwitcher, onLeave: () => leaveTable() });
   attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
@@ -135,14 +209,14 @@ function leaveTable({ useHistory = true } = {}) {
   const inGame = document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode');
   if (!inGame) return;
   if (useHistory && (history.state?.vegasSurface === 'table' || history.state?.vegasSurface === 'tiers')) { history.back(); return; }
-  showSurface('games'); restoreTrigger();
+  showSurface(returnSurface); restoreTrigger();
 }
 
 document.querySelector('[data-tier-back]').addEventListener('click', () => leaveTable());
 window.addEventListener('popstate', event => {
-  if (event.state?.vegasSurface === 'tiers') { showSurface('tiers', { focus: true }); return; }
+  if (event.state?.vegasSurface === 'tiers') { if (selectedGame) { setTierHeader(selectedGame); renderTiers(); } showSurface('tiers', { focus: true }); return; }
   if (event.state?.vegasSurface === 'table') { showSurface('tiers'); return; }
-  if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) { showSurface('games'); restoreTrigger(); }
+  if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) { showSurface(returnSurface); restoreTrigger(); }
 });
 window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveTable(); });
 // A room screen sends someone back to the table where they still hold a seat.
@@ -150,6 +224,7 @@ addEventListener('vegas:open-table', event => {
   const game = GAMES.find(g => g.id === event.detail?.game);
   if (!game) return;
   selectedGame = game;
+  if (!document.body.classList.contains('game-mode')) setReturn(document.querySelector('.surface.is-active')?.dataset.surface);
   openTable(TIERS[event.detail.tier] ? event.detail.tier : Object.keys(TIERS)[0], { seated: true });
 });
 
@@ -184,13 +259,55 @@ function applyState(next) {
   if (isActive('lobby')) { celebrateFloors(state); maybeOpenDaily(state, applyState); }
 }
 
-// The lobby offers to sit back down at the last table played on this device.
-const LAST_TABLE_KEY = 'vegas:last-table';
-function lastTable() {
-  try {
-    const t = JSON.parse(localStorage.getItem(LAST_TABLE_KEY) || 'null');
-    return t && GAMES.some(g => g.id === t.game && playable(g)) && TIERS[t.tier] ? t : null;
-  } catch { return null; }
+// The lobby's way back in: a round still holding chips, then the last three tables played.
+function sitAt(game, tier, trigger, { seated = false } = {}) {
+  lastLobbyTrigger = trigger;
+  setReturn('lobby');
+  selectedGame = game;
+  setTierHeader(game);
+  renderTiers();
+  openTable(tier, { seated });
+}
+// An event table only while that event runs, at its own table.
+function tableStillThere(game, tier) {
+  if (!game || !playable(game) || !TIERS[tier]) return false;
+  return !game.event || eventEntry(eventOf(game))?.tier.slug === tier;
+}
+function renderResume() {
+  const slot = document.querySelector('[data-resume]');
+  const open = (state?.openRounds || []).map(r => ({ r, game: GAMES.find(g => g.id === r.game) })).filter(x => x.game && playable(x.game));
+  slot.hidden = !open.length;
+  if (!open.length) { slot.replaceChildren(); return; }
+  const { r, game } = open[0];
+  const tier = TIERS[r.floor] ? r.floor : (lastTier(game.id) || FIRST_TIER.slug);
+  const locked = r.locked || state.user.account.locked || 0;
+  const b = el('button', 'resume-button');
+  b.type = 'button';
+  b.innerHTML = `<span class="resume-text"><strong>진행 중인 판이 있어요 · 이어하기</strong><small>${game.name} · ${TIERS[tier].name}${r.room ? ` · 친구 방 ${r.room}` : ''}${locked ? ` · ${formatCH(locked)} 걸려 있어요` : ''}${open.length > 1 ? ` · 외 ${open.length - 1}판` : ''}</small></span><span class="resume-go" aria-hidden="true">→</span>`;
+  b.addEventListener('click', () => sitAt(game, tier, b, { seated: true }));
+  slot.replaceChildren(b);
+}
+function renderRecent() {
+  const slot = document.querySelector('[data-recent]');
+  const available = state?.user?.account?.available ?? 0;
+  const items = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).filter(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier)).slice(0, 3);
+  slot.hidden = !items.length;
+  if (!items.length) { slot.replaceChildren(); return; }
+  const list = el('ul', 'recent-list');
+  for (const { game, tier: slug } of items) {
+    const tier = TIERS[slug];
+    const short = available < tier.min;
+    const li = el('li');
+    const b = el('button', 'recent-table');
+    b.type = 'button';
+    b.innerHTML = `${icon(game.guide || game.id)}<span class="recent-name">${game.name}</span><span class="recent-tier">${tier.name} · ${formatCH(tier.min)}–${formatCH(tier.max)}${short ? ' · 칩이 부족해요' : ''}</span>`;
+    b.setAttribute('aria-label', `${game.name} ${tier.name}에 다시 앉기${short ? ', 칩이 부족해요' : ''}`);
+    b.disabled = short;
+    b.addEventListener('click', () => sitAt(game, slug, b));
+    li.append(b);
+    list.append(li);
+  }
+  slot.replaceChildren(el('h2', 'recent-head', '<span id="recent-title">최근 테이블</span>'), list);
 }
 
 function renderRecharge() {
@@ -206,27 +323,8 @@ function renderRecharge() {
     b.addEventListener('click', () => showSurface('bank', { focus: true }));
     slot.append(b);
   }
-  const last = lastTable();
-  const lastEvent = last && GAMES.find(g => g.id === last.game)?.event;
-  const lastEventElsewhere = lastEvent && TIERS[last.tier]?.floor !== (eventOf({ event: lastEvent })?.floor ?? state?.eventEntry?.floor);
-  if (last && !outgrownTier(last.tier) && !lastEventElsewhere) {
-    const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
-    const short = (state?.user?.account?.available ?? Infinity) < tier.min;
-    const b = el('button', 'pill-button pill-button--solid', `${game.name} ${tier.name}에 다시 앉기`);
-    b.type = 'button';
-    b.disabled = short;
-    if (short) b.title = '칩이 부족해요';
-    b.addEventListener('click', () => {
-      lastLobbyTrigger = b;
-      selectedGame = game;
-      history.pushState({ vegasSurface: 'tiers' }, '', `#tiers-${game.id}`);
-      renderTiers();
-      document.querySelector('#tiers-title').textContent = game.name;
-      document.querySelector('#tier-game-name').textContent = `${game.blurb} 앉을 테이블을 골라 주세요.`;
-      openTable(tier.slug);
-    });
-    slot.append(b);
-  }
+  renderResume();
+  renderRecent();
   if (r?.eligible) {
     const b = el('button', 'pill-button', `칩 충전 · +${formatCH(r.amount)}`);
     b.type = 'button';
@@ -314,7 +412,7 @@ setInterval(() => {
 }, 1000);
 // The lounge's hot table block sends players straight to that game's tables.
 addEventListener('vegas:choose-game', event => {
-  const row = document.querySelector(`.game-row[data-game="${event.detail?.game}"]`);
+  const row = document.querySelector(`.surface.is-active .game-row[data-game="${event.detail?.game}"]`) || document.querySelector(`.game-row[data-game="${event.detail?.game}"]`);
   if (row) chooseGame(row);
 });
 
@@ -340,10 +438,14 @@ function eventCard(ev, { now = false } = {}) {
   const when = ev.always ? '언제나 열려 있어요' : now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
   card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine(ev)}`;
   if (now && g) {
-    const go = el('button', 'event-cta', '테이블 고르기');
+    // Entry not met: show what it takes, disabled, rather than a way into an empty tier page.
+    const e = eventEntry(ev);
+    const locked = Boolean(e && !e.open);
+    const go = el('button', `event-cta${locked ? ' is-locked' : ''}`, locked ? `보유 ${formatCH(state?.user?.account?.available ?? 0)} / ${formatCH(e.entry)} 필요` : '테이블에 앉기');
     go.type = 'button';
     go.dataset.game = g.id;
-    go.addEventListener('click', () => chooseGame(go));
+    if (locked) { go.disabled = true; go.setAttribute('aria-label', `입장하려면 보유 칩 ${formatCH(e.entry)} 이상이 필요해요`); }
+    else go.addEventListener('click', () => chooseGame(go));
     card.append(go);
   }
   return card;

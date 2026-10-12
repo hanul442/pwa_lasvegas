@@ -199,7 +199,8 @@ function renderRecharge() {
     slot.append(b);
   }
   const last = lastTable();
-  if (last && !outgrownTier(last.tier)) {
+  const lastEventElsewhere = last && GAMES.find(g => g.id === last.game)?.event && TIERS[last.tier]?.floor !== state?.eventEntry?.floor;
+  if (last && !outgrownTier(last.tier) && !lastEventElsewhere) {
     const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
     const short = (state?.user?.account?.available ?? Infinity) < tier.min;
     const b = el('button', 'pill-button pill-button--solid', `${game.name} ${tier.name}에 다시 앉기`);
@@ -237,27 +238,50 @@ function gameRow(g) {
   b.dataset.game = g.id;
   if (g.soon) b.setAttribute('aria-disabled', 'true');
   if (g.event) b.classList.add('is-event');
-  b.style.setProperty('--felt', FELT[g.id] || FELT.blackjack);
-  b.innerHTML = `<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span><span class="game-row-stake">${g.soon ? '준비 중' : g.event ? '이벤트' : `${formatCH(TIERS.corner.min)}원부터`}</span>`;
+  b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span>`;
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
   return li;
 }
 
-// Each tile is lit with its own table's felt, the one colour a tile carries.
-const FELT = {
-  blackjack: '#1d6b4f', roulette: '#1b5e3f', baccarat: '#1d3f6b', dice: '#6b1f24', matgo: '#2f4a3c', gostop: '#2f4a3c',
-  seotda: '#4a2f28', poker: '#1d6b5e', slots: '#3a3f47', royale: '#173f3a', tazza: '#4a1a1d', oceans: '#1d2f4f', rounders: '#3a2f22', montecarlo: '#2d2346'
+// Each game is marked by its own table object drawn in a fine ivory line, like an engraved
+// menu: no colour, no glow. Colour stays on the felt.
+const ICON = {
+  blackjack: '<rect x="9" y="10" width="19" height="27" rx="2.5" transform="rotate(-10 18 24)"/><rect x="20" y="11" width="19" height="27" rx="2.5" transform="rotate(8 30 24)"/><path d="M27 29.5l2.6-8 2.6 8M28 27h3.4"/>',
+  roulette: '<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="10"/><circle cx="24" cy="24" r="3"/><path d="M24 9v5M24 34v5M9 24h5M34 24h5M13.4 13.4l3.5 3.5M31.1 31.1l3.5 3.5M13.4 34.6l3.5-3.5M31.1 16.9l3.5-3.5"/><circle cx="30.5" cy="17.5" r="1.3" fill="currentColor" stroke="none"/>',
+  baccarat: '<rect x="7" y="13" width="17" height="24" rx="2.5"/><rect x="24" y="13" width="17" height="24" rx="2.5"/><path d="M12.5 21.5c0-2 1.4-3 3-3s3 1 3 3-1.4 3.2-3 3.2-3-1.1-3-3.2zM18.5 21.5v4c0 2-1.4 3-3 3s-2.6-.8-2.9-2"/><path d="M29 18.5h6.5l-4.5 11"/>',
+  dice: '<path d="M24 8l13 7.5v15L24 38l-13-7.5v-15z"/><path d="M11 15.5L24 23l13-7.5M24 23v15"/><circle cx="24" cy="15.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="27" r="1.3" fill="currentColor" stroke="none"/><circle cx="31" cy="25" r="1.3" fill="currentColor" stroke="none"/><circle cx="31" cy="31" r="1.3" fill="currentColor" stroke="none"/>',
+  matgo: '<rect x="14" y="8" width="20" height="32" rx="2"/><circle cx="24" cy="19" r="5.5"/><path d="M14 31c4-3.5 7-4.5 10-4.5s6 1 10 4.5"/>',
+  gostop: '<rect x="8" y="11" width="17" height="27" rx="2" transform="rotate(-9 16 24)"/><rect x="23" y="11" width="17" height="27" rx="2" transform="rotate(9 32 24)"/><circle cx="32" cy="20" r="4"/><path d="M11 27.5c2.5-1.5 5-2 8-1"/>',
+  seotda: '<rect x="8" y="10" width="15" height="28" rx="2"/><rect x="25" y="10" width="15" height="28" rx="2"/><circle cx="15.5" cy="19" r="3.6"/><circle cx="32.5" cy="19" r="3.6"/><path d="M11 30h9M28 30h9"/>',
+  poker: '<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="8.5"/><path d="M24 9v5M24 34v5M9 24h5M34 24h5M13.4 13.4l3.5 3.5M31.1 31.1l3.5 3.5M13.4 34.6l3.5-3.5M31.1 16.9l3.5-3.5"/>',
+  slots: '<rect x="7" y="12" width="34" height="24" rx="3"/><path d="M18.3 12v24M29.7 12v24"/><path d="M12.6 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM24 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM35.4 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3z"/>'
 };
+const icon = id => `<svg class="game-row-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${ICON[id] || ICON.poker}</svg>`;
+// The smallest table this player can sit at right now: the lowest floor they have unlocked and
+// not yet outgrown.
+function entryMin() {
+  const open = Object.values(TIERS).filter(t => {
+    const f = state?.floors?.find(x => x.slug === t.floor);
+    return f ? f.unlocked && !f.outgrown : t === TIERS.corner;
+  });
+  return (open.length ? Math.min(...open.map(t => t.min)) : TIERS.corner.min);
+}
 const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'slots']], ['화투', ['matgo', 'gostop', 'seotda']]];
-const groupHead = text => { const li = el('li', 'game-group', text); li.setAttribute('role', 'presentation'); return li; };
+const groupHead = (text, aside = '') => {
+  const li = el('li', 'game-group');
+  li.setAttribute('role', 'presentation');
+  li.innerHTML = `<span>${text}</span>${aside ? `<small>${aside}</small>` : ''}`;
+  return li;
+};
 
 // Both lists show the everyday tables (events live in the 이벤트 tab); the 게임 tab groups them.
 function renderGameLists() {
   const games = GAMES.filter(g => !g.event);
   const byId = id => games.find(g => g.id === id);
-  document.querySelector('[data-game-grid]').replaceChildren(...games.map(gameRow));
-  document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids]) => [groupHead(name), ...ids.map(byId).filter(Boolean).map(gameRow)]));
+  const stake = `최소 ${formatCH(entryMin())}원부터 앉을 수 있어요`;
+  document.querySelector('[data-game-grid]').replaceChildren(groupHead('테이블', stake), ...games.map(gameRow));
+  document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids], i) => [groupHead(name, i ? '' : stake), ...ids.map(byId).filter(Boolean).map(gameRow)]));
   renderEvents();
 }
 
@@ -281,7 +305,7 @@ function eventCard(ev, { now = false } = {}) {
   const g = GAMES.find(x => x.event === ev.id);
   const card = el('article', `event-banner event-card event-banner--${ev.id}${now ? '' : ' is-upcoming'}`);
   const when = now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
-  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>`;
+  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine()}`;
   if (now && g) {
     const go = el('button', 'event-cta', '테이블 고르기');
     go.type = 'button';
@@ -290,6 +314,17 @@ function eventCard(ev, { now = false } = {}) {
     card.append(go);
   }
   return card;
+}
+// Events seat only big players: one fixed table, and a minimum holding to sit down.
+function eventEntry() {
+  const e = state?.eventEntry;
+  const tier = e && Object.values(TIERS).find(t => t.floor === e.floor);
+  return e && tier ? { ...e, tier, open: (state?.user?.account?.available ?? 0) >= e.entry } : null;
+}
+function entryLine() {
+  const e = eventEntry();
+  if (!e) return '';
+  return `<p class="event-entry${e.open ? ' is-open' : ''}">입장 · 보유 칩 ${formatCH(e.entry)} 이상 · ${e.tier.name} ${formatCH(e.tier.min)}–${formatCH(e.tier.max)}원${e.open ? '' : ' · 아직 입장할 수 없어요'}</p>`;
 }
 function renderEventTab() {
   const [now, next, ...later] = state?.eventSchedule || [];
@@ -331,6 +366,7 @@ function renderTiers() {
   const floors = state?.floors || [];
   const available = state?.user?.account?.available ?? 0;
   // Floors a player has outgrown fold away behind one line; the next locked floor shows what it takes.
+  if (selectedGame?.event && eventEntry()) return renderEventTier(grid, eventEntry());
   const all = Object.values(TIERS).map(tier => ({ tier, floor: floors.find(f => f.slug === tier.floor) }));
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);
@@ -354,6 +390,23 @@ function renderTiers() {
     b.addEventListener('click', () => openTable(tier.slug));
     return b;
   }));
+}
+
+// An event plays at one table only, open to players holding the event entry.
+function renderEventTier(grid, { tier, entry, open }) {
+  const b = el('button', `tier-card tier-card--${tier.slug}${open ? '' : ' is-locked'}`);
+  b.setAttribute('role', 'listitem');
+  b.type = 'button';
+  b.dataset.tier = tier.slug;
+  b.dataset.min = tier.min;
+  b.disabled = !open;
+  const chips = el('span', 'tier-chips');
+  tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
+  chips.setAttribute('aria-hidden', 'true');
+  b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
+  b.append(chips);
+  b.addEventListener('click', () => openTable(tier.slug));
+  grid.replaceChildren(b);
 }
 
 // ---------- ranking ----------

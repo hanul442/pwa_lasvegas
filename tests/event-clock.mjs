@@ -8,3 +8,6 @@ export const during = (id, fn) => async (...args) => {
   Date.now = () => at;
   try { return await fn(...args); } finally { Date.now = real; }
 };
+
+// Event tables seat only players holding the event entry: give every test player `amount`.
+export const holdings = (store, amount) => { for (const u of Object.values(store.peek().users)) u.account.available = amount; };

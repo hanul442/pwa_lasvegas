@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
 import { EVENTS, liveEvents, currentEvent, nextEvent, eventOfWeek, ROTATION_START, WEEK } from '../lib/events.mjs';
-import { during } from './event-clock.mjs';
+import { during, holdings } from './event-clock.mjs';
 import { trackEventStreak } from '../lib/event-bonus.mjs';
 import { createHoldemSession, ROUNDERS } from '../lib/holdem-session.mjs';
 
@@ -61,11 +61,15 @@ test('a streak bonus pays at the target, resets on a loss and ignores pushes', d
 test("Ocean's blackjack seats the crew and reports the run", during('oceans', async () => {
   const store = memoryStore();
   await call(store, 'GET', '/api/state');
-  const res = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000], floor: 'high-limit', event: 'oceans' });
+  holdings(store, 9_999_999_999);
+  assert.equal((await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [1_000_000_000], floor: 'penthouse', event: 'oceans' })).data.error, 'EVENT_ENTRY_REQUIRED', 'one 원 under 100억 stays outside');
+  holdings(store, 20_000_000_000);
+  assert.equal((await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000], floor: 'high-limit', event: 'oceans' })).status, 400, 'events play only at the event table');
+  const res = await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [1_000_000_000], floor: 'penthouse', event: 'oceans' });
   assert.equal(res.status, 200, JSON.stringify(res.data));
   assert.deepEqual(res.data.round.ai.map(a => a.name), ['대니', '러스티', '라이너스']);
   assert.equal(res.data.eventStreak.need, 5);
-  assert.equal((await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [10_000_000], floor: 'high-limit', event: 'rounders' })).status, 409, 'an event of another game is refused');
+  assert.equal((await call(store, 'POST', '/api/blackjack/v2/start', { stakes: [1_000_000_000], floor: 'penthouse', event: 'rounders' })).status, 409, 'an event of another game is refused');
 }));
 
 test('Monte Carlo baccarat tracks the run and pays the gala bonus', during('montecarlo', async () => {
@@ -73,11 +77,12 @@ test('Monte Carlo baccarat tracks the run and pays the gala bonus', during('mont
   await call(store, 'GET', '/api/state');
   let paid = false;
   for (let i = 0; i < 80 && !paid; i++) {
-    const res = await call(store, 'POST', '/api/baccarat/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BANKER', event: 'montecarlo' });
+    holdings(store, 50_000_000_000);
+    const res = await call(store, 'POST', '/api/baccarat/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BANKER', event: 'montecarlo' });
     assert.equal(res.status, 200, JSON.stringify(res.data));
     const s = res.data.eventStreak;
     assert.equal(s.need, 3);
-    if (s.bonus) { paid = true; assert.equal(s.bonus, 100_000_000); }
+    if (s.bonus) { paid = true; assert.equal(s.bonus, 10_000_000_000); }
   }
   assert.ok(paid, 'three banker wins in a row within 80 hands');
 }));
@@ -85,7 +90,8 @@ test('Monte Carlo baccarat tracks the run and pays the gala bonus', during('mont
 test('타짜 나이트 starts every 고스톱 hand at ×2 against 아귀 and 고광렬', during('tazza', async () => {
   const store = memoryStore();
   await call(store, 'GET', '/api/state');
-  const res = await call(store, 'POST', '/api/gostop/start', { stake: 10_000_000, floor: 'high-limit', event: 'tazza' });
+  holdings(store, 20_000_000_000);
+  const res = await call(store, 'POST', '/api/gostop/start', { stake: 1_000_000_000, floor: 'penthouse', event: 'tazza' });
   assert.equal(res.status, 200, JSON.stringify(res.data));
   assert.equal(res.data.round.double, 2);
   assert.deepEqual(res.data.round.seats.slice(1).map(s => s.name), ['아귀', '고광렬']);
@@ -98,7 +104,8 @@ test('Rounders seats one boss heads-up by ladder step', during('rounders', async
   const store = memoryStore();
   const first = (await call(store, 'GET', '/api/state')).data;
   assert.equal(first.rounders.boss, ROUNDERS.bosses[0].name);
-  const res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 100_000_000, floor: 'high-limit', event: 'rounders' });
+  holdings(store, 20_000_000_000);
+  const res = await call(store, 'POST', '/api/holdem/sit', { buyIn: 10_000_000_000, floor: 'penthouse', event: 'rounders' });
   assert.equal(res.status, 200, JSON.stringify(res.data));
   assert.equal(res.data.session.royale.event, 'rounders');
   assert.equal(res.data.session.royale.bossName, ROUNDERS.bosses[0].name);
@@ -110,6 +117,7 @@ test('the state lists this week\'s event and the weeks after it', during('tazza'
   assert.deepEqual(res.data.events.map(e => e.id), ['tazza']);
   assert.deepEqual(res.data.eventSchedule.map(e => e.id), ['tazza', 'oceans', 'rounders', 'montecarlo', 'royale']);
   assert.equal(Date.parse(res.data.eventSchedule[1].from), Date.parse(res.data.eventSchedule[0].until));
-  const closed = await call(store, 'POST', '/api/baccarat/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BANKER', event: 'montecarlo' });
+  holdings(store, 20_000_000_000);
+  const closed = await call(store, 'POST', '/api/baccarat/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BANKER', event: 'montecarlo' });
   assert.equal(closed.status, 409, 'an event that is not this week\'s is closed');
 }));

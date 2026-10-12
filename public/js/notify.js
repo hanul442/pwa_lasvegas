@@ -30,8 +30,15 @@ function bytesToB64url(buf) {
 }
 
 // Makes sure this browser is subscribed with the server's current key and that the server knows it.
+// The service worker can be missing (a failed install) and then `ready` never settles; register
+// it again and give up after a while instead of leaving the button spinning.
+async function workerReady() {
+  if (!(await navigator.serviceWorker.getRegistration().catch(() => null))) await navigator.serviceWorker.register('sw.js').catch(() => {});
+  return Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('SW_TIMEOUT')), 10_000))]);
+}
+
 async function syncDevice() {
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await workerReady();
   const { publicKey } = await api.pushKey();
   let sub = await reg.pushManager.getSubscription();
   const key = sub?.options?.applicationServerKey;
@@ -42,15 +49,31 @@ async function syncDevice() {
 }
 
 // The tap on "알림 켜기". Browsers only show their permission prompt from a tap like this.
+// Returns {ok} or {ok: false, reason} so the sheet can say what went wrong instead of nothing.
 export async function enablePush({ test = true } = {}) {
-  const result = await Notification.requestPermission();
-  if (result !== 'granted') return false;
-  try {
-    await syncDevice();
-    if (test) await api.pushTest().catch(() => {});
-  } catch {}
-  return true;
+  // Older browsers only take a callback.
+  const result = await new Promise(resolve => { const p = Notification.requestPermission(resolve); if (p?.then) p.then(resolve, () => resolve('default')); });
+  if (result !== 'granted') return { ok: false, reason: result === 'denied' ? 'denied' : 'dismissed' };
+  return checkDevice({ test });
 }
+
+// Registers this device and sends the "알림이 켜졌어요" test; reports the first step that failed.
+export async function checkDevice({ test = true } = {}) {
+  try { await syncDevice(); } catch (e) { return { ok: false, reason: 'device', detail: (typeof e?.code === 'string' && e.code) || e?.name || e?.message || '' }; }
+  synced = true;
+  if (!test) return { ok: true };
+  try {
+    const out = await api.pushTest();
+    return out.sent > 0 ? { ok: true } : { ok: false, reason: 'delivery', detail: (out.statuses || []).join(',') };
+  } catch (e) { return { ok: false, reason: 'delivery', detail: e?.code || '' }; }
+}
+
+const FAILURES = {
+  dismissed: '알림 허용 창이 닫혔어요. 한 번 더 눌러서 허용을 골라 주세요.',
+  device: '이 휴대폰을 알림 받을 기기로 등록하지 못했어요. 앱을 완전히 닫았다가 다시 열고 한 번 더 눌러 주세요.',
+  delivery: '등록은 됐는데 테스트 알림이 나가지 못했어요. 잠시 뒤 한 번 더 눌러 주세요.'
+};
+export const failureText = r => `${FAILURES[r.reason] || FAILURES.device}${r.detail ? ` (${r.detail})` : ''}`;
 
 // On sign-out, this device stops getting that player's reminders.
 export async function forgetDevice() {
@@ -127,11 +150,15 @@ function open(state) {
     go.addEventListener('click', async () => {
       go.disabled = true;
       if (state === 'install') { bumpNag(); close(); setTimeout(() => openInstallGuide(), 340); return; }
-      const on = state === 'blocked' ? pushState() === 'on' && (await syncDevice().then(() => true, () => true)) : await enablePush();
-      if (on) { close(); return; }
+      const note = node.querySelector('.lounge-note');
+      if (state === 'blocked' && pushState() !== 'on') { go.disabled = false; note.textContent = '아직 막혀 있어요. 허용으로 바꾼 다음 다시 눌러 주세요.'; return; }
+      go.textContent = '켜는 중…';
+      const r = state === 'blocked' ? await checkDevice() : await enablePush();
+      if (r.ok) { close(); return; }
       go.disabled = false;
-      if (pushState() === 'blocked' && state !== 'blocked') { close(); setTimeout(() => maybeAsk({ force: true }), 400); }
-      else node.querySelector('.lounge-note').textContent = state === 'blocked' ? '아직 막혀 있어요. 허용으로 바꾼 다음 다시 눌러 주세요.' : '알림 창이 안 떴어요. 한 번 더 눌러 주세요.';
+      go.textContent = c.action;
+      if (r.reason === 'denied') { close(); setTimeout(() => maybeAsk({ force: true }), 400); }
+      else note.textContent = failureText(r);
     });
   }
   node.append(actions);
@@ -181,6 +208,8 @@ export function notifyRow(row) {
   };
   const state = pushState();
   const r = row('푸시 알림', notes[state], button);
+  // A failure stays on the row until the next paint, so the player can read it.
+  const setNote = text => { r.querySelector('.set-note').textContent = text; };
   const paint = () => {
     const s = pushState();
     r.querySelector('.set-note').textContent = notes[s];
@@ -192,9 +221,17 @@ export function notifyRow(row) {
     const s = pushState();
     if (s === 'on') {
       button.disabled = true;
-      try { await syncDevice(); await api.pushTest(); button.textContent = '보냈어요'; } catch { button.textContent = '다시 눌러 주세요'; }
-      setTimeout(() => { button.disabled = false; paint(); }, 1600);
-    } else if (s === 'ask') { await enablePush(); paint(); }
+      const res = await checkDevice();
+      button.textContent = res.ok ? '보냈어요' : '다시 눌러 주세요';
+      if (!res.ok) setNote(failureText(res));
+      setTimeout(() => { button.disabled = false; paint(); }, res.ok ? 1600 : 6000);
+    } else if (s === 'ask') {
+      button.disabled = true;
+      const res = await enablePush();
+      button.disabled = false;
+      paint();
+      if (!res.ok && res.reason !== 'denied') setNote(failureText(res));
+    }
     else if (s === 'install') openInstallGuide(button);
     else maybeAsk({ force: true });
   });

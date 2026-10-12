@@ -216,3 +216,21 @@ test('a jackpot pushes to subscribed players right away, at most every two hours
     assert.equal(seen.length, 1);
   } finally { Date.now = realNow; }
 });
+
+test("Chrome's padded keys are accepted and the test push still decrypts", async () => {
+  const store = memoryStore();
+  const { ecdh, auth, sub } = browserKeys();
+  // Chrome on Android sends base64url with '=' padding.
+  const padded = { endpoint: sub.endpoint, keys: { p256dh: Buffer.from(ecdh.getPublicKey()).toString('base64url') + '=', auth: Buffer.from(auth).toString('base64') } };
+  assert.match(padded.keys.auth, /=$/);
+  const seen = [];
+  const pushFetch = async (url, init) => { seen.push(JSON.parse(await decrypt(Buffer.from(init.body), ecdh, auth))); return new Response(null, { status: 201 }); };
+  const req = (method, body) => ({ method, header: n => ({ 'x-player-id': 'hanseo' })[n], body: async () => body });
+  await handleApi(req('GET'), new URL('http://x/api/push/key'), store);
+  const out = await handleApi(req('POST', { subscription: padded }), new URL('http://x/api/push/subscribe'), store);
+  assert.equal(out.status, 200);
+  assert.equal(store.state.users.hanseo.push.subs[0].keys.p256dh.includes('='), false);
+  const test = await handleApi(req('POST', {}), new URL('http://x/api/push/test'), store, { pushFetch });
+  assert.deepEqual(test.data, { sent: 1, devices: 1, statuses: [201] });
+  assert.equal(seen[0].title, '알림이 켜졌어요');
+});

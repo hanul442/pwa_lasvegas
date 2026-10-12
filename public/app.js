@@ -99,6 +99,8 @@ async function openTable(tier) {
   showSurface('table');
   closeTable();
   voice.preload(selectedGame.guide || selectedGame.id);
+  // Event tables play the tense 'noir' cue; the rest of the casino keeps the big band.
+  music.theme(selectedGame.event ? 'noir' : 'lounge');
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, onLeave: () => leaveTable() });
   attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
@@ -109,6 +111,7 @@ async function openTable(tier) {
 function closeTable() {
   if (!activeTable) return;
   voice.hush();
+  music.theme('lounge');
   const closing = activeTable.destroy();
   activeTable = null;
   tableMount.replaceChildren();

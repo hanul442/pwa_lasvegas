@@ -14,10 +14,10 @@ export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, 
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {
-  ROCK: { RAISE: ['이번엔 들어갈게요.', '패가 좋네요.'], BET: ['조금만 걸게요.'], ALL_IN: ['기다린 보람이 있네요.'], FOLD: ['이건 아니에요.', '다음 판에.'], CALL: ['보죠.'], WIN: ['참은 만큼 받아 가요.'], LOSE: ['역시 무리였네.'], SHOWN: ['그걸로 거기까지 왔어요?', '접길 잘했네요.'] },
-  SHARK: { RAISE: ['레이즈.', '읽혔어요.'], BET: ['얼마나 버틸까요?'], ALL_IN: ['다 걸죠.'], FOLD: ['넘어가요.'], CALL: ['따라가죠.'], WIN: ['계산대로예요.'], LOSE: ['운이 좋았네요.'], SHOWN: ['기억해 둘게요.', '흥미롭네요.'] },
-  STATION: { RAISE: ['어? 저도 올려요!'], BET: ['한번 가볼까요?'], ALL_IN: ['에라 모르겠다!'], FOLD: ['아깝다…'], CALL: ['콜! 궁금하잖아요.', '일단 콜이요.', '보기만 할게요.'], WIN: ['콜하길 잘했다!'], LOSE: ['또 콜해버렸네…'], SHOWN: ['아, 콜할걸!!', '그거였어요?!'] },
-  MANIAC: { RAISE: ['더 올려!', '가즈아!'], BET: ['재미없잖아요, 걸어요.'], ALL_IN: ['올인! 쫄리면 죽든가.', '인생 한 방!'], FOLD: ['…이번만 봐줄게요.'], CALL: ['콜 콜!'], WIN: ['봤죠? 이게 포커예요!'], LOSE: ['다음엔 두 배로!'], SHOWN: ['약 올리네! 다음 판에 갚아 줄게요.', '와… 그걸 보여 줘요?'] }
+  ROCK: { RAISE: ['이번엔 들어갈게요.', '이 정도는 올려야죠.'], BET: ['조금 걸어 볼게요.'], ALL_IN: ['오래 기다렸어요. 올인.'], FOLD: ['이번 판은 쉴게요.', '전 빠질게요.'], CALL: ['받을게요.'], WIN: ['기다린 보람이 있네요.'], LOSE: ['역시 무리였어요.'], SHOWN: ['그 패로 거기까지요?', '접길 잘했네요.'] },
+  SHARK: { RAISE: ['올리죠.', '다 보여요.'], BET: ['어디까지 따라오나 볼까요.'], ALL_IN: ['전부 걸죠.'], FOLD: ['이번엔 넘길게요.'], CALL: ['따라가 보죠.'], WIN: ['계산대로네요.'], LOSE: ['운이 좋으셨네요.'], SHOWN: ['기억해 둘게요.', '흥미롭네요.'] },
+  STATION: { RAISE: ['어, 저도 올릴래요!'], BET: ['한번 가 볼까요?'], ALL_IN: ['에라, 모르겠다!'], FOLD: ['아, 아깝다…'], CALL: ['콜! 궁금하잖아요.', '일단 받을게요.', '구경만 할게요.'], WIN: ['받길 잘했다!'], LOSE: ['또 따라가 버렸네…'], SHOWN: ['아, 받을걸!', '그거였어요?'] },
+  MANIAC: { RAISE: ['더 올려요!', '가즈아!'], BET: ['재미없잖아요, 걸죠.'], ALL_IN: ['쫄리면 죽든가!', '인생 한 방!'], FOLD: ['이번만 봐 드릴게요.'], CALL: ['콜, 콜!'], WIN: ['봤죠? 이게 포커예요.'], LOSE: ['다음 판에 두 배로 갚아 줄게요.'], SHOWN: ['약 올리시네.', '와, 그걸 보여 줘요?'] }
 };
 const pickLine = list => list?.[Math.floor(Math.random() * list.length)];
 const RING = 2 * Math.PI * 15; // turn clock circumference (r = 15)
@@ -120,16 +120,21 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   }
   function clearTags() { seatEls.forEach((_, i) => tag(i, '')); }
   // A speech bubble over a bot's seat.
+  // One voice at a time: a bot only speaks up when nobody else has for a moment, so lines never
+  // pile on top of each other while the table plays fast.
+  let quietUntil = 0;
   function say(i, kind, chance = 0.4) {
     const seat = current?.seats?.[i];
     const node = seatEls[i]?.node;
     if (!seat || seat.kind !== 'bot' || i === pk.me || !node || Math.random() > chance) return;
+    if (performance.now() < quietUntil && kind !== 'ALL_IN') return;
     const line = pickLine(CHATTER[seat.style]?.[kind]);
     if (!line) return;
-    node.querySelector('.pk-say')?.remove();
+    seatEls.forEach(s => s.node.querySelector('.pk-say')?.remove());
+    quietUntil = performance.now() + 1800;
     const bubble = el('span', 'pk-say', line);
     node.append(bubble);
-    setTimeout(() => bubble.remove(), 2200);
+    setTimeout(() => bubble.remove(), 2000);
   }
 
   // Cards turned up after the hand for the table to see; the bots take it personally.
@@ -143,7 +148,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     tag(i, '카드 공개', 'show');
     e.cards.classList.remove('is-showoff'); void e.cards.offsetWidth; e.cards.classList.add('is-showoff');
     const bots = (current?.seats || []).map((s, j) => (s?.kind === 'bot' && j !== i && seatEls[j] ? j : -1)).filter(j => j >= 0);
-    bots.sort(() => Math.random() - 0.5).slice(0, 2).forEach((j, k) => setTimeout(() => say(j, 'SHOWN', 1), 450 + k * 700));
+    const j = bots[Math.floor(Math.random() * bots.length)];
+    if (j !== undefined) setTimeout(() => say(j, 'SHOWN', 0.8), 450);
     await wait(450);
   }
 
@@ -248,14 +254,18 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         break;
       }
       case 'act': {
-        if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(ev.timeout ? 200 : 420 + Math.random() * 380); seatEls[ev.seat].node.classList.remove('is-thinking'); }
+        // A bot thinks for a beat, and never talks over the dealer: it waits for him to finish.
+        if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await Promise.all([wait(ev.timeout ? 200 : 380 + Math.random() * 320), voice.idle(900)]); seatEls[ev.seat].node.classList.remove('is-thinking'); }
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
-        // The dealer calls each action with its size: "Call, fifty thousand", "Raise to two hundred thousand".
-        if (ev.action === 'ALL_IN') voice.say(betLine('ALL_IN', ev.bet) || 'all-in', { cut: true });
-        else if (ev.action === 'CHECK') voice.say('check');
-        else voice.say(betLine(ev.action, ev.bet));
+        // The dealer calls the action. Your own bets get their size ("Raise, two hundred thousand");
+        // the bots get one word, and only when he is free, so the call-outs keep up with the table.
+        if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
+        else if (ev.action === 'CHECK') voice.say('check', { drop: ev.seat !== me });
+        else if (ev.action === 'CALL') voice.say('call', { drop: ev.seat !== me });
+        else if (ev.seat === me) voice.say(betLine(ev.action, ev.bet));
+        else if (ev.action === 'RAISE') voice.say('raise', { drop: true });
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));

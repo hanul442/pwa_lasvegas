@@ -87,14 +87,23 @@ export const voice = {
   // Queue a line id, or an array of piece ids spoken as one phrase. `cut` stops whatever he is
   // saying first, for a call-out that supersedes it; `next` drops what is waiting but lets the
   // current line finish, for the cue that matters most ("Your action").
-  say(line, { cut = false, next = false } = {}) {
+  // `drop` is for chatter that only matters right now (a bot's call): skipped while he is still
+  // talking, so his voice never falls behind the cards.
+  say(line, { cut = false, next = false, drop = false } = {}) {
     const ids = [line].flat().filter(Boolean);
     if (!ids.length || silent()) return;
+    if (drop && this.busy) return;
     if (cut) this.hush();
     else if (next) queue = [];
     queue.push({ ids, at: performance.now() });
     if (queue.length > MAX_QUEUE) queue = queue.slice(-MAX_QUEUE);
     pump();
+  },
+  get busy() { return pumping || queue.length > 0; },
+  // Resolves once he has finished speaking, or after `max` ms, so the next player waits their turn.
+  async idle(max = 900) {
+    const end = performance.now() + max;
+    while (this.busy && performance.now() < end) await new Promise(r => setTimeout(r, 60));
   },
   hush() {
     queue = [];

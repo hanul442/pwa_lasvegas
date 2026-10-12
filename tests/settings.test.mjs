@@ -38,3 +38,15 @@ test('settings are a full surface reachable from the top bar and from every tabl
   assert.match(app, /attachQuickSettings\(activeTable\)/);
   for (const f of ['js/settings.js', 'js/settings-panel.js']) assert.match(sw, new RegExp(f.replace('.', '\\.')));
 });
+
+test('baccarat squeeze is on by default, can be switched off, and ships in the offline shell', async () => {
+  assert.equal(DEFAULTS.bacSqueeze, true);
+  const sw = await read('sw.js');
+  const panel = await read('js/settings-panel.js');
+  const bac = await read('js/games/baccarat.js');
+  assert.match(sw, /'js\/squeeze\.js'/);
+  assert.match(panel, /toggle\('bacSqueeze'/);
+  assert.match(bac, /from '\.\.\/squeeze\.js'/);
+  // The squeeze only presents: the round still comes from the server before any card is peeled.
+  assert.ok(bac.indexOf('api.baccarat(') < bac.indexOf('await squeeze('));
+});

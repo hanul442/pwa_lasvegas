@@ -7,6 +7,7 @@ import { createDoubleOrNothing } from '../double-or-nothing.js';
 import { eventInfo, createStreakMeter } from '../event-table.js';
 import { seatCrowd } from '../npc.js';
 import { voice } from '../voice.js';
+import { squeeze, squeezeOn } from '../squeeze.js';
 
 const point = texts => texts.reduce((s, t) => { const c = parseCard(t); if (!c) return s; return s + (c.rank === 'A' ? 1 : ['10', 'J', 'Q', 'K'].includes(c.rank) ? 0 : Number(c.rank)); }, 0) % 10;
 const MAIN = ['PLAYER', 'BANKER', 'TIE'];
@@ -138,13 +139,22 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     // Deal P, B, P, B face down, then turn them — the bettor's side gets the slow squeeze.
     const nodes = { PLAYER: [], BANKER: [] };
     for (let i = 0; i < 2; i++) for (const s of ['PLAYER', 'BANKER']) nodes[s].push(await dealCard(hand(s), 'HIDDEN', shoe, { faceUp: false }));
-    const order = betType === 'BANKER' ? ['PLAYER', 'BANKER'] : ['BANKER', 'PLAYER'];
+    // The side you backed is yours to squeeze (a Tie or pairs-only bet squeezes Player).
+    const mine = betType === 'BANKER' ? 'BANKER' : 'PLAYER';
+    const order = mine === 'BANKER' ? ['PLAYER', 'BANKER'] : ['BANKER', 'PLAYER'];
+    const title = s => (s === 'PLAYER' ? 'Player' : 'Banker');
+    // 쪼기: peel the cards open by hand on a mat over the felt; with it off, the slow squeeze flip.
+    const reveal = async (s, cards, texts, names, base = []) => {
+      if (s === mine && squeezeOn()) {
+        await squeeze(t, cards, texts, { title: title(s), side: s.toLowerCase(), names, base, total: point });
+        return;
+      }
+      for (const [i, card] of cards.entries()) await flipCard(card, texts[i], { squeeze: s === mine });
+    };
     for (const s of order) {
       const texts = s === 'PLAYER' ? r.player : r.banker;
-      const squeeze = s === betType;
       await wait(200);
-      await flipCard(nodes[s][0], texts[0], { squeeze });
-      await flipCard(nodes[s][1], texts[1], { squeeze });
+      await reveal(s, nodes[s], texts.slice(0, 2), ['첫 번째 카드', '두 번째 카드']);
       setScore(s);
       if (rankOf(texts[0]) === rankOf(texts[1])) hit(`${s}_PAIR`);
     }
@@ -153,7 +163,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
       if (texts.length > 2) {
         await wait(450);
         const third = await dealCard(hand(s), 'HIDDEN', shoe, { faceUp: false, rotate: true });
-        await flipCard(third, texts[2], { squeeze: true });
+        await reveal(s, [third], [texts[2]], ['세 번째 카드'], texts.slice(0, 2));
         setScore(s);
       }
     }

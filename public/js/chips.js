@@ -9,7 +9,10 @@ const STEPS = [1, 2, 5, 10];
 // the next table's 1× chip, so the two share a colour and no rack repeats one.
 const COLORS = 'teal purple wine ivory pink gold black wine ivory teal gold pink black ivory wine gold wine black ivory'.split(' ');
 // A table is a floor: same slug, same name. Its range runs from the smallest bet to ten times it.
-const tier = (slug, name, min) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min) });
+// Higher floors play harder (lib/constants.mjs DIFFICULTY_STARS, H17_FROM_LEVEL): sharper AI, and
+// from the Penthouse up the blackjack dealer hits soft 17.
+const STARS = [1, 2, 3, 4, 5, 5];
+const tier = (slug, name, min, level) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min), level, stars: STARS[level], h17: level >= 3 });
 
 // Six floors from 100만 in the Gold Room to 1천억 in The Vault, each ten times the last
 // (lib/constants.mjs FLOORS). A floor opens at ten of its smallest bets in net worth and
@@ -21,7 +24,7 @@ export const TIERS = Object.fromEntries([
   ['penthouse', 'Penthouse', 1_000_000_000],
   ['sky-lounge', 'Sky Lounge', 10_000_000_000],
   ['vault', 'The Vault', 100_000_000_000]
-].map(([slug, name, min]) => [slug, tier(slug, name, min)]));
+].map(([slug, name, min], i) => [slug, tier(slug, name, min, i)]));
 
 // The cheapest table in the casino.
 export const FIRST_TIER = Object.values(TIERS)[0];

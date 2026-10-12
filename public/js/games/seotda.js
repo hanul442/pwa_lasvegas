@@ -8,6 +8,7 @@ import { animate, flyFrom, flyTo, flyOut, wait, sound, haptic, formatCH, el } fr
 import { breakdown, createChip } from '../chips.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
+import { doubleStamp } from '../double-down.js';
 import { createRoomClient } from './room-client.js';
 
 const ME = 0;
@@ -176,7 +177,8 @@ export async function mountSeotda(ctx) {
         await reveal(e);
       } else if (e.type === 'redeal') {
         await shout(`${e.name} · 재경기`);
-        t.toast('판돈은 그대로, 남은 사람끼리 다시 받아요');
+        await doubleStamp(t.body, '판돈 묻고 다시');
+        t.toast('판돈은 그대로 묻어 두고, 남은 사람끼리 다시 받아요');
         await clearCards();
         delete t.body.dataset.street2;
         hush();

@@ -1,22 +1,14 @@
 // Casino chips: denominations per stake tier, chip markup and stack decomposition.
 import { el, formatCH } from './fx.js';
 
-// Each table has five chips: 1, 2, 3, 5 and 7 times its smallest bet. The table's colours go
-// up with the floor, so a glance at the rack says where you are sitting.
-const STEPS = [1, 2, 3, 5, 7];
-const PALETTES = {
-  corner: ['white', 'red', 'blue', 'green', 'black'],
-  'main-street': ['red', 'blue', 'green', 'black', 'purple'],
-  house: ['blue', 'green', 'black', 'purple', 'orange'],
-  downtown: ['green', 'black', 'purple', 'orange', 'teal'],
-  strip: ['black', 'purple', 'orange', 'teal', 'pink'],
-  'gold-room': ['purple', 'orange', 'teal', 'pink', 'gold'],
-  'high-limit': ['gold', 'wine', 'purple', 'blue', 'black'],
-  'salon-prive': ['pink', 'gold', 'wine', 'teal', 'ivory'],
-  penthouse: ['teal', 'ivory', 'gold', 'wine', 'purple'],
-  'sky-lounge': ['ivory', 'wine', 'black', 'gold', 'teal'],
-  vault: ['gold', 'black', 'wine', 'ivory', 'pink']
-};
+// Each table has four round chips: 1, 2, 5 and 10 times its smallest bet (1억·2억·5억·10억,
+// 한서's call: no 3억 or 7억). The table's colours go up with the floor, so a glance at the rack
+// says where you are sitting.
+const STEPS = [1, 2, 5, 10];
+// One colour per chip value from 10원 to 1조, rising through the floors. A table's 10× chip is
+// the next table's 1× chip, so the two share a colour and no rack repeats one.
+const COLORS = ('white red blue green black purple orange teal pink gold wine ivory black red gold teal purple wine '
+  + 'ivory pink gold black wine ivory teal gold pink black ivory wine gold wine black ivory').split(' ');
 // A table is a floor: same slug, same name. Its range runs from the smallest bet to ten times it.
 const tier = (slug, name, min) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min) });
 
@@ -37,7 +29,7 @@ export const TIERS = Object.fromEntries([
   ['vault', 'The Vault', 100_000_000_000]
 ].map(([slug, name, min]) => [slug, tier(slug, name, min)]));
 
-export const CHIP_COLORS = Object.fromEntries(Object.entries(TIERS).flatMap(([slug, t]) => t.chips.map((v, k) => [v, PALETTES[slug][k]])));
+export const CHIP_COLORS = Object.fromEntries(Object.values(TIERS).flatMap((t, i) => t.chips.map((v, k) => [v, COLORS[i * 3 + k]])));
 
 export function createChip(value, tag = 'span') {
   const chip = el(tag, `chip chip--${CHIP_COLORS[value] || 'white'}`);

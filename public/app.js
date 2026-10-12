@@ -17,6 +17,7 @@ import { mountSeotda } from './js/games/seotda.js';
 import { attachGuide } from './js/guide.js';
 import { mountHoldem } from './js/games/holdem.js';
 import { mountSlots } from './js/games/slots.js';
+import { mountHorses } from './js/games/horses.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels } from './js/social.js';
@@ -40,6 +41,7 @@ const GAMES = [
   { id: 'seotda', name: '섯다', tag: '두 장으로 겨루는 족보 싸움', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
   { id: 'poker', name: "Hold'em", tag: 'AI들과 텍사스 홀덤', blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
   { id: 'slots', name: 'Slots', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
+  { id: 'horses', name: '경마', tag: '여섯 마리, 1200m 단거리', blurb: '여섯 마리 중 1등을 맞혀요. 단승은 1착, 연승은 2착 안에만 들면 돼요.', mount: mountHorses },
   // Event tables (lib/events.mjs): one runs each week, reached from the 이벤트 tab.
   { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
   { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
@@ -266,6 +268,7 @@ const ICON = {
   gostop: '<rect x="8" y="11" width="17" height="27" rx="2" transform="rotate(-9 16 24)"/><rect x="23" y="11" width="17" height="27" rx="2" transform="rotate(9 32 24)"/><circle cx="32" cy="20" r="4"/><path d="M11 27.5c2.5-1.5 5-2 8-1"/>',
   seotda: '<rect x="8" y="10" width="15" height="28" rx="2"/><rect x="25" y="10" width="15" height="28" rx="2"/><circle cx="15.5" cy="19" r="3.6"/><circle cx="32.5" cy="19" r="3.6"/><path d="M11 30h9M28 30h9"/>',
   poker: '<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="8.5"/><path d="M24 9v5M24 34v5M9 24h5M34 24h5M13.4 13.4l3.5 3.5M31.1 31.1l3.5 3.5M13.4 34.6l3.5-3.5M31.1 16.9l3.5-3.5"/>',
+  horses: '<path d="M15 40c1-7 3-12 7-16l-4-2c-1.4-.7-1.6-2.6-.3-3.5l9-6.5c1.6-4 4.6-6.4 8.3-7l-1 3.4c3.6 1.6 5.5 5.6 5.5 10.6 0 6.4-2.4 13.4-3.7 21"/><path d="M26.6 12.4l3.4-5.4M21.8 18.7l1.6.3"/><circle cx="27.8" cy="15.6" r="1.1" fill="currentColor" stroke="none"/>',
   slots: '<rect x="7" y="12" width="34" height="24" rx="3"/><path d="M18.3 12v24M29.7 12v24"/><path d="M12.6 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM24 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM35.4 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3z"/>'
 };
 const icon = id => `<svg class="game-row-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${ICON[id] || ICON.poker}</svg>`;
@@ -278,7 +281,7 @@ function entryMin() {
   });
   return (open.length ? Math.min(...open.map(t => t.min)) : FIRST_TIER.min);
 }
-const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'slots']], ['화투', ['matgo', 'gostop', 'seotda']]];
+const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'slots', 'horses']], ['화투', ['matgo', 'gostop', 'seotda']]];
 const groupHead = (text, aside = '') => {
   const li = el('li', 'game-group');
   li.setAttribute('role', 'presentation');

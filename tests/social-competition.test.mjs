@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../lib/store.mjs';
+import { tableBase } from '../lib/state.mjs';
 import { buildSocialCompetitionSnapshot, createRival, archiveRival, createChallenge, acceptChallenge, cancelChallenge } from '../lib/social-competition.mjs';
 
 test('social competition fails closed to empty read-only surfaces when source state is absent', () => {
@@ -111,6 +112,8 @@ test('social lifecycle fails closed on invalid targets and metrics', () => {
 test('a duel runs a week, scores table results only, and pays its winner once', async () => {
   const { settleChallenges, CHALLENGE_PRIZE } = await import('../lib/social-competition.mjs');
   const state = defaultState();
+  // The demo seed's game rows are stamped with today's date; keep them out of the duel window.
+  state.ledger = state.ledger.filter(tx => tx.referenceType !== 'DEMO_SEED');
   createChallenge(state, 'hanseo', 'zero', 'WINS', { now: '2026-10-12T00:00:00.000Z', challengeId: 'duel' });
   const accepted = acceptChallenge(state, 'zero', 'duel', { now: '2026-10-12T01:00:00.000Z' });
   assert.equal(accepted.endsAt, '2026-10-19T01:00:00.000Z');
@@ -122,12 +125,13 @@ test('a duel runs a week, scores table results only, and pays its winner once', 
   const live = buildSocialCompetitionSnapshot(state, 'hanseo').challenges[0];
   assert.deepEqual(live.score, { me: 2, them: 1 });
   const before = state.users.hanseo.account.available;
+  const prize = CHALLENGE_PRIZE * tableBase(state.users.hanseo);
   assert.deepEqual(settleChallenges(state, Date.parse('2026-10-18T00:00:00.000Z')), []);
   assert.deepEqual(settleChallenges(state, Date.parse('2026-10-19T02:00:00.000Z')), ['duel']);
-  assert.equal(state.users.hanseo.account.available, before + CHALLENGE_PRIZE);
+  assert.equal(state.users.hanseo.account.available, before + prize);
   assert.equal(buildSocialCompetitionSnapshot(state, 'zero').challenges[0].winner, 'THEM');
   assert.deepEqual(settleChallenges(state, Date.parse('2026-10-20T00:00:00.000Z')), []);
-  assert.equal(state.users.hanseo.account.available, before + CHALLENGE_PRIZE);
+  assert.equal(state.users.hanseo.account.available, before + prize);
 });
 
 test('unanswered invitations lapse after three days', async () => {

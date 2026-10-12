@@ -306,3 +306,70 @@
 .auth-install{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px}
 .auth-install[hidden]{display:none}
 .auth-install svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- bank ---------- */
+.bank-hero{display:grid;gap:20px;padding:6px 0 24px;border-bottom:1px solid var(--hair)}
+.bank-grade{display:grid;gap:4px;max-width:360px}
+.bank-grade small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
+.bank-grade strong{font:560 clamp(56px,16vw,84px)/1 var(--display);font-stretch:125%;letter-spacing:-.04em}
+.bank-grade strong span{margin-left:6px;font:500 18px var(--sans);letter-spacing:0;color:var(--smoke)}
+.bank-score{display:block;height:4px;margin:8px 0 2px;border-radius:4px;background:#ffffff14;overflow:hidden}
+.bank-score i{display:block;height:100%;background:var(--star);border-radius:4px}
+.bank-sums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0}
+.bank-sums div{display:grid;gap:2px;min-width:0}
+.bank-sums dt{color:var(--smoke);font-size:13px}
+.bank-sums dd{margin:0;font:600 18px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em;overflow-wrap:anywhere}
+.bank-sums dd.neg{color:var(--signal)}
+.bank-flag{margin:0;padding:10px 14px;border:1px solid #ff4f4f66;border-radius:12px;color:#ffb3b3;font-size:14px}
+.bank-block{padding:22px 0 20px;border-bottom:1px solid var(--hair)}
+.loan-list,.lender-list,.pay-list{list-style:none;margin:0;padding:0}
+.loan{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--hair)}
+.loan:first-child{border-top:0}
+.loan-text{flex:1;min-width:0;display:grid;gap:2px}
+.loan-house{font-size:15px}
+.loan-house small,.loan-text>small{color:var(--smoke);font-size:13px}
+.loan-text strong{font:600 22px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.loan.is-overdue .loan-text>small{color:#ff9d9d}
+.loan.is-overdue strong{color:var(--signal)}
+.lender-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.lender{width:100%;height:100%;display:grid;gap:4px;align-content:start;padding:16px;border:1px solid var(--hair-strong);border-radius:16px;background:var(--ink-2);text-align:left;transition:border-color .2s,background .2s}
+.lender:not(:disabled):hover{border-color:var(--white);background:var(--ink-3)}
+.lender:disabled{opacity:.55}
+.lender-tier{color:var(--smoke);font-size:13px}
+.lender strong{font:600 22px/1.15 var(--display);font-stretch:112%;letter-spacing:-.02em}
+.lender-terms{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;color:var(--smoke);font-size:14px;font-variant-numeric:tabular-nums}
+.lender-terms b{color:var(--white);font-weight:600}
+.lender small{margin-top:4px;color:#ffb3b3;font-size:13px}
+.lender--shark{border-color:#ff4f4f55}
+.lender--shark .lender-terms b{color:#ff8a8a}
+.pay-row{display:flex;align-items:center;gap:14px;padding:12px 0}
+.pay-row .pill-button{flex:none;min-height:40px;padding:0 16px;font-variant-numeric:tabular-nums}
+.pay-weeks{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 0;padding:0}
+.pay-weeks li{padding:6px 0;border-radius:999px;border:1px solid var(--hair);color:var(--dim);font-size:12px;text-align:center}
+.pay-weeks li.is-now{border-color:var(--hair-strong);color:var(--white)}
+.pay-weeks li.is-done{background:var(--white);border-color:var(--white);color:var(--ink)}
+.bank-block--bust .pill-button{margin-top:12px}
+.pill-button--danger{border-color:var(--signal);color:var(--signal);background:none}
+.pill-button--solid.pill-button--danger{background:var(--signal);color:#fff;border-color:var(--signal)}
+.bank-sheet-body{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:14px}
+.bank-label{margin:6px 0 0;color:var(--smoke);font-size:13px}
+.bank-amount{display:grid;gap:6px}
+.bank-amount-row{display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--hair-strong)}
+.bank-amount-row input{flex:1;min-width:0;width:100%;padding:6px 0;border:0;background:none;color:var(--white);font:600 28px var(--sans);font-variant-numeric:tabular-nums;outline:none}
+.bank-unit{color:var(--smoke)}
+.bank-hint{min-height:1.4em;color:var(--smoke);font-size:13px}
+.bank-picks{display:flex;gap:8px}
+.bank-picks .pill-button{min-height:36px;padding:0 14px;font-size:14px}
+.bank-terms{grid-template-columns:repeat(4,1fr)}
+.bank-terms .segment[aria-checked="true"]{background:var(--white);color:var(--ink);font-weight:600}
+.bank-preview{margin:6px 0 0;color:var(--smoke);font-size:14px;line-height:1.6}
+.bank-preview b{color:var(--white)}
+.bank-terms-list{margin:0;padding-left:18px;color:var(--smoke);font-size:15px;line-height:1.7}
+.bank-error{margin:4px 0 0;color:#ff9d9d;font-size:14px}
+.tier-outgrown{margin:0;padding:14px 4px;border-bottom:1px solid var(--hair);color:var(--smoke);font-size:14px}
+.floor-row.is-outgrown span:first-child{color:var(--dim)}
+.floor-row small{color:var(--dim);font-size:12px}
+.ach-group{color:var(--dim);font-size:12px;margin-left:4px}
+.ach-more{margin-top:8px}
+.ach-more summary{min-height:44px;display:flex;align-items:center;color:var(--smoke);font-size:14px;cursor:pointer}
+@media (min-width:760px){.bank-hero{grid-template-columns:auto 1fr;align-items:end;gap:40px}}

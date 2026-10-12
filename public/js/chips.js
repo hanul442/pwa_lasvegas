@@ -42,7 +42,14 @@ export function createChip(value, tag = 'span') {
   chip.dataset.value = value;
   const label = formatCH(value);
   // Long Korean amounts (2500만) get a smaller face so they stay inside the inlay.
-  chip.innerHTML = `<span class="chip-label${label.length > 4 ? ' chip-label--long' : ''}">${label}</span>`;
+  // Width is weighed by glyph: Korean units are wide, commas narrow.
+  const width = [...label].reduce((n, c) => n + (/[가-힣]/.test(c) ? 1.6 : c === ',' ? 0.4 : 1), 0);
+  const face = `<span class="chip-label${width > 4 ? ' chip-label--long' : ''}">${label}</span>`;
+  // Discs carry a printed dash ring around the inlay; plaques carry the house mark and a serial
+  // number, like the numbered plaques of a real high-limit room. Both are decoration only.
+  chip.innerHTML = isPlaque(value)
+    ? `<i class="chip-mark" aria-hidden="true">VEGAS</i>${face}<i class="chip-serial" aria-hidden="true">№ ${String(Math.round(value / PLAQUE_MIN)).padStart(5, '0')}</i>`
+    : `<i class="chip-ring" aria-hidden="true"></i>${face}`;
   return chip;
 }
 

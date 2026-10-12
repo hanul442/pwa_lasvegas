@@ -308,7 +308,7 @@
 .wheel-result.is-shown{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .wheel-result--red{background:#8f2a2a}.wheel-result--black{background:#1a1714}.wheel-result--green{background:#2e5e45}
 .rl-history{display:flex;gap:4px;list-style:none;margin:0;padding:0;min-height:22px}
-.hist{min-width:24px;height:22px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font-size:11px}
+.hist{min-width:26px;height:24px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font-size:12px}
 .hist--red{background:#8f2a2a}.hist--black{background:#1a1714;box-shadow:inset 0 0 0 1px #fff2}.hist--green{background:#2e5e45}
 .hist:first-child{box-shadow:0 0 0 1px var(--ivory)}
 .rl-layout{display:grid;gap:6px}
@@ -355,7 +355,7 @@
 .sb-totals{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .zone--total{--size:26px;min-height:50px;padding:4px 2px;border-radius:10px}
 .zone--total strong{font-size:18px}
-.zone--total small{font-size:10px}
+.zone--total small{font-size:12px}
 
 /* ================= responsive ================= */
 @media (min-width:760px){
@@ -409,7 +409,7 @@
   .bj-insurance{height:26px;padding:0 8px}
   .bj-insurance>span:first-child{font-size:8px;letter-spacing:.1em}
   .bet-circle{width:60px;height:60px;--size:30px;margin:2px 0}
-  .zone-amount{top:calc(100% + 4px);font-size:11px}
+  .zone-amount{top:calc(100% + 4px);font-size:12px}
   .shoe{width:40px;height:40px;top:8px}.discard{width:30px;height:42px;top:8px}
 }
 /* Short screens: drop the printed arc so all three boxes stay on the felt. */
@@ -529,7 +529,7 @@
 .pk-tag.is-aggr,.pk-tag.is-win{background:var(--white);color:var(--ink);border-color:var(--white)}
 .pk-tag.is-fold{color:var(--smoke)}
 .pk-seat--hero .pk-tag{top:auto;bottom:calc(100% - 2px);left:calc(100% + 12px);transform:none}
-.pk-handname{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);padding:2px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:650 11px var(--sans);white-space:nowrap;box-shadow:0 6px 14px #0008;z-index:3}
+.pk-handname{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);padding:2px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:650 12px var(--sans);white-space:nowrap;box-shadow:0 6px 14px #0008;z-index:3}
 
 /* bets in front of each seat */
 .pk-bet{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;visibility:hidden;z-index:3;pointer-events:none}
@@ -721,9 +721,9 @@
 .bet-tool:disabled{opacity:.4}
 @media (max-width:519px){
   .num{font-size:clamp(13px,3.6vw,16px);letter-spacing:-.04em}
-  .zone--total small{font-size:11px;color:#efe7d9d9}
+  .zone--total small{font-size:12px;color:#efe7d9d9}
   .zone small{color:#efe7d9d9}
-  .side-label{font-size:10px;opacity:.85;white-space:nowrap;letter-spacing:-.02em}
+  .side-label{font-size:11px;opacity:.92;white-space:nowrap;letter-spacing:-.02em}
   .toast{font-size:14px}
 }
 /* "친구와 함께" at the blackjack table, out of the way of the boxes */
@@ -758,15 +758,6 @@
 .don-btn--black{background:var(--white);color:var(--ink);border-color:var(--white)}
 .don-btn:disabled{opacity:.45;cursor:default}
 
-/* ---------- plaques: 1억 and up are rectangular pearl tiles, not discs ---------- */
-.chip--plaque{width:calc(var(--size) * 1.24);height:calc(var(--size) * .8);border-radius:calc(var(--size) * .09);
-  background:linear-gradient(140deg,color-mix(in srgb,var(--c) 70%,#fff) 0,var(--c) 38%,color-mix(in srgb,var(--c) 82%,#000) 100%);
-  box-shadow:inset 0 0 0 max(1px,calc(var(--size) * .03)) color-mix(in srgb,var(--edge) 75%,transparent),inset 0 calc(var(--size) * .05) calc(var(--size) * .08) #ffffff40,0 calc(var(--size) * .04) 0 color-mix(in srgb,var(--rim) 50%,#000),0 calc(var(--size) * .1) calc(var(--size) * .18) #0009}
-.chip--plaque::before{inset:13% 9%;border-radius:calc(var(--size) * .05);border-color:color-mix(in srgb,var(--ink) 45%,transparent)}
-.chip--plaque::after{content:"";position:absolute;left:50%;top:9%;width:calc(var(--size) * .1);height:calc(var(--size) * .1);margin-left:calc(var(--size) * -.05);background:color-mix(in srgb,var(--ink) 70%,transparent);clip-path:var(--star-shape)}
-.chip--plaque .chip-label{font-size:calc(var(--size) * .25);translate:0 calc(var(--size) * .03)}
-.chip--plaque .chip-label--long{font-size:calc(var(--size) * .2)}
-.chip-tray .chip--plaque[aria-pressed="true"]::after{top:auto}
 
 /* ---------- Casino Royale event table: midnight felt, tuxedo-black rail ---------- */
 .felt.felt--royale{--felt-a:#173f3a;--felt-b:#0c2724;--felt-c:#040d0c}
@@ -786,16 +777,42 @@
    Chips: three-stripe edge inserts, a matte body that darkens toward the rim, and an inlay
    framed by a fine silver line. Cards: warm ivory stock with a printed inner frame, framed
    court panels, and a black lacquer back with a guilloche rosette and the VEGAS star. */
+/* Discs: six wide edge spots with a fine centre line, a dark groove where the edge meets the body,
+   a printed dash ring and an inlay framed in a thin silver line. A soft top-left sheen, no gloss. */
 .chip:not(.chip--plaque){
   background:
-    radial-gradient(circle,transparent 0 57%,color-mix(in srgb,var(--rim) 70%,#000) 57.5% 59%,transparent 59.5%),
-    radial-gradient(circle,var(--c) 0 50%,color-mix(in srgb,var(--c) 88%,#000) 57%,transparent 57.5%),
-    radial-gradient(circle,transparent 0 92%,#0000002e 97%),
-    repeating-conic-gradient(var(--edge) 0 2.6deg,var(--rim) 2.6deg 4.4deg,var(--edge) 4.4deg 7deg,var(--rim) 7deg 9deg,var(--edge) 9deg 11.6deg,var(--rim) 11.6deg 45deg)}
-.chip:not(.chip--plaque)::before{inset:22%;border:max(1px,calc(var(--size) * .018)) solid color-mix(in srgb,var(--ink) 30%,transparent);box-shadow:0 0 0 max(1px,calc(var(--size) * .012)) #ffffff2e,inset 0 0 0 max(1px,calc(var(--size) * .03)) color-mix(in srgb,var(--c) 80%,#fff)}
-.chip-label{font-weight:750;font-variant-numeric:tabular-nums}
-.chip--plaque .chip-label{display:grid;justify-items:center;line-height:1}
-.chip--plaque .chip-label::after{content:"VEGAS";margin-top:calc(var(--size) * .04);font:700 calc(var(--size) * .075)/1 var(--display);font-stretch:125%;letter-spacing:.32em;opacity:.55}
+    linear-gradient(155deg,#ffffff1f 0,transparent 34%,transparent 66%,#00000038 100%),
+    radial-gradient(circle closest-side,transparent 0 76.5%,color-mix(in srgb,var(--rim) 45%,#000) 77.5% 79%,transparent 79.5%),
+    radial-gradient(circle closest-side,var(--c) 0 70%,color-mix(in srgb,var(--c) 88%,#000) 77.5%,transparent 78%),
+    radial-gradient(circle closest-side,transparent 0 93%,#00000052 100%),
+    repeating-conic-gradient(from -11deg,transparent 0 9.6deg,color-mix(in srgb,var(--rim) 80%,#000) 9.6deg 12.4deg,transparent 12.4deg 60deg),
+    repeating-conic-gradient(from -11deg,var(--edge) 0 22deg,var(--rim) 22deg 60deg)}
+.chip-ring{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:repeating-conic-gradient(color-mix(in srgb,var(--ink) 34%,transparent) 0 2.2deg,transparent 2.2deg 7.5deg);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 0 63.5%,#000 64.5% 68%,transparent 69%);
+          mask:radial-gradient(circle closest-side,transparent 0 63.5%,#000 64.5% 68%,transparent 69%)}
+.chip:not(.chip--plaque)::before{inset:21%;border:max(1px,calc(var(--size) * .014)) solid #ffffff5c;
+  background:radial-gradient(circle closest-side,color-mix(in srgb,var(--c) 90%,#fff) 0,var(--c) 100%);
+  box-shadow:0 0 0 max(1px,calc(var(--size) * .01)) color-mix(in srgb,var(--ink) 22%,transparent),inset 0 calc(var(--size) * .02) calc(var(--size) * .05) #00000038}
+.chip-label{font-size:calc(var(--size) * .2);font-weight:650;font-family:var(--display);font-stretch:108%;font-variant-numeric:tabular-nums;letter-spacing:-.01em;text-shadow:0 1px 0 #0000002e}
+
+/* Plaques (1억 and up): pearl acrylic tiles with a clear bevelled edge, a fine double frame,
+   the house mark on top and a serial number underneath. */
+.chip--plaque{width:calc(var(--size) * 1.32);height:calc(var(--size) * .84);border-radius:calc(var(--size) * .075);
+  background:
+    linear-gradient(112deg,transparent 0 20%,#ffffff1c 30%,transparent 42% 58%,#ffffff10 67%,transparent 78%),
+    conic-gradient(from 210deg at 28% 22%,#ffdbe414,#cffff20f,#dcd8ff14,#fff3d60f,#ffdbe414),
+    linear-gradient(160deg,color-mix(in srgb,var(--c) 80%,#fff) 0,var(--c) 46%,color-mix(in srgb,var(--c) 78%,#000) 100%);
+  box-shadow:inset 0 0 0 1px #ffffff70,inset 0 0 0 calc(var(--size) * .04) color-mix(in srgb,var(--c) 72%,#000),inset 0 0 0 calc(var(--size) * .046) #ffffff38,
+    inset 0 calc(var(--size) * .06) calc(var(--size) * .08) #ffffff1f,0 calc(var(--size) * .035) 0 color-mix(in srgb,var(--rim) 45%,#000),0 calc(var(--size) * .1) calc(var(--size) * .2) #000000b0}
+.chip--plaque::before{inset:13% 8.5%;border-radius:calc(var(--size) * .035);border:1px solid color-mix(in srgb,var(--ink) 38%,transparent);
+  outline:1px solid color-mix(in srgb,var(--ink) 16%,transparent);outline-offset:calc(var(--size) * .022)}
+.chip--plaque .chip-label{font:600 calc(var(--size) * .23)/1 var(--display);font-stretch:110%;letter-spacing:-.015em}
+.chip:not(.chip--plaque) .chip-label--long{font-size:calc(var(--size) * .15)}
+.chip--plaque .chip-label--long{font-size:calc(var(--size) * .19)}
+.chip-mark,.chip-serial{position:absolute;left:0;right:0;text-align:center;font-style:normal;line-height:1;pointer-events:none;white-space:nowrap}
+.chip-mark{top:20%;font:700 calc(var(--size) * .062)/1 var(--display);font-stretch:125%;letter-spacing:.42em;text-indent:.42em;opacity:.62}
+.chip-serial{bottom:19%;font:500 calc(var(--size) * .055)/1 var(--sans);font-variant-numeric:tabular-nums;letter-spacing:.18em;opacity:.45}
 .pk-pot-stack .chip-label,.pk-bet-stack .chip-label,.rack-col .chip-label,.bj-seat-chips .chip-label,.chip-flyer .chip-label,.pk-flying .chip-label{display:none}
 
 .card-face{background:

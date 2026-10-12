@@ -30,15 +30,15 @@ import { renderBank } from './js/bank.js';
 document.documentElement.dataset.vegasUi = 'live-tables';
 
 const GAMES = [
-  { id: 'blackjack', name: 'Blackjack', blurb: '21에 가깝게. 블랙잭은 3 대 2로 받아요.', mount: mountBlackjack },
-  { id: 'roulette', name: 'Roulette', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
-  { id: 'baccarat', name: 'Baccarat', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
-  { id: 'dice', name: 'Sic Bo', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
-  { id: 'matgo', name: '맞고', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
-  { id: 'gostop', name: '고스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
-  { id: 'seotda', name: '섯다', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
-  { id: 'poker', name: "Hold'em", blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
-  { id: 'slots', name: 'Slots', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
+  { id: 'blackjack', name: 'Blackjack', tag: '21에 가깝게, 블랙잭은 3 대 2', blurb: '21에 가깝게. 블랙잭은 3 대 2로 받아요.', mount: mountBlackjack },
+  { id: 'roulette', name: 'Roulette', tag: '싱글 제로 휠, 숫자 하나에 35배', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
+  { id: 'baccarat', name: 'Baccarat', tag: '플레이어냐 뱅커냐', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
+  { id: 'dice', name: 'Sic Bo', tag: '주사위 세 개의 합', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
+  { id: 'matgo', name: '맞고', tag: '둘이서 치는 고스톱', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
+  { id: 'gostop', name: '고스톱', tag: 'AI 둘과 셋이서 고·스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
+  { id: 'seotda', name: '섯다', tag: '두 장으로 겨루는 족보 싸움', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
+  { id: 'poker', name: "Hold'em", tag: 'AI들과 텍사스 홀덤', blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
+  { id: 'slots', name: 'Slots', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
   // Event tables (lib/events.mjs): one runs each week, reached from the 이벤트 tab.
   { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
   { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
@@ -238,16 +238,27 @@ function gameRow(g) {
   b.dataset.game = g.id;
   if (g.soon) b.setAttribute('aria-disabled', 'true');
   if (g.event) b.classList.add('is-event');
-  b.innerHTML = `<span class="game-row-name">${g.name}</span><span class="game-row-stake">${g.soon ? '준비 중' : g.event ? '이벤트' : `${formatCH(TIERS.corner.min)}원부터`}</span><span class="game-row-desc">${g.blurb}</span>`;
+  b.style.setProperty('--felt', FELT[g.id] || FELT.blackjack);
+  b.innerHTML = `<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span><span class="game-row-stake">${g.soon ? '준비 중' : g.event ? '이벤트' : `${formatCH(TIERS.corner.min)}원부터`}</span>`;
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
   return li;
 }
 
+// Each tile is lit with its own table's felt, the one colour a tile carries.
+const FELT = {
+  blackjack: '#1d6b4f', roulette: '#1b5e3f', baccarat: '#1d3f6b', dice: '#6b1f24', matgo: '#2f4a3c', gostop: '#2f4a3c',
+  seotda: '#4a2f28', poker: '#1d6b5e', slots: '#3a3f47', royale: '#173f3a', tazza: '#4a1a1d', oceans: '#1d2f4f', rounders: '#3a2f22', montecarlo: '#2d2346'
+};
+const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'slots']], ['화투', ['matgo', 'gostop', 'seotda']]];
+const groupHead = text => { const li = el('li', 'game-group', text); li.setAttribute('role', 'presentation'); return li; };
+
+// Both lists show the everyday tables (events live in the 이벤트 tab); the 게임 tab groups them.
 function renderGameLists() {
   const games = GAMES.filter(g => !g.event);
+  const byId = id => games.find(g => g.id === id);
   document.querySelector('[data-game-grid]').replaceChildren(...games.map(gameRow));
-  document.querySelector('[data-floor-list]').replaceChildren(...games.map(gameRow));
+  document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids]) => [groupHead(name), ...ids.map(byId).filter(Boolean).map(gameRow)]));
   renderEvents();
 }
 

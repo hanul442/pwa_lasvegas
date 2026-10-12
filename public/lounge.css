@@ -5,7 +5,9 @@
 .lounge{display:grid;gap:0;margin-top:34px;border-top:1px solid var(--hair)}
 .lounge:empty{display:none}
 .lounge-block{padding:22px 0 20px;border-bottom:1px solid var(--hair)}
-.lounge-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.lounge-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-bottom:10px}
+.lounge-head small{margin-left:auto}
+.lounge-kicker{display:block;margin:0 0 2px!important;text-align:left!important;color:var(--smoke);font:500 13px var(--sans);letter-spacing:.02em}
 .lounge-head h2{margin:0;font:600 22px/1.2 var(--display);font-stretch:112%;letter-spacing:-.02em}
 .lounge-head small{color:var(--smoke);font-size:13px;text-align:right}
 .lounge-note{margin:10px 0 0;color:var(--smoke);font-size:14px;line-height:1.55}
@@ -153,7 +155,7 @@
 .felt--slots{--felt-a:#23262c;--felt-b:#15171b;--felt-c:#08090b}
 .slot{display:grid;justify-items:center;align-content:center;gap:14px;padding-bottom:8px}
 .slot-jackpot{display:grid;justify-items:center;gap:2px;padding:10px 22px 12px;border-radius:14px;background:#050607;box-shadow:inset 0 0 0 1px #fff6dc40,0 10px 30px #000a}
-.slot-jackpot span{color:var(--smoke);font:500 11px var(--sans);letter-spacing:.18em}
+.slot-jackpot span{color:var(--smoke);font:500 12px var(--sans);letter-spacing:.18em}
 .slot-jackpot strong{color:var(--star);font:600 clamp(24px,7.4vw,36px)/1.1 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .slot-cabinet{display:flex;align-items:center;gap:10px}
 .slot-window{--sym:clamp(58px,17vw,92px);position:relative;display:grid;grid-template-columns:repeat(3,var(--sym));gap:8px;padding:10px;border-radius:18px;background:linear-gradient(#111317,#050607);box-shadow:inset 0 0 0 1px #ffffff26,0 18px 40px #000b}
@@ -373,3 +375,8 @@
 .ach-more{margin-top:8px}
 .ach-more summary{min-height:44px;display:flex;align-items:center;color:var(--smoke);font-size:14px;cursor:pointer}
 @media (min-width:760px){.bank-hero{grid-template-columns:auto 1fr;align-items:end;gap:40px}}
+/* bank summary as one lacquer card */
+.bank-hero{gap:0;margin-bottom:24px;padding:18px 18px 16px;border:1px solid var(--hair);border-radius:18px;background:linear-gradient(160deg,#16171a 0,#0b0c0e 70%)}
+.bank-hero .bank-grade{max-width:none}
+.bank-hero .bank-sums{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair)}
+@media (min-width:760px){.bank-hero{gap:40px}.bank-hero .bank-sums{margin:0;padding:0;border:0}}

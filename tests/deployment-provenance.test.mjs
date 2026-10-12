@@ -31,7 +31,7 @@ test('assessment passes only with health, state and exact runtime provenance', (
     expectedCommit: sha,
     health: { ok: true, service: 'social-vegas' },
     version: { service: 'social-vegas', commit: sha, provenance: 'RUNTIME_ENV', deploymentId: 'dep-1', environment: 'production' },
-    state: { user: { account: { available: 100000000, locked: 0 } }, floors: [{ slug: 'strip' }], ledger: [] }
+    state: { user: { account: { available: 100000000, locked: 0 } }, floors: [{ slug: 'salon-prive' }], ledger: [] }
   });
   assert.equal(result.ok, true);
   assert.equal(result.actualCommit, sha);

@@ -73,8 +73,9 @@ test('installable PWA never caches game or chip API responses', () => {
 });
 
 test('chip tiers match server floor limits', () => {
-  assert.equal(TIERS.low.min, 10_000_000, 'the smallest bet is 1천만 원');
-  assert.equal(TIERS.vault.max, 10_000_000_000_000, 'The Vault goes up to 10조');
+  assert.equal(Object.keys(TIERS).length, FLOORS.length, 'one table per floor');
+  assert.equal(TIERS.corner.min, 10, 'the smallest bet is 10원');
+  assert.equal(TIERS.vault.max, 1_000_000_000_000, 'The Vault goes up to 1조');
   // Every table's whole range must be accepted by its floor on the server.
   for (const tier of Object.values(TIERS)) {
     const floor = FLOORS.find(f => f.slug === tier.floor);
@@ -82,7 +83,7 @@ test('chip tiers match server floor limits', () => {
     assert.ok(tier.min >= floor.minBet && tier.max <= floor.maxBet, tier.slug);
     for (const stake of [tier.min, tier.max]) assert.ok(floor.stakeTiers.includes(stakeTierFor(stake)?.slug), `${tier.slug} ${stake}`);
   }
-  assert.deepEqual(breakdown(90_000_000, TIERS.low.chips), [70_000_000, 20_000_000]);
+  assert.deepEqual(breakdown(90_000_000, TIERS['high-limit'].chips), [70_000_000, 20_000_000]);
 });
 
 test('chip amounts read as Korean money and never overflow a unit', () => {

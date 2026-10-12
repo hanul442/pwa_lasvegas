@@ -84,9 +84,9 @@ test('섯다 room: friends and AI play hands; every won chip is one someone else
   const w = world(3);
   const { state } = w;
   // Fifteen hands of half-pot raises at a 5천만 ante: give everyone deep enough pockets that
-  // nobody runs dry mid-test (about 1,500 antes each, as before the economy rescale).
-  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = 75_000_000_000;
-  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'downtown', size: 4 }, w.ctx());
+  // nobody runs dry mid-test, while staying under High Limit's 100억 ceiling.
+  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = 9_900_000_000;
+  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 4 }, w.ctx());
   assert.match(room.code, /^[A-HJ-NP-Z2-9]{4}$/);
   joinRoom(state, state.users.min, room.code.toLowerCase(), w.ctx());
   joinRoom(state, state.users.june, room.code, w.ctx());
@@ -102,12 +102,12 @@ test('고스톱 and 맞고 rooms play to the end and settle each person', () => 
   for (const [game, size] of [['gostop', 3], ['matgo', 2]]) {
     const w = world(game === 'gostop' ? 5 : 9);
     const { state } = w;
-    const room = createRoom(state, state.users.hanseo, { game, stake: 10_000_000, floor: 'downtown' }, w.ctx());
+    const room = createRoom(state, state.users.hanseo, { game, stake: 10_000_000, floor: 'high-limit' }, w.ctx());
     assert.equal(room.size, size);
-    joinRoom(state, state.users.zero, room.code, w.ctx());
-    assert.equal(state.users.zero.account.locked, 0);
+    joinRoom(state, state.users.june, room.code, w.ctx());
+    assert.equal(state.users.june.account.locked, 0);
     startRoom(state, state.users.hanseo, room.code, w.ctx());
-    assert.equal(state.users.zero.account.locked, 100_000_000, '10점 보증금 locked when dealt');
+    assert.equal(state.users.june.account.locked, 100_000_000, '10점 보증금 locked when dealt');
     assert.equal(room.round.seats.filter(s => s.kind === 'human').length, 2);
     assert.ok(playHands(w, room, 6) >= 6, game);
   }
@@ -116,9 +116,9 @@ test('고스톱 and 맞고 rooms play to the end and settle each person', () => 
 test('blackjack room: friends and AI against one dealer, doubles and splits locked and settled', () => {
   const w = world(13);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { game: 'blackjack', stake: 50_000_000, floor: 'downtown', size: 4 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { game: 'blackjack', stake: 50_000_000, floor: 'high-limit', size: 4 }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
-  joinRoom(state, state.users.zero, room.code, w.ctx());
+  joinRoom(state, state.users.june, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   assert.equal(room.round.seats.length, 4);
   assert.equal(room.round.seats.filter(s => s.kind === 'ai').length, 1);
@@ -132,7 +132,7 @@ test('blackjack room: friends and AI against one dealer, doubles and splits lock
 test('the room is drawn from each viewer\'s own seat, and other hands stay hidden', () => {
   const w = world(4);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'downtown', size: 3 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   const r = room.round;
@@ -156,7 +156,7 @@ test('the room is drawn from each viewer\'s own seat, and other hands stay hidde
 test('a clock that runs out plays a free move; too many in a row and the table stands you up', () => {
   const w = world(6);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { game: 'gostop', stake: 10_000_000, floor: 'downtown' }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { game: 'gostop', stake: 10_000_000, floor: 'high-limit' }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   let guard = 0;
@@ -179,7 +179,7 @@ test('a clock that runs out plays a free move; too many in a row and the table s
 test('leaving mid-hand plays your seat out and still settles you; the last one out closes the room', () => {
   const w = world(8);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000_000, floor: 'downtown' }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000_000, floor: 'high-limit' }, w.ctx());
   joinRoom(state, state.users.min, room.code, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   const handId = room.round.id;
@@ -201,7 +201,7 @@ test('leaving mid-hand plays your seat out and still settles you; the last one o
 test('the last person leaving mid-hand lets the AI finish it before the room closes', () => {
   const w = world(10);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'downtown', size: 5 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 5 }, w.ctx());
   startRoom(state, state.users.hanseo, room.code, w.ctx());
   leaveRoom(state, state.users.hanseo, room.code, w.ctx());
   assert.equal(room.status, 'CLOSED');
@@ -211,19 +211,19 @@ test('the last person leaving mid-hand lets the AI finish it before the room clo
 test('one table at a time, and rooms list only where you may sit', () => {
   const w = world(12);
   const { state } = w;
-  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'downtown', size: 2 }, w.ctx());
-  assert.throws(() => createRoom(state, state.users.hanseo, { game: 'gostop', stake: 10_000_000, floor: 'downtown' }, w.ctx()), /ALREADY_IN_ROOM/);
-  assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx()), /ALREADY_IN_ROOM/);
-  createHoldemRoom(state, state.users.june, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx());
+  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 2 }, w.ctx());
+  assert.throws(() => createRoom(state, state.users.hanseo, { game: 'gostop', stake: 10_000_000, floor: 'high-limit' }, w.ctx()), /ALREADY_IN_ROOM/);
+  assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx()), /ALREADY_IN_ROOM/);
+  createHoldemRoom(state, state.users.june, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx());
   assert.throws(() => joinRoom(state, state.users.june, room.code, w.ctx()), /ALREADY_IN_ROOM/);
   // The refusal names the room that holds the seat, so the screen can offer a way back or out.
-  assert.throws(() => createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000_000, floor: 'downtown' }, w.ctx()), e => e.where?.game === 'seotda' && e.where.code === room.code && e.where.tier === room.tier);
+  assert.throws(() => createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000_000, floor: 'high-limit' }, w.ctx()), e => e.where?.game === 'seotda' && e.where.code === room.code && e.where.tier === room.tier);
   assert.throws(() => joinRoom(state, state.users.june, room.code, w.ctx()), e => e.where?.game === 'holdem' && /^[A-Z0-9]{4}$/.test(e.where.code));
-  assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'downtown', size: 3 }, w.ctx()), e => e.where?.game === 'seotda');
+  assert.throws(() => createHoldemRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 3 }, w.ctx()), e => e.where?.game === 'seotda');
   joinRoom(state, state.users.min, room.code, w.ctx());
   assert.throws(() => joinRoom(state, state.users.zero, room.code, w.ctx()), /ROOM_FULL/);
-  assert.throws(() => createRoom(state, state.users.zero, { game: 'seotda', stake: 50_000_000, floor: 'downtown', size: 6 }, w.ctx()), /INVALID_ROOM_SIZE/);
-  assert.throws(() => createRoom(state, state.users.zero, { game: 'poker', stake: 50_000_000, floor: 'downtown' }, w.ctx()), /UNKNOWN_GAME/);
+  assert.throws(() => createRoom(state, state.users.zero, { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 6 }, w.ctx()), /INVALID_ROOM_SIZE/);
+  assert.throws(() => createRoom(state, state.users.zero, { game: 'poker', stake: 50_000_000, floor: 'high-limit' }, w.ctx()), /UNKNOWN_GAME/);
   assert.equal(listRooms(state, state.users.zero, 'seotda').length, 0, 'a full room is not offered');
   assert.equal(listRooms(state, state.users.min, 'seotda')[0].mine, true);
   assert.equal(listRooms(state, state.users.min, 'gostop').length, 0);
@@ -251,7 +251,7 @@ test('rooms over the API: create, join by code, poll with a cursor, act, leave',
   const store = memoryStore();
   const ids = ['hanseo', 'min'];
   const total = wealth(store.peek(), ids);
-  const made = await call(store, 'hanseo', 'POST', '/api/rooms', { game: 'seotda', stake: 50_000_000, floor: 'downtown', size: 3 });
+  const made = await call(store, 'hanseo', 'POST', '/api/rooms', { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 3 });
   assert.equal(made.status, 201, JSON.stringify(made.data));
   const code = made.data.room.code;
   assert.equal(made.data.room.game, 'seotda');
@@ -260,7 +260,7 @@ test('rooms over the API: create, join by code, poll with a cursor, act, leave',
   assert.equal((await call(store, 'min', 'POST', '/api/rooms/join', { code }, 'k-join-min-1')).status, 200);
   assert.equal((await call(store, 'min', 'POST', '/api/rooms/join', { code }, 'k-join-min-1')).data.replayed, true);
   assert.equal((await call(store, 'min', 'GET', '/api/rooms')).data.mine.game, 'seotda');
-  const blocked = await call(store, 'min', 'POST', '/api/holdem/rooms', { buyIn: 50_000_000, floor: 'downtown', size: 3 });
+  const blocked = await call(store, 'min', 'POST', '/api/holdem/rooms', { buyIn: 50_000_000, floor: 'high-limit', size: 3 });
   assert.equal(blocked.status, 409);
   assert.deepEqual({ error: blocked.data.error, game: blocked.data.where?.game, code: blocked.data.where?.code }, { error: 'ALREADY_IN_ROOM', game: 'seotda', code });
   const started = await call(store, 'hanseo', 'POST', '/api/rooms/start', { code, cursor: { hand: 0, from: 0 } });

@@ -9,7 +9,8 @@ import { voice, handLine, betLine } from '../voice.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
-export const BLINDS = { low: 1_000_000, mid: 10_000_000, high: 100_000_000, vip: 1_000_000_000, royal: 10_000_000_000, vault: 100_000_000_000 };
+// Big blind per table: a tenth of its smallest bet, and never under 2원 (lib/holdem-session.mjs).
+export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2, t.min / 10)]));
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {
@@ -53,14 +54,14 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   const pk = {
     oval: $('[data-oval]'), hintLine: $('[data-hint-line]'), sitdown: $('[data-sitdown]'),
     me: 0, seatEls: [], animating: false,
-    bb: BLINDS[t.tier.slug] || BLINDS.low,
+    bb: BLINDS[t.tier.slug] || BLINDS.corner,
     chipSet: null,
     // Plate text for a seat; drivers may replace it.
     nameOf: (i, s) => (i === pk.me ? '나' : s.name),
     noteOf: (i, s) => (s.kind === 'bot' ? STYLE_LABEL[s.style] || '' : ''),
     onEnd: null // (summary) => void, after the default banner
   };
-  const setStakes = tier => { pk.bb = BLINDS[tier] || BLINDS.low; pk.chipSet = [pk.bb, ...(TIERS[tier] || t.tier).chips.filter(v => v > pk.bb)]; };
+  const setStakes = tier => { pk.bb = BLINDS[tier] || BLINDS.corner; pk.chipSet = [pk.bb, ...(TIERS[tier] || t.tier).chips.filter(v => v > pk.bb)]; };
   setStakes(t.tier.slug);
   pk.setStakes = setStakes;
   let potLeft = 0; // what is still in the middle while pots are being pushed out

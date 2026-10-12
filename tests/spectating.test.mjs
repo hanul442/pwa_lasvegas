@@ -8,7 +8,7 @@ function activeBlackjackRound() {
     id: 'bj_watch',
     game: 'Blackjack',
     userId: 'zero',
-    floor: 'high-limit',
+    floor: 'penthouse',
     stake: 25_000_000,
     status: 'PLAYER',
     player: [{ r: 'A', s: '♠' }, { r: 'K', s: '♦' }],
@@ -25,7 +25,7 @@ function activeMultiSpotRound() {
     game: 'Blackjack',
     engineVersion: 'MULTI_SPOT_V2',
     userId: 'zero',
-    floor: 'strip',
+    floor: 'salon-prive',
     stake: 2_000_000,
     status: 'PLAYER',
     hands: [
@@ -48,7 +48,7 @@ test('spectating exposes only public active blackjack state and never dealer hol
   assert.equal(snapshot.mode, 'READ_ONLY');
   assert.equal(snapshot.tables.length, 1);
   assert.equal(snapshot.tables[0].participant.id, 'zero');
-  assert.equal(snapshot.tables[0].floor, 'high-limit');
+  assert.equal(snapshot.tables[0].floor, 'penthouse');
   assert.deepEqual(snapshot.tables[0].gameState.playerCards, ['A♠', 'K♦']);
   assert.deepEqual(snapshot.tables[0].gameState.dealerCards, ['9♣', 'HIDDEN']);
   assert.equal(JSON.stringify(snapshot).includes('Q♥'), false);
@@ -87,7 +87,7 @@ test('spectating excludes settled, malformed, unknown-user and unsupported round
   const malformed = activeBlackjackRound();
   malformed.id = 'bad';
   malformed.dealer = [];
-  const unsupported = { id: 'roulette_live', game: 'Roulette', userId: 'zero', status: 'PLAYER', floor: 'strip' };
+  const unsupported = { id: 'roulette_live', game: 'Roulette', userId: 'zero', status: 'PLAYER', floor: 'salon-prive' };
   state.rounds.push(settled, ghost, malformed, unsupported);
 
   const snapshot = buildSpectatingSnapshot(state, 'hanseo');

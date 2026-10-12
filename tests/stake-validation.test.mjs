@@ -3,19 +3,19 @@ import assert from 'node:assert/strict';
 import { validateStakeAgainstFloor } from '../lib/stakes.mjs';
 
 function user({ available = 1_000_000_000, unlockedFloors = ['test-floor'] } = {}) {
-  return { account: { available, unlockedFloors } };
+  return { account: { available, locked: 0, unlockedFloors } };
 }
 
 const floor = {
   slug: 'test-floor',
   minBet: 10_000_000,
   maxBet: 1_000_000_000,
-  stakeTiers: ['low']
+  stakeTiers: ['high-limit']
 };
 
 test('accepts a stake whose canonical tier is allowed by the floor', () => {
   const out = validateStakeAgainstFloor(user(), floor, 50_000_000);
-  assert.equal(out.tier.slug, 'low');
+  assert.equal(out.tier.slug, 'high-limit');
   assert.equal(out.floor, floor);
 });
 
@@ -42,6 +42,13 @@ test('rejects locked floors and insufficient virtual bankroll', () => {
     () => validateStakeAgainstFloor(user({ available: 49_999_999 }), floor, 50_000_000),
     { message: 'INSUFFICIENT_BANKROLL' }
   );
+});
+
+test('turns away a player worth a thousand of the floor\'s smallest bets', () => {
+  const capped = { ...floor, ceiling: 10_000_000_000 };
+  assert.throws(() => validateStakeAgainstFloor(user({ available: 10_000_000_000 }), capped, 50_000_000), { message: 'FLOOR_OUTGROWN' });
+  const owing = { account: { available: 10_000_000_000, locked: 0, unlockedFloors: ['test-floor'] }, loans: [{ balance: 1 }] };
+  assert.equal(validateStakeAgainstFloor(owing, capped, 50_000_000).floor, capped, 'debt counts against net worth');
 });
 
 test('fails closed when floor tier metadata is missing', () => {

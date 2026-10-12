@@ -5,24 +5,37 @@ import { el, formatCH } from './fx.js';
 // up with the floor, so a glance at the rack says where you are sitting.
 const STEPS = [1, 2, 3, 5, 7];
 const PALETTES = {
-  low: ['white', 'red', 'blue', 'green', 'black'],
-  mid: ['black', 'purple', 'orange', 'teal', 'pink'],
-  high: ['gold', 'wine', 'purple', 'blue', 'black'],
-  vip: ['pink', 'gold', 'wine', 'teal', 'ivory'],
-  royal: ['teal', 'ivory', 'gold', 'wine', 'purple'],
+  corner: ['white', 'red', 'blue', 'green', 'black'],
+  'main-street': ['red', 'blue', 'green', 'black', 'purple'],
+  house: ['blue', 'green', 'black', 'purple', 'orange'],
+  downtown: ['green', 'black', 'purple', 'orange', 'teal'],
+  strip: ['black', 'purple', 'orange', 'teal', 'pink'],
+  'gold-room': ['purple', 'orange', 'teal', 'pink', 'gold'],
+  'high-limit': ['gold', 'wine', 'purple', 'blue', 'black'],
+  'salon-prive': ['pink', 'gold', 'wine', 'teal', 'ivory'],
+  penthouse: ['teal', 'ivory', 'gold', 'wine', 'purple'],
+  'sky-lounge': ['ivory', 'wine', 'black', 'gold', 'teal'],
   vault: ['gold', 'black', 'wine', 'ivory', 'pink']
 };
-const tier = (slug, name, floor, floorName, min) => ({ slug, name, floor, floorName, min, max: min * 10 - 1, chips: STEPS.map(k => k * min) });
+// A table is a floor: same slug, same name. Its range runs from the smallest bet to ten times it.
+const tier = (slug, name, min) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min) });
 
-// The smallest bet anywhere is 1천만 원; each floor up is ten times the last, to 10조 at The Vault.
-export const TIERS = {
-  low: tier('low', 'Low', 'downtown', 'Downtown', 10_000_000),
-  mid: tier('mid', 'Mid', 'strip', 'The Strip', 100_000_000),
-  high: tier('high', 'High', 'high-limit', 'High Limit', 1_000_000_000),
-  vip: tier('vip', 'Salon', 'salon-prive', 'Salon Privé', 10_000_000_000),
-  royal: tier('royal', 'Penthouse', 'penthouse', 'Penthouse', 100_000_000_000),
-  vault: { ...tier('vault', 'Vault', 'vault', 'The Vault', 1_000_000_000_000), max: 10_000_000_000_000 }
-};
+// Eleven floors from 10원 at The Corner to 1천억 in The Vault, each ten times the last
+// (lib/constants.mjs FLOORS). A floor opens at ten of its smallest bets in net worth and
+// closes to anyone worth a thousand of them.
+export const TIERS = Object.fromEntries([
+  ['corner', 'The Corner', 10],
+  ['main-street', 'Main Street', 100],
+  ['house', 'The House', 1_000],
+  ['downtown', 'Downtown', 10_000],
+  ['strip', 'The Strip', 100_000],
+  ['gold-room', 'Gold Room', 1_000_000],
+  ['high-limit', 'High Limit', 10_000_000],
+  ['salon-prive', 'Salon Privé', 100_000_000],
+  ['penthouse', 'Penthouse', 1_000_000_000],
+  ['sky-lounge', 'Sky Lounge', 10_000_000_000],
+  ['vault', 'The Vault', 100_000_000_000]
+].map(([slug, name, min]) => [slug, tier(slug, name, min)]));
 
 export const CHIP_COLORS = Object.fromEntries(Object.entries(TIERS).flatMap(([slug, t]) => t.chips.map((v, k) => [v, PALETTES[slug][k]])));
 

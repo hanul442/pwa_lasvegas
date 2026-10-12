@@ -11,12 +11,12 @@ test('idempotency keys are optional but malformed supplied keys fail closed',()=
 
 test('same instant request key replays one authoritative round without a second settlement',()=>{
   const state={rounds:[]};
-  const fingerprint=instantRequestFingerprint({game:'Roulette',stake:1_000_000,floor:'strip',betType:'RED'});
+  const fingerprint=instantRequestFingerprint({game:'Roulette',stake:1_000_000,floor:'salon-prive',betType:'RED'});
   let createCalls=0,settlementCalls=0;
   const execute=()=>{
     const attempt=idempotentInstantRound(state,{
       userId:'hanseo',game:'Roulette',key:'req-roulette-0001',fingerprint,
-      create:()=>{createCalls++;return {id:'rou_authoritative',game:'Roulette',stake:1_000_000,betType:'RED',number:7,color:'RED',netPnl:1_000_000,userId:'hanseo',floor:'strip',status:'SETTLED',createdAt:'2026-09-15T00:00:00.000Z'};}
+      create:()=>{createCalls++;return {id:'rou_authoritative',game:'Roulette',stake:1_000_000,betType:'RED',number:7,color:'RED',netPnl:1_000_000,userId:'hanseo',floor:'salon-prive',status:'SETTLED',createdAt:'2026-09-15T00:00:00.000Z'};}
     });
     if(!attempt.replayed)settlementCalls++;
     return attempt;
@@ -32,21 +32,21 @@ test('same instant request key replays one authoritative round without a second 
 
 test('same key with a different wager fingerprint is rejected instead of re-settled',()=>{
   const state={rounds:[]};
-  const original=instantRequestFingerprint({game:'Baccarat',stake:1_000_000,floor:'strip',betType:'PLAYER'});
+  const original=instantRequestFingerprint({game:'Baccarat',stake:1_000_000,floor:'salon-prive',betType:'PLAYER'});
   idempotentInstantRound(state,{userId:'hanseo',game:'Baccarat',key:'req-baccarat-001',fingerprint:original,create:()=>({id:'bac_1',game:'Baccarat',userId:'hanseo',status:'SETTLED'})});
-  const changed=instantRequestFingerprint({game:'Baccarat',stake:3_000_000,floor:'strip',betType:'BANKER'});
+  const changed=instantRequestFingerprint({game:'Baccarat',stake:3_000_000,floor:'salon-prive',betType:'BANKER'});
   assert.throws(()=>idempotentInstantRound(state,{userId:'hanseo',game:'Baccarat',key:'req-baccarat-001',fingerprint:changed,create:()=>({id:'bac_2',game:'Baccarat',userId:'hanseo',status:'SETTLED'})}),/IDEMPOTENCY_CONFLICT/);
   assert.equal(state.rounds.length,1);
 });
 
 test('legacy clients without a key keep normal one-request-one-round behavior',()=>{
   const state={rounds:[]};
-  const fingerprint=instantRequestFingerprint({game:'Sic Bo',stake:1_000_000,floor:'strip',betType:'BIG'});
+  const fingerprint=instantRequestFingerprint({game:'Sic Bo',stake:1_000_000,floor:'salon-prive',betType:'BIG'});
   for(let i=0;i<2;i++)idempotentInstantRound(state,{userId:'hanseo',game:'Sic Bo',key:null,fingerprint,create:()=>({id:`sic_${i}`,game:'Sic Bo',userId:'hanseo',status:'SETTLED'})});
   assert.equal(state.rounds.length,2);
 });
 
 test('public instant round omits server-only retry and ownership metadata',()=>{
-  const view=instantPublicRound({id:'rou_1',game:'Roulette',stake:1_000_000,number:7,color:'RED',netPnl:1_000_000,userId:'hanseo',floor:'strip',status:'SETTLED',createdAt:'now',idempotency:{key:'req-roulette-0001',fingerprint:'fp'}});
+  const view=instantPublicRound({id:'rou_1',game:'Roulette',stake:1_000_000,number:7,color:'RED',netPnl:1_000_000,userId:'hanseo',floor:'salon-prive',status:'SETTLED',createdAt:'now',idempotency:{key:'req-roulette-0001',fingerprint:'fp'}});
   assert.deepEqual(view,{id:'rou_1',game:'Roulette',stake:1_000_000,number:7,color:'RED',netPnl:1_000_000});
 });

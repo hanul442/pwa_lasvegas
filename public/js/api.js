@@ -23,13 +23,13 @@ function key() {
 }
 
 export class ApiError extends Error {
-  constructor(code, status, where = null) { super(code); this.code = code; this.status = status; this.where = where; }
+  constructor(code, status, where = null, detail = null) { super(code); this.code = code; this.status = status; this.where = where; this.detail = detail; }
 }
 
 // The bet scale this build was made for (lib/economy-upgrade.mjs). A page left open across a
 // rescale would keep offering the old chips and every bet would bounce off the table limits, so
 // it reloads once to pick up the new build.
-export const ECONOMY = 2;
+export const ECONOMY = 3;
 function checkEconomy(server) {
   if (!server || server === ECONOMY) return;
   const mark = `vegas:reloaded-for-economy:${server}`;
@@ -53,7 +53,7 @@ async function request(path, { method = 'GET', body } = {}) {
   if (!res.ok) {
     // A missing or expired session sends the player back to the sign-in screen.
     if (data.error === 'AUTH_REQUIRED') { clearSession(); dispatchEvent(new CustomEvent('vegas:signed-out')); }
-    throw new ApiError(data.error || 'BAD_REQUEST', res.status, data.where || null);
+    throw new ApiError(data.error || 'BAD_REQUEST', res.status, data.where || null, data.detail || null);
   }
   return data;
 }
@@ -76,6 +76,11 @@ export const api = {
   challenge: (opponentId, metric) => request('/api/social/challenges', { method: 'POST', body: { opponentId, metric } }),
   challengeAccept: id => request(`/api/social/challenges/${encodeURIComponent(id)}/accept`, { method: 'POST' }),
   challengeCancel: id => request(`/api/social/challenges/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
+  supportClaim: kind => request('/api/support/claim', { method: 'POST', body: { kind } }),
+  achievementClaim: id => request('/api/achievements/claim', { method: 'POST', body: { id } }),
+  borrow: (lender, amount, days) => request('/api/bank/borrow', { method: 'POST', body: { lender, amount, days } }),
+  repay: (loanId, amount) => request('/api/bank/repay', { method: 'POST', body: { loanId, amount } }),
+  bankruptcy: () => request('/api/bank/bankruptcy', { method: 'POST' }),
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
@@ -135,7 +140,18 @@ const MESSAGES = {
   SIGNUPS_CLOSED: '지금은 새 계정을 만들 수 없어요.',
   NETWORK: '서버에 연결할 수 없어요. 연결을 확인하고 다시 시도해 주세요.',
   INSUFFICIENT_BANKROLL: '칩이 부족해요. 베팅을 줄이거나 충전해 주세요.',
-  FLOOR_LOCKED: '아직 잠긴 층이에요. 보유 칩을 늘리면 열려요.',
+  FLOOR_LOCKED: '아직 잠긴 층이에요. 순자산(보유 칩 − 빚)을 늘리면 열려요.',
+  FLOOR_OUTGROWN: '자산이 많아져서 이 층은 졸업했어요. 위층 테이블로 가 주세요.',
+  LOAN_REFUSED: '지금은 이 곳에서 빌릴 수 없어요.',
+  LOAN_OVER_LIMIT: '대출 한도를 넘었어요.',
+  INVALID_TERM: '상환 기한을 골라 주세요.',
+  LOAN_NOT_FOUND: '이미 끝난 대출이에요.',
+  REPAY_OVER_BALANCE: '남은 빚보다 많이 갚을 수는 없어요.',
+  BANKRUPTCY_NOT_AVAILABLE: '지금은 파산 신청을 할 수 없어요.',
+  SUPPORT_ALREADY_CLAIMED: '이미 받았어요. 다음 지급일에 다시 와 주세요.',
+  WELFARE_NOT_QUALIFIED: '순자산이 1천원 미만일 때만 받을 수 있어요.',
+  ACHIEVEMENT_NOT_DONE: '아직 달성하지 않은 업적이에요.',
+  ACHIEVEMENT_ALREADY_CLAIMED: '이미 받은 업적 보상이에요.',
   BET_OUTSIDE_TABLE_LIMIT: '이 테이블의 베팅 한도를 벗어났어요.',
   STAKE_TIER_NOT_ALLOWED: '이 테이블에서 쓸 수 없는 베팅 금액이에요.',
   OPEN_BLACKJACK_ROUND: '진행 중인 블랙잭 판이 있어요. 이어서 플레이해 주세요.',
@@ -167,7 +183,7 @@ const MESSAGES = {
   NOT_HOST: '딜은 방장이 시작해요.',
   OPEN_SOLO_ROUND: '혼자 하던 판을 먼저 끝내 주세요.',
   HAND_IN_PROGRESS: '이미 게임이 시작됐어요.',
-  DAILY_ALREADY_CLAIMED: '오늘 출석 보너스는 이미 받았어요.',
+  DAILY_ALREADY_CLAIMED: '오늘 일급은 이미 받았어요.',
   MISSION_NOT_DONE: '아직 미션을 끝내지 않았어요.',
   MISSION_ALREADY_CLAIMED: '이미 받은 보상이에요.',
   RESCUE_NOT_AVAILABLE: '지금은 럭키 카드를 뽑을 수 없어요.',
@@ -178,5 +194,6 @@ const MESSAGES = {
 };
 
 export function errorMessage(err) {
+  if (err?.detail) return `${err.detail}.`;
   return MESSAGES[err?.code] || '문제가 생겼어요. 잠시 후 다시 시도해 주세요.';
 }

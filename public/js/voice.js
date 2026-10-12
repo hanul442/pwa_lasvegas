@@ -100,11 +100,6 @@ export const voice = {
     pump();
   },
   get busy() { return pumping || queue.length > 0; },
-  // Resolves once he has finished speaking, or after `max` ms, so the next player waits their turn.
-  async idle(max = 900) {
-    const end = performance.now() + max;
-    while (this.busy && performance.now() < end) await new Promise(r => setTimeout(r, 60));
-  },
   hush() {
     queue = [];
     current.forEach(src => { try { src.stop(); } catch {} });

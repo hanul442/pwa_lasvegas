@@ -35,7 +35,7 @@ test('the jackpot grows with every spin and pays in proportion to the bet', () =
   const pool = state.jackpot.pool + 5_000_000 * JACKPOT_RATE;
   const win = spinSlots(state, { stake: 5_000_000, maxBet: 10_000_000, stopsOverride: [STRIP.indexOf('STAR'), STRIP.indexOf('STAR'), STRIP.lastIndexOf('STAR')] });
   assert.equal(win.line, 'JACKPOT');
-  assert.equal(win.jackpot, Math.floor(pool / 2));
+  assert.equal(win.jackpot, Math.floor(pool / 2 / 1_000_000) * 1_000_000, 'the jackpot pays whole 100만s');
   assert.equal(win.netPnl, 5_000_000 * 500 + win.jackpot - 5_000_000);
   assert.equal(state.jackpot.pool, Math.max(JACKPOT_SEED, pool - win.jackpot));
 });

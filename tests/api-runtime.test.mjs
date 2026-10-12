@@ -84,26 +84,27 @@ test('blackjack start takes one stake per box and settles insurance through the 
 test('baccarat takes optional pair side bets in the same round and ledger entry', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  const body = { stake: 10_000_000, floor: 'high-limit', betType: 'PLAYER', sideBets: { PLAYER_PAIR: 2_500_000, BANKER_PAIR: 5_000_000 } };
+  const body = { stake: 10_000_000, floor: 'high-limit', betType: 'PLAYER', sideBets: { PLAYER_PAIR: 3_000_000, BANKER_PAIR: 5_000_000 } };
   const res = await call(store, 'POST', '/api/baccarat/play', body, { 'x-idempotency-key': 'bac-side-0001' });
   assert.equal(res.status, 200);
   const r = res.data.round;
-  assert.equal(r.stake, 17_500_000);
+  assert.equal(r.stake, 18_000_000);
   assert.equal(r.sideBets.length, 2);
   for (const b of r.sideBets) assert.equal(b.netPnl, r.pairs[b.betType] ? b.stake * 11 : -b.stake);
   assert.equal(r.netPnl, r.mainPnl + r.sideBets.reduce((a, b) => a + b.netPnl, 0));
   assert.equal(res.data.state.user.account.available, start + r.netPnl);
   const tx = res.data.state.ledger.find(x => x.referenceId === r.id);
-  assert.equal(tx.metadata.stake, 17_500_000);
+  assert.equal(tx.metadata.stake, 18_000_000);
   assert.equal(tx.amount, r.netPnl);
   // A replay matches only the same side bets.
   const replay = await call(store, 'POST', '/api/baccarat/play', body, { 'x-idempotency-key': 'bac-side-0001' });
   assert.equal(replay.data.replayed, true);
-  const changed = await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 2_500_000 } }, { 'x-idempotency-key': 'bac-side-0001' });
+  const changed = await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 3_000_000 } }, { 'x-idempotency-key': 'bac-side-0001' });
   assert.equal(changed.status, 409);
   // The old single-bet request still works; bad side stakes are refused.
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BANKER' })).status, 200);
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: -5 } })).status, 400);
+  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 2_500_000 } })).data.error, 'BET_NOT_IN_UNITS');
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 200_000_000 } })).status, 400);
   const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, stake: 100_000_000, sideBets: { PLAYER_PAIR: 100_000_000, BANKER_PAIR: 100_000_000 } }, {})).status, before < 300_000_000 ? 409 : 200);

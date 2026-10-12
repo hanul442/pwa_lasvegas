@@ -10,8 +10,8 @@ import { handName } from '../poker-hand.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
-// Big blind per table: a tenth of its smallest bet, and never under 2원 (lib/holdem-session.mjs).
-export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2, t.min / 10)]));
+// Big blind per table: a tenth of its smallest bet in 200만s, never under 200만 (lib/holdem-session.mjs).
+export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2_000_000, Math.round(t.min / 10 / 2_000_000) * 2_000_000)]));
 const STACK_MAX = 6; // chips in the tower beside each player's plate
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.

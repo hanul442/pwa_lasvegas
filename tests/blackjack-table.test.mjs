@@ -169,11 +169,11 @@ test('blackjack start route locks side bets with the round and keeps the AI play
   assert.equal(tooBig.status, 400);
   let names = null, total = 0, stayed = 0;
   for (let n = 0; n < 8; n++) {
-    const body = { stakes: [10_000_000], pairs: [2_500_000], trips: [5_000_000], floor: 'high-limit' };
+    const body = { stakes: [10_000_000], pairs: [3_000_000], trips: [5_000_000], floor: 'high-limit' };
     const res = await call(store, 'POST', '/api/blackjack/v2/start', body, { 'x-idempotency-key': `bj-side-start-${n}000` });
     assert.equal(res.status, 200, JSON.stringify(res.data));
     let round = res.data.round;
-    assert.equal(round.stake, 17_500_000);
+    assert.equal(round.stake, 18_000_000);
     assert.equal(round.sideBets.length, 2);
     assert.ok(round.ai.length >= 1 && round.ai.length <= 3);
     if (names && round.ai.some(a => names.includes(a.name))) stayed++;

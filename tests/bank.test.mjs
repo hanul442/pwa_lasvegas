@@ -67,8 +67,11 @@ test('interest compounds at each Seoul midnight', () => {
   processLoans(state, u, NOON + DAY);
   assert.equal(loan.balance, 125_000_000, '25% a day for a 14-day 사채');
   processLoans(state, u, NOON + 3 * DAY);
-  assert.equal(loan.balance, Math.ceil(Math.ceil(125_000_000 * 1.25) * 1.25));
-  assert.equal(bankView(u, NOON + 4 * DAY).loans[0].balance, Math.ceil(loan.balance * 1.25), 'the view shows interest still to be booked');
+  // 195,312,500 owed: the balance shows whole 100만s and the 312,500 waits for the next midnight.
+  assert.equal(loan.balance, 195_000_000);
+  assert.equal(loan.carry, 312_500);
+  assert.equal(bankView(u, NOON + 4 * DAY).loans[0].balance, Math.floor(Math.ceil(195_312_500 * 1.25) / 1_000_000) * 1_000_000, 'the view shows interest still to be booked');
+  assert.throws(() => borrow(state, u, { lender: 'shark', amount: 1_500_000, days: 1 }, NOON + 3 * DAY), /AMOUNT_NOT_IN_UNITS/);
 });
 
 test('a loan past due is collected from the wallet and costs credit once', () => {

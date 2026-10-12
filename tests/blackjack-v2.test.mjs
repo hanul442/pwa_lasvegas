@@ -133,18 +133,20 @@ test('blackjack v2 takes a different stake on each betting box', () => {
 });
 
 test('blackjack v2 asks for insurance first when the dealer shows an ace', () => {
-  const round = aceUpRound([400_000, 600_000], { r: 'K', s: '♦' });
-  assert.equal(blackjackV2Public(round).insurance.cost, 500_000);
+  const round = aceUpRound([4_000_000, 6_000_000], { r: 'K', s: '♦' });
+  assert.equal(blackjackV2Public(round).insurance.cost, 5_000_000);
   assert.equal(blackjackV2Public(round).dealer[1], 'HIDDEN');
   assert.throws(() => blackjackV2ActionCost(round, 'HIT', 0), { message: 'INSURANCE_DECISION_REQUIRED' });
-  assert.equal(blackjackV2ActionCost(round, 'INSURANCE'), 500_000);
+  assert.equal(blackjackV2ActionCost(round, 'INSURANCE'), 5_000_000);
+  // Every amount moves in 100만s: half of 300만 rounds up to 200만.
+  assert.equal(blackjackV2ActionCost(aceUpRound([3_000_000], { r: 'K', s: '♦' }), 'INSURANCE'), 2_000_000);
 });
 
 test('blackjack v2 insurance pays 2:1 against a dealer blackjack and conserves the bankroll', () => {
   const state = defaultState();
   const user = state.users.hanseo;
   const opening = user.account.available;
-  const round = aceUpRound([1_000_000], { r: 'K', s: '♦' });
+  const round = aceUpRound([2_000_000], { r: 'K', s: '♦' });
   lockBet(state, user, { stake: round.stake, game: 'Blackjack', roundId: round.id });
   const cost = blackjackV2ActionCost(round, 'INSURANCE');
   increaseBetLock(state, user, { stake: cost, game: 'Blackjack', roundId: round.id });
@@ -152,7 +154,7 @@ test('blackjack v2 insurance pays 2:1 against a dealer blackjack and conserves t
   assert.equal(round.status, 'READY_TO_SETTLE');
   assert.equal(user.account.locked, round.stake);
   const out = settleBlackjackV2(round);
-  // Hand loses 1,000,000; insurance wins 2 × 500,000: the player breaks even.
+  // Hand loses 2,000,000; insurance wins 2 × 1,000,000: the player breaks even.
   assert.equal(out.netPnl, 0);
   assert.equal(out.outcomes.at(-1).result, 'INSURANCE_WIN');
   settleLockedHouseGame(state, user, { game: 'Blackjack', stake: out.totalStake, netPnl: out.netPnl, roundId: round.id, details: {} });
@@ -161,14 +163,14 @@ test('blackjack v2 insurance pays 2:1 against a dealer blackjack and conserves t
 });
 
 test('blackjack v2 insurance is lost when the dealer has no blackjack, and play continues', () => {
-  const round = aceUpRound([1_000_000], { r: '6', s: '♦' });
+  const round = aceUpRound([2_000_000], { r: '6', s: '♦' });
   blackjackV2Action(round, 'INSURANCE');
   assert.equal(round.status, 'PLAYER');
-  assert.equal(round.insurance.netPnl, -500_000);
+  assert.equal(round.insurance.netPnl, -1_000_000);
   blackjackV2Action(round, 'STAND', 0);
   const out = settleBlackjackV2(round);
   assert.equal(out.outcomes.at(-1).result, 'INSURANCE_LOSS');
-  assert.equal(out.totalStake, 1_500_000);
+  assert.equal(out.totalStake, 3_000_000);
 });
 
 test('blackjack v2 declining insurance costs nothing and still peeks', () => {

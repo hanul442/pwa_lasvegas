@@ -1,0 +1,112 @@
+/* 상점: luxury assets drawn in a fine ivory line, and the skins players wear at the tables.
+   The screen stays black and white; colour shows up only in the felt swatches and the chips. */
+
+/* ---------- the screen ---------- */
+.shop-tabs{margin-top:0}
+.shop-pane{padding-top:6px}
+.shop-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:14px 0 0;border:1px solid var(--hair);border-radius:16px;background:var(--hair);overflow:hidden}
+.shop-summary div{padding:12px 14px;background:#0d0e10;min-width:0}
+.shop-summary dt{font-size:13px;color:var(--smoke)}
+.shop-summary dd{margin:2px 0 0;font:600 18px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shop-summary--two{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 6px}
+.shop-note{margin:12px 0 4px;color:var(--smoke);font-size:14px;line-height:1.6}
+
+.shop-list,.skin-grid,.showcase-list{list-style:none;margin:0;padding:0}
+.shop-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--hair)}
+.lux-icon{width:44px;height:44px;color:var(--white);opacity:.9}
+.shop-row-text{display:grid;min-width:0}
+.shop-row-name{font:600 16px/1.35 var(--sans);letter-spacing:-.01em}
+.shop-row-text small{color:var(--smoke);font-size:13px;line-height:1.45}
+.shop-price{margin-top:3px;font:600 15px var(--sans);font-variant-numeric:tabular-nums}
+.shop-tag{display:inline-block;margin-left:6px;padding:1px 7px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--white);font-size:11px;font-weight:600;vertical-align:2px}
+.shop-row.is-owned .lux-icon{opacity:1}
+.shop-row.is-owned .shop-price{color:var(--smoke);font-weight:500}
+.shop-row.is-short .lux-icon,.shop-row.is-short .shop-row-name{opacity:.55}
+.shop-buy{min-height:40px;padding:0 16px;font-size:14px;flex:none}
+
+/* sheets */
+.shop-sheet-body{margin-top:6px}
+.shop-sheet-hero{display:flex;align-items:center;gap:16px;margin:10px 0 4px}
+.shop-sheet-hero .lux-icon{width:56px;height:56px}
+.shop-sheet-hero b{display:block;font:600 24px var(--sans);font-variant-numeric:tabular-nums}
+.shop-sheet-hero small{color:var(--smoke);font-size:13px}
+.shop-sheet .lounge-note b{color:var(--white)}
+
+/* skins */
+.skin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+@media (min-width:640px){.skin-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.skin-tile{position:relative;display:grid;grid-template-rows:auto auto auto;gap:10px;padding:12px;border:1px solid var(--hair);border-radius:16px;background:#0d0e10;min-width:0}
+.skin-tile.is-equipped{border-color:var(--white);box-shadow:inset 0 0 0 1px var(--white)}
+.skin-tile.is-locked .skin-preview{opacity:.5}
+.skin-text{display:grid;min-width:0}
+.skin-name{font:600 15px/1.3 var(--sans)}
+.skin-text small{color:var(--smoke);font-size:12.5px;line-height:1.45}
+.skin-act{min-height:36px;padding:0 14px;font-size:14px;justify-self:start}
+.skin-on{position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--white)}
+.skin-on::before{content:"";width:8px;height:8px;background:var(--star);clip-path:var(--star-shape)}
+.skin-preview{height:96px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:10px;background:radial-gradient(80% 90% at 50% 0,#1c2026,#0a0b0d);overflow:hidden}
+.skin-preview--cardBack{--card-w:54px}
+.skin-preview--cardBack .card{rotate:-4deg}
+.skin-preview--chips{--chip:42px}
+.skin-preview--felt{border:6px solid #16181c;box-shadow:inset 0 0 0 1px #ffffff1a,inset 0 0 30px #000a;
+  background:radial-gradient(70% 70% at 50% 30%,var(--felt-a) 0,var(--felt-b) 55%,var(--felt-c) 100%)}
+.skin-preview.felt-swatch--house{background:linear-gradient(112deg,#165e45 0 34%,#143660 34% 67%,#4f1320 67%)}
+
+/* the collection, on the profile and in another player's sheet */
+.showcase-list{margin-top:6px}
+.showcase-list li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--hair);font-size:15px}
+.showcase-list .lux-icon{width:32px;height:32px}
+.showcase-list small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
+.shop-sheet .showcase-list{max-height:min(46dvh,360px);overflow:auto}
+.profile-shop{margin-top:14px}
+
+/* ranking: the three dearest pieces beside the name */
+.rank-row[role="button"]{cursor:pointer}
+.rank-showcase{display:inline-flex;gap:4px;margin-left:8px;vertical-align:-2px;color:var(--smoke)}
+.rank-lux{width:17px;height:17px;stroke-width:2}
+
+/* ---------- card backs (cards.js adds back--name) ---------- */
+.card-back.back--oxblood,.card-back.back--navy,.card-back.back--pinstripe,.card-back.back--grid{
+  --bk:#08090b;--bk-hi:#1c1f24;
+  background:
+    radial-gradient(circle at 50% 50%,var(--bk) 0 14%,transparent 14.5%),
+    repeating-radial-gradient(circle at 50% 50%,#ffffff16 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(60deg,#ffffff0d 0 1px,transparent 1px 6px),
+    repeating-linear-gradient(-60deg,#ffffff0d 0 1px,transparent 1px 6px),
+    linear-gradient(160deg,var(--bk-hi),var(--bk))}
+.card-back.back--oxblood{--bk:#1c0609;--bk-hi:#521720}
+.card-back.back--navy{--bk:#050c1a;--bk-hi:#18305a}
+.card-back.back--pinstripe{
+  background:
+    radial-gradient(circle at 50% 50%,#121316 0 14%,transparent 14.5%),
+    repeating-linear-gradient(90deg,#ffffff1f 0 1px,transparent 1px 5px),
+    linear-gradient(160deg,#2c2f35,#111215)}
+.card-back.back--grid{
+  background:
+    radial-gradient(circle at 50% 50%,#08090b 0 14%,transparent 14.5%),
+    repeating-linear-gradient(0deg,#ffffff17 0 1px,transparent 1px 6px),
+    repeating-linear-gradient(90deg,#ffffff17 0 1px,transparent 1px 6px),
+    linear-gradient(160deg,#1c1f24,#08090b)}
+.card-back.back--ivory{
+  background:
+    radial-gradient(circle at 50% 50%,#f1ece2 0 14%,transparent 14.5%),
+    repeating-radial-gradient(circle at 50% 50%,#0a0b0d14 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(60deg,#0a0b0d0d 0 1px,transparent 1px 6px),
+    repeating-linear-gradient(-60deg,#0a0b0d0d 0 1px,transparent 1px 6px),
+    linear-gradient(160deg,#f7f3ea,#e3ddd0);
+  box-shadow:inset 0 0 0 calc(var(--card-w) * .04) #0a0b0d,inset 0 0 0 calc(var(--card-w) * .05) #f4efe5,inset 0 0 0 calc(var(--card-w) * .058) #0a0b0d55,inset 0 0 0 calc(var(--card-w) * .075) #f4efe5,inset 0 0 0 calc(var(--card-w) * .08) #0a0b0d26,0 1px 1px #0005,0 10px 22px #0007}
+.card-back.back--ivory::after{background:#0a0b0d}
+.card-back.back--ivory::before{border-color:#0a0b0d59}
+
+/* ---------- felts (table.js adds felt--skin-name to solo tables) ----------
+   Event tables keep their own felt: not under .is-event, and never on an event felt. */
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-forest,.skin-preview.felt--skin-forest{--felt-a:#1d5e45;--felt-b:#0f3b2b;--felt-c:#041710}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-oxblood,.skin-preview.felt--skin-oxblood{--felt-a:#5f1b25;--felt-b:#3b0e16;--felt-c:#160407}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-navy,.skin-preview.felt--skin-navy{--felt-a:#1d365c;--felt-b:#10213f;--felt-c:#050b18}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-charcoal,.skin-preview.felt--skin-charcoal{--felt-a:#3a3d42;--felt-b:#222428;--felt-c:#0b0c0e}
+
+/* ---------- chip accents (shop.js sets data-chip-accent on the page) ---------- */
+:root[data-chip-accent="ivory"],.chip-accent--ivory{--chip-inlay:#fffffff0;--chip-inlay-w:1.9;--chip-halo:0;--plaque-inlay:#ffffffd9;--plaque-outline:#ffffff59}
+:root[data-chip-accent="onyx"],.chip-accent--onyx{--chip-inlay:#0a0b0dd9;--chip-inlay-w:1.9;--chip-halo:0;--plaque-inlay:#0a0b0dc7;--plaque-outline:#0a0b0d59}
+:root[data-chip-accent="double"],.chip-accent--double{--chip-inlay:#ffffffbf;--chip-inlay-w:1;--chip-halo:1;--plaque-inlay:#ffffffb3;--plaque-outline:#ffffffb3}
+.chip-accent--classic{--chip-inlay:#ffffff5c;--chip-inlay-w:1;--chip-halo:0;--plaque-inlay:initial;--plaque-outline:initial}

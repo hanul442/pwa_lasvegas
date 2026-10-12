@@ -228,6 +228,7 @@ export function feedText(f) {
     case 'FLOOR_UNLOCK': return f.text?.replace(/^(.+) unlocked (.+)\.$/, '$1님이 $2 층에 올라섰어요') || '';
     case 'BANKRUPTCY': return f.amount ? `${who}님 파산! ${gameName(f.game)}에서 ${formatMoney(f.amount)} 날리고 빈털터리` : `${who}님이 파산했어요. 다시 일어설 수 있을까요?`;
     case 'BIG_LOSS': return `${who}님이 큰 판에서 졌어요`;
+    case 'LUXURY': return `${who}님이 ${f.name}${/[가-힣]$/.test(f.name || '') && (f.name.charCodeAt(f.name.length - 1) - 0xac00) % 28 ? '을' : '를'} ${formatMoney(f.amount)}에 샀어요`;
     case 'BIG_WIN': return f.text || '';
     case 'CHALLENGE_WON': return `${who}님이 ${f.opponent}님과의 대결에서 이겼어요`;
     default: return f.text || '';

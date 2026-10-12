@@ -34,13 +34,25 @@ function faceMarkup(card) {
   return `${corner}${center}${corner.replace('card-corner', 'card-corner card-corner--end')}<span class="card-mark" aria-hidden="true">${suit}</span>`;
 }
 
+// 꾸미기 (lib/shop.mjs): the card back this player wears, applied to every card dealt from now on.
+// null keeps the house's black lacquer back.
+let backSkin = null;
+export function setCardBack(skin) {
+  backSkin = skin || null;
+  document.querySelectorAll('.card-back').forEach(node => {
+    node.classList.forEach(c => { if (c.startsWith('back--')) node.classList.remove(c); });
+    if (backSkin && !node.closest('.skin-preview')) node.classList.add(`back--${backSkin}`);
+  });
+}
+export const cardBackClass = () => (backSkin ? `card-back back--${backSkin}` : 'card-back');
+
 export function createCard(text, { faceUp = true } = {}) {
   const card = parseCard(text);
   const node = el('div', 'card');
   node.dataset.card = text || 'HIDDEN';
   // A touch of hand-placed imperfection so stacks never look machine-aligned.
   node.style.setProperty('--tilt', `${(Math.random() * 4 - 2).toFixed(2)}deg`);
-  node.innerHTML = `<div class="card-inner"><div class="card-face${card && RED_SUITS.has(card.suit) ? ' is-red' : ''}">${card ? faceMarkup(card) : ''}</div><div class="card-back"></div></div>`;
+  node.innerHTML = `<div class="card-inner"><div class="card-face${card && RED_SUITS.has(card.suit) ? ' is-red' : ''}">${card ? faceMarkup(card) : ''}</div><div class="${cardBackClass()}"></div></div>`;
   if (faceUp && card) node.classList.add('is-faceup');
   node.setAttribute('role', 'img');
   node.setAttribute('aria-label', card ? `${card.rank}${card.suit}` : '뒷면 카드');

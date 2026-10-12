@@ -28,6 +28,7 @@ import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
 import { renderBank } from './js/bank.js';
 import { hotStatus, clock, pct } from './js/hot.js';
+import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet } from './js/shop.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -78,6 +79,7 @@ function showSurface(name, { focus = false } = {}) {
   if (name === 'lobby' && state) { celebrateFloors(state); maybeOpenDaily(state, applyState); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'bank') renderBank(document.querySelector('[data-bank]'), state, applyState);
+  if (name === 'shop') renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (name === 'settings') openSettings(); else closeSettings();
   syncWakeLock();
   if (focus) { const heading = target.querySelector('h1'); heading?.setAttribute('tabindex', '-1'); heading?.focus({ preventScroll: true }); }
@@ -169,6 +171,7 @@ function applyState(next) {
   if (shownWallet === null || shownWallet === available) walletEl.textContent = formatCH(available);
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
+  applyCosmetics(state);
   renderRecharge();
   renderGameLists();
   maybeBust(state);
@@ -176,6 +179,7 @@ function applyState(next) {
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();
   if (isActive('bank')) renderBank(document.querySelector('[data-bank]'), state, applyState);
+  if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
   if (isActive('lobby')) { celebrateFloors(state); maybeOpenDaily(state, applyState); }
 }
@@ -446,7 +450,7 @@ function renderEventTier(grid, { tier, entry, open }) {
 // "이번 주" is the weekly season (resets Monday 00:00 KST, top three get prizes); "전체" is all time.
 const RANK_TABS = {
   season: [['profit', '수익'], ['wins', '승리'], ['highRoller', '베팅량']],
-  allTime: [['wealth', '자산'], ['profit', '수익'], ['highRoller', '베팅량']]
+  allTime: [['wealth', '순자산'], ['profit', '수익'], ['highRoller', '베팅량']]
 };
 let rankPeriod = 'season';
 let rankTab = 'profit';
@@ -488,16 +492,24 @@ function renderRanking() {
   const rows = (rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
   const me = state?.user?.id;
   const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
+  // Each row wears the player's three dearest luxury pieces (lib/shop.mjs); a tap opens their collection.
+  const showcase = r => (r.showcase || []).map(id => luxuryItem(state, id)).filter(Boolean).map(x => luxuryIcon(x.icon, 'rank-lux')).join('');
   document.querySelector('[data-rank-list]').replaceChildren(...rows.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}${r.rank <= 3 ? ` is-top is-top-${r.rank}` : ''}`);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}</span><span class="rank-value">${value(r)}</span>`;
+    const lux = showcase(r);
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
+    li.tabIndex = 0;
+    li.setAttribute('role', 'button');
+    li.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 컬렉션 보기`);
+    li.addEventListener('click', () => openPlayerSheet(state, r));
+    li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerSheet(state, r); } });
     return li;
   }));
   renderDuels(document.querySelector('[data-duels]'), state, applyState);
 }
 
 // ---------- profile ----------
-const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금' };
+const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금', PURCHASE: '구매', RESALE: '되팔기' };
 function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }
@@ -506,7 +518,7 @@ function renderProfile() {
   // One line per finished round: chip locks are skipped and a round shows its win or loss, not the chips handed back.
   const ledger = state.ledger.filter(x => x.type !== 'BET_LOCK').slice(0, 15).map(x => {
     const amount = x.type.startsWith('GAME_') && Number.isFinite(x.rawPnlDelta) ? x.rawPnlDelta : x.amount;
-    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${gameName(x.metadata.game)}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
+    return `<li><span>${LEDGER_LABEL[x.type] || x.type}${x.metadata?.game ? ` · ${gameName(x.metadata.game)}` : ''}${x.referenceType === 'SHOP' && x.metadata?.name ? ` · ${x.metadata.name}` : ''}</span><b class="${amount > 0 ? 'pos' : amount < 0 ? 'neg' : ''}">${amount > 0 ? '+' : ''}${formatCH(amount)}</b></li>`;
   }).join('');
   const eng = state.engagement || {};
   const badges = (eng.badges || []).map(b => `<li class="badge badge--${b.rank}"><span class="badge-star" aria-hidden="true"></span><b>${b.rank}위</b><small>${b.name}</small></li>`).join('');
@@ -515,10 +527,16 @@ function renderProfile() {
     const rate = s.rounds ? Math.round((s.wins / s.rounds) * 100) : 0;
     return `<tr><th scope="row">${gameName(g)}</th><td>${s.rounds}</td><td>${rate}%</td><td>${formatCH(s.biggestWin)}</td><td class="${s.pnl > 0 ? 'pos' : s.pnl < 0 ? 'neg' : ''}">${s.pnl > 0 ? '+' : ''}${formatCH(s.pnl)}</td></tr>`;
   }).join('');
+  // 자산: the luxury on show (lib/shop.mjs), dearest first. Trophies only; floors run on chips.
+  const owned = (u.luxury || []).map(x => ({ ...x, item: luxuryItem(state, x.id) })).filter(x => x.item).sort((p, q) => q.price - p.price);
+  const assets = u.assets ?? state.shop?.assets ?? 0;
+  const showcase = owned.length
+    ? `<ul class="showcase-list showcase-list--profile">${owned.map(x => `<li>${luxuryIcon(x.item.icon)}<span>${x.item.name}</span><small>${formatCH(x.price)}</small></li>`).join('')}</ul>`
+    : '<p class="lounge-note">아직 산 사치품이 없어요. 상점에서 시계부터 섬까지 살 수 있어요.</p>';
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)}원${state.bank?.debt ? ` · 빚 ${formatFull(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
+      <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)}원${assets ? ` · 자산 ${formatFull(assets)}원` : ''}${state.bank?.debt ? ` · 빚 ${formatFull(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
     </div>
     <dl class="stat-grid">
       <div><dt>총 손익</dt><dd class="${a.qualifiedPnl >= 0 ? 'pos' : 'neg'}">${a.qualifiedPnl >= 0 ? '+' : ''}${formatCH(a.qualifiedPnl)}</dd></div>
@@ -528,6 +546,9 @@ function renderProfile() {
       <div><dt>최대 승리</dt><dd>${formatCH(totals.best)}</dd></div>
       <div><dt>최장 연승</dt><dd>${eng.streak?.best || 0}연승${eng.streak?.current > 1 ? ` <small>지금 ${eng.streak.current}</small>` : ''}</dd></div>
     </dl>
+    <h2 class="sub-head">자산 <small>${formatCH(assets)}원 · 사치품 ${owned.length}점</small></h2>
+    ${showcase}
+    <button type="button" class="pill-button profile-shop" data-go-shop>상점 가기</button>
     ${badges ? `<h2 class="sub-head">시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
     <h2 class="sub-head">업적 <small>${(state.achievements || []).filter(x => x.claimed).length} / ${(state.achievements || []).length}</small></h2><div data-achievements></div>
     <h2 class="sub-head">게임별 기록</h2>
@@ -537,6 +558,7 @@ function renderProfile() {
     <h2 class="sub-head">계정</h2>
     <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
   renderAchievements(root.querySelector('[data-achievements]'));
+  root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
   renderAdmin(root, state, applyState);
   root.querySelector('[data-sign-out]').addEventListener('click', async () => {
     await forgetDevice();

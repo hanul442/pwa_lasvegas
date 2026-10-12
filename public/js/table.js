@@ -14,11 +14,20 @@ const memoryKey = (game, tier, what) => `vegas:${what}:${game}:${tier}`;
 function recall(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
 function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
 
+// The felt this player wears, as an extra class on the felt ('' for the game's own).
+function feltSkin(state, on) {
+  const felt = on && state?.user?.cosmetics?.equipped?.felt;
+  return felt ? ` felt--skin felt--skin-${String(felt).replace(/^felt-/, '')}` : '';
+}
+
 export class Table {
   // multi: separate bets per zone. zoneMin: every zone must meet the table minimum (blackjack
   // boxes) rather than the total (chips spread over a roulette layout).
   // hot: whether this table takes part in 핫 딜러 타임 (lib/hot-table.mjs); event tables don't.
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true }) {
+  // skin: whether the player's own felt (꾸미기, lib/shop.mjs) may cover this table; slots keep
+  // their cabinet. Event tables keep their look too: table.css skips the skin under .is-event
+  // and the event felts, so a table that turns into an event mid-visit changes back.
+  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true }) {
     this.pushDouble = pushDouble;
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
@@ -57,7 +66,7 @@ export class Table {
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
         </div>
       </header>
-      <div class="felt ${feltClass}" data-felt>
+      <div class="felt ${feltClass}${feltSkin(state, skin)}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
         <div class="dealer-rack" data-rack aria-hidden="true"></div>
         <div class="felt-body" data-body></div>

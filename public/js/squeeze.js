@@ -2,7 +2,7 @@
 // them open by hand: drag a corner and it bends back along a fold line, showing the face on its
 // underside; drag an edge and the whole side lifts; pull far enough and the card turns over.
 // Presentation only: the cards were already decided on the server.
-import { createCard, setCardFace } from './cards.js';
+import { createCard, setCardFace, cardBackClass } from './cards.js';
 import { animate, sound, haptic, el, reducedMotion } from './fx.js';
 import { settings } from './settings.js';
 
@@ -33,7 +33,7 @@ function squeezeCard(text, { label, onPeek, onOpen }) {
   // The underside the flap shows, and the clean face it lands as. The underside has no corner
   // index, so the pips decide it, the way a squeeze reads them: a corner, then a side.
   const face = createCard(text).querySelector('.card-face');
-  node.innerHTML = '<div class="sq-back card-back"></div><div class="sq-flapwrap"><div class="sq-flap"><div class="sq-under"></div><i class="sq-shade"></i></div></div><div class="sq-open"></div>';
+  node.innerHTML = `<div class="sq-back ${cardBackClass()}"></div><div class="sq-flapwrap"><div class="sq-flap"><div class="sq-under"></div><i class="sq-shade"></i></div></div><div class="sq-open"></div>`;
   const under = face.cloneNode(true);
   under.classList.add('sq-face');
   node.querySelector('.sq-under').replaceWith(under);

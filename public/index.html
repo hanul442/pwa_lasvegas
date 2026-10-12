@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="lounge.css">
   <link rel="stylesheet" href="crowd.css">
   <link rel="stylesheet" href="horses.css">
+  <link rel="stylesheet" href="shop.css">
 </head>
 <body>
   <div class="app-shell">
@@ -87,6 +88,12 @@
         <div data-bank></div>
       </section>
 
+      <section class="surface" data-surface="shop" aria-labelledby="shop-title">
+        <h1 id="shop-title">상점</h1>
+        <p class="lede">칩으로 사치품을 사서 프로필과 랭킹에 걸고, 테이블을 내 취향으로 꾸며요. 모든 금액은 현실 화폐 가치가 없는 가상 칩이에요.</p>
+        <div data-shop></div>
+      </section>
+
       <section class="surface" data-surface="profile" aria-labelledby="profile-title">
         <h1 id="profile-title">프로필</h1>
         <div data-profile></div>
@@ -116,6 +123,7 @@
       <button class="nav-item" type="button" data-nav="games">게임</button>
       <button class="nav-item" type="button" data-nav="events">이벤트</button>
       <button class="nav-item" type="button" data-nav="bank">은행</button>
+      <button class="nav-item" type="button" data-nav="shop">상점</button>
       <button class="nav-item" type="button" data-nav="ranking">랭킹</button>
       <button class="nav-item" type="button" data-nav="profile">프로필</button>
     </nav>

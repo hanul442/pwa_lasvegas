@@ -260,13 +260,12 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
-        // The dealer calls the action. Your own bets get their size ("Raise, two hundred thousand");
-        // the bots get one word, and only when he is free, so the call-outs keep up with the table.
-        if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
-        else if (ev.action === 'CHECK') voice.say('check', { drop: ev.seat !== me });
-        else if (ev.action === 'CALL') voice.say('call', { drop: ev.seat !== me });
-        else if (ev.seat === me) voice.say(betLine(ev.action, ev.bet));
-        else if (ev.action === 'RAISE') voice.say('raise', { drop: true });
+        // The dealer calls every action with its size: "Call, sixty thousand", "Raise, two hundred
+        // thousand". The newest call-out replaces any still waiting (the one he is saying finishes),
+        // so he never falls more than one line behind the table and the table never waits for him.
+        if (ev.action === 'ALL_IN') voice.say(betLine('ALL_IN', ev.bet) || 'all-in', { cut: true });
+        else if (ev.action === 'CHECK') voice.say('check', { next: true });
+        else if (ev.action !== 'FOLD') voice.say(betLine(ev.action, ev.bet), { next: true });
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));

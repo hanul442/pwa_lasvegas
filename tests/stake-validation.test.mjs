@@ -44,10 +44,11 @@ test('rejects locked floors and insufficient virtual bankroll', () => {
   );
 });
 
-test('turns away a player worth a thousand of the floor\'s smallest bets', () => {
+test('turns away a player worth more than a hundred of the floor\'s smallest bets', () => {
   const capped = { ...floor, ceiling: 10_000_000_000 };
-  assert.throws(() => validateStakeAgainstFloor(user({ available: 10_000_000_000 }), capped, 50_000_000), { message: 'FLOOR_OUTGROWN' });
-  const owing = { account: { available: 10_000_000_000, locked: 0, unlockedFloors: ['test-floor'] }, loans: [{ balance: 1 }] };
+  assert.equal(validateStakeAgainstFloor(user({ available: 10_000_000_000 }), capped, 50_000_000).floor, capped, 'exactly at the ceiling still sits');
+  assert.throws(() => validateStakeAgainstFloor(user({ available: 10_000_000_001 }), capped, 50_000_000), { message: 'FLOOR_OUTGROWN' });
+  const owing = { account: { available: 10_000_000_001, locked: 0, unlockedFloors: ['test-floor'] }, loans: [{ balance: 1 }] };
   assert.equal(validateStakeAgainstFloor(owing, capped, 50_000_000).floor, capped, 'debt counts against net worth');
 });
 

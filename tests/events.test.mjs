@@ -9,6 +9,8 @@ import { createHoldemSession, ROUNDERS } from '../lib/holdem-session.mjs';
 
 function memoryStore() {
   let state = defaultState();
+  // Mid-way through High Limit (1억–10억 net worth), so a few wins don't graduate the floor.
+  state.users.hanseo.account.available = 300_000_000;
   let queue = Promise.resolve();
   return {
     peek: () => state,

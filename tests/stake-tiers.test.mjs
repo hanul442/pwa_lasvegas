@@ -17,14 +17,14 @@ test('eleven tiers run from 10원 to 1조, ten times each, with no gaps', () => 
   assert.equal(FLOORS.at(-1).maxBet, 1_000_000_000_000);
 });
 
-test('a floor opens at ten of its smallest bets and closes at a thousand', () => {
+test('a floor opens at ten of its smallest bets and closes past a hundred', () => {
   assert.equal(FLOORS[0].threshold, 0);
   for (const f of FLOORS.slice(1)) assert.equal(f.threshold, f.minBet * 10);
-  for (const f of FLOORS.slice(0, -1)) assert.equal(f.ceiling, f.minBet * 1000);
+  for (const f of FLOORS.slice(0, -1)) assert.equal(f.ceiling, f.minBet * 100);
   assert.equal(FLOORS.at(-1).ceiling, null, 'The Vault never closes');
   // At any net worth at least one opened floor is still open.
   for (let worth = 0; worth < 1e13; worth = worth * 3 + 7) {
-    const open = FLOORS.filter(f => worth >= f.threshold && (f.ceiling == null || worth < f.ceiling));
+    const open = FLOORS.filter(f => worth >= f.threshold && (f.ceiling == null || worth <= f.ceiling));
     assert.ok(open.length >= 1, String(worth));
   }
 });

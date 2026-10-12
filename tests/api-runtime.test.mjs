@@ -8,6 +8,8 @@ import { defaultState } from '../lib/state.mjs';
 // against any store that offers load() and mutate().
 function memoryStore() {
   let state = defaultState();
+  // Mid-way through High Limit (1억–10억 net worth), so a few wins don't graduate the floor.
+  state.users.hanseo.account.available = 300_000_000;
   let queue = Promise.resolve();
   return {
     load: async () => structuredClone(state),

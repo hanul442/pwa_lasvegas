@@ -20,6 +20,8 @@ const validateStake = (user, floor, stake) => validateStakeAgainstFloor(user, FL
 function world(seed = 7) {
   seed += Number(process.env.ROOM_SEED || 0);
   const state = defaultState();
+  // The friends sit at High Limit, so keep their wallets under its 10억 ceiling.
+  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = Math.min(state.users[uid].account.available, 900_000_000);
   let clock = 1_000_000;
   const rand = seeded(seed);
   const ctx = () => ({ now: clock, rand, validateStake });
@@ -30,14 +32,15 @@ const netOf = { seotda: seotdaNet, gostop: gostopNet, matgo: matgoNet, blackjack
 const actorOf = r => (r.players || r.game === 'Seotda' ? r.turn : r.phase === 'PLAY' ? r.turn : r.pending.seat);
 
 // A person's move from their own seat: the same heuristics the house AI uses, or a legal 섯다 call.
-function moveFor(room, seat, rand) {
+function moveFor(room, seat, rand, wallet = Infinity) {
   const r = room.round;
   if (room.game === 'blackjack') {
     const o = blackjackRoomOptions(r, seat), v = blackjackRoomPublic(r, seat).seats[seat].hands[o.hand].value, pick = rand();
     return { action: o.canSplit && pick < 0.5 ? 'SPLIT' : o.canDouble && v >= 9 && v <= 11 ? 'DOUBLE' : v < 15 ? 'HIT' : 'STAND' };
   }
   if (room.game === 'seotda') {
-    const opts = seotdaOptions(r, seat).map(o => o.action);
+    // A player only raises or calls with chips they still have; otherwise they fold.
+    const opts = seotdaOptions(r, seat).filter(o => o.cost <= wallet).map(o => o.action);
     const pick = rand();
     return { action: pick < 0.15 && opts.includes('HALF') ? 'HALF' : opts.includes('CALL') ? (pick > 0.9 ? 'DIE' : 'CALL') : 'CHECK' };
   }
@@ -75,7 +78,7 @@ function playHands(w, room, hands) {
     const seat = room.round.seats[actorOf(r)];
     assert.equal(seat.kind, 'human', 'AI seats never hold the turn');
     const s = r.seats.indexOf(seat);
-    roomAction(state, state.users[seat.userId], room.code, { handNo: room.handNo, seq: room.events.length, ...moveFor(room, s, w.rand) }, w.ctx());
+    roomAction(state, state.users[seat.userId], room.code, { handNo: room.handNo, seq: room.events.length, ...moveFor(room, s, w.rand, state.users[seat.userId].account.available) }, w.ctx());
   }
   return ended;
 }
@@ -83,10 +86,10 @@ function playHands(w, room, hands) {
 test('섯다 room: friends and AI play hands; every won chip is one someone else lost', () => {
   const w = world(3);
   const { state } = w;
-  // Fifteen hands of half-pot raises at a 5천만 ante: give everyone deep enough pockets that
-  // nobody runs dry mid-test, while staying under High Limit's 100억 ceiling.
-  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = 9_900_000_000;
-  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 50_000_000, floor: 'high-limit', size: 4 }, w.ctx());
+  // Fifteen hands of half-pot raises at High Limit's 1천만 ante: a full 10억 wallet each (the
+  // floor's ceiling) is deep enough that nobody runs dry mid-test.
+  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = 1_000_000_000;
+  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 10_000_000, floor: 'high-limit', size: 4 }, w.ctx());
   assert.match(room.code, /^[A-HJ-NP-Z2-9]{4}$/);
   joinRoom(state, state.users.min, room.code.toLowerCase(), w.ctx());
   joinRoom(state, state.users.june, room.code, w.ctx());
@@ -232,6 +235,7 @@ test('one table at a time, and rooms list only where you may sit', () => {
 // ---------- API ----------
 function memoryStore() {
   let state = defaultState();
+  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = Math.min(state.users[uid].account.available, 900_000_000);
   let queue = Promise.resolve();
   return {
     peek: () => state,

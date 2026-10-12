@@ -93,7 +93,7 @@ function chooseGame(button) {
   showSurface('tiers', { focus: true });
 }
 
-// A floor this player has outgrown (net worth ≥ 1,000× its minimum) stays shut; only a seat they
+// A floor this player has outgrown (net worth above 100× its minimum) stays shut; only a seat they
 // already hold in a room there can bring them back.
 const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[slug]?.floor)?.outgrown);
 
@@ -335,7 +335,7 @@ function renderTiers() {
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);
   const shown = all.filter((x, i) => !x.floor?.outgrown && (firstLocked < 0 || i <= firstLocked + 1));
-  const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. 순자산이 최소 베팅의 1,000배가 되면 그 층에는 앉지 않아요.`)] : [];
+  const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. 순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.`)] : [];
   grid.replaceChildren(...note, ...shown.map(({ tier, floor }) => {
     const locked = floor ? !floor.unlocked : false;
     const broke = available < tier.min;
@@ -347,7 +347,7 @@ function renderTiers() {
     b.disabled = locked || broke;
     const chips = el('span', 'tier-chips');
     tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
-    const status = locked ? `순자산 ${formatCH(floor?.threshold || 0)}원이 되면 열려요 (${Math.round((floor?.progress || 0) * 100)}%)` : broke ? '칩이 부족해요 · 은행에서 빌릴 수 있어요' : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원부터는 졸업` : '끝없는 층';
+    const status = locked ? `순자산 ${formatCH(floor?.threshold || 0)}원이 되면 열려요 (${Math.round((floor?.progress || 0) * 100)}%)` : broke ? '칩이 부족해요 · 은행에서 빌릴 수 있어요' : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
     b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);

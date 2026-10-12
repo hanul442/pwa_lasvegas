@@ -16,6 +16,8 @@ const validateStake = (user, floor, stake) => validateStakeAgainstFloor(user, FL
 function world(seed = 7) {
   seed += Number(process.env.ROOM_SEED || 0);
   const state = defaultState();
+  // The friends sit at High Limit, so keep their wallets under its 10억 ceiling.
+  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = Math.min(state.users[uid].account.available, 900_000_000);
   let clock = 1_000_000;
   const rand = seeded(seed);
   const ctx = () => ({ now: clock, rand, validateStake });
@@ -195,6 +197,7 @@ test('the room module stays runtime-neutral (no file system, runs in the Worker)
 // ---------- API ----------
 function memoryStore() {
   let state = defaultState();
+  for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = Math.min(state.users[uid].account.available, 900_000_000);
   let queue = Promise.resolve();
   return {
     peek: () => state,

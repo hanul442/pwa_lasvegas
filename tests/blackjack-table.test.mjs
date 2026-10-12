@@ -152,6 +152,8 @@ test('basic strategy: six decks, dealer stands on soft 17, double after split', 
 
 function memoryStore() {
   let state = defaultState();
+  // Mid-way through High Limit (1억–10억 net worth), so a few wins don't graduate the floor.
+  state.users.hanseo.account.available = 300_000_000;
   return {
     load: async () => structuredClone(state),
     mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; }

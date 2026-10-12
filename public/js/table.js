@@ -528,7 +528,7 @@ export class Table {
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
-    if (net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: staked > 0 && net >= staked * BIG_WIN_MULTIPLE ? `${Math.floor(net / staked)}×` : '대박' });
+    if (big !== false && net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: staked > 0 && net >= staked * BIG_WIN_MULTIPLE ? `${Math.floor(net / staked)}×` : '대박' });
     await wait(net > 0 ? 900 : 650);
     const moves = [];
     const balance = this.balanceEl.getBoundingClientRect();

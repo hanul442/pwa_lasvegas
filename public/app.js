@@ -44,6 +44,7 @@ const GAMES = [
   { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
   { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: ctx => mountBlackjack(ctx, { event: 'oceans' }) },
   { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: ctx => mountHoldem(ctx, { tourney: 'rounders' }) },
+  { id: 'whale', event: 'whale', guide: 'poker', name: 'The Whale Room', blurb: '최상위 부자 전용 홀덤 토너먼트. 바이인 1천억, 우승하면 ×10.', mount: ctx => mountHoldem(ctx, { tourney: 'whale' }) },
   { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: ctx => mountBaccarat(ctx, { event: 'montecarlo' }) }
 ];
 const eventOf = g => (g.event ? state?.events?.find(e => e.id === g.event) || null : null);
@@ -199,7 +200,8 @@ function renderRecharge() {
     slot.append(b);
   }
   const last = lastTable();
-  const lastEventElsewhere = last && GAMES.find(g => g.id === last.game)?.event && TIERS[last.tier]?.floor !== state?.eventEntry?.floor;
+  const lastEvent = last && GAMES.find(g => g.id === last.game)?.event;
+  const lastEventElsewhere = lastEvent && TIERS[last.tier]?.floor !== (eventOf({ event: lastEvent })?.floor ?? state?.eventEntry?.floor);
   if (last && !outgrownTier(last.tier) && !lastEventElsewhere) {
     const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
     const short = (state?.user?.account?.available ?? Infinity) < tier.min;
@@ -288,7 +290,7 @@ function renderGameLists() {
 // The lobby carries one slim teaser for this week's event; the 이벤트 tab has the rest.
 function renderEvents() {
   const slot = document.querySelector('[data-events]');
-  const g = GAMES.find(x => x.event && eventOf(x));
+  const g = GAMES.find(x => x.event && eventOf(x) && !eventOf(x).always);
   const ev = g && eventOf(g);
   slot.hidden = !ev;
   if (!ev) { slot.replaceChildren(); return; }
@@ -304,8 +306,8 @@ const dayLabel = iso => new Date(iso).toLocaleDateString('ko-KR', { month: 'long
 function eventCard(ev, { now = false } = {}) {
   const g = GAMES.find(x => x.event === ev.id);
   const card = el('article', `event-banner event-card event-banner--${ev.id}${now ? '' : ' is-upcoming'}`);
-  const when = now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
-  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine()}`;
+  const when = ev.always ? '언제나 열려 있어요' : now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
+  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine(ev)}`;
   if (now && g) {
     const go = el('button', 'event-cta', '테이블 고르기');
     go.type = 'button';
@@ -316,13 +318,15 @@ function eventCard(ev, { now = false } = {}) {
   return card;
 }
 // Events seat only big players: one fixed table, and a minimum holding to sit down.
-function eventEntry() {
-  const e = state?.eventEntry;
+// Each event names its own table and entry (The Whale Room sits one floor up); older servers
+// sent one entry for every event.
+function eventEntry(ev) {
+  const e = ev?.floor && ev?.entry ? { floor: ev.floor, entry: ev.entry } : state?.eventEntry;
   const tier = e && Object.values(TIERS).find(t => t.floor === e.floor);
   return e && tier ? { ...e, tier, open: (state?.user?.account?.available ?? 0) >= e.entry } : null;
 }
-function entryLine() {
-  const e = eventEntry();
+function entryLine(ev) {
+  const e = eventEntry(ev);
   if (!e) return '';
   return `<p class="event-entry${e.open ? ' is-open' : ''}">입장 · 보유 칩 ${formatCH(e.entry)} 이상 · ${e.tier.name} ${formatCH(e.tier.min)}–${formatCH(e.tier.max)}원${e.open ? '' : ' · 아직 입장할 수 없어요'}</p>`;
 }
@@ -331,6 +335,7 @@ function renderEventTab() {
   const live = now && eventOf({ event: now.id }) ? now : null;
   document.querySelector('[data-event-now]').replaceChildren(live ? eventCard(live, { now: true }) : el('p', 'lede', '이번 주에는 열린 이벤트가 없어요.'));
   document.querySelector('[data-event-next]').replaceChildren(...(next ? [eventCard(next)] : []));
+  document.querySelector('[data-event-always]').replaceChildren(...(state?.eventsAlways || []).map(ev => eventCard(ev, { now: true })));
   document.querySelector('[data-event-schedule]').replaceChildren(...later.map(ev => {
     const li = el('li', `event-schedule-row event-banner--${ev.id}`);
     li.innerHTML = `<span>${dayLabel(ev.from)}</span><b>${ev.title}</b><small>${ev.kicker}</small>`;
@@ -366,7 +371,8 @@ function renderTiers() {
   const floors = state?.floors || [];
   const available = state?.user?.account?.available ?? 0;
   // Floors a player has outgrown fold away behind one line; the next locked floor shows what it takes.
-  if (selectedGame?.event && eventEntry()) return renderEventTier(grid, eventEntry());
+  const entry = selectedGame?.event && eventEntry(eventOf(selectedGame));
+  if (entry) return renderEventTier(grid, entry);
   const all = Object.values(TIERS).map(tier => ({ tier, floor: floors.find(f => f.slug === tier.floor) }));
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);

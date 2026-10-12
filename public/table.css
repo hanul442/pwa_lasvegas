@@ -861,6 +861,7 @@
 .felt.felt--tazza{--felt-a:#3b1518;--felt-b:#260c0f;--felt-c:#0d0405}
 .is-event--oceans .felt{--felt-a:#1b3557;--felt-b:#0f2240;--felt-c:#050c18}
 .felt.felt--rounders{--felt-a:#3a2c1c;--felt-b:#241a10;--felt-c:#0c0805}
+.felt.felt--whale{--felt-a:#2c2a33;--felt-b:#17161c;--felt-c:#070709}
 .is-event--montecarlo .felt{--felt-a:#2f2450;--felt-b:#1c1534;--felt-c:#080611}
 .royale-boss{font:600 14px/1.2 var(--sans);color:#d9dde2}
 .royale-boss b{color:var(--white);font-weight:800}
@@ -871,3 +872,18 @@
 .ev-meter-pips i.is-on{background:var(--star);border-color:var(--star)}
 /* at the showdown my hand is called over my seat already */
 .pk-seat--hero:has([data-hand-name]) .pk-myhand{display:none}
+/* heads-up (holdem-view.js enterDuel): the two players lit, the rest of the room dimmed, and the
+   felt's edges darkening in a slow heartbeat */
+.pk-oval.is-duel .pk-seat:not(.is-duelist){opacity:.22;filter:grayscale(1);transition:opacity .5s,filter .5s}
+.pk-oval.is-duel .is-duelist .pk-plate{box-shadow:0 0 0 1.5px var(--star),0 0 26px #fff3dc33,0 8px 18px #0009}
+.pk-oval::after{content:"";position:absolute;inset:-12px;border-radius:40px;pointer-events:none;opacity:0;box-shadow:inset 0 0 90px 30px #000;transition:opacity .6s;z-index:1}
+.pk-oval.is-duel::after{opacity:1;animation:pk-heartbeat 1.15s ease-in-out infinite}
+@keyframes pk-heartbeat{0%,40%,100%{opacity:.75}12%{opacity:1}24%{opacity:.85}30%{opacity:1}}
+.pk-duel{position:absolute;left:50%;top:34%;z-index:9;display:grid;justify-items:center;gap:4px;transform:translate(-50%,-50%);pointer-events:none;animation:pk-duel 1.7s var(--ease-out) both}
+.pk-duel b{font:600 clamp(26px,8vw,54px)/1 var(--display);font-stretch:125%;letter-spacing:.08em;white-space:nowrap;color:var(--white);text-shadow:0 4px 24px #000}
+.pk-duel small{padding:3px 12px;border-radius:999px;background:#000c;color:var(--ivory);font:600 13px var(--sans);white-space:nowrap}
+@keyframes pk-duel{0%{opacity:0;letter-spacing:.5em;transform:translate(-50%,-50%) scale(1.2)}18%,78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .pk-oval.is-duel::after{animation:none}
+  .pk-duel{animation:none}
+}

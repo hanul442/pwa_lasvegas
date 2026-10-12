@@ -7,6 +7,7 @@ import { wait, formatCH, flyFrom, flyTo, animate, sound, el } from '../fx.js';
 import { createChip, breakdown } from '../chips.js';
 import { Table } from '../table.js';
 import { voice } from '../voice.js';
+import { eventResult } from '../event-result.js';
 import { createPokerFelt, createActionBar } from './holdem-view.js';
 import { createFriends } from './holdem-room.js';
 
@@ -44,7 +45,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
         <span class="royale-buyin"><small>바이인</small>${formatCH(entry)}원</span>
         <ul class="royale-rules">${(ev?.rules || []).map(r => `<li>${r}</li>`).join('')}</ul>
       </div>`);
-    pk.hintLine.textContent = tourney === 'rounders' ? '보스가 기다리고 있어요' : '하이롤러 다섯 명이 기다리고 있어요';
+    pk.hintLine.textContent = tourney === 'rounders' ? '보스가 기다리고 있어요' : tourney === 'whale' ? '세계 최고 부자 다섯 명이 기다리고 있어요' : '하이롤러 다섯 명이 기다리고 있어요';
   }
   // The tournament's state over the felt: level, blinds, who is left, what it pays.
   function paintHud(s) {
@@ -86,9 +87,14 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
   async function royaleNote(e) {
     if (e.t === 'level') { t.banner(`Level ${e.level}`, 'push'); t.toast(`블라인드가 ${formatCH(e.small)}/${formatCH(e.big)}로 올랐어요`); sound.tick(); await wait(700); }
     else if (e.t === 'rebuy') { t.toast(`리바이 · ${formatCH(e.stack)} 다시 받았어요`); sound.chips(3); }
-    else if (e.t === 'out') { t.toast(`${e.name} 탈락 · ${e.place}위`); await wait(600); }
+    else if (e.t === 'out') {
+      t.toast(`${e.name} 탈락 · ${e.place}위`);
+      await wait(600);
+      // Down to the last two of a six-seat tournament: the final.
+      if (e.place === 3 && tourney !== 'rounders') { t.banner('HEADS-UP 결승', 'push'); sound.tick(); await wait(900); }
+    }
     else if (e.t === 'royale-end') {
-      if (e.place === 1) t.banner(tourney === 'rounders' ? '보스 격파' : 'Casino Royale 우승', 'win');
+      if (e.place === 1) t.banner(tourney === 'rounders' ? '보스 격파' : `${evOf(tourney)?.title || 'Casino Royale'} 우승`, 'win');
       else t.banner(`${e.place}위로 마쳤어요`, 'lose');
       await wait(900);
     }
@@ -112,7 +118,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     if (!royale && !t.betReady) return;
     const buyIn = royale ? entry : t.total;
     let res;
-    try { res = await api.holdemSit(buyIn, t.tier.floor, opponents, tourney === 'royale', tourney === 'rounders' ? 'rounders' : null); }
+    try { res = await api.holdemSit(buyIn, t.tier.floor, opponents, tourney === 'royale', tourney && tourney !== 'royale' ? tourney : null); }
     catch (e) { t.toast(errorMessage(e)); return; }
     t.lock();
     // The buy-in leaves the cloth and becomes the person's stack.
@@ -193,12 +199,18 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
         return flyFrom(c, from, { duration: 520, delay: k * 50, lift: 50 }).then(() => c.remove());
       }));
     }
-    const won = tourney === 'rounders' ? '보스 격파' : 'Casino Royale 우승';
-    t.banner(royale ? (cash > 0 ? won : '토너먼트를 마쳤어요') : cash > 0 ? '일어났어요' : '칩을 모두 잃었어요', net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
     // The house's event prize on top of the pot: the champion's bonus, the runner-up's buy-in back, the boss bounty.
     const extra = (r?.bonus || 0) + (r?.bounty || 0);
-    if (royale && cash > 0 && net > 0) await t.bigWin(net + extra, tourney === 'rounders' ? { title: 'BOSS DOWN', subtitle: `현상금 ${formatCH(extra)} 포함 · 다음 보스가 기다려요` } : { title: 'CASINO ROYALE', subtitle: `우승 보너스 ${formatCH(extra)} 포함` });
-    else if (extra > 0) t.toast(`${r.place}위 상금 ${formatCH(extra)}원을 받았어요`);
+    if (royale && r?.place) {
+      // A tournament ends on its own screen: the victory card for a prize, the noir defeat otherwise.
+      const title = evOf(r.event || tourney)?.title || 'Casino Royale';
+      const event = r.event || tourney;
+      const headsUp = event === 'rounders';
+      const won = !r.forfeit && (r.place === 1 || (r.place === 2 && !headsUp));
+      const detail = r.forfeit ? '기권했어요' : extra > 0 ? `${r.bounty ? '현상금' : r.place === 1 ? '우승 보너스' : '바이인 반환'} ${formatCH(extra)} 포함` : '';
+      const amount = won ? (r.place === 1 ? net + extra : extra) : Math.max(0, -net);
+      await eventResult({ event, win: won, title, place: headsUp ? null : r.place, amount, detail, nickname: t.nickname });
+    } else t.banner(cash > 0 ? '일어났어요' : '칩을 모두 잃었어요', net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
     hud.hidden = true;
     t.locked = false;
     t.root.classList.remove('is-playing');

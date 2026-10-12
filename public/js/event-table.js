@@ -1,6 +1,7 @@
 // Event tables in the client (lib/events.mjs): the event's copy from the server state, and the
 // win-run meter over the felt with its bonus moment (Ocean's vault, the Monte Carlo gala).
 import { el, formatCH, sound } from './fx.js';
+import { eventResult } from './event-result.js';
 
 export const eventInfo = (state, id) => state?.events?.find(e => e.id === id) || null;
 
@@ -21,8 +22,7 @@ export function createStreakMeter(t, ev, start = 0) {
       if (!s) return;
       if (s.bonus > 0) {
         paint(need);
-        sound.win();
-        await t.bigWin(s.bonus, { title: ev.id === 'oceans' ? 'VAULT OPEN' : 'GALA BONUS', subtitle: `${need}연승 · ${ev.streak.label} 보너스 ${formatCH(s.bonus)}` });
+        await eventResult({ event: ev.id, win: true, title: ev.title, amount: s.bonus, detail: `${need}연승 · ${ev.streak.label} 보너스`, nickname: t.nickname });
       }
       paint(s.streak);
     }

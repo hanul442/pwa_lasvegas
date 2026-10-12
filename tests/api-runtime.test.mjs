@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
+import { forceHotTable } from '../lib/hot-table.mjs';
+
+// These tests count exact payouts: keep 핫 딜러 타임 (lib/hot-table.mjs) out of them whatever the hour.
+forceHotTable('off');
 
 // The same handler runs in the Node server and the Cloudflare Worker, so it must work
 // against any store that offers load() and mutate().

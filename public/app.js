@@ -26,6 +26,7 @@ import { mountInstallButton } from './js/install.js';
 import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
 import { renderBank } from './js/bank.js';
+import { hotStatus, clock, pct } from './js/hot.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -240,7 +241,15 @@ function gameRow(g) {
   b.dataset.game = g.id;
   if (g.soon) b.setAttribute('aria-disabled', 'true');
   if (g.event) b.classList.add('is-event');
-  b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span>`;
+  // 핫 딜러 타임 (lib/hot-table.mjs): the hot game wears a badge and counts down in place of its tagline.
+  const hot = !g.event && hotStatus(state).live;
+  if (hot && hot.game === g.id) {
+    b.classList.add('is-hot');
+    b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}<span class="hot-badge">HOT ${pct(hot)}</span></span><span class="game-row-desc">핫 딜러 타임 · 이기면 ${pct(hot)} · <span data-hot-left>${clock(Date.parse(hot.endsAt) - hotStatus(state).now)}</span> 남음</span>`;
+    b.setAttribute('aria-label', `${g.name}, 핫 테이블, 이기면 순수익 ${pct(hot)}`);
+  } else {
+    b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span>`;
+  }
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
   return li;
@@ -286,6 +295,21 @@ function renderGameLists() {
   document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids], i) => [groupHead(name, i ? '' : stake), ...ids.map(byId).filter(Boolean).map(gameRow)]));
   renderEvents();
 }
+
+// The hot badge follows the clock: the countdown ticks, and the lists redraw when a window opens or closes.
+let shownHot = null;
+setInterval(() => {
+  if (!state) return;
+  const { live, now } = hotStatus(state);
+  const key = live ? `${live.game}:${live.startsAt}` : '';
+  if (key !== shownHot) { shownHot = key; renderGameLists(); return; }
+  if (live) document.querySelectorAll('[data-hot-left]').forEach(n => { n.textContent = clock(Date.parse(live.endsAt) - now); });
+}, 1000);
+// The lounge's hot table block sends players straight to that game's tables.
+addEventListener('vegas:choose-game', event => {
+  const row = document.querySelector(`.game-row[data-game="${event.detail?.game}"]`);
+  if (row) chooseGame(row);
+});
 
 // The lobby carries one slim teaser for this week's event; the 이벤트 tab has the rest.
 function renderEvents() {

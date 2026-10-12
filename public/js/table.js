@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, moneyResult, rollNumber, el, wait, ms } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
 
@@ -17,7 +17,8 @@ function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(v
 export class Table {
   // multi: separate bets per zone. zoneMin: every zone must meet the table minimum (blackjack
   // boxes) rather than the total (chips spread over a roulette layout).
-  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false }) {
+  // hot: whether this table takes part in 핫 딜러 타임 (lib/hot-table.mjs); event tables don't.
+  constructor({ mount, game, title, tier, state, onLeave, feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true }) {
     this.pushDouble = pushDouble;
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
@@ -50,7 +51,7 @@ export class Table {
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="게임 목록으로 나가기"><span aria-hidden="true">←</span></button>
-        <div class="table-name"><strong>${title}</strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatCH(this.tier.max)}원</i></span></div>
+        <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatCH(this.tier.max)}원</i></span></div>
         <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
         <div class="table-tools">
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
@@ -92,6 +93,10 @@ export class Table {
     root.querySelector('[data-tool="max"]').addEventListener('click', () => this.max());
     this.renderTray();
     this.renderRack();
+    this.hotEl = root.querySelector('[data-hot]');
+    this.hotOn = hot;
+    this.hotWindows = [];
+    this.watchHot(state, { announce: true });
     // Number keys 1–5 pick a chip from the tray, left to right.
     this.onKey(e => {
       if (e.ctrlKey || e.metaKey || e.altKey || this.locked || this.busy) return;
@@ -503,7 +508,8 @@ export class Table {
   // `zones` maps zone id to its own net; without it the whole net belongs to the one bet.
   // `big` names a moment worth stopping the table for ({ title, subtitle }); any win of five
   // times the stake or more gets one anyway.
-  async settle(net, { label, kind, zones, big } = {}) {
+  // `hot` is the round's 핫 테이블 bonus ({ bonus, rate }), already counted in `net`.
+  async settle(net, { label, kind, zones, big, hot } = {}) {
     const staked = this.total;
     const held = [...this.bets.keys()].filter(z => this.chipsOf(z).length);
     const nets = zones || new Map([[held[0], net]]);
@@ -524,7 +530,7 @@ export class Table {
       });
     });
     if (pays.length) { sound.chips(Math.min(pays.length, 6)); await Promise.all(pays); }
-    if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'), net);
+    if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'), net, hot?.bonus > 0 ? `핫 테이블 +${Math.round(hot.rate * 100)}% · +${formatMoney(hot.bonus)}` : '');
     if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
     else if (net < 0) { sound.lose(); haptic(30); }
     else sound.push();
@@ -557,6 +563,40 @@ export class Table {
 
   setServerState(state) {
     if (state?.user?.account) this.available = state.user.account.available;
+    this.watchHot(state);
+  }
+
+  // ---------- 핫 딜러 타임 ----------
+  // The "HOT" marker by the title and its countdown, while this game is the hot table. The
+  // windows come with every server state; the clock is corrected by the server's time.
+  watchHot(state, { announce = false } = {}) {
+    if (!this.hotOn || !state) return;
+    if (state.serverTime) this.clockSkew = Date.parse(state.serverTime) - Date.now();
+    this.hotWindows = [state.hotTable, state.hotNext].filter(w => w && w.game === this.game);
+    if (!this.hotTimer) {
+      this.hotTimer = setInterval(() => this.paintHot(), 1000);
+      this.listeners.push(['hot-timer', this.hotTimer]);
+    }
+    const live = this.paintHot();
+    if (announce && live) setTimeout(() => this.toast(`핫 딜러 타임 · 이기면 순수익 +${Math.round(live.bonus * 100)}%`), 400);
+  }
+
+  paintHot() {
+    const now = Date.now() + (this.clockSkew || 0);
+    const live = this.hotWindows.find(w => now >= Date.parse(w.startsAt) && now < Date.parse(w.endsAt));
+    const node = this.hotEl;
+    node.hidden = !live;
+    this.root.classList.toggle('is-hot', Boolean(live));
+    if (!live) return null;
+    const left = Math.max(0, Math.ceil((Date.parse(live.endsAt) - now) / 1000));
+    const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    const pct = Math.round(live.bonus * 100);
+    if (!node.firstChild) node.innerHTML = '<b>HOT</b><span class="hot-pct"></span><span data-hot-clock></span>';
+    node.querySelector('.hot-pct').textContent = `+${pct}%`;
+    node.querySelector('[data-hot-clock]').textContent = clock;
+    node.setAttribute('aria-label', `핫 테이블, 이기면 순수익 ${pct}% 추가, ${Math.floor(left / 60)}분 ${left % 60}초 남음`);
+    node.title = `핫 딜러 타임: 이기면 순수익의 ${pct}%를 더 받아요 (베팅액까지)`;
+    return live;
   }
 
   async setBalance(value, { roll = true } = {}) {
@@ -583,12 +623,13 @@ export class Table {
 
   // ---------- feedback ----------
   // The headline, and under it what the round was worth: "7억 2천만원 벌었어요".
-  banner(text, kind = 'win', net = 0) {
+  banner(text, kind = 'win', net = 0, extra = '') {
     const node = this.root.querySelector('[data-banner]');
     node.className = `banner banner--${kind} is-shown`;
     node.replaceChildren();
     if (text) node.append(el('span', 'banner-head', text));
     if (net) node.append(el('span', 'banner-money', moneyResult(net)));
+    if (extra) node.append(el('span', 'banner-hot', extra));
     clearTimeout(this.bannerTimer);
     this.bannerTimer = setTimeout(() => node.classList.remove('is-shown'), ms(1800));
   }
@@ -638,5 +679,5 @@ export class Table {
     this.listeners.push(['keydown', fn]);
   }
 
-  destroy() { this.listeners.forEach(([t, fn]) => window.removeEventListener(t, fn)); this.listeners = []; }
+  destroy() { this.listeners.forEach(([t, fn]) => (t === 'hot-timer' ? clearInterval(fn) : window.removeEventListener(t, fn))); this.listeners = []; this.hotTimer = null; }
 }

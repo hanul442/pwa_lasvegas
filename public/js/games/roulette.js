@@ -204,11 +204,12 @@ export async function mountRoulette(ctx) {
     await spinTo(res.round.number);
     voice.say(rouletteLine(res.round.number));
     await wait(250);
-    const net = res.round.netPnl;
+    const hot = res.round.hotTable;
+    const net = res.round.netPnl + (hot?.bonus || 0);
     // Each spot is paid or raked on its own.
     const zones = new Map(res.round.bets.map((b, i) => [bets[i].zone, b.netPnl]));
     const hits = res.round.bets.filter(b => b.won).length;
-    const settled = t.settle(net, { zones, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
+    const settled = t.settle(net, { zones, hot, label: `${res.round.number} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}`, big: hits && res.round.bets.some(b => b.won && b.betType === 'NUMBER') && net >= res.round.stake * 5 ? { title: `${res.round.number}`, subtitle: '35 대 1' } : null });
     await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, res.round.number))]);
     await t.syncBalance();
     crowd.open();

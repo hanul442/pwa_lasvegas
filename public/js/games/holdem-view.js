@@ -12,7 +12,7 @@ export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '�
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
 // Big blind per table: a tenth of its smallest bet, and never under 2원 (lib/holdem-session.mjs).
 export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2, t.min / 10)]));
-const STACK_MAX = 7; // chips shown per column of a player's stack
+const STACK_MAX = 6; // chips in the tower beside each player's plate
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {
@@ -70,6 +70,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   let handStart = null; // my stack when this hand was dealt, for the result banner
   let winners = [];
   let calledHand = false; // the winning hand is called once, even when side pots pay out again
+  let lastStanding = false; // this hand was won without a showdown, everyone else folded
   const shown = new Map(); // seat -> cards turned up at showdown
   let current = null; // last table view drawn
   const seatEls = pk.seatEls;
@@ -93,8 +94,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         <div class="hand pk-cards" data-cards></div>
         <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><i class="pk-myhand" data-myhand></i><em class="pk-tag" data-tag></em><span class="pk-stack" data-chips aria-hidden="true"></span></div>`;
       const bet = el('div', `pk-bet${side ? ' pk-bet--side' : ''}`);
-      bet.style.setProperty('--x', (50 + (p.x - 50) * (side ? 0.3 : 0.55)).toFixed(2));
-      bet.style.setProperty('--y', (k === 0 && pk.me >= 0 ? 88 : 50 + (p.y - 50) * 0.56).toFixed(2));
+      bet.style.setProperty('--x', (50 + (p.x - 50) * (side ? (p.y > 50 ? 0.1 : 0.25) : 0.55)).toFixed(2));
+      bet.style.setProperty('--y', (k === 0 && pk.me >= 0 ? 88 : 50 + (p.y - 50) * (side ? (p.y > 50 ? 1.3 : 0.56) : 0.45)).toFixed(2));
       bet.innerHTML = '<span class="pk-bet-stack"></span><b></b>';
       seatsEl.append(node, bet);
       seatEls.push({ node, bet, cards: node.querySelector('[data-cards]'), plate: node.querySelector('.pk-plate'), key: seatKey(s), stack: s.stack });
@@ -126,8 +127,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     const text = mine.length === 2 ? handName([...mine, ...up(boardEl)]) : '';
     if (node.textContent !== text) node.textContent = text;
   }
-  // What each player has left, stacked beside their plate in the table's chips: a column for
-  // each of the (up to three) biggest chips they hold, taller the more of it they have.
+  // What each player has left, as one small tower of the table's chips beside their plate:
+  // the biggest chips at the bottom, a few smaller ones on top, never taller than STACK_MAX.
   function paintChips(e, amount) {
     const box = e.node.querySelector('[data-chips]');
     const set = pk.chipSet || [pk.bb];
@@ -135,14 +136,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     if (!box || box.dataset.key === key) return;
     box.dataset.key = key;
     const counts = amount > 0 ? holding(amount, set) : [];
-    const cols = set.map((v, k) => [v, counts[k] || 0]).filter(([, n]) => n > 0).slice(-3).reverse();
-    box.replaceChildren(...cols.map(([v, n]) => {
-      const col = el('span', 'pk-stack-col');
-      const shown = Math.min(n, STACK_MAX);
-      col.style.setProperty('--n', shown);
-      for (let j = 0; j < shown; j++) { const c = createChip(v); c.style.setProperty('--i', j); col.append(c); }
-      return col;
-    }));
+    const tower = [];
+    for (let k = set.length - 1; k >= 0 && tower.length < STACK_MAX; k--) for (let j = 0; j < (counts[k] || 0) && tower.length < STACK_MAX; j++) tower.push(set[k]);
+    box.style.setProperty('--n', tower.length);
+    box.replaceChildren(...tower.map((v, j) => { const c = createChip(v); c.style.setProperty('--i', j); return c; }));
   }
   function tag(i, text, kind = '') {
     const node = seatEls[i]?.node.querySelector('[data-tag]'); if (!node) return;
@@ -255,7 +252,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         clearTags();
         markTurn(-1);
         winners = [];
-        shown.clear(); calledHand = false;
+        shown.clear(); calledHand = false; lastStanding = false;
         handStart = me >= 0 && ev.seats.includes(me) ? seatEls[me]?.stack ?? null : null;
         seatEls.forEach((s, i) => { s.node.classList.remove('is-folded', 'is-allin', 'is-winner'); s.node.classList.toggle('is-out', !ev.seats.includes(i) && !s.node.classList.contains('is-empty')); paintBet(i, 0); s.node.querySelector('[data-hand-name]')?.remove(); s.cards.classList.remove('is-showoff'); s.node.classList.remove('is-showing'); });
         moveButton(ev.button);
@@ -290,12 +287,12 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
-        // The dealer calls each bet by its size alone: "Sixty thousand", "Two hundred thousand".
-        // The newest call-out replaces any still waiting (the one he is saying finishes), so he
-        // never falls more than one line behind the table and the table never waits for him.
+        // The dealer reads only a new size on the table, by its amount alone: "Sixty thousand".
+        // A call (the same amount again) goes unsaid. The newest call-out replaces any still
+        // waiting, so he never falls behind the table and the table never waits for him.
         if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
         else if (ev.action === 'CHECK') voice.say('check', { next: true });
-        else if (ev.action !== 'FOLD') voice.say(betLine(ev.action, ev.bet), { next: true });
+        else if (ev.action === 'BET' || ev.action === 'RAISE') voice.say(betLine(ev.action, ev.bet), { next: true });
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));
@@ -375,6 +372,13 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         await Promise.all(flying);
         setStack(ev.seat, ev.stack);
         tag(ev.seat, ev.uncalled ? '반환' : `+${formatCH(ev.amount)}`, 'win');
+        // Everyone else folded: no hand to call, the winner is the last one standing.
+        if (!ev.hand && !ev.uncalled && !shown.size && !target.node.querySelector('[data-hand-name]')) {
+          lastStanding = true;
+          const name = el('span', 'pk-handname pk-handname--last', 'LAST STANDING');
+          name.dataset.handName = '';
+          target.node.append(name);
+        }
         // A full house or better at showdown is a moment.
         if (ev.seat === me && BIG_HANDS.has(ev.hand)) await t.bigWin(ev.amount, { title: ev.hand, subtitle: "Hold'em" });
         break;
@@ -383,7 +387,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         ev.stacks.forEach((s, i) => setStack(i, s));
         const net = handStart === null ? 0 : ev.stacks[me] - handStart;
         const names = [...new Set(winners)].map(i => (i === me ? '나' : pk.nameOf(i, current?.seats?.[i] || {})));
-        const label = net > 0 ? 'You win' : names.length ? `${names.join(', ')} wins` : '';
+        const label = lastStanding ? (net > 0 ? 'Last standing' : `${names.join(', ')} · Last standing`) : net > 0 ? 'You win' : names.length ? `${names.join(', ')} wins` : '';
         if (label || net) t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
         if (net > 0) voice.say('you-win');
         if (net < 0) sound.lose();

@@ -29,7 +29,8 @@
   .table-name strong{grid-area:title;min-width:0}
   .table-name>span{grid-area:sub;min-width:0;font-size:12px;line-height:1.3}
   .table-balance{grid-area:bal;align-self:center}
-  .table-balance span{display:none}
+  .table-balance{display:flex;align-items:baseline;gap:5px}
+  .table-balance span{font-size:11px}
   .table-balance strong{font-size:14px}
   .table-tools{grid-area:tools}
 }
@@ -528,7 +529,7 @@
 @keyframes pk-showoff{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-14px) scale(1.12)}100%{transform:translateY(-4px) scale(1.04)}}
 .pk-tag.is-aggr,.pk-tag.is-win{background:var(--white);color:var(--ink);border-color:var(--white)}
 .pk-tag.is-fold{color:var(--smoke)}
-.pk-seat--hero .pk-tag{top:auto;bottom:calc(100% - 2px);left:calc(100% + 12px);transform:none}
+.pk-seat--hero .pk-tag{top:auto;bottom:calc(100% - 2px);left:calc(100% + 8px);transform:none}
 .pk-handname{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);padding:2px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:650 12px var(--sans);white-space:nowrap;box-shadow:0 6px 14px #0008;z-index:3}
 
 /* bets in front of each seat */
@@ -538,20 +539,21 @@
 .pk-bet b{font:650 14px var(--sans);font-variant-numeric:tabular-nums;padding:2px 8px;border-radius:999px;background:#000000b3;box-shadow:0 0 0 1px #ffffff1f;white-space:nowrap}
 .pk-button{position:absolute;left:calc(var(--x,50) * 1%);top:calc(var(--y,50) * 1%);width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;display:grid;place-items:center;background:var(--white);color:var(--ink);font:800 11px var(--display);box-shadow:0 2px 0 #9aa0a8,0 6px 10px #0008;opacity:0;transition:left .5s var(--ease-out),top .5s var(--ease-out),opacity .3s;z-index:5;pointer-events:none}
 .pk-button.is-shown{opacity:1}
-.pk-plate .pk-button{left:-9px;top:auto;bottom:-8px;margin:0;width:20px;height:20px;font-size:10px;transition:opacity .3s}
-.pk-seat--l .pk-plate .pk-button{left:auto;right:-9px}
-/* what each player has left, stacked on the felt beside their cards (beside the plate for me),
-   on the side facing the board */
-.pk-stack{position:absolute;bottom:calc(100% + 2px);left:calc(50% + 26px);display:flex;align-items:flex-end;gap:1px;pointer-events:none}
-.pk-seat--r .pk-stack{left:auto;right:calc(50% + 26px);flex-direction:row-reverse}
-.pk-seat--hero .pk-stack{bottom:4px;left:calc(100% + 12px);gap:2px}
+/* the dealer button sits just above the plate's outer corner, beside the cards (beside my plate
+   for me), never on a card or a name */
+.pk-plate .pk-button{left:2px;top:auto;bottom:calc(100% + 3px);margin:0;width:20px;height:20px;font-size:10px;transition:opacity .3s}
+.pk-seat--r .pk-plate .pk-button{left:auto;right:2px}
+.pk-seat--hero .pk-plate .pk-button{left:calc(100% + 8px);bottom:6px}
+.pk-seat:not(.pk-seat--side):not(.pk-seat--hero) .pk-plate .pk-button{left:auto;right:calc(100% + 6px);bottom:6px}
+/* what each player has left: one small tower of chips inside the plate, at its inner edge, so it
+   never runs into a bet, a card or the next seat */
+.pk-plate:has(.pk-stack:not(:empty)){padding-right:28px}
+.pk-seat--r .pk-plate:has(.pk-stack:not(:empty)){padding-right:8px;padding-left:28px}
+.pk-stack{--size:15px;position:absolute;right:6px;bottom:6px;width:calc(var(--size) * 1.24);height:calc(var(--size) * .8 + (var(--n) - 1) * 3px);pointer-events:none}
+.pk-seat--r .pk-stack{right:auto;left:6px}
 .pk-stack:empty{display:none}
-.pk-stack-col{--size:14px;position:relative;width:calc(var(--size) * 1.24);height:calc(var(--size) + (var(--n) - 1) * 2.5px)}
-.pk-seat--hero .pk-stack-col{--size:19px;height:calc(var(--size) + (var(--n) - 1) * 3px)}
-.pk-stack-col .chip{--size:inherit;position:absolute;left:0;right:0;margin:auto;bottom:calc(var(--i) * 2.5px);top:auto;box-shadow:0 1px 0 #000a}
-.pk-seat--hero .pk-stack-col .chip{bottom:calc(var(--i) * 3px)}
-.pk-stack-col .chip--plaque{height:calc(var(--size) * .8)}
-.pk-stack-col .chip-label,.pk-stack-col .chip::after{display:none}
+.pk-stack .chip{--size:inherit;position:absolute;left:0;right:0;margin:auto;bottom:calc(var(--i) * 3px);top:auto;box-shadow:0 1px 0 #000a}
+.pk-stack .chip-label,.pk-stack .chip::after{display:none}
 .pk-flying{--size:30px;position:fixed;z-index:100;margin:-15px 0 0 -15px;pointer-events:none}
 .pk-flying .chip-label{display:none}
 .chip-flyer{position:fixed;z-index:100;margin:0;pointer-events:none;translate:none;rotate:none}
@@ -644,13 +646,15 @@
 }
 /* Phones upright: side seats and their bets move up/down, away from the board's row. */
 @media (max-width:759px) and (orientation:portrait){
-  .pk-plate{min-width:64px;max-width:112px;padding:3px 8px 4px;border-radius:10px;line-height:1.2}
+  .pk-plate{min-width:64px;max-width:132px;padding:3px 8px 4px;border-radius:10px;line-height:1.2}
   .pk-plate b{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;font-stretch:100%;letter-spacing:0}
   .pk-plate span{font-size:13px}
-  .pk-plate small{font-size:10.5px}
+  .pk-plate small{display:none}
   .pk-seat--hero .pk-plate{max-width:none;padding:4px 14px 5px}
-  .pk-seat--side{top:calc((50 + (var(--y) - 50) * 1.3) * 1%)}
-  .pk-bet--side{top:calc((50 + (var(--y) - 50) * 1.5) * 1%)}
+  .pk-seat--side{left:calc((50 + (var(--x) - 50) * .8) * 1%);top:calc((50 + (var(--y) - 50) * 1.3) * 1%)}
+  .pk-bet--side{top:calc(var(--y) * 1%)}
+  .table-screen--holdem.is-seated .pk-center{top:calc(50% + 20px)}
+  .pk-seat:not(.pk-seat--side):not(.pk-seat--hero){transform:translate(-50%,calc(-50% - 10px))}
 }
 @media (orientation:landscape) and (max-height:520px){
   /* the felt is barely 230px tall on its side: the oval fills it and my cards sit beside my plate */
@@ -772,6 +776,12 @@
 .royale-hud{position:absolute;left:6px;bottom:6px;z-index:7;display:grid;gap:1px;padding:4px 7px;border-radius:8px;background:#050607d9;border:1px solid var(--hair-strong);color:#d9dde2;font:500 10.5px/1.3 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
 .royale-hud[hidden]{display:none}
 .royale-hud b{color:var(--white);font-weight:800}
+/* short phones: my cards sit beside my plate at the bottom, so the tournament line moves to the
+   top edge as one row */
+@media (max-height:760px) and (orientation:portrait){
+  .royale-hud{top:4px;bottom:auto;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:2px 8px}
+  .royale-hud span:nth-child(2){display:none}
+}
 
 /* ---------- premium pass: chips and cards ----------
    Chips: three-stripe edge inserts, a matte body that darkens toward the rim, and an inlay
@@ -859,3 +869,5 @@
 .ev-meter-pips{display:flex;gap:4px}
 .ev-meter-pips i{width:8px;height:8px;border-radius:50%;border:1px solid #ffffff70}
 .ev-meter-pips i.is-on{background:var(--star);border-color:var(--star)}
+/* at the showdown my hand is called over my seat already */
+.pk-seat--hero:has([data-hand-name]) .pk-myhand{display:none}

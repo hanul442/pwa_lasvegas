@@ -19,7 +19,7 @@ test('the dealer never falls behind the bots, and bots speak one at a time', asy
   const npc = await read('js/npc.js');
   assert.match(voice, /if \(drop && this\.busy\) return;/);
   assert.doesNotMatch(view, /voice\.idle/, 'the table never waits on the dealer\'s voice');
-  assert.match(view, /voice\.say\(betLine\(ev\.action, ev\.bet\), \{ next: true \}\)/, 'every bet is read with its size, newest first');
+  assert.match(view, /ev\.action === 'BET' \|\| ev\.action === 'RAISE'\) voice\.say\(betLine\(ev\.action, ev\.bet\), \{ next: true \}\)/, 'only a new size is read, newest first; calls go unsaid');
   assert.match(view, /quietUntil/);
   assert.match(npc, /quietUntil/);
 });

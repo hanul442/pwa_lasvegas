@@ -82,7 +82,7 @@
   .crowd{position:absolute;top:8px;bottom:auto;left:12px;right:12px;margin:0;padding:0;border:0;background:none;z-index:3}
   .table-screen--baccarat.has-crowd .shoe,.table-screen--baccarat.has-crowd .discard{top:46px}
   .crowd-avatar{width:26px;height:26px}
-  .crowd-meta b,.crowd-meta span{font-size:12px}
+  .crowd-meta b,.crowd-meta span{font-size:13px}
   .crowd-bubble{bottom:auto;top:calc(100% + 6px);border-radius:3px 12px 12px 12px;transform-origin:0 0}
   .crowd-seat:last-child:not(:first-child) .crowd-bubble{left:auto;right:-2px;border-radius:12px 3px 12px 12px;transform-origin:100% 0}
   .crowd-seat:nth-child(2):not(:last-child) .crowd-bubble{left:50%;translate:-50% 0}

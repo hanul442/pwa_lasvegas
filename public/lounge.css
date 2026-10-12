@@ -39,7 +39,7 @@
 .feed-list{list-style:none;margin:0;padding:0}
 .feed-item,.feed-empty{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;font-size:15px;line-height:1.45}
 .feed-item+.feed-item{border-top:1px solid var(--hair)}
-.feed-item small{flex:none;color:var(--dim);font-size:12px}
+.feed-item small{flex:none;color:var(--dim);font-size:13px}
 .feed-empty{color:var(--smoke)}
 .feed-item--hot-win span,.feed-item--jackpot span,.feed-item--season-winner span{color:var(--white)}
 .feed-item--jackpot span::before,.feed-item--season-winner span::before,.feed-item--hot-win span::before{content:"";display:inline-block;width:9px;height:9px;margin-right:7px;background:var(--star);clip-path:var(--star-shape)}
@@ -64,7 +64,7 @@
 .lounge-sheet h2{margin:4px 0 6px;font:600 clamp(24px,6.4vw,30px)/1.2 var(--display);font-stretch:112%;letter-spacing:-.02em}
 .lounge-sheet-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 .daily-strip{list-style:none;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:18px 0 0;padding:0}
-.daily-day{display:grid;justify-items:center;gap:2px;padding:10px 0 8px;border:1px solid var(--hair);border-radius:12px;color:var(--smoke);font-size:12px}
+.daily-day{display:grid;justify-items:center;gap:2px;padding:10px 0 8px;border:1px solid var(--hair);border-radius:12px;color:var(--smoke);font-size:13px}
 .daily-day b{color:var(--white);font:600 13px var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.02em}
 .daily-day.is-done{background:#ffffff0d;color:var(--dim)}
 .daily-day.is-done b{color:var(--dim);text-decoration:line-through}
@@ -99,14 +99,14 @@
 .season-last{margin:-4px 0 6px;color:var(--smoke);font-size:13px}
 
 /* ---------- profile: records and badges ---------- */
-.stat-grid dd small{color:var(--smoke);font-size:12px}
+.stat-grid dd small{color:var(--smoke);font-size:13px}
 .badge-list{list-style:none;display:flex;flex-wrap:wrap;gap:10px;margin:0;padding:0}
 .badge{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;padding:10px 14px 10px 12px;border:1px solid var(--hair);border-radius:14px}
 .badge-star{grid-row:1 / span 2;width:22px;height:22px;background:var(--smoke);clip-path:var(--star-shape)}
 .badge--1 .badge-star{background:var(--star)}
 .badge--1{border-color:#fff6dc55}
 .badge b{font-size:15px}
-.badge small{color:var(--smoke);font-size:12px}
+.badge small{color:var(--smoke);font-size:13px}
 .game-stats-wrap{overflow-x:auto}
 .game-stats{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
 .game-stats th,.game-stats td{padding:11px 8px;border-bottom:1px solid var(--hair);text-align:right;white-space:nowrap}
@@ -145,7 +145,7 @@
 
 /* ---------- roulette: spread bets, dozens and columns ---------- */
 .table-screen--roulette .rl-board{grid-template-columns:minmax(24px,.85fr) repeat(12,minmax(0,1fr)) minmax(28px,.95fr)}
-.num--col{background:#0e4e37;font-size:clamp(10px,2.6vw,13px)}
+.num--col{background:#0e4e37;font-size:clamp(12px,3.2vw,14px)}
 .rl-dozens{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
 .rl-dozens .zone{min-height:40px;--size:28px;padding:4px;border-radius:10px}
 .rl-dozens .zone strong{font-size:clamp(12px,3.4vw,15px);font-stretch:100%}
@@ -155,7 +155,7 @@
 .felt--slots{--felt-a:#23262c;--felt-b:#15171b;--felt-c:#08090b}
 .slot{display:grid;justify-items:center;align-content:center;gap:14px;padding-bottom:8px}
 .slot-jackpot{display:grid;justify-items:center;gap:2px;padding:10px 22px 12px;border-radius:14px;background:#050607;box-shadow:inset 0 0 0 1px #fff6dc40,0 10px 30px #000a}
-.slot-jackpot span{color:var(--smoke);font:500 12px var(--sans);letter-spacing:.18em}
+.slot-jackpot span{color:var(--smoke);font:500 13px var(--sans);letter-spacing:.18em}
 .slot-jackpot strong{color:var(--star);font:600 clamp(24px,7.4vw,36px)/1.1 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .slot-cabinet{display:flex;align-items:center;gap:10px}
 .slot-window{--sym:clamp(58px,17vw,92px);position:relative;display:grid;grid-template-columns:repeat(3,var(--sym));gap:8px;padding:10px;border-radius:18px;background:linear-gradient(#111317,#050607);box-shadow:inset 0 0 0 1px #ffffff26,0 18px 40px #000b}
@@ -336,7 +336,7 @@
 .lender-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
 .lender{width:100%;height:100%;display:grid;gap:4px;align-content:start;padding:16px;border:1px solid var(--hair-strong);border-radius:16px;background:var(--ink-2);text-align:left;transition:border-color .2s,background .2s}
 .lender:not(:disabled):hover{border-color:var(--white);background:var(--ink-3)}
-.lender:disabled{opacity:.55}
+.lender:disabled{opacity:.68}
 .lender-tier{color:var(--smoke);font-size:13px}
 .lender strong{font:600 22px/1.15 var(--display);font-stretch:112%;letter-spacing:-.02em}
 .lender-terms{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;color:var(--smoke);font-size:14px;font-variant-numeric:tabular-nums}
@@ -347,7 +347,7 @@
 .pay-row{display:flex;align-items:center;gap:14px;padding:12px 0}
 .pay-row .pill-button{flex:none;min-height:40px;padding:0 16px;font-variant-numeric:tabular-nums}
 .pay-weeks{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 0;padding:0}
-.pay-weeks li{padding:6px 0;border-radius:999px;border:1px solid var(--hair);color:var(--dim);font-size:12px;text-align:center}
+.pay-weeks li{padding:6px 0;border-radius:999px;border:1px solid var(--hair);color:var(--smoke);font-size:13px;text-align:center}
 .pay-weeks li.is-now{border-color:var(--hair-strong);color:var(--white)}
 .pay-weeks li.is-done{background:var(--white);border-color:var(--white);color:var(--ink)}
 .bank-block--bust .pill-button{margin-top:12px}
@@ -370,8 +370,8 @@
 .bank-error{margin:4px 0 0;color:#ff9d9d;font-size:14px}
 .tier-outgrown{margin:0;padding:14px 4px;border-bottom:1px solid var(--hair);color:var(--smoke);font-size:14px}
 .floor-row.is-outgrown span:first-child{color:var(--dim)}
-.floor-row small{color:var(--dim);font-size:12px}
-.ach-group{color:var(--dim);font-size:12px;margin-left:4px}
+.floor-row small{color:var(--smoke);font-size:13px}
+.ach-group{color:var(--smoke);font-size:13px;margin-left:4px}
 .ach-more{margin-top:8px}
 .ach-more summary{min-height:44px;display:flex;align-items:center;color:var(--smoke);font-size:14px;cursor:pointer}
 @media (min-width:760px){.bank-hero{grid-template-columns:auto 1fr;align-items:end;gap:40px}}

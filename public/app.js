@@ -92,8 +92,13 @@ function chooseGame(button) {
   showSurface('tiers', { focus: true });
 }
 
-async function openTable(tier) {
+// A floor this player has outgrown (net worth ≥ 1,000× its minimum) stays shut; only a seat they
+// already hold in a room there can bring them back.
+const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[slug]?.floor)?.outgrown);
+
+async function openTable(tier, { seated = false } = {}) {
   if (!selectedGame) return;
+  if (!seated && outgrownTier(tier)) { renderTiers(); showSurface('tiers', { focus: true }); return; }
   try { localStorage.setItem(LAST_TABLE_KEY, JSON.stringify({ game: selectedGame.id, tier })); } catch {}
   history.pushState({ vegasSurface: 'table' }, '', `#table-${selectedGame.id}-${tier}`);
   showSurface('table');
@@ -138,7 +143,7 @@ addEventListener('vegas:open-table', event => {
   const game = GAMES.find(g => g.id === event.detail?.game);
   if (!game) return;
   selectedGame = game;
-  openTable(TIERS[event.detail.tier] ? event.detail.tier : Object.keys(TIERS)[0]);
+  openTable(TIERS[event.detail.tier] ? event.detail.tier : Object.keys(TIERS)[0], { seated: true });
 });
 
 // ---------- state ----------
@@ -193,7 +198,7 @@ function renderRecharge() {
     slot.append(b);
   }
   const last = lastTable();
-  if (last) {
+  if (last && !outgrownTier(last.tier)) {
     const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
     const short = (state?.user?.account?.available ?? Infinity) < tier.min;
     const b = el('button', 'pill-button pill-button--solid', `${game.name} ${tier.name}에 다시 앉기`);

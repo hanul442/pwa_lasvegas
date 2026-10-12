@@ -172,6 +172,10 @@ test('the bank over the API: borrow, play, repay, outgrow a floor', async () => 
   const outgrown = await call('POST', '/api/sicbo/play', { stake: 10, floor: 'corner', betType: 'BIG' }, 'hanseo');
   assert.equal(outgrown.status, 403);
   assert.equal(outgrown.data.error, 'FLOOR_OUTGROWN');
+  // Every way to bet is shut, the multi-spot roulette table included.
+  const spin = await call('POST', '/api/roulette/spin', { floor: 'corner', bets: [{ betType: 'RED', stake: 10 }] }, 'hanseo');
+  assert.equal(spin.status, 403);
+  assert.equal(spin.data.error, 'FLOOR_OUTGROWN');
   const support = await call('POST', '/api/support/claim', { kind: 'grant' });
   assert.equal(support.status, 200);
   assert.equal(support.data.claim.amount, 500);

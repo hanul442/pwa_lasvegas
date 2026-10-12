@@ -81,6 +81,55 @@
   .hr-track{height:120px}
   .hr[data-phase="race"] .hr-track{min-height:200px}
 }
+/* Phones up to the Fold's cover screen: the rack folds away (chips still fly from its spot), the
+   track preview gets shorter and the runners' rows tighten, so all six fit above the chips. */
+@media (max-width:599px) and (orientation:portrait) and (max-height:820px){
+  .table-screen--horses .felt-body{padding-top:14px}
+  .table-screen--horses .dealer-rack{visibility:hidden}
+  .hr{gap:6px}
+  .hr-track{flex:1 1 72px;height:auto;min-height:72px;max-height:220px}
+  .hr-runner{padding:2px}
+  .zone.hr-odds{min-height:36px;padding:2px}
+}
+/* during the race the track takes whatever the ticket and the call leave */
+@media (max-height:820px){
+  .hr[data-phase="race"] .hr-track,.hr[data-phase="result"] .hr-track{min-height:180px;max-height:none}
+}
+/* the shortest phones keep each runner to one line: name, form and odds */
+@media (max-width:599px) and (orientation:portrait) and (max-height:700px){
+  .hr-tag{display:none}
+  .zone.hr-odds{min-height:32px}
+}
+/* the Fold's inner screen and tablets that aren't tall: a shorter track so the card fits */
+@media (min-width:600px) and (min-height:521px) and (max-height:820px){
+  .table-screen--horses .felt-body{padding-top:14px}
+  .table-screen--horses .dealer-rack{visibility:hidden}
+  .hr-track{flex:1 1 110px;height:auto;min-height:110px;max-height:260px}
+  .hr-runner{padding:3px 2px}
+  .zone.hr-odds{min-height:38px}
+}
+/* Phones on their side: the track runs down the left, the race card on the right. */
+@media (orientation:landscape) and (max-height:520px){
+  .table-screen--horses .felt-body{padding-top:12px}
+  .table-screen--horses .dealer-rack{visibility:hidden}
+  .hr{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);grid-template-rows:auto auto minmax(0,1fr);align-content:start;gap:6px 12px}
+  .hr>*{grid-column:2}
+  .hr>.hr-track{grid-column:1;grid-row:1 / -1;align-self:stretch;height:auto;min-height:120px}
+  .hr[data-phase="race"] .hr-track,.hr[data-phase="result"] .hr-track{min-height:0}
+  .hr>.hr-card{grid-row:1 / -1}
+  .hr-head{padding-bottom:3px;grid-template-columns:minmax(0,1fr) 58px 58px}
+  .hr-runner{grid-template-columns:26px minmax(0,1fr) 58px 58px;gap:6px}
+  .hr-runner{padding:1px 2px}
+  .hr-tag{display:none}
+  .zone.hr-odds{min-height:32px;padding:1px 2px}
+}
+/* phones under 400px tall on their side: one slim line per runner */
+@media (orientation:landscape) and (max-height:400px){
+  .zone.hr-odds{min-height:28px;padding:0 2px}
+  .zone.hr-odds small{display:none}
+  .table-screen--horses .felt-body{padding-top:6px;padding-bottom:4px}
+  .hr-runner{padding:0 2px}
+}
 @media (prefers-reduced-motion:reduce){
   .hr-track,.hr-result,.hr-photo{transition:none}
   .hr-call.is-new,.hr-track.is-flash .hr-flash{animation:none}

@@ -28,7 +28,7 @@ export function eventResult({ event, win, title, place = null, amount = 0, detai
       <div class="event-result-inner">
         <p class="event-result-kicker">${title}</p>
         ${win ? '<span class="event-result-star" aria-hidden="true"></span>' : '<span class="event-result-rule" aria-hidden="true"></span>'}
-        <h2 class="event-result-mark">${mark}</h2>
+        <h2 class="event-result-mark" style="--chars:${Math.max(...mark.split(' ').map(w => w.length))}">${mark}</h2>
         ${headline ? `<p class="event-result-place">${headline}</p>` : ''}
         ${amount ? `<strong class="event-result-amount"><span data-amount>${win ? '+' : '−'}0원</span></strong>` : ''}
         ${detail ? `<p class="event-result-detail">${detail}</p>` : ''}

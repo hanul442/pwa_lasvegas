@@ -159,7 +159,7 @@
 .coach-foot button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 
 /* Portrait phones: the 맞고 hand wraps to two rows so each card is big enough to read and tap. */
-@media (max-width:759px) and (orientation:portrait){
+@media (max-width:599px) and (orientation:portrait){
   .mg-hand{flex-wrap:wrap;row-gap:10px;align-content:flex-start;--hw-w:clamp(34px,calc((100vw - 80px) / 5.4),62px)}
   .mg-hand .hw{margin:0 2px}
   .mg-caps{--cap-w:clamp(18px,5.4vw,30px)}
@@ -167,18 +167,20 @@
 }
 /* Short phones: two rows of hand cards don't fit under the board, so the hand fans out in one
    row the way it's held, each card overlapping the next with its left edge (and month) showing. */
-@media (max-width:759px) and (orientation:portrait) and (max-height:760px){
+@media (max-width:599px) and (orientation:portrait) and (max-height:900px){
   .table-screen--matgo .felt-body{padding-top:16px}
   .table-screen--matgo .dealer-rack{display:none}
-  .mg{gap:6px;grid-template-columns:minmax(0,1fr)}
-  .mg-board{--hw-w:clamp(30px,min(10.8vw,5.8dvh),62px);gap:10px 8px;padding:6px 4px}
+  .mg{gap:4px;grid-template-columns:minmax(0,1fr)}
+  .mg-board{--hw-w:clamp(30px,min(10.8vw,5.4dvh),62px);gap:10px 8px;padding:4px}
   .mg-caps{--cap-w:clamp(15px,min(5.4vw,2.8dvh),30px)}
-  .mg-hand{flex-wrap:nowrap;justify-content:center;--hw-w:clamp(40px,min(16vw,8.4dvh),62px)}
+  .mg-hand{flex-wrap:nowrap;justify-content:center;padding-top:10px;--hw-w:clamp(40px,min(16vw,7.8dvh),62px)}
   .mg-hand .hw{flex:0 1 var(--hw-w);min-width:0;margin:0}
   .mg-hand .hw:last-child{flex-shrink:0}
   .mg-hand .hw-inner{inset:auto;left:0;top:0;width:var(--hw-w);height:calc(var(--hw-w) * 1.6)}
+  /* before the deal the chip tray is still up: the empty hand row gives way to it */
+  .mg-hand:empty{min-height:0}
 }
-@media (min-width:760px){
+@media (min-width:600px){
   .mg{--hw-w:clamp(36px,min(4.6vw,7dvh),60px)}
   .mg-board{--hw-w:clamp(38px,min(4.8vw,8dvh),64px);min-height:calc(var(--hw-w) * 2.2)}
   .mg-hand{--hw-w:clamp(40px,min(5.4vw,7.6dvh),70px)}
@@ -261,7 +263,7 @@
 .gs .callout--opp{top:16%}
 .gs .gs-callout--1{left:27%}
 .gs .gs-callout--2{left:73%}
-@media (min-width:760px){
+@media (min-width:600px){
   .gs-mini{--cap-w:clamp(14px,min(1.8vw,3.4dvh),24px)}
   .gs-opp-hand{--hw-w:18px}
   .gs-opp-hand .hw+.hw{margin-left:-10px}
@@ -302,9 +304,26 @@
 .rm-clock.is-mine.is-short{background:#ff9585;color:var(--ink)}
 .table-screen.is-room .dealer-rack{visibility:hidden}
 /* 고스톱 on short phones: the rack folds away like 맞고's so my hand stays on the felt. */
-@media (max-width:759px) and (orientation:portrait) and (max-height:760px){
+@media (max-width:599px) and (orientation:portrait) and (max-height:820px){
   .table-screen--gostop .felt-body{padding-top:14px}
   .table-screen--gostop .dealer-rack{display:none}
-  .gs{gap:6px}
+  .gs{gap:4px}
   .gs .mg-board{min-height:calc(var(--hw-w) * 3.2);padding:4px}
 }
+/* 섯다 on short phones: the rack folds away (chips still fly from its spot), the pot narrows and the
+   seat-count picker leaves once the hand is dealt, so my own two cards stay on the felt. */
+@media (max-width:599px) and (orientation:portrait) and (max-height:820px){
+  .table-screen--seotda .felt-body{padding-top:12px}
+  .table-screen--seotda .dealer-rack{visibility:hidden}
+  .sd{--hw-w:clamp(44px,min(15vw,8.4dvh),96px);gap:6px}
+  .sd-ring{padding-top:6px}
+  .sd-pot{gap:4px}
+  .sd-pot .zone{min-height:64px}
+  .table-screen--seotda.is-playing .sd-count{display:none}
+}
+@media (max-width:599px) and (orientation:portrait) and (max-height:700px){
+  .sd{--hw-w:clamp(44px,min(15vw,7.6dvh),96px)}
+  .sd-ring{min-height:calc(var(--opp-w) * 1.6 + 40px)}
+}
+/* short screens of any width: the seat-count picker leaves once the hand is dealt */
+@media (max-height:820px){.table-screen--seotda.is-playing .sd-count{display:none}}

@@ -1,5 +1,5 @@
 /* ================= TABLE SCREEN ================= */
-.table-screen{--card-w:clamp(54px,15.5vw,92px);--chip:46px;height:100dvh;position:relative;overflow:clip;display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);background:radial-gradient(90% 60% at 50% 0,#1c2026 0,var(--ink) 70%)}
+.table-screen{--card-w:clamp(54px,min(15.5vw,9.5dvh),92px);--chip:46px;height:100dvh;position:relative;overflow:clip;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);background:radial-gradient(90% 60% at 50% 0,#1c2026 0,var(--ink) 70%)}
 .table-bar{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 16px}
 .table-tools{display:flex;align-items:center;gap:6px}
 .table-tools .table-icon{width:38px;height:38px;border-radius:50%;border:1px solid var(--hair);background:none;color:var(--taupe);display:grid;place-items:center;padding:0;font-size:15px}
@@ -150,7 +150,7 @@
 .bet-readout strong{font:700 24px var(--display);letter-spacing:-.03em;font-variant-numeric:lining-nums tabular-nums}
 .bet-readout small{font-size:13px;color:#ff7b72}
 .bet-tools{grid-area:tools;display:flex;gap:6px}
-.bet-tool{min-width:40px;height:36px;padding:0 9px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px}
+.bet-tool{min-width:40px;height:36px;padding:0 9px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px;white-space:nowrap}
 .bet-tool:disabled{opacity:.3}
 .chip-tray{grid-area:tray;display:flex;justify-content:space-between;gap:6px;padding:8px 2px 4px;transition:opacity .25s}
 .chip-tray .chip{--size:clamp(44px,13vw,54px);transition:transform .18s var(--ease-out);touch-action:none}
@@ -289,7 +289,7 @@
 /* ================= BACCARAT ================= */
 .bac{display:grid;gap:16px;align-content:center;min-height:100%}
 .bac-sides{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.bac-side{--card-w:clamp(50px,14vw,92px);min-height:calc(var(--card-w) * 1.4 + 90px);position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px 12px;border-radius:18px;border:1.5px solid #ffffff1c;transition:box-shadow .4s,border-color .4s}
+.bac-side{--card-w:clamp(50px,min(14vw,9dvh),92px);min-height:calc(var(--card-w) * 1.4 + 90px);position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px 12px;border-radius:18px;border:1.5px solid #ffffff1c;transition:box-shadow .4s,border-color .4s}
 .bac-side h3{margin:0;font:650 18px var(--display);font-stretch:118%;letter-spacing:-.02em}
 .bac-side--player h3{color:#c7d6ea}.bac-side--banker h3{color:#ead0c9}
 .bac-side.is-winner{border-color:#efe7d9aa;box-shadow:inset 0 0 40px #efe7d90f}
@@ -297,7 +297,7 @@
 .bac-zones{display:grid;grid-template-columns:1fr .8fr 1fr;gap:8px}
 .zone--player{border-color:#c7d6ea66}.zone--banker{border-color:#ead0c966}.zone--tie{border-color:#cfe3d466}
 .zone--player strong{color:#dfe8f3}.zone--banker strong{color:#f2e2dd}.zone--tie strong{color:#e2efe5}
-.bac-zones .zone{min-height:96px;--size:42px}
+.bac-zones .zone{min-height:min(96px,11dvh);--size:42px}
 .bac-zones .zone strong{font-size:19px}
 .road{display:flex;flex-wrap:wrap;gap:5px;list-style:none;margin:0;padding:0;justify-content:center;min-height:24px}
 .road-dot{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:10px;border:1px solid}
@@ -388,16 +388,41 @@
 .zone--total small{font-size:13px}
 
 /* ================= responsive ================= */
-@media (min-width:760px){
+@media (min-width:600px){
   .table-screen--blackjack{--card-w:clamp(54px,9.5dvh,92px)}
   .bj .felt-arc{width:min(100%,380px)}
-  .table-controls{grid-template-columns:auto auto 1fr auto;grid-template-areas:"bet tools tray act";max-width:1100px;width:100%;margin:0 auto}
+  /* tablets and the Fold's inner screen: bet line on top, chips beside the actions underneath */
+  .table-controls{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"bet tools" "tray act";max-width:1100px;width:100%;margin:0 auto}
   .chip-tray{justify-content:center;gap:12px}
-  .action-row{min-width:320px}
+  .action-row{min-width:min(320px,42vw)}
+  .bet-tools{justify-content:flex-end}
   .felt{width:min(1100px,calc(100% - 28px));margin:6px auto 10px}
   .rl{grid-template-columns:minmax(220px,300px) 1fr;align-items:center}
   .sb{grid-template-columns:minmax(220px,280px) 1fr;grid-template-rows:auto auto;align-items:center}
   .sb .dome{grid-row:span 2}
+}
+/* small phones on their side: the one control line tightens so it fits 640px */
+@media (orientation:landscape) and (max-height:520px) and (max-width:819px){
+  .table-controls{gap:4px 8px;padding-left:12px;padding-right:12px}
+  .bet-tools{gap:4px}
+  .table-controls .bet-tool{min-width:34px;padding:0 7px;font-size:13px}
+  .chip-tray{gap:4px}
+  .chip-tray .chip{--size:32px}
+  .action-row{min-width:0}
+  .action{padding:0 10px;font-size:15px}
+  .bet-readout strong{font-size:20px}
+  /* undo becomes its arrow here; the button keeps its spoken name */
+  .table-controls .bet-tool[data-tool="undo"]{font-size:0}
+  .table-controls .bet-tool[data-tool="undo"]::before{content:"↶";font-size:18px;line-height:1}
+}
+/* the smallest phones on their side: the control line is drawn a touch smaller instead of running off */
+@media (orientation:landscape) and (max-height:520px) and (max-width:699px){
+  .table-controls{zoom:.88}
+  .bet-readout{min-width:max-content}
+}
+/* wide screens: everything on one line under the felt */
+@media (min-width:1024px){
+  .table-controls{grid-template-columns:auto auto 1fr auto;grid-template-areas:"bet tools tray act"}
 }
 @media (orientation:landscape) and (max-height:520px){
   .table-screen{--card-w:clamp(40px,7.5vw,62px)}
@@ -443,9 +468,9 @@
   .shoe{width:40px;height:40px;top:8px}.discard{width:30px;height:42px;top:8px}
 }
 /* Short screens: drop the printed arc so all three boxes stay on the felt. */
-@media (max-height:760px){.bj .felt-arc{display:none}}
+@media (max-height:820px){.bj .felt-arc{display:none}}
 /* Short portrait phones: AI seats lie flat (cards beside the name plate) and the felt tightens up. */
-@media (max-height:760px) and (orientation:portrait){
+@media (max-height:820px) and (orientation:portrait){
   .bj{gap:4px;--card-w:clamp(40px,7dvh,56px)}
   .bj-ai{padding-top:0}
   .bj-seat{--card-w:26px;flex-direction:row;align-items:center;gap:6px}
@@ -457,7 +482,7 @@
   .bj-spots{padding-bottom:12px}
 }
 /* Short portrait phones: a smaller dice dome keeps every Sic Bo bet on the felt without scrolling. */
-@media (max-height:760px) and (orientation:portrait){
+@media (max-height:820px) and (orientation:portrait){
   .dome{width:min(52vw,210px,25dvh)}
   .sb{gap:8px}
   .sb-main .zone{min-height:60px}
@@ -603,7 +628,7 @@
 .pk-sizer[hidden]{display:none}
 .pk-presets{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:6px}
 .pk-presets button[aria-pressed="true"]{background:var(--ivory);color:var(--ink);border-color:var(--ivory);font-weight:650}
-.pk-presets button,.pk-slider button{height:38px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px}
+.pk-presets button,.pk-slider button{height:38px;white-space:nowrap;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px}
 .pk-slider{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:10px}
 .pk-slider input{width:100%;accent-color:var(--white)}
 .table-screen--holdem:not(.is-seated) .pk-sizer{display:none}
@@ -658,15 +683,18 @@
 .pk-seat.is-human [data-name]{white-space:nowrap}
 .table-screen--holdem.is-seated .table-controls{grid-template-areas:"bet bet" "sizer sizer" "act act"}
 .table-screen--holdem.is-seated .chip-tray,.table-screen--holdem.is-seated .bet-tools{display:none}
-@media (min-width:760px){
-  .pk-oval{min-height:520px;--ring-bottom:170px}
+@media (min-width:600px){
+  .pk-oval{min-height:min(520px,60dvh);--ring-bottom:170px}
   .pk-ring{inset:30px 40px var(--ring-bottom)}
-  .table-screen--holdem.is-seated .table-controls{grid-template-columns:auto minmax(260px,1fr) auto;grid-template-areas:"bet sizer act"}
+  .table-screen--holdem.is-seated .table-controls{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"sizer sizer" "bet act"}
   .pk-sizer{grid-template-columns:auto 1fr;align-items:center}
+}
+@media (min-width:1024px){
+  .table-screen--holdem.is-seated .table-controls{grid-template-columns:auto minmax(260px,1fr) auto;grid-template-areas:"bet sizer act"}
 }
 /* Short portrait phones: the oval shrinks to the felt and my cards sit beside my plate, so the
    whole table (and my hand) stays visible without the board running into the side seats. */
-@media (max-height:760px) and (orientation:portrait){
+@media (max-height:820px) and (orientation:portrait){
   .pk-oval{min-height:0;--ring-bottom:96px}
   .pk-ring{inset:24px 6px var(--ring-bottom)}
   .pk-seat--hero{flex-direction:row;align-items:center;gap:8px;transform:translate(-50%,6px)}
@@ -675,7 +703,7 @@
   .pk-center{--card-w:clamp(32px,9.2vw,50px)}
 }
 /* Phones upright: side seats and their bets move up/down, away from the board's row. */
-@media (max-width:759px) and (orientation:portrait){
+@media (max-width:599px) and (orientation:portrait){
   .pk-plate{min-width:64px;max-width:132px;padding:3px 8px 4px;border-radius:10px;line-height:1.2}
   .pk-plate b{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;font-stretch:100%;letter-spacing:0}
   .pk-plate span{font-size:13px}
@@ -694,6 +722,8 @@
   .pk-seat--hero .pk-cards{--card-w:44px;margin-bottom:0}
   .pk-seat:not(.pk-seat--hero){flex-direction:row;gap:4px;top:calc((50 + (var(--y) - 50) * 1.3) * 1%)}
   .pk-seat:not(.pk-seat--hero) .pk-cards{--card-w:28px;margin-bottom:0}
+  /* the seat across the table drops a little so its cards don't run off the felt's top edge */
+  .pk-seat:not(.pk-seat--side):not(.pk-seat--hero){transform:translate(-50%,-8%)}
   .pk-plate{padding:4px 9px}
   .pk-plate small{display:none}
   .pk-center{--card-w:38px}
@@ -703,7 +733,7 @@
 }
 /* Before sitting down the buy-in, table size and "친구와 함께" sit low on the felt; on short
    screens the hint line moves up out of their way instead of running through them. */
-@media (max-height:760px) and (orientation:portrait){
+@media (max-height:820px) and (orientation:portrait){
   .table-screen--holdem:not(.is-seated) .pk-center{top:21%}
 }
 @media (orientation:landscape) and (max-height:520px){
@@ -721,7 +751,7 @@
 }
 /* Short desktop windows and tablets: with AI players at the table the felt runs out of height,
    so cards, boxes and seats scale with the window height and the boxes stay on the felt. */
-@media (min-width:760px) and (max-height:900px){
+@media (min-width:600px) and (max-height:900px){
   .table-screen--blackjack .felt-body{padding-top:46px}
   .bj{--card-w:clamp(36px,7dvh,62px)}
   .bj .bet-circle{width:clamp(64px,11dvh,104px);height:clamp(64px,11dvh,104px)}
@@ -734,7 +764,7 @@
   .side-circle{width:28px;height:28px;top:-12px;left:-2px}
   .side-circle--t3{left:auto;right:-2px}
 }
-@media (max-width:759px) and (max-height:760px) and (orientation:portrait){
+@media (max-width:599px) and (max-height:820px) and (orientation:portrait){
   .bj{--card-w:clamp(44px,min(13.5vw,7.4dvh),80px);gap:4px}
   .table-screen--blackjack .felt-body{padding-top:40px}
   .bj-hands,.bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 26px)}
@@ -744,7 +774,7 @@
   .table-screen--blackjack .felt-body{padding-bottom:14px}
   .bj-insurance{height:26px}
 }
-@media (max-width:759px) and (orientation:portrait){
+@media (max-width:599px) and (orientation:portrait){
   .bj{gap:4px}
   .bj .hand-wrap{padding:3px;gap:3px}
 }
@@ -808,7 +838,7 @@
 .royale-hud b{color:var(--white);font-weight:800}
 /* short phones: my cards sit beside my plate at the bottom, so the tournament line moves to the
    top edge as one row */
-@media (max-height:760px) and (orientation:portrait){
+@media (max-height:820px) and (orientation:portrait){
   .royale-hud{top:4px;bottom:auto;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:2px 8px}
   .royale-hud span:nth-child(2){display:none}
 }
@@ -973,3 +1003,12 @@
 /* A toast that carries one action (다시 시도 after a dropped connection) takes taps. */
 .toast.has-action{display:flex;align-items:center;gap:12px;width:max-content;border-radius:16px;text-align:left;pointer-events:auto;padding:6px 6px 6px 16px}
 .toast-action{flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--white);color:var(--ink);font:600 13px var(--sans)}
+/* Hold'em on the shortest phones: my stack already shows on my plate, so the stack line under the
+   felt goes and the sizer tightens, giving the six seats the height they need. */
+@media (max-height:700px) and (orientation:portrait){
+  .table-screen--holdem.is-seated .table-controls{grid-template-areas:"sizer sizer" "act act"}
+  .table-screen--holdem.is-seated .bet-readout{display:none}
+  .pk-sizer{gap:6px}
+  .pk-presets button,.pk-slider button{height:34px}
+  .table-screen--holdem:not(.is-seated) .pk-center{top:14%}
+}

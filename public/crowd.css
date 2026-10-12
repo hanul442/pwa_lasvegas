@@ -42,7 +42,7 @@
 .has-crowd .wheel{width:min(56vw,236px,22dvh)}
 .has-crowd .rl{gap:8px}
 .has-crowd .dome{width:min(58vw,236px,26dvh)}
-@media (max-height:760px) and (orientation:portrait){
+@media (max-height:820px) and (orientation:portrait){
   .has-crowd .wheel{width:min(50vw,200px,22dvh)}
   .has-crowd .dome{width:min(48vw,190px,22dvh)}
   .crowd{padding-top:8px;padding-bottom:10px}
@@ -51,7 +51,7 @@
 }
 /* Landscape phones: the rail moves up to the top edge, two seats each side of the dealer's rack. */
 @media (orientation:landscape) and (max-height:520px){
-  .crowd{position:absolute;top:6px;bottom:auto;left:62px;right:62px;margin:0;padding:0;border:0;background:none;justify-content:flex-start;gap:14px;z-index:3}
+  .crowd{position:absolute;top:6px;bottom:auto;left:62px;right:62px;margin:0;padding:0;border:0;background:none;justify-content:flex-start;gap:14px;z-index:7}
   .crowd-seat:nth-child(3){margin-left:auto}
   .crowd-avatar{width:26px;height:26px}
   .crowd-bubble{bottom:auto;top:calc(100% + 6px);border-radius:3px 12px 12px 12px;transform-origin:0 0}
@@ -77,9 +77,9 @@
 /* Upright phones: the regulars sit along the top edge where the dealer's rack was, instead of a
    rail across the bottom that covered the last row of bets. Their remarks drop below them. The
    rack stays as an invisible point chips fly from and to. */
-@media (max-width:759px) and (orientation:portrait){
+@media (max-width:599px) and (orientation:portrait){
   .has-crowd .dealer-rack{visibility:hidden}
-  .crowd{position:absolute;top:8px;bottom:auto;left:12px;right:12px;margin:0;padding:0;border:0;background:none;z-index:3}
+  .crowd{position:absolute;top:8px;bottom:auto;left:12px;right:12px;margin:0;padding:0;border:0;background:none;z-index:7}
   .table-screen--baccarat.has-crowd .shoe,.table-screen--baccarat.has-crowd .discard{top:46px}
   .crowd-avatar{width:26px;height:26px}
   .crowd-meta b,.crowd-meta span{font-size:13px}
@@ -90,8 +90,8 @@
   .has-crowd .bac-side h3{font-size:15px}
   .has-crowd .bac-score{font-size:30px}
 }
-@media (max-width:759px) and (max-height:760px) and (orientation:portrait){
-  .has-crowd .wheel{width:min(46vw,190px,18dvh)}
+@media (max-width:599px) and (max-height:820px) and (orientation:portrait){
+  .has-crowd .wheel{width:min(46vw,190px,16dvh)}
   .has-crowd .rl{gap:6px}
 }
 /* Small phones on their side (about 360px tall): every bet row gets a little shorter. */
@@ -111,4 +111,26 @@
   .num .npc-stack[data-seat="1"]{top:-5px}
   .num .npc-stack[data-seat="2"]{right:-5px;top:-5px}
   .num .npc-stack[data-seat="3"]{right:-5px;bottom:-5px}
+}
+/* a remark is always read in full: the rail and its bubbles sit above the wheel, dome and cards */
+.crowd{z-index:7}
+/* the shortest phones (iPhone SE size): the wheel and dice dome give up a little height to the bets */
+@media (max-width:599px) and (max-height:700px) and (orientation:portrait){
+  .has-crowd .dome{width:min(44vw,170px,18dvh)}
+  .has-crowd .wheel{width:min(44vw,170px,13.5dvh)}
+}
+/* Tablets and the Fold's inner screen: the regulars sit along the top edge as on phones, so the
+   felt keeps its height for the bets. */
+@media (min-width:600px) and (min-height:521px) and (max-height:820px){
+  .has-crowd .dealer-rack{visibility:hidden}
+  .crowd{position:absolute;top:8px;bottom:auto;left:12px;right:12px;margin:0;padding:0;border:0;background:none}
+  .table-screen--baccarat.has-crowd .shoe,.table-screen--baccarat.has-crowd .discard{top:46px}
+  .crowd-avatar{width:26px;height:26px}
+  .crowd-bubble{bottom:auto;top:calc(100% + 6px);border-radius:3px 12px 12px 12px;transform-origin:0 0}
+  .crowd-seat:last-child:not(:first-child) .crowd-bubble{left:auto;right:-2px;border-radius:12px 3px 12px 12px;transform-origin:100% 0}
+}
+@media (orientation:landscape) and (max-height:420px){
+  .has-crowd .sb-main .zone{min-height:44px;padding-block:2px}
+  .has-crowd .zone--total{min-height:34px;padding-block:1px;gap:0}
+  .has-crowd .sb-totals{gap:3px}
 }

@@ -29,12 +29,12 @@ function crowdPlan(last) {
     const roll = Math.random();
     const zone = roll < 0.08 ? 'TIE' : last() && roll < 0.55 ? last() : roll < 0.78 ? 'BANKER' : 'PLAYER';
     const lines = {
-      PLAYER: ['플레이어 갑니다', '이번엔 플레이어'],
-      BANKER: ['뱅커 따라갑니다', '뱅커가 맞아요'],
-      TIE: ['타이 한번 봅시다', '느낌 왔어요, 타이']
+      PLAYER: ['플레이어로 갈게요.', '이번엔 플레이어.'],
+      BANKER: ['뱅커 따라갈게요.', '흐름은 뱅커예요.'],
+      TIE: ['타이 한번 가 보죠.', '왠지 타이 느낌이에요.']
     };
     const bets = [{ zone, amount: Math.max(stake, t.tier.min), line: Math.random() < 0.4 ? lines[zone][Math.floor(Math.random() * 2)] : null }];
-    if (Math.random() < 0.22) bets.push({ zone: Math.random() < 0.5 ? 'PLAYER_PAIR' : 'BANKER_PAIR', amount: unit * (1 + Math.floor(Math.random() * 2)), line: Math.random() < 0.5 ? '페어 하나 걸어요' : null });
+    if (Math.random() < 0.22) bets.push({ zone: Math.random() < 0.5 ? 'PLAYER_PAIR' : 'BANKER_PAIR', amount: unit * (1 + Math.floor(Math.random() * 2)), line: Math.random() < 0.5 ? '페어도 하나 걸게요.' : null });
     return bets;
   };
 }

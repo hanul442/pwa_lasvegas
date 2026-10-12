@@ -5,8 +5,8 @@ import { el, flyFrom, flyTo, wait, ms, sound, formatCH, rollNumber, reducedMotio
 import { createChip, breakdown } from './chips.js';
 
 const NAMES = ['NOVA', 'REX', 'LUNA', 'ACE', 'MIRA', 'JUNO', 'KAI', 'VEGA', 'ORION', 'SOL', 'ZARA', 'NIKO'];
-const WIN = ['나이스!', '좋아요!', '역시 감이 왔어', '오늘 되는 날이네'];
-const LOSE = ['아깝다', '다음 판엔…', '흠', '딜러님 살살요'];
+const WIN = ['나이스!', '좋았어!', '감이 왔어요.', '오늘 되는 날이네요.'];
+const LOSE = ['아, 아깝다.', '다음 판엔 와요.', '흠…', '딜러님, 살살 좀요.'];
 const pick = list => list[Math.floor(Math.random() * list.length)];
 const between = (lo, hi) => lo + Math.random() * (hi - lo);
 
@@ -42,8 +42,13 @@ export function seatCrowd(t, { plan, count = innerWidth < 420 ? 3 : 4 }) {
     npc.chipsEl.textContent = formatCH(npc.chips);
   }
 
-  function say(npc, text) {
+  // One voice at a time on the rail: a line waits for the last one to fade, or is let go.
+  let quietUntil = 0;
+  function say(npc, text, force = false) {
     if (!text) return;
+    if (!force && performance.now() < quietUntil) return;
+    quietUntil = performance.now() + 1600;
+    seats.forEach(o => { if (o !== npc) o.bubble.classList.remove('is-shown'); });
     npc.bubble.textContent = text;
     npc.bubble.classList.add('is-shown');
     clearTimeout(npc.bubbleTimer);
@@ -153,7 +158,7 @@ export function seatCrowd(t, { plan, count = innerWidth < 420 ? 3 : 4 }) {
         if (Math.random() < (net > 0 ? 0.45 : 0.18)) say(npc, pick(net > 0 ? WIN : LOSE));
       });
       // Anyone who can no longer cover the minimum tops up from the cage.
-      seats.forEach(npc => { if (npc.chips < t.tier.min) { buyIn(npc); say(npc, '칩 좀 바꿔 올게요'); } });
+      seats.forEach(npc => { if (npc.chips < t.tier.min) { buyIn(npc); say(npc, '칩 좀 바꿔 올게요.', true); } });
       if (!reducedMotion()) await wait(150);
     }
   };

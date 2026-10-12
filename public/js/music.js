@@ -2,11 +2,15 @@
 // swinging drum kit) synthesized live with WebAudio, so there are no audio files to load or license.
 // It loops a 16-bar shout chorus in B♭: the brass plays the tune in four-part harmony, then the saxes
 // take it while the brass punches hits behind them.
+// Event tables (Casino Royale and the rest) switch to a second theme, 'noir': a slow, tense spy
+// cue in D minor with a pulsing low ostinato, a string pad, a twangy guitar figure and a
+// heartbeat kick, so a high-stakes night sounds like one.
 import { audioContext } from './fx.js';
 import { settings, onSettings } from './settings.js';
 
-const BPM = 144;
-const BEAT = 60 / BPM;
+const TEMPO = { lounge: 144, noir: 96 };
+let theme = 'lounge';
+let BEAT = 60 / TEMPO.lounge;
 const SWING = 0.63; // the off-beat eighth lands at 63% of the beat
 const FULL = 0.3;
 // The settings slider scales the band; 60 (the default) sits a little under full.
@@ -57,8 +61,6 @@ function impulse(seconds = 2.2) {
 function build() {
   ac = audioContext();
   if (!ac) return false;
-  bus = ac.createGain();
-  bus.gain.value = 0.0001;
   const tone = ac.createBiquadFilter();
   tone.type = 'lowpass';
   tone.frequency.value = 7500;
@@ -74,7 +76,7 @@ function build() {
   wet.gain.value = 0.18;
   // The dealer's voice dips the band through its own stage so it never fights the fade in or out.
   duckGain = ac.createGain();
-  bus.connect(duckGain).connect(tone).connect(glue);
+  duckGain.connect(tone).connect(glue);
   glue.connect(ac.destination);
   glue.connect(verb).connect(wet).connect(ac.destination);
   return true;
@@ -263,9 +265,100 @@ function scheduleBar(at, index) {
   if (pos === FORM.length - 1) [2.5, 3, 3.5].forEach((b, i) => snare(t(b), 0.06 + i * 0.012));
 }
 
+// ---------- noir: the event-table theme ----------
+const MIN9 = [0, 3, 7, 14], MAJ7 = [0, 4, 7, 11], MIN6 = [0, 3, 7, 9], DOM7B9 = [0, 4, 7, 10, 13];
+const NOIR = [[38, MIN9], [38, MIN9], [34, MAJ7], [34, MAJ7], [43, MIN6], [43, MIN6], [45, DOM7B9], [45, DOM7B9]];
+
+// Strings: a slow-blooming, dark pad.
+function pad(midi, at, length, gain) {
+  const g = ac.createGain();
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 950;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + length * 0.35);
+  g.gain.setValueAtTime(gain, at + length * 0.8);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + length + 0.4);
+  for (const detune of [-9, 9]) {
+    const o = ac.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = hz(midi);
+    o.detune.value = detune;
+    o.connect(lp);
+    o.start(at);
+    o.stop(at + length + 0.5);
+  }
+  lp.connect(g).connect(bus);
+}
+
+// A reverb-drenched, twangy guitar pluck with a touch of tremolo-arm bend.
+function twang(midi, at, length, gain) {
+  const f = hz(midi);
+  const o = ac.createOscillator();
+  const lp = ac.createBiquadFilter();
+  const g = ac.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(f, at);
+  o.frequency.setValueAtTime(f, at + length * 0.6);
+  o.frequency.linearRampToValueAtTime(f * 0.985, at + length);
+  lp.type = 'lowpass';
+  lp.Q.value = 3;
+  lp.frequency.setValueAtTime(2600, at);
+  lp.frequency.exponentialRampToValueAtTime(700, at + 0.35);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + 0.006);
+  g.gain.exponentialRampToValueAtTime(gain * 0.35, at + 0.25);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + length);
+  o.connect(lp).connect(g).connect(bus);
+  o.start(at);
+  o.stop(at + length + 0.05);
+}
+
+// Timpani: a low, round boom.
+function timpani(at, gain, freq = 73) {
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.frequency.setValueAtTime(freq * 1.05, at);
+  o.frequency.exponentialRampToValueAtTime(freq, at + 0.15);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 1.4);
+  o.connect(g).connect(bus);
+  o.start(at);
+  o.stop(at + 1.5);
+  hiss(at, 0.12, gain * 0.25, 300, { q: 0.7 });
+}
+
+function scheduleNoirBar(at, index) {
+  const pos = index % NOIR.length;
+  const [root, tones] = NOIR[pos];
+  const b = beat => at + beat * BEAT;
+  // The pad holds each chord for its two bars.
+  if (pos % 2 === 0) tones.slice(0, 4).forEach((i, k) => pad(root + 12 + i, at, BEAT * 8, 0.022 - k * 0.003));
+  // The ostinato: low eighth notes that never let up, an octave jump at the end of the bar.
+  const low = root - 12;
+  for (let e = 0; e < 8; e++) bass(hz(e === 6 ? low + 12 : low), b(e / 2), BEAT * (e === 6 ? 0.45 : 0.32));
+  // The guitar figure: up the chord on the first bar, a chromatic slide back on the second.
+  const top = root + 24;
+  const figure = pos % 2 === 0
+    ? [[0, top], [1, top + tones[1]], [2, top + tones[2]], [3, top + tones[2] - 1]]
+    : [[0, top + tones[2] - 2], [1.5, top + tones[1]], [2.5, top]];
+  for (const [beat, midi] of figure) twang(midi, b(beat), BEAT * 1.4, 0.05);
+  // Heartbeat kick, a ticking hat, and the timpani at the top of the loop.
+  kick(b(0), 0.22);
+  kick(b(0.5), 0.12);
+  kick(b(2), 0.18);
+  for (let e = 0; e < 8; e++) hiss(b(e / 2), BEAT * 0.18, e % 2 ? 0.018 : 0.026, 9000, { q: 1.4 });
+  if (pos === 0) timpani(at, 0.35);
+  // The turnaround: low brass swells over the dominant and the drums roll back to the top.
+  if (pos === NOIR.length - 2) section(57, NOIR[pos], b(0), BEAT * 7.5, 0.028, { bright: 1400 });
+  if (pos === NOIR.length - 1) [2.5, 3, 3.25, 3.5, 3.75].forEach((beat, k) => timpani(b(beat), 0.12 + k * 0.04, 73 + (k % 2) * 9));
+}
+
 function tick() {
   while (nextBar < ac.currentTime + 1.2) {
-    scheduleBar(nextBar, bar++);
+    if (theme === 'noir') scheduleNoirBar(nextBar, bar++);
+    else scheduleBar(nextBar, bar++);
     nextBar += BEAT * 4;
   }
 }
@@ -277,10 +370,16 @@ export const music = {
     if (!ac && !build()) return;
     if (ac.state === 'suspended') ac.resume();
     playing = true;
+    // Each start gets its own bus, so notes already queued by a theme that is fading out die
+    // away on their own instead of jumping back up with the new one.
+    bus = ac.createGain();
+    bus.gain.value = 0.0001;
+    bus.connect(duckGain);
+    BEAT = 60 / TEMPO[theme];
+    bar = 0;
     nextBar = ac.currentTime + 0.1;
-    bus.gain.cancelScheduledValues(ac.currentTime);
-    bus.gain.setValueAtTime(Math.max(bus.gain.value, 0.0001), ac.currentTime);
-    bus.gain.exponentialRampToValueAtTime(volume(), ac.currentTime + 3);
+    bus.gain.setValueAtTime(0.0001, ac.currentTime);
+    bus.gain.exponentialRampToValueAtTime(volume(), ac.currentTime + (theme === 'noir' ? 2 : 3));
     tick();
     timer = setInterval(tick, 200);
   },
@@ -291,6 +390,14 @@ export const music = {
     bus.gain.cancelScheduledValues(ac.currentTime);
     bus.gain.setValueAtTime(Math.max(bus.gain.value, 0.0001), ac.currentTime);
     bus.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.8);
+  },
+  // 'lounge' for the casino floor, 'noir' for the event tables; a change crossfades.
+  theme(name) {
+    if (!TEMPO[name] || name === theme) return;
+    theme = name;
+    if (!playing) return;
+    this.stop();
+    this.start();
   },
   duck(on) {
     if (!duckGain) return;

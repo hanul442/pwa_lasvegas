@@ -135,7 +135,7 @@
 .bigwin-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px}
 
 /* ---------- hold'em bots talk ---------- */
-.pk-say{position:absolute;left:50%;bottom:calc(100% + 4px);z-index:7;width:max-content;max-width:150px;padding:6px 10px;border-radius:12px 12px 12px 4px;background:var(--white);color:var(--ink);font:500 12px/1.35 var(--sans);white-space:normal;text-align:left;transform:translateX(-30%);box-shadow:0 8px 20px #000a;animation:pk-say 2.2s ease both;pointer-events:none}
+.pk-say{position:absolute;left:50%;bottom:calc(100% + 4px);z-index:7;width:max-content;max-width:124px;padding:5px 9px;border-radius:12px 12px 12px 4px;background:var(--white);color:var(--ink);font:500 11.5px/1.3 var(--sans);white-space:normal;text-align:left;transform:translateX(-30%);box-shadow:0 8px 20px #000a;animation:pk-say 2.2s ease both;pointer-events:none}
 @keyframes pk-say{0%{opacity:0;transform:translate(-30%,6px) scale(.9)}10%,85%{opacity:1;transform:translate(-30%,0) scale(1)}100%{opacity:0}}
 /* Seats at the felt's edges open their bubble toward the middle so it never runs off the table. */
 .pk-seat--l .pk-say{left:0;transform:none;border-radius:12px 12px 12px 4px}

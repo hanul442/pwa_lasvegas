@@ -4,13 +4,15 @@
 // `me` is the viewer's seat (always drawn at the bottom), or -1 for someone watching.
 import { createCard, flipCard, setCardFace } from '../cards.js';
 import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../fx.js';
-import { createChip, breakdown, TIERS } from '../chips.js';
+import { createChip, breakdown, holding, TIERS } from '../chips.js';
 import { voice, handLine, betLine } from '../voice.js';
+import { handName } from '../poker-hand.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
 // Big blind per table: a tenth of its smallest bet, and never under 2원 (lib/holdem-session.mjs).
 export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2, t.min / 10)]));
+const STACK_MAX = 7; // chips shown per column of a player's stack
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.
 const CHATTER = {
@@ -89,7 +91,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       node.style.setProperty('--y', p.y.toFixed(2));
       node.innerHTML = `
         <div class="hand pk-cards" data-cards></div>
-        <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><em class="pk-tag" data-tag></em></div>`;
+        <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><i class="pk-myhand" data-myhand></i><em class="pk-tag" data-tag></em><span class="pk-stack" data-chips aria-hidden="true"></span></div>`;
       const bet = el('div', `pk-bet${side ? ' pk-bet--side' : ''}`);
       bet.style.setProperty('--x', (50 + (p.x - 50) * (side ? 0.3 : 0.55)).toFixed(2));
       bet.style.setProperty('--y', (k === 0 && pk.me >= 0 ? 88 : 50 + (p.y - 50) * 0.56).toFixed(2));
@@ -107,13 +109,41 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     e.node.querySelector('[data-stack]').textContent = empty ? '' : formatCH(s.stack);
     e.node.querySelector('[data-style]').textContent = empty ? '' : pk.noteOf(i, s);
     e.stack = s.stack;
+    paintChips(e, empty ? 0 : s.stack);
     e.node.classList.toggle('is-empty', empty);
     e.node.classList.toggle('is-human', s.kind === 'human' && i !== pk.me);
     e.node.classList.toggle('is-folded', Boolean(s.folded));
     e.node.classList.toggle('is-allin', Boolean(s.allIn));
     e.node.classList.toggle('is-out', !empty && s.stack <= 0 && !s.inHand);
   }
-  function setStack(i, stack) { const e = seatEls[i]; if (!e) return; e.stack = stack; e.node.querySelector('[data-stack]').textContent = formatCH(stack); }
+  function setStack(i, stack) { const e = seatEls[i]; if (!e) return; e.stack = stack; e.node.querySelector('[data-stack]').textContent = formatCH(stack); paintChips(e, stack); }
+  // What my two cards make with the board so far ("원페어", "플러시"…), always on my plate.
+  function paintMyHand() {
+    const e = seatEls[pk.me]; if (!e) return;
+    const up = box => [...box.children].filter(c => c.classList.contains('is-faceup')).map(c => c.dataset.card);
+    const mine = up(e.cards);
+    const node = e.node.querySelector('[data-myhand]');
+    const text = mine.length === 2 ? handName([...mine, ...up(boardEl)]) : '';
+    if (node.textContent !== text) node.textContent = text;
+  }
+  // What each player has left, stacked beside their plate in the table's chips: a column for
+  // each of the (up to three) biggest chips they hold, taller the more of it they have.
+  function paintChips(e, amount) {
+    const box = e.node.querySelector('[data-chips]');
+    const set = pk.chipSet || [pk.bb];
+    const key = `${amount}:${set.join(',')}`;
+    if (!box || box.dataset.key === key) return;
+    box.dataset.key = key;
+    const counts = amount > 0 ? holding(amount, set) : [];
+    const cols = set.map((v, k) => [v, counts[k] || 0]).filter(([, n]) => n > 0).slice(-3).reverse();
+    box.replaceChildren(...cols.map(([v, n]) => {
+      const col = el('span', 'pk-stack-col');
+      const shown = Math.min(n, STACK_MAX);
+      col.style.setProperty('--n', shown);
+      for (let j = 0; j < shown; j++) { const c = createChip(v); c.style.setProperty('--i', j); col.append(c); }
+      return col;
+    }));
+  }
   function tag(i, text, kind = '') {
     const node = seatEls[i]?.node.querySelector('[data-tag]'); if (!node) return;
     node.textContent = text; node.className = `pk-tag${text ? ' is-shown' : ''}${kind ? ` is-${kind}` : ''}`;
@@ -170,13 +200,12 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     potEl.hidden = amount <= 0;
     potAmount.textContent = amount ? `POT ${formatCH(amount)}` : '';
     const values = amount ? breakdown(amount, pk.chipSet, 8) : [];
-    potStack.replaceChildren(...values.map((v, k) => { const c = createChip(v); c.style.setProperty('--i', k); c.style.setProperty('--jx', `${(k % 3 - 1) * 5}px`); return c; }));
+    potStack.replaceChildren(...values.map((v, k) => { const c = createChip(v); c.style.setProperty('--i', k); c.style.setProperty('--jx', `${(k % 3 - 1) * 2}px`); return c; }));
   }
+  // The dealer button sits on the corner of the dealer's plate, so it never lands on the board.
   function moveButton(i) {
     const s = seatEls[i]; if (!s) return;
-    const x = Number(s.node.style.getPropertyValue('--x')), y = Number(s.node.style.getPropertyValue('--y'));
-    dealerBtn.style.setProperty('--x', (50 + (x - 50) * 0.6 + (x >= 50 ? -6 : 6)).toFixed(2));
-    dealerBtn.style.setProperty('--y', (50 + (y - 50) * 0.6 + 4).toFixed(2));
+    if (dealerBtn.parentNode !== s.plate) s.plate.append(dealerBtn);
     dealerBtn.classList.add('is-shown');
   }
   function markTurn(i) { seatEls.forEach((s, k) => s.node.classList.toggle('is-turn', k === i)); }
@@ -198,6 +227,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     paintPot(tb.handOver ? 0 : tb.pot - tb.seats.reduce((a, s) => a + s.bet, 0));
     if (tb.handNo) moveButton(tb.button);
     markTurn(tb.toAct);
+    paintMyHand();
   }
 
   // ---------- event playback ----------
@@ -260,10 +290,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
         tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
         say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
-        // The dealer calls every action with its size: "Call, sixty thousand", "Raise, two hundred
-        // thousand". The newest call-out replaces any still waiting (the one he is saying finishes),
-        // so he never falls more than one line behind the table and the table never waits for him.
-        if (ev.action === 'ALL_IN') voice.say(betLine('ALL_IN', ev.bet) || 'all-in', { cut: true });
+        // The dealer calls each bet by its size alone: "Sixty thousand", "Two hundred thousand".
+        // The newest call-out replaces any still waiting (the one he is saying finishes), so he
+        // never falls more than one line behind the table and the table never waits for him.
+        if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
         else if (ev.action === 'CHECK') voice.say('check', { next: true });
         else if (ev.action !== 'FOLD') voice.say(betLine(ev.action, ev.bet), { next: true });
         if (ev.action === 'FOLD') {
@@ -369,7 +399,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   async function playEvents(events, tb, { snap = true } = {}) {
     pk.animating = true;
     if (tb) current = tb;
-    try { for (const ev of events) await play(ev, tb); }
+    try { for (const ev of events) { await play(ev, tb); paintMyHand(); } }
     finally { pk.animating = false; }
     if (snap && tb) render(tb);
   }
@@ -380,6 +410,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     boardEl.replaceChildren();
     seatEls.forEach(s => { s.cards.replaceChildren(); s.node.classList.remove('is-winner'); s.node.querySelector('[data-hand-name]')?.remove(); });
     clearTags();
+    paintMyHand();
   }
 
   function clear() {

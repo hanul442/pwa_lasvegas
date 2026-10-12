@@ -199,7 +199,8 @@ function renderRecharge() {
     slot.append(b);
   }
   const last = lastTable();
-  if (last && !outgrownTier(last.tier)) {
+  const lastEventElsewhere = last && GAMES.find(g => g.id === last.game)?.event && TIERS[last.tier]?.floor !== state?.eventEntry?.floor;
+  if (last && !outgrownTier(last.tier) && !lastEventElsewhere) {
     const game = GAMES.find(g => g.id === last.game), tier = TIERS[last.tier];
     const short = (state?.user?.account?.available ?? Infinity) < tier.min;
     const b = el('button', 'pill-button pill-button--solid', `${game.name} ${tier.name}에 다시 앉기`);
@@ -281,7 +282,7 @@ function eventCard(ev, { now = false } = {}) {
   const g = GAMES.find(x => x.event === ev.id);
   const card = el('article', `event-banner event-card event-banner--${ev.id}${now ? '' : ' is-upcoming'}`);
   const when = now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
-  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>`;
+  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine()}`;
   if (now && g) {
     const go = el('button', 'event-cta', '테이블 고르기');
     go.type = 'button';
@@ -290,6 +291,17 @@ function eventCard(ev, { now = false } = {}) {
     card.append(go);
   }
   return card;
+}
+// Events seat only big players: one fixed table, and a minimum holding to sit down.
+function eventEntry() {
+  const e = state?.eventEntry;
+  const tier = e && Object.values(TIERS).find(t => t.floor === e.floor);
+  return e && tier ? { ...e, tier, open: (state?.user?.account?.available ?? 0) >= e.entry } : null;
+}
+function entryLine() {
+  const e = eventEntry();
+  if (!e) return '';
+  return `<p class="event-entry${e.open ? ' is-open' : ''}">입장 · 보유 칩 ${formatCH(e.entry)} 이상 · ${e.tier.name} ${formatCH(e.tier.min)}–${formatCH(e.tier.max)}원${e.open ? '' : ' · 아직 입장할 수 없어요'}</p>`;
 }
 function renderEventTab() {
   const [now, next, ...later] = state?.eventSchedule || [];
@@ -331,6 +343,7 @@ function renderTiers() {
   const floors = state?.floors || [];
   const available = state?.user?.account?.available ?? 0;
   // Floors a player has outgrown fold away behind one line; the next locked floor shows what it takes.
+  if (selectedGame?.event && eventEntry()) return renderEventTier(grid, eventEntry());
   const all = Object.values(TIERS).map(tier => ({ tier, floor: floors.find(f => f.slug === tier.floor) }));
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);
@@ -354,6 +367,23 @@ function renderTiers() {
     b.addEventListener('click', () => openTable(tier.slug));
     return b;
   }));
+}
+
+// An event plays at one table only, open to players holding the event entry.
+function renderEventTier(grid, { tier, entry, open }) {
+  const b = el('button', `tier-card tier-card--${tier.slug}${open ? '' : ' is-locked'}`);
+  b.setAttribute('role', 'listitem');
+  b.type = 'button';
+  b.dataset.tier = tier.slug;
+  b.dataset.min = tier.min;
+  b.disabled = !open;
+  const chips = el('span', 'tier-chips');
+  tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
+  chips.setAttribute('aria-hidden', 'true');
+  b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
+  b.append(chips);
+  b.addEventListener('click', () => openTable(tier.slug));
+  grid.replaceChildren(b);
 }
 
 // ---------- ranking ----------

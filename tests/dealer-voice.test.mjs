@@ -46,11 +46,22 @@ test('bet amounts are spoken in words from recorded pieces', () => {
   assert.deepEqual(amountWords(17_500), ['seventeen', 'thousand', 'five', 'hundred']);
   assert.deepEqual(amountWords(1e12), ['one', 'trillion']);
   assert.deepEqual(amountWords(0), []);
-  assert.deepEqual(betLine('CALL', 50_000), ['lead-call', 'n-fifty', 'n-thousand-end']);
-  assert.deepEqual(betLine('RAISE', 2_000_000), ['lead-raise', 'n-two', 'n-million-end']);
+  assert.deepEqual(betLine('CALL', 50_000), ['n-fifty', 'n-thousand-end'], 'only the amount is spoken');
+  assert.deepEqual(betLine('RAISE', 2_000_000), ['n-two', 'n-million-end']);
   assert.equal(betLine('FOLD', 100), null);
   // Every amount a table can produce, up to the vault's limits, resolves to recorded pieces.
   for (const n of [1, 19, 20, 99, 101, 999, 5_000, 12_345, 999_999, 1_000_001, 987_654_321, 123_456_789_012, 999_999_999_999_999]) {
     for (const action of ['CALL', 'RAISE', 'BET', 'ALL_IN']) for (const id of betLine(action, n)) assert.ok(files.has(id), `${n}: missing ${id}`);
   }
+});
+
+test('my hand is named as the board comes out', async () => {
+  const { handName } = await import('../public/js/poker-hand.js');
+  assert.equal(handName(['A♠', 'K♠']), '하이카드');
+  assert.equal(handName(['5♦', '5♣']), '원페어');
+  assert.equal(handName(['3♣', 'Q♣', '3♦', 'Q♥', '8♥']), '투페어');
+  assert.equal(handName(['A♠', '2♦', '3♣', '4♥', '5♠', 'K♦']), '스트레이트');
+  assert.equal(handName(['2♥', '6♥', '8♥', 'Q♥', 'K♥', 'K♣', 'K♦']), '플러시');
+  assert.equal(handName(['3♣', '3♦', '3♥', 'Q♣', 'Q♦']), '풀하우스');
+  assert.equal(handName(['10♠', 'J♠', 'Q♠', 'K♠', 'A♠']), '스트레이트 플러시');
 });

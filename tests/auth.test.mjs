@@ -102,9 +102,9 @@ test('two accounts play with separate wallets, and the ledger stays consistent',
   const store = memoryStore();
   const a = (await call(store, 'POST', '/api/auth/signup', { username: 'alpha', password: 'secret12' })).data;
   const b = (await call(store, 'POST', '/api/auth/signup', { username: 'bravo', password: 'secret12' })).data;
-  const loan = await call(store, 'POST', '/api/bank/borrow', { lender: 'shark', amount: 1_000, days: 3 }, { token: a.token });
+  const loan = await call(store, 'POST', '/api/bank/borrow', { lender: 'shark', amount: 100_000_000, days: 3 }, { token: a.token });
   assert.equal(loan.status, 200, JSON.stringify(loan.data));
-  const play = await call(store, 'POST', '/api/sicbo/play', { stake: 10, floor: 'corner', betType: 'BIG' }, { token: a.token });
+  const play = await call(store, 'POST', '/api/sicbo/play', { stake: 1_000_000, floor: 'gold-room', betType: 'BIG' }, { token: a.token });
   assert.equal(play.status, 200, JSON.stringify(play.data));
   const bState = (await call(store, 'GET', '/api/state', null, { token: b.token })).data;
   assert.equal(bState.user.account.available, 0);

@@ -154,7 +154,7 @@ const MESSAGES = {
   REPAY_OVER_BALANCE: '남은 빚보다 많이 갚을 수는 없어요.',
   BANKRUPTCY_NOT_AVAILABLE: '지금은 파산 신청을 할 수 없어요.',
   SUPPORT_ALREADY_CLAIMED: '이미 받았어요. 다음 지급일에 다시 와 주세요.',
-  WELFARE_NOT_QUALIFIED: '순자산이 1천원 미만일 때만 받을 수 있어요.',
+  WELFARE_NOT_QUALIFIED: '순자산이 100만원 미만일 때만 받을 수 있어요.',
   ACHIEVEMENT_NOT_DONE: '아직 달성하지 않은 업적이에요.',
   ACHIEVEMENT_ALREADY_CLAIMED: '이미 받은 업적 보상이에요.',
   BET_OUTSIDE_TABLE_LIMIT: '이 테이블의 베팅 한도를 벗어났어요.',

@@ -2,13 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FLOORS, STAKE_TIERS, stakeTierFor } from '../lib/constants.mjs';
 
-test('eleven tiers run from 10원 to 1조, ten times each, with no gaps', () => {
-  assert.equal(STAKE_TIERS.length, 11);
-  assert.equal(stakeTierFor(9), null);
-  assert.equal(stakeTierFor(10)?.slug, 'corner');
-  assert.equal(stakeTierFor(99)?.slug, 'corner');
-  assert.equal(stakeTierFor(100)?.slug, 'main-street');
-  assert.equal(stakeTierFor(1_000)?.slug, 'house');
+test('six tiers run from 100만 to 1조, ten times each, with no gaps', () => {
+  assert.equal(STAKE_TIERS.length, 6);
+  assert.equal(stakeTierFor(999_999), null, 'nothing under 100만');
+  assert.equal(stakeTierFor(1_000_000)?.slug, 'gold-room');
+  assert.equal(stakeTierFor(9_999_999)?.slug, 'gold-room');
   assert.equal(stakeTierFor(10_000_000)?.slug, 'high-limit');
   assert.equal(stakeTierFor(100_000_000_000)?.slug, 'vault');
   assert.equal(stakeTierFor(1_000_000_000_000)?.slug, 'vault');

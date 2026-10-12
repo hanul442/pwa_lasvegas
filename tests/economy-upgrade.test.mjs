@@ -14,8 +14,19 @@ test('the bank economy keeps every balance and reopens floors on the new ladder,
   assert.equal(upgradeEconomy(state), true);
   assert.equal(state.users.hanseo.account.available, 95_000_000, 'balances stay as they were');
   assert.equal(state.ledger.length, ledger, 'no chips move');
-  // 9천5백만 opens every floor whose threshold (ten smallest bets) it covers: up to Gold Room.
-  assert.deepEqual(state.users.hanseo.account.unlockedFloors, ['corner', 'main-street', 'house', 'downtown', 'strip', 'gold-room']);
+  // 9천5백만 covers only the Gold Room's threshold, which is open to everyone.
+  assert.deepEqual(state.users.hanseo.account.unlockedFloors, ['gold-room']);
   assert.equal(state.users.hanseo.credit.score, 500);
   assert.equal(upgradeEconomy(state), false, 'runs once');
+});
+
+test('dropping the tables under 100만 moves everyone up to the Gold Room and keeps balances', () => {
+  const state = defaultState();
+  state.meta.economy = 3; // the bank ladder with floors from 10원
+  state.users.june.account.available = 300_000;
+  state.users.june.account.unlockedFloors = ['corner', 'main-street', 'house', 'downtown', 'strip'];
+  assert.equal(upgradeEconomy(state), true);
+  assert.equal(state.users.june.account.available, 300_000);
+  assert.deepEqual(state.users.june.account.unlockedFloors, ['gold-room']);
+  assert.deepEqual(state.users.hanseo.account.unlockedFloors, ['gold-room', 'high-limit', 'salon-prive'], 'the 10억 profile keeps its floors');
 });

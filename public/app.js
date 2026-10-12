@@ -6,7 +6,7 @@ import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { createCard, flipCard } from './js/cards.js';
-import { TIERS, createChip } from './js/chips.js';
+import { TIERS, FIRST_TIER, createChip } from './js/chips.js';
 import { mountBlackjack } from './js/games/blackjack.js';
 import { mountBaccarat } from './js/games/baccarat.js';
 import { mountRoulette } from './js/games/roulette.js';
@@ -263,9 +263,9 @@ const icon = id => `<svg class="game-row-icon" viewBox="0 0 48 48" aria-hidden="
 function entryMin() {
   const open = Object.values(TIERS).filter(t => {
     const f = state?.floors?.find(x => x.slug === t.floor);
-    return f ? f.unlocked && !f.outgrown : t === TIERS.corner;
+    return f ? f.unlocked && !f.outgrown : t === FIRST_TIER;
   });
-  return (open.length ? Math.min(...open.map(t => t.min)) : TIERS.corner.min);
+  return (open.length ? Math.min(...open.map(t => t.min)) : FIRST_TIER.min);
 }
 const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'slots']], ['화투', ['matgo', 'gostop', 'seotda']]];
 const groupHead = (text, aside = '') => {
@@ -464,7 +464,7 @@ function renderRanking() {
 }
 
 // ---------- profile ----------
-const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '생계급여', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금' };
+const LEDGER_LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금' };
 function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }

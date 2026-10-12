@@ -48,7 +48,7 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
   assert.equal(dailyStatus(u, WED + (PAY_CYCLE + 2) * DAY).streak, 0);
 });
 
-test('정부 지원금 once a week for anyone; 기초생활수급 once a day for someone worth under 1천원', () => {
+test('정부 지원금 once a week for anyone; 구제금융 once a day for someone worth under 100만', () => {
   const state = defaultState(); const u = state.users.hanseo;
   // Mid-way through High Limit (1억–10억 net worth), so a payout doesn't graduate the floor.
   u.account.available = 300_000_000;
@@ -58,10 +58,12 @@ test('정부 지원금 once a week for anyone; 기초생활수급 once a day for
   const base = tableBase(u);
   assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 50 * base, 'next week pays again');
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
-  u.account.available = 200;
+  u.account.available = 200_000;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
+  assert.equal(WELFARE_DAILY, 50_000_000, 'fifty of the Gold Room\'s smallest bets');
   assert.equal(claimSupport(state, u, 'welfare', WED).amount, WELFARE_DAILY);
   assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /SUPPORT_ALREADY_CLAIMED/);
+  u.account.available = 0; // lost it all again
   assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, WELFARE_DAILY);
 });
 

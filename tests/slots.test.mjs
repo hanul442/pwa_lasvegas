@@ -42,6 +42,8 @@ test('the jackpot grows with every spin and pays in proportion to the bet', () =
 
 test('slots spin settles through the API and posts a jackpot to the lounge', async () => {
   let state = defaultState();
+  // Mid-way through High Limit (1억–10억 net worth), so a win doesn't graduate the floor before the replay.
+  state.users.hanseo.account.available = 300_000_000;
   const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
   const call = (path, body, key) => handleApi({ method: 'POST', header: n => (n === 'x-idempotency-key' ? key : undefined), body: async () => body }, new URL(`http://x${path}`), store, { NODE_ENV: 'production' });
   const before = state.users.hanseo.account.available;

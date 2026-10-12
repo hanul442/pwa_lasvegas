@@ -5,8 +5,8 @@ import { holding, TIERS } from '../public/js/chips.js';
 const worth = (counts, chips) => counts.reduce((n, c, k) => n + c * chips[k], 0);
 
 test('my stacks add up to the balance, down to the smallest chip', () => {
-  const { chips } = TIERS.corner;
-  for (const amount of [0, 5, 10, 25, 99, 180, 1990, 2000, 123_456]) {
+  const { chips } = TIERS['gold-room'];
+  for (const amount of [0, 500_000, 1_000_000, 2_500_000, 9_900_000, 18_000_000, 199_000_000, 200_000_000, 12_345_678_901]) {
     const counts = holding(amount, chips);
     assert.equal(worth(counts, chips), amount - (amount % chips[0]), `amount ${amount}`);
     assert.ok(counts.every(n => Number.isInteger(n) && n >= 0));

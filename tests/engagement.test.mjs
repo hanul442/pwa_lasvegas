@@ -4,7 +4,7 @@ import { defaultState } from '../lib/state.mjs';
 import { settleHouseGame, totalBalance } from '../lib/economy.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { tableBase } from '../lib/state.mjs';
-import { dayKey, dailyStatus, claimDaily, PAY, PAY_CYCLE, supportStatus, claimSupport, WELFARE_DAILY, missionsFor, missionsStatus, claimMission, MISSIONS, MISSION_SWEEP_BONUS, weekBoundary, settleFinishedSeason, SEASON_PRIZES, rescueStatus, playRescue, onRoundSettled } from '../lib/engagement.mjs';
+import { dayKey, dailyStatus, claimDaily, PAY, PAY_CYCLE, supportStatus, claimSupport, WELFARE_STEPS, missionsFor, missionsStatus, claimMission, MISSIONS, MISSION_SWEEP_BONUS, weekBoundary, settleFinishedSeason, SEASON_PRIZES, rescueStatus, playRescue, onRoundSettled } from '../lib/engagement.mjs';
 
 const DAY = 86_400_000;
 // 2026-10-14 12:00 in Seoul, a Wednesday.
@@ -60,11 +60,21 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
   u.account.available = 200_000;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
-  assert.equal(WELFARE_DAILY, 50_000_000, 'fifty of the Gold Room\'s smallest bets');
-  assert.equal(claimSupport(state, u, 'welfare', WED).amount, WELFARE_DAILY);
-  assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /SUPPORT_ALREADY_CLAIMED/);
-  u.account.available = 0; // lost it all again
-  assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, WELFARE_DAILY);
+  // Five a day, 100억 first and half as much each time after.
+  assert.deepEqual(WELFARE_STEPS, [10_000_000_000, 5_000_000_000, 2_500_000_000, 1_250_000_000, 625_000_000]);
+  assert.equal(claimSupport(state, u, 'welfare', WED).amount, 10_000_000_000);
+  assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /WELFARE_NOT_QUALIFIED/, 'only while broke');
+  for (const step of WELFARE_STEPS.slice(1)) {
+    u.account.available = 0; // lost it all again
+    assert.equal(claimSupport(state, u, 'welfare', WED + 1000).amount, step);
+  }
+  u.account.available = 0;
+  assert.equal(supportStatus(u, WED).welfare.claimed, true);
+  assert.throws(() => claimSupport(state, u, 'welfare', WED + 2000), /SUPPORT_ALREADY_CLAIMED/);
+  // A new day starts back at 100억, and a save from before (only the day) counts as one taken.
+  assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, 10_000_000_000);
+  u.support.welfare = dayKey(WED + 2 * DAY); u.account.available = 0;
+  assert.equal(supportStatus(u, WED + 2 * DAY).welfare.amount, 5_000_000_000);
 });
 
 test('three missions a day, stable within the day, one of them general', () => {

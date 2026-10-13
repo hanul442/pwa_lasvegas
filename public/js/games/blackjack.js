@@ -361,9 +361,12 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     const pairs = boxes.map(b => t.zoneTotal(`pp-${b}`)), trips = boxes.map(b => t.zoneTotal(`t3-${b}`));
     const sides = pairs.some(Boolean) || trips.some(Boolean) ? { pairs, trips } : {};
     t.lock();
+    // The deal goes to the server while the last hand is swept away, not after.
+    const request = api.blackjackStart(stakes, t.tier.floor, ev ? { ...sides, event: ev.id } : sides);
+    request.catch(() => {});
     await clearFelt();
     let res;
-    try { res = await api.blackjackStart(stakes, t.tier.floor, ev ? { ...sides, event: ev.id } : sides); }
+    try { res = await request; }
     catch (e) { t.locked = false; t.root.classList.remove('is-playing'); t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
     spotBox = boxes;

@@ -128,13 +128,16 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     const zones = t.betZones;
     const key = t.roundKey(ev?.id || '');
     t.lock();
+    // The bet goes to the server while the last hand is swept away, not after.
+    const request = api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined, ev?.id, key);
+    request.catch(() => {});
     await Promise.all([
       crowd.close(),
       hand('PLAYER').children.length ? sweepCards([hand('PLAYER'), hand('BANKER')], discard) : null
     ]);
     ['PLAYER', 'BANKER'].forEach(s => { score(s).textContent = '–'; side(s).classList.remove('is-winner'); });
     let res;
-    try { res = await api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined, ev?.id, key); }
+    try { res = await request; }
     catch (e) { t.roundFailed(e, deal); return; }
     t.roundDone();
     t.setServerState(res.state);

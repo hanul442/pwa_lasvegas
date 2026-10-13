@@ -6,6 +6,8 @@ import { resetGuides } from './guide.js';
 import { voice } from './voice.js';
 import { notifyRow } from './notify.js';
 import { installRow } from './install.js';
+import { playtime, limitControl, duration } from './playtime.js';
+import { openTerms, HELPLINE } from './terms.js';
 
 const canVibrate = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 const canWakeLock = () => typeof navigator !== 'undefined' && 'wakeLock' in navigator;
@@ -127,6 +129,30 @@ function done(button, text) {
   setTimeout(() => { button.textContent = was; button.disabled = false; }, 1600);
 }
 
+// 건강한 이용: time played, the daily limit, the terms and where to get help.
+function healthSection(parts) {
+  const time = el('strong', 'set-value');
+  const paintTime = () => { const s = playtime.get(); time.textContent = `오늘 ${duration(s.today)}`; time.title = `연속 ${duration(s.run)}`; };
+  paintTime();
+  const offTime = playtime.on(paintTime);
+  const limit = el('div', 'set-limit');
+  const offLimit = limitControl(limit);
+  parts.push({ cleanup: () => { offTime(); offLimit(); } });
+  const limitRow = row('하루 플레이 한도', null, limit);
+  limitRow.classList.add('set-row--stack');
+  const terms = el('button', 'pill-button', '보기');
+  terms.type = 'button';
+  terms.addEventListener('click', () => openTerms());
+  const call = el('a', 'pill-button set-link', `${HELPLINE.phone} 전화`);
+  call.href = `tel:${HELPLINE.phone}`;
+  return section('건강한 이용', [
+    row('플레이 시간', '쉬지 않고 1시간 할 때마다 휴식 안내가 나와요. 15분 넘게 쉬면 연속 시간이 다시 세져요', time),
+    limitRow,
+    row('이용약관', '가상 칩, 이용 자격, 개인정보, 건강한 이용', terms),
+    row('도움이 필요할 때', `${HELPLINE.name} 헬프라인. 국번 없이 ${HELPLINE.phone}, 24시간 무료 상담`, call)
+  ]);
+}
+
 // Renders into `root`; returns a cleanup that drops the listener.
 // `game` is the table the quick sheet opened over, so game-specific rows show only there.
 export function renderSettings(root, { compact = false, game = null } = {}) {
@@ -156,6 +182,7 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
     replay.type = 'button';
     replay.addEventListener('click', () => { resetGuides(); done(replay, '다음에 앉으면 다시 나와요'); });
     sections.push(section('알림', [notifyRow(row)]));
+    sections.push(healthSection(parts));
     sections.push(section('가이드', [
       add(toggle('guides', '처음 앉을 때 가이드', '게임에 처음 앉으면 테이블에서 따라 하는 가이드가 시작돼요')),
       row('본 가이드 기록', '모든 게임의 가이드를 처음 앉을 때처럼 다시 보여 줘요', replay)
@@ -167,7 +194,8 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
     ]));
   }
   root.replaceChildren(...sections);
-  return onSettings(() => parts.forEach(p => p.paint?.()));
+  const off = onSettings(() => parts.forEach(p => p.paint?.()));
+  return () => { off(); parts.forEach(p => p.cleanup?.()); };
 }
 
 // A ⚙ button in the table's top bar opens the quick settings as a bottom sheet, so the

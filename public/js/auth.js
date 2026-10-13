@@ -2,6 +2,7 @@
 import { api, errorMessage, saveSession } from './api.js';
 import { el } from './fx.js';
 import { mountInstallButton } from './install.js';
+import { openTerms, markAgreed } from './terms.js';
 
 let gate = null;
 
@@ -35,6 +36,7 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
             <input name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" maxlength="72" required>
             ${signup ? '<small>6자 이상.</small>' : ''}</label>
           ${claim ? `<label class="auth-claim"><input type="checkbox" name="claim" value="${claim.id}"><span><b>${claim.nickname} 기록 이어받기</b><small>지금까지 ${claim.nickname} 프로필에 쌓인 칩과 전적을 이 계정으로 가져와요. 한 계정만 이어받을 수 있어요.</small></span></label>` : ''}
+          ${signup ? '<label class="auth-claim auth-terms"><input type="checkbox" name="terms" required><span><b>만 19세 이상이며 이용약관에 동의해요</b><small><button type="button" class="auth-link" data-terms>이용약관 보기</button></small></span></label>' : ''}
           <p class="auth-error" role="alert">${error}</p>
           <button class="pill-button pill-button--solid auth-submit" type="submit">${signup ? '계정 만들기' : '로그인'}</button>
         </form>
@@ -43,15 +45,18 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
       </div>`;
     mountInstallButton(gate.querySelector('[data-auth-install]'));
     const form = gate.querySelector('form');
+    gate.querySelector('[data-terms]')?.addEventListener('click', e => { e.preventDefault(); openTerms(); });
     gate.querySelector('[data-auth-mode]').addEventListener('click', () => { mode = signup ? 'login' : 'signup'; render(); gate.querySelector('input')?.focus(); });
     form.querySelectorAll('input').forEach(input => input.addEventListener('input', () => { gate.querySelector('.auth-error').textContent = ''; }));
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const username = form.username.value.trim(), password = form.password.value;
       const submit = form.querySelector('.auth-submit');
+      if (signup && !form.terms.checked) { gate.querySelector('.auth-error').textContent = '만 19세 이상인지, 이용약관에 동의하는지 체크해 주세요.'; form.terms.focus(); return; }
       submit.disabled = true;
       try {
         const out = signup ? await api.signup(username, password, form.claim?.checked ? form.claim.value : undefined) : await api.login(username, password);
+        if (signup) markAgreed();
         saveSession(out.token, out.state.user.id);
         close();
         onSignedIn(out.state);

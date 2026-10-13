@@ -265,12 +265,12 @@ export async function mountRoulette(ctx, { event = null } = {}) {
 
   // 크게 보기: while the ball runs, the wheel lifts off the table into the middle of the screen
   // over a dimmed felt, then settles back into its place once the number is called. A spot
-  // holds its place in the layout. Skipped when the wheel is already big (tablets, landscape)
-  // or motion is reduced.
+  // holds its place in the layout while the wheel is on the page. Skipped when the wheel is
+  // already big (tablets, landscape) or motion is reduced.
   async function lift() {
     if (reducedMotion() || !t.root.isConnected) return null;
     const from = wheel.getBoundingClientRect();
-    const size = Math.min(innerWidth * 0.9, innerHeight * 0.6, 520);
+    const size = Math.min(innerWidth * 0.82, innerHeight * 0.6, 520); // the bowl rim adds 4% each side
     if (!from.width || size < from.width * 1.2) return null;
     const hold = document.createElement('div');
     hold.className = 'wheel-hold';
@@ -279,7 +279,9 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     wheel.before(hold);
     const shade = document.createElement('div');
     shade.className = 'wheel-shade';
-    t.root.append(shade);
+    // Up to the page itself: inside the table, a transformed or layered ancestor pins "fixed" to
+    // the felt and keeps the wheel under the shade (dimmed black and off-centre on phones).
+    document.body.append(shade, wheel);
     wheel.classList.add('is-lifted');
     Object.assign(wheel.style, { left: `${(innerWidth - size) / 2}px`, top: `${(innerHeight - size) / 2 - innerHeight * 0.04}px`, width: `${size}px` });
     const to = wheel.getBoundingClientRect();
@@ -298,7 +300,7 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     wheel.getAnimations().forEach(a => a.cancel());
     wheel.classList.remove('is-lifted');
     wheel.style.left = wheel.style.top = wheel.style.width = '';
-    hold.remove(); shade.remove();
+    hold.replaceWith(wheel); shade.remove();
   }
 
   function refreshActions() {

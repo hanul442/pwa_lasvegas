@@ -219,12 +219,24 @@ export function createFriends(t, pk, bar, hooks) {
     if (message) t.toast(message);
   }
 
+  // Works at any moment, even mid-animation: polling stops at once, and the cash-out plays after
+  // whatever is on the felt finishes.
+  let leaving = false;
   async function leave() {
+    if (leaving || !active) return;
+    leaving = true;
     const wasBust = bustedNow();
+    stop();
+    pk.halted = true;
     let res;
     try { res = await api.holdemRoomLeave(code); }
-    catch (e) { if (e.code !== 'NOT_IN_ROOM' && e.code !== 'ROOM_NOT_FOUND') { t.toast(errorMessage(e)); return; } res = null; }
+    catch (e) {
+      if (e.code !== 'NOT_IN_ROOM' && e.code !== 'ROOM_NOT_FOUND') { pk.halted = leaving = false; t.toast(errorMessage(e)); schedule(); return; }
+      res = null;
+    }
+    active = false; // replies still queued are dropped, and the one on screen stops at its next event
     await applying;
+    pk.halted = leaving = false;
     if (res) t.setServerState(res.state);
     const result = res?.result;
     await exit();
@@ -327,7 +339,7 @@ export function createFriends(t, pk, bar, hooks) {
     const people = view.players.length;
     let line = '';
     if (!view.started) line = view.isHost ? `친구에게 코드 ${view.code}를 알려 주세요 · ${people}명 앉음` : `방장이 딜을 시작하길 기다리는 중 · ${people}명 앉음`;
-    else if (view.waiting) line = '다음 핸드부터 앉아요';
+    else if (view.waiting) line = '다음 핸드부터 AI 자리에 앉아요';
     pk.hintLine.hidden = !line;
     pk.hintLine.textContent = line;
   }
@@ -437,11 +449,11 @@ export function createFriends(t, pk, bar, hooks) {
     if (show.length && dealAt) showTimer = setTimeout(() => { if (active) hooks.refreshActions(); }, Math.max(0, dealAt - 500 - Date.now()));
     if (bustedNow()) {
       t.hint('칩을 모두 잃었어요');
-      t.setActions([...show, { label: '나가기', key: '↵', primary: true, disabled: pk.animating, onClick: leave }]);
+      t.setActions([...show, { label: '나가기', key: '↵', primary: true, anytime: true, onClick: leave }]);
       return;
     }
     t.setActions([
-      { label: '나가기', ghost: true, disabled: pk.animating, onClick: leave },
+      { label: '나가기', ghost: true, anytime: true, onClick: leave },
       ...show,
       ...queue,
       ...(room && room.isHost && !room.started ? [{ label: '딜 시작', key: '↵', primary: true, disabled: pk.animating, onClick: deal }] : [])

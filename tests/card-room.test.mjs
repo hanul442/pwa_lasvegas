@@ -65,7 +65,8 @@ test('맞고 enforces turns and hides the opponent hand', () => {
   assert.equal(view.opponentHand, 10);
   assert.equal(JSON.stringify(view).includes(r.hands[1][0]), false);
   const events = matgoAct(r, 0, matgoAiDecision(r, 0));
-  assert.equal(events[0].type, 'play');
+  // A bomb or a shake is announced first ('call'), so the play is not always the first event.
+  assert.equal(events.find(e => e.type !== 'call').type, 'play');
   assert.ok(events.some(e => e.type === 'flip'));
   assert.ok(matgoActor(r) === 1 || r.phase !== 'PLAY');
 });

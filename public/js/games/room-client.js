@@ -198,11 +198,22 @@ export function createRoomClient(t, game, hooks) {
     hooks.refreshActions();
   }
 
+  // Works at any moment, even while the felt is still playing out other seats' moves: polling
+  // stops at once, and the felt is cleared after whatever is on screen finishes.
+  let leaving = false;
   async function leave() {
+    if (leaving || !active) return;
+    leaving = true;
     const midHand = room?.round?.status === 'PLAYING';
+    stop();
     let res = null;
     try { res = await api.roomLeave(code); }
-    catch (e) { if (e.code !== 'NOT_IN_ROOM' && e.code !== 'ROOM_NOT_FOUND') { t.toast(errorMessage(e)); return; } }
+    catch (e) {
+      if (e.code !== 'NOT_IN_ROOM' && e.code !== 'ROOM_NOT_FOUND') { leaving = false; t.toast(errorMessage(e)); schedule(); return; }
+    }
+    active = false;
+    await queue;
+    leaving = false;
     if (res) t.setServerState(res.state);
     await exit(res?.result?.pending || midHand ? '방에서 나왔어요. 하던 판은 자동으로 마저 치고 정산해요.' : '방에서 나왔어요');
   }
@@ -243,7 +254,7 @@ export function createRoomClient(t, game, hooks) {
       while (t.busy) await sleep(60);
       if (!active) return;
       t.busy = true;
-      t.actions.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      t.actions.querySelectorAll('button:not([data-anytime])').forEach(b => { b.disabled = true; });
       try { await applyView(view, sent); } finally { t.busy = false; hooks.refreshActions(); }
     }).catch(() => {});
     return queue;
@@ -281,7 +292,7 @@ export function createRoomClient(t, game, hooks) {
     const people = v.players.length;
     let line = '';
     if (!v.started) line = v.isHost ? `코드 ${v.code}를 친구에게 알려 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
-    else if (v.waiting) line = '다음 판부터 같이 해요';
+    else if (v.waiting) line = '다음 판부터 AI 자리에 앉아요';
     else if (v.round?.status === 'SETTLED') line = '다음 판을 곧 돌려요';
     statusEl.textContent = line;
     clearInterval(clockTimer);
@@ -316,7 +327,7 @@ export function createRoomClient(t, game, hooks) {
   }
 
   // The action row between hands, and the 나가기 button while others play.
-  const leaveAction = () => ({ label: '나가기', ghost: true, onClick: leave });
+  const leaveAction = () => ({ label: '나가기', ghost: true, anytime: true, onClick: leave });
   function idleActions() {
     const list = [leaveAction()];
     if (room?.isHost && !room.started) list.push({ label: '시작', key: '↵', primary: true, onClick: deal });

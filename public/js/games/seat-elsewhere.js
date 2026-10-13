@@ -36,14 +36,18 @@ export function seatedElsewhere(t, e, retry, goHere = null) {
     if (goHere) t.run(() => goHere(where.code));
     else dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game: SCREEN[where.game] || where.game, tier: where.tier } }));
   });
-  box.querySelector('[data-leave]').addEventListener('click', () => t.run(async () => {
+  // Not behind the table's busy lock: getting up from the other room always answers the tap.
+  const leaveBtn = box.querySelector('[data-leave]');
+  leaveBtn.addEventListener('click', async () => {
+    if (leaveBtn.disabled) return;
+    leaveBtn.disabled = true;
     try { await (where.game === 'holdem' ? api.holdemRoomLeave(where.code) : api.roomLeave(where.code)); }
-    catch (err) { if (err.code !== 'NOT_IN_ROOM' && err.code !== 'ROOM_NOT_FOUND') { t.toast(errorMessage(err)); return; } }
+    catch (err) { if (err.code !== 'NOT_IN_ROOM' && err.code !== 'ROOM_NOT_FOUND') { leaveBtn.disabled = false; t.toast(errorMessage(err)); return; } }
     close();
     sound.tick();
     t.toast(`${name} 방에서 나왔어요`);
-    await retry();
-  }));
+    await t.run(retry);
+  });
   t.felt.append(box);
   box.querySelector('[data-go]').focus({ preventScroll: true });
   return true;

@@ -298,3 +298,25 @@ test('rooms over the API: create, join by code, poll with a cursor, act, leave',
   assert.equal(wealth(store.peek(), ids) - total, moved, 'the only change is the settled results');
   assert.equal((await call(store, 'hanseo', 'GET', `/api/room?code=${code}`)).status, 404);
 });
+
+test('friends sit together whatever floors each has reached or outgrown; only the chips count', () => {
+  const w = world(21);
+  const { state } = w;
+  const poor = state.users.june, rich = state.users.hanseo, mid = state.users.min;
+  poor.account.available = 50_000_000; poor.account.unlockedFloors = ['gold-room'];
+  mid.account.available = 30_000_000; mid.account.unlockedFloors = ['gold-room'];
+  // The rich friend has outgrown Gold Room and can't sit there alone, but can sit at a friend's room.
+  assert.throws(() => createRoom(state, rich, { game: 'seotda', stake: 1_000_000, floor: 'gold-room', size: 3 }, w.ctx()), /FLOOR_OUTGROWN/);
+  const low = createRoom(state, poor, { game: 'seotda', stake: 1_000_000, floor: 'gold-room', size: 3 }, w.ctx());
+  joinRoom(state, rich, low.code, w.ctx());
+  assert.ok(low.players[rich.id]);
+  leaveRoom(state, rich, low.code, w.ctx());
+  // A friend who hasn't reached High Limit is offered the room and sits, chips permitting.
+  const high = createRoom(state, rich, { game: 'seotda', stake: 10_000_000, floor: 'high-limit', size: 3 }, w.ctx());
+  assert.ok(listRooms(state, mid, 'seotda').some(r => r.code === high.code));
+  joinRoom(state, mid, high.code, w.ctx());
+  assert.ok(high.players[mid.id]);
+  leaveRoom(state, mid, high.code, w.ctx());
+  mid.account.available = 5_000_000; // short of the room's 10M stake
+  assert.throws(() => joinRoom(state, mid, high.code, w.ctx()), /INSUFFICIENT_BANKROLL/);
+});

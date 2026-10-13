@@ -133,19 +133,21 @@ test('a finished season pays its podium once and leaves a badge', () => {
   const lastWeek = weekBoundary(WED - 7 * DAY);
   const at = new Date(Date.parse(lastWeek.startsAt) + DAY).toISOString();
   const win = (uid, pnl) => state.ledger.push({ id: `tx_${uid}_${pnl}`, userId: uid, type: pnl > 0 ? 'GAME_WIN' : 'GAME_LOSS', amount: pnl, rawPnlDelta: pnl, qualifiedPnlDelta: pnl, createdAt: at, metadata: { game: 'Baccarat', stake: 1_000_000 } });
-  win('june', 9_000_000); win('min', 4_000_000); win('zero', 1_000_000); win('hanseo', -2_000_000);
-  const before = { june: state.users.june.account.available, min: state.users.min.account.available, hanseo: state.users.hanseo.account.available };
+  // Three people, plus the demo AI 'june' with the best week of all: AI never takes a prize.
+  for (const [uid, from] of [['ann', 'june'], ['bo', 'min'], ['cy', 'zero']]) state.users[uid] = { ...structuredClone(state.users[from]), id: uid, nickname: uid.toUpperCase() };
+  win('ann', 9_000_000); win('bo', 4_000_000); win('cy', 1_000_000); win('hanseo', -2_000_000); win('june', 50_000_000);
+  const before = { ann: state.users.ann.account.available, bo: state.users.bo.account.available, hanseo: state.users.hanseo.account.available, june: state.users.june.account.available };
   // Prizes are counted in each winner's table base at the moment they are paid.
-  const prizes = { june: SEASON_PRIZES[0] * tableBase(state.users.june), min: SEASON_PRIZES[1] * tableBase(state.users.min) };
-  const prize = uid => prizes[uid];
+  const prizes = { ann: SEASON_PRIZES[0] * tableBase(state.users.ann), bo: SEASON_PRIZES[1] * tableBase(state.users.bo) };
   const result = settleFinishedSeason(state, WED);
-  assert.deepEqual(result.podium.map(r => r.userId), ['june', 'min', 'zero']);
-  assert.equal(state.users.june.account.available, before.june + prize('june', 0));
-  assert.equal(state.users.min.account.available, before.min + prize('min', 1));
+  assert.deepEqual(result.podium.map(r => r.userId), ['ann', 'bo', 'cy']);
+  assert.equal(state.users.ann.account.available, before.ann + prizes.ann);
+  assert.equal(state.users.bo.account.available, before.bo + prizes.bo);
   assert.equal(state.users.hanseo.account.available, before.hanseo);
-  assert.equal(state.users.june.badges[0].rank, 1);
+  assert.equal(state.users.june.account.available, before.june);
+  assert.equal(state.users.ann.badges[0].rank, 1);
   assert.equal(settleFinishedSeason(state, WED + 1000), null);
-  assert.equal(state.users.june.account.available, before.june + prize('june', 0));
+  assert.equal(state.users.ann.account.available, before.ann + prizes.ann);
 });
 
 test('lucky card rescue only opens on an empty wallet while the recharge cools down', () => {

@@ -583,6 +583,24 @@ function timeLeft(iso) {
   const d = Math.floor(ms / 86_400_000), h = Math.floor(ms / 3_600_000) % 24, m = Math.floor(ms / 60_000) % 60;
   return d > 0 ? `${d}일 ${h}시간` : h > 0 ? `${h}시간 ${m}분` : `${m}분`;
 }
+// Rank changes since this device last looked at a board: the ranks seen then are kept per board,
+// read once a session (so the arrows stay put while you flip tabs) and saved with every look.
+const RANK_SEEN_KEY = 'vegas:rank-seen';
+let rankSeen = null;
+let rankBoardShown = '';
+function rankMoves(board, rows) {
+  if (!rankSeen) { try { rankSeen = JSON.parse(localStorage.getItem(RANK_SEEN_KEY) || '{}') || {}; } catch { rankSeen = {}; } }
+  const before = rankSeen[board]?.ranks;
+  const moves = new Map();
+  if (before) for (const r of rows) moves.set(r.id, before[r.id] == null ? 'new' : before[r.id] - r.rank);
+  try {
+    const saved = JSON.parse(localStorage.getItem(RANK_SEEN_KEY) || '{}') || {};
+    saved[board] = { at: Date.now(), ranks: Object.fromEntries(rows.map(r => [r.id, r.rank])) };
+    for (const k in saved) if (Date.now() - (saved[k]?.at || 0) > 30 * 86_400_000) delete saved[k];
+    localStorage.setItem(RANK_SEEN_KEY, JSON.stringify(saved));
+  } catch {}
+  return moves;
+}
 function renderRanking() {
   const season = state?.rankings?.season;
   if (!season) rankPeriod = 'allTime';
@@ -618,17 +636,56 @@ function renderRanking() {
   const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
   // Each row wears the player's three dearest luxury pieces (lib/shop.mjs); a tap opens their collection.
   const showcase = r => (r.showcase || []).map(id => luxuryItem(state, id)).filter(Boolean).map(x => luxuryIcon(x.icon, 'rank-lux')).join('');
-  document.querySelector('[data-rank-list]').replaceChildren(...rows.map(r => {
-    const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}${r.rank <= 3 ? ` is-top is-top-${r.rank}` : ''}`);
+  const board = rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
+  const move = rankMoves(board, rows);
+  const moveTag = r => {
+    const m = move.get(r.id);
+    if (m == null) return '';
+    if (m === 'new') return '<span class="rank-move rank-move--new">NEW</span>';
+    return m > 0 ? `<span class="rank-move rank-move--up" aria-label="${m}계단 올라감">▲${m}</span>` : m < 0 ? `<span class="rank-move rank-move--down" aria-label="${-m}계단 내려감">▼${-m}</span>` : '';
+  };
+  const open = (node, r) => {
+    node.tabIndex = 0;
+    node.setAttribute('role', 'button');
+    node.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 컬렉션 보기`);
+    node.addEventListener('click', () => openPlayerSheet(state, r));
+    node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerSheet(state, r); } });
+  };
+  // The top three stand on a podium: 2nd, 1st, 3rd, the winner raised in the middle.
+  const top = rows.filter(r => r.rank <= 3);
+  const podium = document.querySelector('[data-rank-podium]');
+  // The podium rises only when a board first shows, not on every chip update after.
+  podium.classList.toggle('is-fresh', board !== rankBoardShown);
+  rankBoardShown = board;
+  podium.replaceChildren(...[2, 1, 3].map(n => top.find(r => r.rank === n)).filter(Boolean).map(r => {
+    const li = el('li', `podium-spot podium-spot--${r.rank}${r.id === me ? ' is-me' : ''}`);
     const lux = showcase(r);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
-    li.tabIndex = 0;
-    li.setAttribute('role', 'button');
-    li.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 컬렉션 보기`);
-    li.addEventListener('click', () => openPlayerSheet(state, r));
-    li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerSheet(state, r); } });
+    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
+    open(li, r);
     return li;
   }));
+  // Where I stand: the gap to the next rank up, or how far ahead I am at the top.
+  const mine = rows.find(r => r.id === me);
+  const meBox = document.querySelector('[data-rank-me]');
+  meBox.replaceChildren();
+  if (mine) {
+    const above = rows.find(r => r.rank === mine.rank - 1);
+    const below = rows.find(r => r.rank === mine.rank + 1);
+    const gap = (a, b) => rankTab === 'wins' ? `${a.value - b.value}승` : formatCH(a.value - b.value);
+    const line = mine.rank === 1
+      ? (below ? `1위 지키는 중 · 2위 ${below.nickname}보다 ${gap(mine, below)} 앞서요` : '1위예요')
+      : above ? `${above.nickname}(${above.rank}위)까지 ${gap(above, mine)} 남았어요` : '';
+    meBox.innerHTML = `<span class="rank-me-no">${mine.rank}<small>위</small></span><span class="rank-me-text"><b>나 ${moveTag(mine)}</b><small>${line}</small></span><span class="rank-me-value">${value(mine)}</span>`;
+  }
+  const rest = rows.filter(r => r.rank > 3);
+  document.querySelector('[data-rank-list]').replaceChildren(...rest.map(r => {
+    const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}`);
+    const lux = showcase(r);
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
+    open(li, r);
+    return li;
+  }));
+  if (!rows.length) document.querySelector('[data-rank-list]').innerHTML = '<li class="rank-empty">아직 이 순위에 오른 사람이 없어요. 한 판 하고 첫 이름을 올려 보세요.</li>';
   renderDuels(document.querySelector('[data-duels]'), state, applyState);
 }
 

@@ -15,9 +15,10 @@ test('six tiers run from 100만 to 1조, ten times each, with no gaps', () => {
   assert.equal(FLOORS.at(-1).maxBet, 1_000_000_000_000);
 });
 
-test('a floor opens at ten of its smallest bets and closes past a hundred', () => {
+test('a floor opens at three of its smallest bets and closes past a hundred', () => {
   assert.equal(FLOORS[0].threshold, 0);
-  for (const f of FLOORS.slice(1)) assert.equal(f.threshold, f.minBet * 10);
+  for (const f of FLOORS.slice(1)) assert.equal(f.threshold, f.minBet * 3);
+  assert.equal(FLOORS.find(f => f.slug === 'vault').threshold, 300_000_000_000, 'The Vault opens at 3천억');
   for (const f of FLOORS.slice(0, -1)) assert.equal(f.ceiling, f.minBet * 100);
   assert.equal(FLOORS.at(-1).ceiling, null, 'The Vault never closes');
   // At any net worth at least one opened floor is still open.

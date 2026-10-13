@@ -138,7 +138,8 @@ test('skins: free and earned ones need no purchase, bought ones do, and only own
 
   buyItem(state, u, 'felt-navy');
   assert.equal(state.ledger.at(-1).type, 'PURCHASE');
-  assert.equal(u.account.available, 18 * 억, 'the Salon Privé felt is 2× its smallest bet');
+  assert.equal(u.account.available, 20 * 억 - itemById('felt-navy').price);
+  assert.equal(itemById('felt-navy').price, 6_000 * 10_000, 'the Salon Privé felt is a fifth of the 3억 that opens the floor');
   equipItem(u, 'felt', 'felt-navy');
   assert.equal(u.cosmetics.equipped.felt, 'felt-navy');
   assert.throws(() => buyItem(state, u, 'felt-navy'), /ITEM_ALREADY_OWNED/);
@@ -205,7 +206,7 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
 
   const felt = await call('POST', '/api/shop/buy', { itemId: 'felt-navy' }, 'buy-key-00000003');
   assert.equal(felt.status, 200);
-  assert.equal(felt.data.state.user.account.available, 3 * 억);
+  assert.equal(felt.data.state.user.account.available, 5 * 억 - itemById('felt-navy').price);
   const on = await call('POST', '/api/shop/equip', { slot: 'felt', itemId: 'felt-navy' });
   assert.equal(on.data.state.user.cosmetics.equipped.felt, 'felt-navy');
   assert.equal(on.data.state.shop.equipped.felt, 'felt-navy');
@@ -221,7 +222,7 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   const sell = await call('POST', '/api/shop/sell', { itemId: 'watch-tourbillon' }, 'sell-key-0000001');
   assert.equal(sell.status, 200);
   assert.equal(sell.data.sale.amount, 3.5 * 억);
-  assert.equal(sell.data.state.user.account.available, 6.5 * 억);
+  assert.equal(sell.data.state.user.account.available, 8.5 * 억 - itemById('felt-navy').price);
   assert.equal(sell.data.state.shop.assets, 0);
   const missing = await call('POST', '/api/shop/sell', { itemId: 'nope' }, 'sell-key-0000002');
   assert.equal(missing.status, 404);

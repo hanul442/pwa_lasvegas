@@ -354,6 +354,9 @@ function rechargeButton(r, solid) {
 }
 
 // ---------- lobby ----------
+// Every table and event has its own key art (scripts/art.mjs draws them): a still life under the lamp.
+const art = (id, cls) => `<img class="${cls}" src="art/${id}.svg" alt="" width="480" height="360" loading="lazy" decoding="async">`;
+
 function gameRow(g) {
   const li = el('li');
   const b = el('button', `game-row${g.soon ? ' is-soon' : ''}`);
@@ -365,10 +368,10 @@ function gameRow(g) {
   const hot = !g.event && hotStatus(state).live;
   if (hot && hot.game === g.id) {
     b.classList.add('is-hot');
-    b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}<span class="hot-badge">HOT ${pct(hot)}</span></span><span class="game-row-desc">핫 딜러 타임 · 이기면 ${pct(hot)} · <span data-hot-left>${clock(Date.parse(hot.endsAt) - hotStatus(state).now)}</span> 남음</span>`;
+    b.innerHTML = `${art(g.event || g.id, 'game-row-art')}<span class="game-row-name">${g.name}<span class="hot-badge">HOT ${pct(hot)}</span></span><span class="game-row-desc">핫 딜러 타임 · 이기면 ${pct(hot)} · <span data-hot-left>${clock(Date.parse(hot.endsAt) - hotStatus(state).now)}</span> 남음</span>`;
     b.setAttribute('aria-label', `${g.name}, 핫 테이블, 이기면 순수익 ${pct(hot)}`);
   } else {
-    b.innerHTML = `${icon(g.id)}<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span>`;
+    b.innerHTML = `${art(g.event || g.id, 'game-row-art')}<span class="game-row-name">${g.name}</span><span class="game-row-desc">${g.tag || g.blurb}</span>`;
   }
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
@@ -441,7 +444,7 @@ function renderEvents() {
   if (!ev) { slot.replaceChildren(); return; }
   const b = el('button', `event-banner event-banner--teaser event-banner--${g.id}`);
   b.type = 'button';
-  b.innerHTML = `<span class="event-kicker">이번 주 이벤트 · ${timeLeft(ev.until)} 남음</span><strong class="event-title">${ev.title}</strong><span class="event-cta">이벤트 보기</span>`;
+  b.innerHTML = `${art(ev.id, 'event-art')}<span class="event-kicker">이번 주 이벤트 · ${timeLeft(ev.until)} 남음</span><strong class="event-title">${ev.title}</strong><span class="event-cta">이벤트 보기</span>`;
   b.addEventListener('click', () => showSurface('events', { focus: true }));
   slot.replaceChildren(b);
   if (document.querySelector('[data-surface="events"]').classList.contains('is-active')) renderEventTab();
@@ -452,7 +455,7 @@ function eventCard(ev, { now = false } = {}) {
   const g = GAMES.find(x => x.event === ev.id);
   const card = el('article', `event-banner event-card event-banner--${ev.id}${now ? '' : ' is-upcoming'}`);
   const when = ev.always ? '언제나 열려 있어요' : now ? `${timeLeft(ev.until)} 남음` : `${dayLabel(ev.from)} 시작`;
-  card.innerHTML = `<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine(ev)}`;
+  card.innerHTML = `${art(ev.id, 'event-art')}<span class="event-kicker">${ev.kicker} · ${when}</span><strong class="event-title">${ev.title}</strong><span class="event-blurb">${ev.blurb}</span><ul class="event-rules">${ev.rules.map(r => `<li>${r}</li>`).join('')}</ul>${entryLine(ev)}`;
   if (now && g) {
     // Entry not met: show what it takes, disabled, rather than a way into an empty tier page.
     const e = eventEntry(ev);

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360" role="img" aria-label="슬롯">
+<defs>
+  <radialGradient id="room" cx="50%" cy="-8%" r="95%"><stop offset="0" stop-color="#2a2826"/><stop offset=".45" stop-color="#121214"/><stop offset="1" stop-color="#050506"/></radialGradient>
+  <radialGradient id="felt" cx="50%" cy="34%" r="70%"><stop offset="0" stop-color="#2b2f37"/><stop offset=".55" stop-color="#15171c"/><stop offset="1" stop-color="#060709"/></radialGradient>
+  <linearGradient id="rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a3e"/><stop offset=".18" stop-color="#151517"/><stop offset="1" stop-color="#060607"/></linearGradient>
+  <radialGradient id="pool" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6e6" stop-opacity=".2"/><stop offset=".6" stop-color="#fff6e6" stop-opacity=".05"/><stop offset="1" stop-color="#fff6e6" stop-opacity="0"/></radialGradient>
+  <radialGradient id="vig" cx="50%" cy="45%" r="75%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".72"/></radialGradient>
+  <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e5dc"/></linearGradient>
+  <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f4f2"/><stop offset=".35" stop-color="#8d8f93"/><stop offset=".55" stop-color="#e2e3e4"/><stop offset="1" stop-color="#4a4c50"/></linearGradient>
+  <filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="blur3"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .07"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+</defs>
+<rect width="480" height="360" fill="url(#room)"/>
+<defs><linearGradient id="reel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9d5cc"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#d9d5cc"/></linearGradient>
+    <linearGradient id="reelShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset=".3" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>
+    <linearGradient id="cab" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0c0c0d"/><stop offset=".5" stop-color="#232326"/><stop offset="1" stop-color="#0c0c0d"/></linearGradient></defs>
+    <g filter="url(#blur3)"><circle cx="347.94" cy="37.44" r="6.46" fill="#ffe2e2" opacity="0.1"/><circle cx="212.69" cy="58.55" r="6.27" fill="#ffe2e2" opacity="0.13"/><circle cx="205.84" cy="72.48" r="18.25" fill="#ffe2e2" opacity="0.06"/><circle cx="463.67" cy="81.48" r="20.89" fill="#ffe2e2" opacity="0.07"/><circle cx="144.72" cy="43.54" r="20.5" fill="#ffe2e2" opacity="0.12"/><circle cx="416.38" cy="46.1" r="12.14" fill="#ffe2e2" opacity="0.13"/><circle cx="81.62" cy="81.23" r="15.17" fill="#ffe2e2" opacity="0.11"/><circle cx="165.63" cy="66" r="7.46" fill="#ffe2e2" opacity="0.09"/><circle cx="182.48" cy="16.32" r="14.31" fill="#ffe2e2" opacity="0.07"/><circle cx="1.79" cy="98.02" r="15.96" fill="#ffe2e2" opacity="0.07"/><circle cx="115.43" cy="95.28" r="9.84" fill="#ffe2e2" opacity="0.12"/><circle cx="304.13" cy="44.47" r="19.46" fill="#ffe2e2" opacity="0.06"/></g>
+    <ellipse cx="240" cy="352" rx="210" ry="22" fill="#000" opacity=".7" filter="url(#soft)"/>
+    <rect x="66" y="44" width="348" height="320" rx="26" fill="url(#cab)"/><rect x="66" y="44" width="348" height="320" rx="26" fill="none" stroke="url(#chrome)" stroke-width="3"/>
+    <rect x="96" y="58" width="288" height="44" rx="10" fill="#0a0a0b" stroke="#fff" stroke-opacity=".12"/>
+    <text x="240" y="89" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="22" font-weight="900" letter-spacing="9" fill="#f4efe4" text-anchor="middle">VEGAS</text>
+    <path d="M241 69L243.4 75.4L250 75.6L244.8 79.6L246.6 86L241 82.2L235.4 86L237.2 79.6L232 75.6L238.6 75.4Z" fill="#ffd28a" opacity="0"/>
+    <rect x="88" y="114" width="304" height="152" rx="12" fill="#050506" stroke="url(#chrome)" stroke-width="2.5"/>
+    <g transform="translate(96 0)"><rect x="0" y="124" width="92" height="132" rx="6" fill="url(#reel)"/>
+    <text x="46" y="148" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="900" fill="#141416" fill-opacity=".25" text-anchor="middle">BAR</text>
+    <text x="46" y="214" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="62" font-weight="900" fill="#c4122c" text-anchor="middle" font-style="italic">7</text>
+    <text x="46" y="262" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="900" fill="#141416" fill-opacity=".25" text-anchor="middle">♦</text>
+    <rect x="0" y="124" width="92" height="132" rx="6" fill="url(#reelShade)"/></g><g transform="translate(194 0)"><rect x="0" y="124" width="92" height="132" rx="6" fill="url(#reel)"/>
+    <text x="46" y="148" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="900" fill="#141416" fill-opacity=".25" text-anchor="middle">♣</text>
+    <text x="46" y="214" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="62" font-weight="900" fill="#c4122c" text-anchor="middle" font-style="italic">7</text>
+    <text x="46" y="262" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="900" fill="#141416" fill-opacity=".25" text-anchor="middle">BAR</text>
+    <rect x="0" y="124" width="92" height="132" rx="6" fill="url(#reelShade)"/></g><g transform="translate(292 0)"><rect x="0" y="124" width="92" height="132" rx="6" fill="url(#reel)"/>
+    <text x="46" y="148" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="900" fill="#141416" fill-opacity=".25" text-anchor="middle">♥</text>
+    <text x="46" y="214" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="62" font-weight="900" fill="#c4122c" text-anchor="middle" font-style="italic">7</text>
+    <text x="46" y="262" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="900" fill="#141416" fill-opacity=".25" text-anchor="middle">♣</text>
+    <rect x="0" y="124" width="92" height="132" rx="6" fill="url(#reelShade)"/></g>
+    <path d="M90 190H390" stroke="#e01b39" stroke-width="2" opacity=".85"/><path d="M84 182L94 190L84 198Z" fill="#e01b39"/><path d="M396 182L386 190L396 198Z" fill="#e01b39"/>
+    <rect x="102" y="282" width="276" height="34" rx="8" fill="#0a0a0b" stroke="#fff" stroke-opacity=".1"/>
+    <text x="240" y="305" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="800" letter-spacing="3" fill="#f4efe4" fill-opacity=".85" text-anchor="middle">JACKPOT  ×  500</text>
+    <rect x="414" y="150" width="14" height="70" rx="4" fill="url(#chrome)"/><path d="M421 152L436 80" stroke="url(#chrome)" stroke-width="7" stroke-linecap="round"/><circle cx="437" cy="74" r="13" fill="#b3122b"/><circle cx="433" cy="70" r="4" fill="#fff" opacity=".5"/>
+<rect width="480" height="360" fill="url(#vig)"/><rect width="480" height="360" filter="url(#grain)"/>
+</svg>

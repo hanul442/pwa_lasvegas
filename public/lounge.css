@@ -494,9 +494,18 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .slot-window.is-boosted .slot-boost{display:block;animation:slot-mult-in .45s cubic-bezier(.2,1.6,.4,1)}
 .slot-window.is-boosted .slot-payline{background:#fff;opacity:1;height:3px}
 .slot--lightning .slot-window{box-shadow:inset 0 0 0 1px #ffffff59,0 18px 40px #000b}
+/* FREE coin: a black lacquer disc with a warm ring, the one scatter on the reels */
+.slot-sym--free i{display:grid;place-items:center;width:74%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#2a2d33,#0a0b0d 70%);box-shadow:inset 0 0 0 calc(var(--sym) * .04) var(--star),inset 0 0 0 calc(var(--sym) * .07) #0a0b0d,inset 0 0 0 calc(var(--sym) * .085) #fff6dc80,0 3px 6px #0006;color:#fff;font:800 calc(var(--sym) * .17)/1 var(--display);font-style:normal;font-stretch:112%;letter-spacing:.04em}
+.slot-strikes>span.is-coin{border-radius:50%;box-shadow:0 0 0 2px var(--star),0 0 18px #fff6dcaa;animation:slot-coin 1s ease-in-out infinite alternate}
+@keyframes slot-coin{to{box-shadow:0 0 0 3px var(--star),0 0 28px #fff6dc}}
+.slot-free{position:absolute;left:50%;top:0;z-index:6;display:flex;align-items:baseline;gap:8px;transform:translate(-50%,-55%);padding:6px 12px 5px;border-radius:999px;background:#0a0b0d;box-shadow:0 0 0 1px var(--star),0 6px 18px #000c;white-space:nowrap;animation:slot-mult-in .45s cubic-bezier(.2,1.6,.4,1)}
+.slot-free[hidden]{display:none}
+.slot-free span{color:var(--smoke);font:700 12px/1 var(--sans);letter-spacing:.12em}
+.slot-free strong{color:var(--star);font:800 clamp(15px,4.4vw,19px)/1 var(--display);font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.01em}
+.slot--free .slot-window{box-shadow:inset 0 0 0 1px var(--star),0 0 0 1px #fff6dc40,0 18px 44px #000b,0 0 40px #fff6dc26}
 @media (max-height:820px) and (orientation:portrait){.slot-strikes{inset:8px}}
 @media (orientation:landscape) and (max-height:380px){.slot-mode button{min-height:30px}}
-@media (prefers-reduced-motion:reduce){.slot-mult,.slot-window.is-boosted .slot-boost{animation:none}.slot-bolt{display:none}}
+@media (prefers-reduced-motion:reduce){.slot-mult,.slot-window.is-boosted .slot-boost,.slot-free,.slot-strikes>span.is-coin{animation:none}.slot-bolt{display:none}}
 
 /* 칩 내역 on the profile: filter, rows grouped by day, balance after each. */
 .ledger-filter{margin:0 0 6px}

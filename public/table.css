@@ -152,6 +152,8 @@
 .bet-tools{grid-area:tools;display:flex;gap:6px}
 .bet-tool{min-width:40px;height:36px;padding:0 9px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px;white-space:nowrap}
 .bet-tool:disabled{opacity:.3}
+.table-controls .bet-step{min-width:44px;font-size:22px;font-weight:500;line-height:1;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.table-controls .bet-step span{display:block;translate:0 -1px}
 .chip-tray{grid-area:tray;display:flex;justify-content:space-between;gap:6px;padding:8px 2px 4px;transition:opacity .25s}
 .chip-tray .chip{--size:clamp(44px,13vw,54px);transition:transform .18s var(--ease-out);touch-action:none}
 .chip-tray .chip[aria-pressed="true"]{transform:translateY(-7px)}
@@ -411,9 +413,6 @@
   .action-row{min-width:0}
   .action{padding:0 10px;font-size:15px}
   .bet-readout strong{font-size:20px}
-  /* undo becomes its arrow here; the button keeps its spoken name */
-  .table-controls .bet-tool[data-tool="undo"]{font-size:0}
-  .table-controls .bet-tool[data-tool="undo"]::before{content:"↶";font-size:18px;line-height:1}
 }
 /* the smallest phones on their side: the control line is drawn a touch smaller instead of running off */
 @media (orientation:landscape) and (max-height:520px) and (max-width:699px){

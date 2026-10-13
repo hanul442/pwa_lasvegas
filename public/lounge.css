@@ -472,6 +472,32 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .slot-auto button:disabled{opacity:.45}
 .slot-auto button[aria-pressed="true"]{opacity:1;background:var(--white);color:var(--ink);border-color:var(--white)}
 
+/* 라이트닝 슬롯: 일반 / 라이트닝 beside 자동, bolts and white multiplier tags over the reels. No glow. */
+.slot-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;max-width:100%}
+.slot-mode{flex:none;display:inline-grid;grid-auto-flow:column;padding:2px;border-radius:999px;background:#0a0b0d99;border:1px solid var(--hair-strong)}
+.slot-mode button{min-height:32px;padding:0 12px;border:0;border-radius:999px;background:none;color:var(--smoke);font:700 13px/1 var(--sans);letter-spacing:-.01em;white-space:nowrap;cursor:pointer}
+.slot-mode button[aria-pressed="true"]{background:var(--white);color:var(--ink)}
+.slot-mode button:disabled{cursor:default}
+.slot-mode button:disabled:not([aria-pressed="true"]){opacity:.45}
+.slot-mode button:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.slot-strikes{position:absolute;inset:10px;display:grid;grid-template-columns:repeat(3,var(--sym));grid-template-rows:repeat(3,var(--sym));column-gap:8px;pointer-events:none;z-index:2}
+.slot-strikes>span{position:relative;display:block}
+.slot-strikes>span.is-struck{box-shadow:inset 0 0 0 2px var(--ink);border-radius:6px}
+.slot-strikes>span.is-struck:not(.is-on-line){opacity:.6}
+.slot-mult{position:absolute;right:3px;top:3px;z-index:3;padding:3px 5px 2px;border-radius:4px;background:#fff;color:var(--ink);font:800 clamp(11px,3.2vw,14px)/1 var(--display);letter-spacing:-.02em;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap;box-shadow:0 0 0 1px var(--ink),0 2px 4px #0006;animation:slot-mult-in .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes slot-mult-in{from{opacity:0;transform:scale(.2)}}
+.slot-strikes>span.is-lit-hit{box-shadow:inset 0 0 0 3px var(--ink)}
+.slot-strikes>span.is-lit-hit .slot-mult{background:var(--ink);color:#fff;box-shadow:0 0 0 1px #fff}
+.slot-bolt{position:absolute;left:50%;bottom:40%;z-index:4;width:24px;height:calc(var(--sym) * 1.4);margin-left:-12px;fill:#fff;stroke:var(--ink);stroke-width:1.2;transform-origin:50% 0;animation:slot-bolt .6s ease-out forwards}
+@keyframes slot-bolt{0%{opacity:1;transform:scaleY(0)}22%{opacity:1;transform:scaleY(1)}36%{opacity:.25}50%{opacity:1}100%{opacity:0;transform:scaleY(1)}}
+.slot-boost{position:absolute;right:-10px;top:50%;z-index:5;display:none;transform:translateY(-50%);padding:5px 8px 4px;border-radius:6px;background:#fff;color:var(--ink);font:800 clamp(15px,4.4vw,20px)/1 var(--display);letter-spacing:-.02em;font-variant-numeric:lining-nums tabular-nums;box-shadow:0 0 0 1px var(--ink),0 4px 12px #000a}
+.slot-window.is-boosted .slot-boost{display:block;animation:slot-mult-in .45s cubic-bezier(.2,1.6,.4,1)}
+.slot-window.is-boosted .slot-payline{background:#fff;opacity:1;height:3px}
+.slot--lightning .slot-window{box-shadow:inset 0 0 0 1px #ffffff59,0 18px 40px #000b}
+@media (max-height:820px) and (orientation:portrait){.slot-strikes{inset:8px}}
+@media (orientation:landscape) and (max-height:380px){.slot-mode button{min-height:30px}}
+@media (prefers-reduced-motion:reduce){.slot-mult,.slot-window.is-boosted .slot-boost{animation:none}.slot-bolt{display:none}}
+
 /* 칩 내역 on the profile: filter, rows grouped by day, balance after each. */
 .ledger-filter{margin:0 0 6px}
 .ledger-day{padding:16px 0 4px;color:var(--dim);font-size:13px;letter-spacing:.02em}

@@ -5,6 +5,7 @@ import { sound, haptic, reducedMotion, wait } from '../fx.js';
 import { Table } from '../table.js';
 import { seatCrowd } from '../npc.js';
 import { voice, rouletteLine } from '../voice.js';
+import { eventInfo, createStreakMeter } from '../event-table.js';
 
 const ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -115,9 +116,13 @@ function crowdPlan(npc, t) {
   return bets;
 }
 
-export async function mountRoulette(ctx) {
+// `event: 'casablanca'` seats Casablanca (lib/events.mjs): Rick's bonus after three winning spins.
+export async function mountRoulette(ctx, { event = null } = {}) {
+  const ev = event ? eventInfo(ctx.state, event) : null;
   // Chips go on as many spots as you like before the spin, like a real layout.
-  const t = new Table({ ...ctx, game: 'roulette', title: gameName('roulette'), feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당' });
+  const t = new Table({ ...ctx, game: 'roulette', title: ev ? ev.title : gameName('roulette'), feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당', hot: !ev });
+  const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
+  if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
   t.body.innerHTML = `
     <div class="rl">
       <div class="rl-top">
@@ -272,7 +277,7 @@ export async function mountRoulette(ctx) {
     clearStrikes();
     await crowd.close();
     let res;
-    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning', key); }
+    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning', ev?.id, key); }
     catch (e) { lockMode(false); t.roundFailed(e, spin); return; }
     t.roundDone();
     t.setServerState(res.state);
@@ -297,6 +302,7 @@ export async function mountRoulette(ctx) {
     const settled = t.settle(net, { zones, hot, label, big });
     await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, n, strikes))]);
     await t.syncBalance();
+    if (res.eventStreak) await meter?.update(res.eventStreak);
     lockMode(false);
     crowd.open();
   }

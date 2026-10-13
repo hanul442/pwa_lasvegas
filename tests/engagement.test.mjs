@@ -4,7 +4,7 @@ import { defaultState } from '../lib/state.mjs';
 import { settleHouseGame, totalBalance } from '../lib/economy.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { tableBase } from '../lib/state.mjs';
-import { dayKey, dailyStatus, claimDaily, PAY, PAY_CYCLE, supportStatus, claimSupport, WELFARE_STEPS, missionsFor, missionsStatus, claimMission, MISSIONS, MISSION_SWEEP_BONUS, weekBoundary, settleFinishedSeason, SEASON_PRIZES, rescueStatus, playRescue, onRoundSettled } from '../lib/engagement.mjs';
+import { dayKey, dailyStatus, claimDaily, PAY, PAY_MIN, PAY_CYCLE, supportStatus, claimSupport, WELFARE_STEPS, missionsFor, missionsStatus, claimMission, MISSIONS, MISSION_SWEEP_BONUS, weekBoundary, settleFinishedSeason, SEASON_PRIZES, rescueStatus, playRescue, onRoundSettled } from '../lib/engagement.mjs';
 
 const DAY = 86_400_000;
 // 2026-10-14 12:00 in Seoul, a Wednesday.
@@ -16,12 +16,14 @@ test('days turn over at midnight in Seoul', () => {
 });
 
 test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th, and a missed day starts over', () => {
+  const rate = (kind, base) => Math.max(PAY[kind] * base, PAY_MIN[kind]);
   const state = defaultState(); const u = state.users.hanseo;
   const base = tableBase(u);
   assert.equal(base, 10_000_000, 'the 10억 profile sits at High Limit at the cheapest');
   const start = u.account.available;
   const first = claimDaily(state, u, WED);
-  assert.equal(first.amount, PAY.daily * base);
+  assert.equal(first.amount, rate('daily', base));
+  assert.equal(first.amount, 10_000_000_000, '일급 is at least 100억');
   assert.throws(() => claimDaily(state, u, WED + 1000), /DAILY_ALREADY_CLAIMED/);
   assert.equal(dailyStatus(u, WED).claimed, true);
   assert.equal(dailyStatus(u, WED).toWeekly, 6);
@@ -32,7 +34,7 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
   for (let d = 1; d < 6; d++) claim(d);
   const weekBase = claim(6);
   assert.equal(u.daily.streak, 7);
-  assert.deepEqual(last.pay, { daily: PAY.daily * weekBase, weekly: PAY.weekly * weekBase, monthly: 0 });
+  assert.deepEqual(last.pay, { daily: rate('daily', weekBase), weekly: rate('weekly', weekBase), monthly: 0 });
   assert.equal(u.account.available, start + paid);
   assert.equal(u.payStats.weeks, 1);
   assert.equal(state.feed[0].type, 'DAILY_STREAK');
@@ -40,7 +42,7 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
   const monthBase = claim(PAY_CYCLE - 1);
   assert.equal(u.payStats.weeks, 4);
   assert.equal(u.payStats.months, 1);
-  assert.ok(state.ledger.some(x => x.userId === 'hanseo' && x.type === 'MONTHLY_PAY' && x.amount === PAY.monthly * monthBase));
+  assert.ok(state.ledger.some(x => x.userId === 'hanseo' && x.type === 'MONTHLY_PAY' && x.amount === rate('monthly', monthBase)));
   // Day 29 starts the calendar over but keeps the streak.
   assert.equal(dailyStatus(u, WED + PAY_CYCLE * DAY).day, 1);
   assert.equal(claimDaily(state, u, WED + PAY_CYCLE * DAY).streak, PAY_CYCLE + 1);
@@ -173,15 +175,16 @@ test('API exposes engagement and the claim routes', async () => {
   assert.equal(s.data.engagement.daily.claimed, false);
   assert.equal(s.data.engagement.missions.items.length, 3);
   assert.ok(s.data.rankings.season, 'weekly season is always on');
+  // Settling a round shows up in the weekly season board (played before 일급 lifts the player
+  // past High Limit).
+  await call('POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BIG' });
+  const after = await call('GET', '/api/state');
+  const me = after.data.rankings.season.highRoller.find(r => r.id === 'hanseo');
+  assert.equal(me.value, 10_000_000);
   const claim = await call('POST', '/api/daily/claim');
   assert.equal(claim.status, 200);
   assert.equal(claim.data.state.engagement.daily.claimed, true);
   assert.equal((await call('POST', '/api/daily/claim')).status, 409);
   assert.equal((await call('POST', '/api/missions/claim', { missionId: 'nope' })).status, 404);
   assert.equal((await call('POST', '/api/rescue', { pick: 0 })).status, 409);
-  // Settling a round shows up in the weekly season board.
-  await call('POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BIG' });
-  const after = await call('GET', '/api/state');
-  const me = after.data.rankings.season.highRoller.find(r => r.id === 'hanseo');
-  assert.equal(me.value, 10_000_000);
 });

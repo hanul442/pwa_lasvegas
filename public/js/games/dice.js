@@ -5,6 +5,7 @@ import { Table } from '../table.js';
 import { gameName } from '../names.js';
 import { seatCrowd } from '../npc.js';
 import { voice, sicboLine } from '../voice.js';
+import { eventInfo, createStreakMeter } from '../event-table.js';
 
 const FACE_ROT = { 1: '', 2: 'rotateX(90deg)', 3: 'rotateY(-90deg)', 4: 'rotateY(90deg)', 5: 'rotateX(-90deg)', 6: 'rotateY(180deg)' };
 const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
@@ -41,8 +42,12 @@ function crowdPlan(npc, t) {
   return bets;
 }
 
-export async function mountDice(ctx) {
-  const t = new Table({ ...ctx, game: 'dice', title: gameName('dice'), feltClass: 'felt--red' });
+// `event: 'godofgamblers'` seats God of Gamblers (lib/events.mjs): 도신's bonus after four wins in a row.
+export async function mountDice(ctx, { event = null } = {}) {
+  const ev = event ? eventInfo(ctx.state, event) : null;
+  const t = new Table({ ...ctx, game: 'dice', title: ev ? ev.title : gameName('dice'), feltClass: 'felt--red', hot: !ev });
+  const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
+  if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
   const totals = Object.entries(TOTAL_PAY).map(([n, p]) => `<button type="button" class="zone zone--total" data-zone="T${n}"><strong>${n}</strong><small>${p}:1</small></button>`).join('');
   t.body.innerHTML = `
     <div class="sb">
@@ -119,7 +124,7 @@ export async function mountDice(ctx) {
     t.lock();
     await crowd.close();
     let res;
-    try { res = await api.sicbo(t.total, t.tier.floor, betType, target, key); }
+    try { res = await api.sicbo(t.total, t.tier.floor, betType, target, ev?.id, key); }
     catch (e) { t.roundFailed(e, go); return; }
     t.roundDone();
     t.setServerState(res.state);
@@ -134,6 +139,7 @@ export async function mountDice(ctx) {
       crowd.settle((zone, stake) => betNet(zone, stake, res.round.dice))
     ]);
     await t.syncBalance();
+    if (res.eventStreak) await meter?.update(res.eventStreak);
     crowd.open();
   }
 

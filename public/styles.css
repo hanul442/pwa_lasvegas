@@ -292,6 +292,8 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .event-banner--oceans{background:radial-gradient(120% 140% at 100% 0,#1d2f4f 0,#0a0b0d 62%)}
 .event-banner--rounders{background:radial-gradient(120% 140% at 100% 0,#3a2f22 0,#0a0b0d 62%)}
 .event-banner--montecarlo{background:radial-gradient(120% 140% at 100% 0,#2d2346 0,#0a0b0d 62%)}
+.event-banner--casablanca{background:radial-gradient(120% 140% at 100% 0,#3a2a1c 0,#0a0b0d 62%)}
+.event-banner--godofgamblers{background:radial-gradient(120% 140% at 100% 0,#4a1c16 0,#0a0b0d 62%)}
 .event-banner--whale{background:radial-gradient(120% 140% at 100% 0,#3b3423 0,#0a0b0d 62%)}
 /* Lobby teaser: one slim line for this week's event */
 .event-banner--teaser{grid-template-columns:1fr auto;align-items:center;gap:4px 12px;padding:14px 16px}

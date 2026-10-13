@@ -23,7 +23,7 @@ const call = (store, method, path, body) =>
   handleApi({ method, header: h => (h === 'x-idempotency-key' ? `k-room-${++n}` : undefined), body: async () => body ?? {} }, new URL(`http://x${path}`), store, { NODE_ENV: 'production' });
 
 test('every event names a lobby game and its rules', () => {
-  const games = new Set(['poker', 'gostop', 'blackjack', 'baccarat']);
+  const games = new Set(['poker', 'gostop', 'blackjack', 'baccarat', 'roulette', 'dice']);
   for (const e of EVENTS) {
     assert.ok(games.has(e.game), e.id);
     assert.ok(e.rules.length > 0 && e.title && e.blurb, e.id);
@@ -117,8 +117,8 @@ test('Rounders seats one boss heads-up by ladder step', during('rounders', async
 test('the state lists this week\'s event and the weeks after it', during('tazza', async () => {
   const store = memoryStore();
   const res = await call(store, 'GET', '/api/state');
-  assert.deepEqual(res.data.events.map(e => e.id), ['tazza', 'whale']);
-  assert.deepEqual(res.data.eventsAlways.map(e => [e.id, e.floor, e.entry]), [['whale', 'sky-lounge', 100_000_000_000]]);
+  assert.deepEqual(res.data.events.map(e => e.id), ['tazza', 'casablanca', 'godofgamblers', 'whale']);
+  assert.deepEqual(res.data.eventsAlways.map(e => [e.id, e.floor, e.entry]), [['casablanca', 'penthouse', 10_000_000_000], ['godofgamblers', 'penthouse', 10_000_000_000], ['whale', 'sky-lounge', 100_000_000_000]]);
   assert.deepEqual(res.data.eventSchedule.map(e => e.id), ['tazza', 'oceans', 'rounders', 'montecarlo', 'royale']);
   assert.equal(Date.parse(res.data.eventSchedule[1].from), Date.parse(res.data.eventSchedule[0].until));
   holdings(store, 20_000_000_000);
@@ -141,3 +141,28 @@ test('The Whale Room seats only the very rich, at Sky Lounge, for a fixed 1천�
   assert.ok(res.data.session.table.seats.some(s => s.name === '두바이 왕자'));
   assert.equal(res.data.session.royale.prize, 1_000_000_000_000, 'a champion takes ×10');
 }));
+
+test('Casablanca roulette and God of Gamblers sic bo are always open and pay on a win run', async () => {
+  const store = memoryStore();
+  await call(store, 'GET', '/api/state');
+  assert.ok(eventOpen(eventById('casablanca')) && eventOpen(eventById('godofgamblers')));
+  holdings(store, 9_000_000_000);
+  assert.equal((await call(store, 'POST', '/api/roulette/spin', { bets: [{ betType: 'RED', stake: 1_000_000_000 }], floor: 'penthouse', event: 'casablanca' })).data.error, 'EVENT_ENTRY_REQUIRED');
+  assert.equal((await call(store, 'POST', '/api/sicbo/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'godofgamblers' })).data.error, 'EVENT_ENTRY_REQUIRED');
+  holdings(store, 50_000_000_000);
+  assert.equal((await call(store, 'POST', '/api/roulette/spin', { bets: [{ betType: 'RED', stake: 1_000_000_000 }], floor: 'high-limit', event: 'casablanca' })).data.error, 'EVENT_FLOOR_ONLY');
+  assert.equal((await call(store, 'POST', '/api/sicbo/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'casablanca' })).status, 409, 'an event belongs to its own game');
+  const run = async (path, body, need, bonus) => {
+    for (let i = 0; i < 300; i++) {
+      holdings(store, 50_000_000_000);
+      const res = await call(store, 'POST', path, body);
+      assert.equal(res.status, 200, JSON.stringify(res.data));
+      assert.equal(res.data.eventStreak.need, need);
+      if (res.data.eventStreak.bonus) { assert.equal(res.data.eventStreak.bonus, bonus); return true; }
+    }
+    return false;
+  };
+  assert.ok(await run('/api/roulette/spin', { bets: [{ betType: 'RED', stake: 1_000_000_000 }], floor: 'penthouse', event: 'casablanca' }, 3, 15_000_000_000), 'three reds in a row');
+  assert.ok(await run('/api/sicbo/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'godofgamblers' }, 4, 25_000_000_000), 'four bigs in a row');
+  assert.ok(store.peek().ledger.filter(x => x.type === 'EVENT_BONUS').length >= 2);
+});

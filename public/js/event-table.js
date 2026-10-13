@@ -9,7 +9,7 @@ export function createStreakMeter(t, ev, start = 0) {
   // The run sits in the table's subtitle, where it never covers the felt: "High Limit · 금고 ●●○○○".
   const node = el('span', 'ev-meter');
   node.setAttribute('aria-live', 'polite');
-  const host = t.root.querySelector('.table-name span');
+  const host = t.root.querySelector('.table-name > span');
   host.textContent = `${t.tier.name} · `;
   host.append(node);
   const need = ev.streak.need;

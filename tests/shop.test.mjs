@@ -138,7 +138,7 @@ test('skins: free and earned ones need no purchase, bought ones do, and only own
 
   buyItem(state, u, 'felt-navy');
   assert.equal(state.ledger.at(-1).type, 'PURCHASE');
-  assert.equal(u.account.available, 15 * 억);
+  assert.equal(u.account.available, 18 * 억, 'the Salon Privé felt is 2× its smallest bet');
   equipItem(u, 'felt', 'felt-navy');
   assert.equal(u.cosmetics.equipped.felt, 'felt-navy');
   assert.throws(() => buyItem(state, u, 'felt-navy'), /ITEM_ALREADY_OWNED/);
@@ -182,9 +182,9 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   assert.equal(s.shop.assets, 0);
   assert.equal(s.shop.luxury.length, LUXURY.length);
   assert.deepEqual(Object.keys(s.shop.luxury[0]).sort(), ['blurb', 'boughtAt', 'group', 'headline', 'icon', 'id', 'name', 'owned', 'paid', 'price', 'resale'].sort());
-  assert.deepEqual(Object.keys(s.shop.cosmetics[0]).sort(), ['achievement', 'achievementLabel', 'blurb', 'equipped', 'house', 'id', 'name', 'owned', 'price', 'slot'].sort());
-  assert.deepEqual(s.shop.equipped, { cardBack: null, felt: null, chips: null });
-  assert.deepEqual(s.user.cosmetics, { owned: [], equipped: { cardBack: null, felt: null, chips: null } });
+  assert.deepEqual(Object.keys(s.shop.cosmetics[0]).sort(), ['achievement', 'achievementLabel', 'blurb', 'equipped', 'floor', 'house', 'id', 'name', 'owned', 'price', 'slot'].sort());
+  assert.deepEqual(s.shop.equipped, { cardBack: null, felt: null, chips: null, frame: null });
+  assert.deepEqual(s.user.cosmetics, { owned: [], equipped: { cardBack: null, felt: null, chips: null, frame: null } });
   assert.deepEqual(s.user.luxury, []);
   assert.equal(s.user.assets, 0);
   assert.ok(s.users.every(x => Array.isArray(x.luxury) && Number.isFinite(x.assets)), 'everyone else sees each player’s assets');
@@ -203,12 +203,12 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   assert.equal(replay.data.replayed, true);
   assert.equal(replay.data.state.user.account.available, 5 * 억);
 
-  const felt = await call('POST', '/api/shop/buy', { itemId: 'felt-oxblood' }, 'buy-key-00000003');
+  const felt = await call('POST', '/api/shop/buy', { itemId: 'felt-navy' }, 'buy-key-00000003');
   assert.equal(felt.status, 200);
-  assert.equal(felt.data.state.user.account.available, 0);
-  const on = await call('POST', '/api/shop/equip', { slot: 'felt', itemId: 'felt-oxblood' });
-  assert.equal(on.data.state.user.cosmetics.equipped.felt, 'felt-oxblood');
-  assert.equal(on.data.state.shop.equipped.felt, 'felt-oxblood');
+  assert.equal(felt.data.state.user.account.available, 3 * 억);
+  const on = await call('POST', '/api/shop/equip', { slot: 'felt', itemId: 'felt-navy' });
+  assert.equal(on.data.state.user.cosmetics.equipped.felt, 'felt-navy');
+  assert.equal(on.data.state.shop.equipped.felt, 'felt-navy');
   const notMine = await call('POST', '/api/shop/equip', { slot: 'chips', itemId: 'chips-onyx' });
   assert.equal(notMine.status, 409);
   assert.equal(notMine.data.error, 'ITEM_NOT_OWNED');
@@ -221,7 +221,7 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   const sell = await call('POST', '/api/shop/sell', { itemId: 'watch-tourbillon' }, 'sell-key-0000001');
   assert.equal(sell.status, 200);
   assert.equal(sell.data.sale.amount, 3.5 * 억);
-  assert.equal(sell.data.state.user.account.available, 3.5 * 억);
+  assert.equal(sell.data.state.user.account.available, 6.5 * 억);
   assert.equal(sell.data.state.shop.assets, 0);
   const missing = await call('POST', '/api/shop/sell', { itemId: 'nope' }, 'sell-key-0000002');
   assert.equal(missing.status, 404);

@@ -167,6 +167,7 @@ const MESSAGES = {
   INSUFFICIENT_BANKROLL: '칩이 부족해요. 베팅을 줄이거나 충전해 주세요.',
   FLOOR_LOCKED: '아직 잠긴 층이에요. 순자산(보유 칩 − 빚)을 늘리면 열려요.',
   FLOOR_OUTGROWN: '자산이 많아져서 이 층은 졸업했어요. 위층 테이블로 가 주세요.',
+  FLOOR_PASS_REQUIRED: '이 층에 앉으려면 상점 꾸미기에서 이 층 꾸미기를 하나 사야 해요.',
   EVENT_ENTRY_REQUIRED: '이벤트 테이블은 칩을 100억 이상 가진 사람만 앉을 수 있어요.',
   EVENT_FLOOR_ONLY: '이벤트는 Penthouse 테이블에서만 열려요.',
   EVENT_CLOSED: '이번 주에 열린 이벤트가 아니에요.',

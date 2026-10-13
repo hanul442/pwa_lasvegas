@@ -98,15 +98,72 @@
 .card-back.back--ivory::after{background:#0a0b0d}
 .card-back.back--ivory::before{border-color:#0a0b0d59}
 
+/* Sky Lounge: the Strip at night, a skyline cut out along the bottom. */
+.card-back.back--skyline{
+  background:
+    radial-gradient(circle at 50% 46%,#0a0d18 0 14%,transparent 14.5%),
+    linear-gradient(#050608,#050608) 4% 100%/12% 30% no-repeat,
+    linear-gradient(#050608,#050608) 18% 100%/9% 46% no-repeat,
+    linear-gradient(#050608,#050608) 30% 100%/14% 24% no-repeat,
+    linear-gradient(#050608,#050608) 47% 100%/7% 58% no-repeat,
+    linear-gradient(#050608,#050608) 58% 100%/13% 36% no-repeat,
+    linear-gradient(#050608,#050608) 74% 100%/8% 50% no-repeat,
+    linear-gradient(#050608,#050608) 86% 100%/12% 28% no-repeat,
+    repeating-linear-gradient(0deg,#ffffff0a 0 1px,transparent 1px 5px),
+    linear-gradient(180deg,#0b1226 0,#1d2a52 55%,#4a2a4a 100%)}
+/* The Vault: a safe dial, ticks around a steel face. */
+.card-back.back--vault{
+  background:
+    radial-gradient(circle at 50% 50%,#121417 0 14%,#ffffff2e 14.5% 15.2%,transparent 15.7% 26%,#ffffff26 26.5% 27%,transparent 27.5%),
+    repeating-conic-gradient(from 0deg at 50% 50%,#ffffff40 0 1.2deg,transparent 1.2deg 10deg),
+    radial-gradient(circle at 50% 50%,transparent 0 30%,#0a0b0d 30.5% 33%,transparent 33.5%),
+    radial-gradient(120% 90% at 30% 10%,#4b5058,#1a1c20 60%,#0b0c0e)}
+
 /* ---------- felts (table.js adds felt--skin-name to solo tables) ----------
    Event tables keep their own felt: not under .is-event, and never on an event felt. */
 .table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-forest,.skin-preview.felt--skin-forest{--felt-a:#1d5e45;--felt-b:#0f3b2b;--felt-c:#041710}
 .table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-oxblood,.skin-preview.felt--skin-oxblood{--felt-a:#5f1b25;--felt-b:#3b0e16;--felt-c:#160407}
 .table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-navy,.skin-preview.felt--skin-navy{--felt-a:#1d365c;--felt-b:#10213f;--felt-c:#050b18}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-teal,.skin-preview.felt--skin-teal{--felt-a:#1b6466;--felt-b:#0d3d40;--felt-c:#031618}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-obsidian,.skin-preview.felt--skin-obsidian{--felt-a:#35303f;--felt-b:#17141d;--felt-c:#050407}
 .table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-charcoal,.skin-preview.felt--skin-charcoal{--felt-a:#3a3d42;--felt-b:#222428;--felt-c:#0b0c0e}
 
 /* ---------- chip accents (shop.js sets data-chip-accent on the page) ---------- */
 :root[data-chip-accent="ivory"],.chip-accent--ivory{--chip-inlay:#fffffff0;--chip-inlay-w:1.9;--chip-halo:0;--plaque-inlay:#ffffffd9;--plaque-outline:#ffffff59}
 :root[data-chip-accent="onyx"],.chip-accent--onyx{--chip-inlay:#0a0b0dd9;--chip-inlay-w:1.9;--chip-halo:0;--plaque-inlay:#0a0b0dc7;--plaque-outline:#0a0b0d59}
 :root[data-chip-accent="double"],.chip-accent--double{--chip-inlay:#ffffffbf;--chip-inlay-w:1;--chip-halo:1;--plaque-inlay:#ffffffb3;--plaque-outline:#ffffffb3}
+:root[data-chip-accent="marble"],.chip-accent--marble{--chip-inlay:#dccfb5eb;--chip-inlay-w:1.6;--chip-halo:0;--plaque-inlay:#dccfb5d1;--plaque-outline:#dccfb566}
+:root[data-chip-accent="platinum"],.chip-accent--platinum{--chip-inlay:#e9eef3f5;--chip-inlay-w:2.4;--chip-halo:1;--plaque-inlay:#e9eef3e0;--plaque-outline:#e9eef3cc}
+:root[data-chip-accent="diamond"],.chip-accent--diamond{--chip-inlay:#ffffff;--chip-inlay-w:1.4;--chip-halo:1;--plaque-inlay:#ffffff;--plaque-outline:#ffffff}
 .chip-accent--classic{--chip-inlay:#ffffff5c;--chip-inlay-w:1;--chip-halo:0;--plaque-inlay:initial;--plaque-outline:initial}
+
+/* ---------- nameplates (명패: the name as the ranking and profile show it) ---------- */
+.name-frame{display:inline-block;padding:1px 9px 2px;border-radius:7px;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:baseline}
+.name-frame--silver{border:1px solid #c9ced6b3;background:linear-gradient(180deg,#ffffff10,#ffffff03)}
+.name-frame--pearl{border:1px solid #f1ece2cc;box-shadow:0 0 0 2px #0a0b0d,0 0 0 3px #f1ece25c;background:linear-gradient(180deg,#f1ece214,#f1ece203)}
+.name-frame--onyx{border:1px solid #0a0b0d;background:linear-gradient(180deg,#26282d,#0b0c0e);box-shadow:inset 0 0 0 1px #ffffff1f,0 0 0 1px #ffffff40;position:relative}
+.name-frame--onyx::before,.name-frame--onyx::after{content:"";position:absolute;width:5px;height:5px;border-color:#e9eef3;border-style:solid}
+.name-frame--onyx::before{left:2px;top:2px;border-width:1px 0 0 1px}
+.name-frame--onyx::after{right:2px;bottom:2px;border-width:0 1px 1px 0}
+.name-frame--platinum{border:1px solid transparent;background:linear-gradient(#0d0e10,#0d0e10) padding-box,linear-gradient(110deg,#8d949e,#ffffff 30%,#9aa1ab 50%,#ffffff 70%,#8d949e) border-box;background-size:100% 100%,220% 100%;animation:plate-sheen 5s linear infinite}
+.name-frame--diamond{position:relative;border:1px solid #fff;background:linear-gradient(180deg,#ffffff1c,#ffffff05);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #ffffff80,0 0 12px #ffffff40;padding-left:20px}
+.name-frame--diamond::before{content:"";position:absolute;left:6px;top:50%;width:9px;height:9px;margin-top:-4.5px;background:var(--star);clip-path:var(--star-shape)}
+@keyframes plate-sheen{to{background-position:0 0,-220% 0}}
+@media (prefers-reduced-motion:reduce){.name-frame--platinum{animation:none}}
+.skin-preview--frame{font:600 17px var(--sans);letter-spacing:-.01em;padding:0 10px}
+.skin-preview--frame .name-frame{max-width:100%}
+.name-frame-plain{color:var(--smoke)}
+.podium-name .name-frame,.rank-name .name-frame{padding-top:0;padding-bottom:0}
+
+/* ---------- floor passes in the 꾸미기 tab ---------- */
+.pass-floor{scroll-margin-top:110px;border-radius:20px;outline:1px solid transparent;outline-offset:8px;transition:outline-color 1.2s}
+.pass-floor.is-focus{outline-color:#ffffff8c;animation:pass-focus 2.6s ease-out forwards}
+@keyframes pass-focus{70%{outline-color:#ffffff8c}to{outline-color:transparent}}
+.pass-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pass-mark{width:13px;height:13px;clip-path:var(--star-shape);background:#ffffff38;flex:none}
+.pass-floor.is-passed .pass-mark{background:var(--star)}
+.pass-floor.is-due .pass-head small{color:var(--white)}
+.floor-pass-go{margin-top:10px;min-height:40px;font-size:14px}
+.tier-card.needs-pass{cursor:pointer}
+.tier-card.needs-pass small{color:var(--white)}
+.tier-card.needs-pass{border-style:dashed}

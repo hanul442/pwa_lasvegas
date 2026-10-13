@@ -30,7 +30,7 @@ import { renderBank, supportButtons } from './js/bank.js';
 import { renderLedger } from './js/ledger.js';
 import { errorToast, watchConnection } from './js/notice.js';
 import { hotStatus, clock, pct } from './js/hot.js';
-import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet } from './js/shop.js';
+import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
@@ -112,7 +112,7 @@ function sittableTiers(game) {
   if (game.event) { const e = eventEntry(eventOf(game)); return e?.open ? [e.tier.slug] : []; }
   return Object.values(TIERS).filter(t => {
     const f = state?.floors?.find(x => x.slug === t.floor);
-    return (f ? f.unlocked && !f.outgrown : t === FIRST_TIER) && available >= t.min;
+    return (f ? f.open : t === FIRST_TIER) && available >= t.min;
   }).map(t => t.slug);
 }
 // Straight to a table: the one last used for this game while it is still open, else the only open one.
@@ -256,7 +256,7 @@ function applyState(next) {
   renderRecharge();
   renderGameLists();
   maybeBust(state);
-  renderLounge(document.querySelector('[data-lounge]'), state, applyState);
+  renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();
   if (isActive('bank')) renderBank(document.querySelector('[data-bank]'), state, applyState);
@@ -395,12 +395,11 @@ const ICON = {
   slots: '<rect x="7" y="12" width="34" height="24" rx="3"/><path d="M18.3 12v24M29.7 12v24"/><path d="M12.6 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM24 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM35.4 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3z"/>'
 };
 const icon = id => `<svg class="game-row-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${ICON[id] || ICON.poker}</svg>`;
-// The smallest table this player can sit at right now: the lowest floor they have unlocked and
-// not yet outgrown.
+// The smallest table this player can sit at right now: the lowest floor that is open to them.
 function entryMin() {
   const open = Object.values(TIERS).filter(t => {
     const f = state?.floors?.find(x => x.slug === t.floor);
-    return f ? f.unlocked && !f.outgrown : t === FIRST_TIER;
+    return f ? f.open : t === FIRST_TIER;
   });
   return (open.length ? Math.min(...open.map(t => t.min)) : FIRST_TIER.min);
 }
@@ -534,23 +533,31 @@ function renderTiers() {
   const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. 순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.`)] : [];
   grid.replaceChildren(...note, ...shown.map(({ tier, floor }) => {
     const locked = floor ? !floor.unlocked : false;
+    // Reached by net worth but its pass (one of the floor's skins, 상점 꾸미기) not bought yet.
+    const needsPass = Boolean(floor && floor.unlocked && !floor.passed);
     const broke = available < tier.min;
-    const b = el('button', `tier-card tier-card--${tier.slug}${locked ? ' is-locked' : ''}`);
+    const b = el('button', `tier-card tier-card--${tier.slug}${locked || needsPass ? ' is-locked' : ''}${needsPass ? ' needs-pass' : ''}`);
     b.setAttribute('role', 'listitem');
     b.type = 'button';
     b.dataset.tier = tier.slug;
     b.dataset.min = tier.min;
-    b.disabled = locked || broke;
+    b.disabled = locked || (broke && !needsPass);
     const chips = el('span', 'tier-chips');
     tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
-    const status = locked ? `순자산 ${formatCH(floor?.threshold || 0)}원이 되면 열려요 (${Math.round((floor?.progress || 0) * 100)}%)` : broke ? '칩이 부족해요 · 은행에서 빌릴 수 있어요' : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
+    const status = locked ? `순자산 ${formatCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)` : needsPass ? `입장하려면 이 층 꾸미기를 하나 사 주세요 · ${formatCH(floor.minBet * 2)}원부터` : broke ? '칩이 부족해요 · 은행에서 빌릴 수 있어요' : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
     const stars = `<em class="tier-stars" aria-label="난이도 ${tier.stars}/5">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>`;
     b.innerHTML = `<strong>${tier.name}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
-    b.addEventListener('click', () => openTable(tier.slug));
+    b.addEventListener('click', () => needsPass ? openPassShop(floor.slug) : openTable(tier.slug));
     return b;
   }));
+}
+
+// The shop's 꾸미기 tab, scrolled to the skins that open `floor`.
+function openPassShop(floor) {
+  showShopTab('cosmetics', floor);
+  showSurface('shop', { focus: true });
 }
 
 // An event plays at one table only, open to players holding the event entry.
@@ -660,7 +667,7 @@ function renderRanking() {
   podium.replaceChildren(...[2, 1, 3].map(n => top.find(r => r.rank === n)).filter(Boolean).map(r => {
     const li = el('li', `podium-spot podium-spot--${r.rank}${r.id === me ? ' is-me' : ''}`);
     const lux = showcase(r);
-    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
+    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
     open(li, r);
     return li;
   }));
@@ -681,7 +688,7 @@ function renderRanking() {
   document.querySelector('[data-rank-list]').replaceChildren(...rest.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}`);
     const lux = showcase(r);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${r.nickname}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
     open(li, r);
     return li;
   }));
@@ -694,7 +701,7 @@ function renderProfile() {
   const root = document.querySelector('[data-profile]');
   if (!state) { root.textContent = '불러오는 중…'; return; }
   const u = state.user, a = u.account;
-  const floors = state.floors.map(f => `<li class="floor-row${f.open ? ' is-open' : ''}${f.outgrown ? ' is-outgrown' : ''}"><span>${f.name}${f.outgrown ? ' <small>졸업</small>' : ''}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
+  const floors = state.floors.map(f => `<li class="floor-row${f.open ? ' is-open' : ''}${f.outgrown ? ' is-outgrown' : ''}"><span>${f.name}${f.outgrown ? ' <small>졸업</small>' : f.unlocked && !f.passed ? ' <small>입장 꾸미기 필요</small>' : ''}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
   const eng = state.engagement || {};
   const badges = (eng.badges || []).map(b => `<li class="badge badge--${b.rank}"><span class="badge-star" aria-hidden="true"></span><b>${b.rank}위</b><small>${b.name}</small></li>`).join('');
   // Per-game record: win rate, biggest win and net, most played first.
@@ -711,7 +718,7 @@ function renderProfile() {
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${u.nickname}</strong><small>보유 ${formatFull(a.available)}원${assets ? ` · 자산 ${formatFull(assets)}원` : ''}${state.bank?.debt ? ` · 빚 ${formatFull(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
+      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatFull(a.available)}원${assets ? ` · 자산 ${formatFull(assets)}원` : ''}${state.bank?.debt ? ` · 빚 ${formatFull(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
     </div>
     <dl class="stat-grid">
       <div><dt>총 손익</dt><dd class="${a.qualifiedPnl >= 0 ? 'pos' : 'neg'}">${a.qualifiedPnl >= 0 ? '+' : ''}${formatCH(a.qualifiedPnl)}</dd></div>

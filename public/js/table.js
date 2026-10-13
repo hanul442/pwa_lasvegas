@@ -733,8 +733,10 @@ export class Table {
       b.type = 'button';
       if (a.pressed != null) b.setAttribute('aria-pressed', String(a.pressed));
       b.innerHTML = `<span>${a.label}</span>${a.key ? `<kbd>${a.key}</kbd>` : ''}`;
-      b.disabled = Boolean(a.disabled) || this.busy;
-      b.addEventListener('click', () => this.run(a.onClick));
+      // `anytime`: a way out (leaving a room) that works mid-animation, outside the busy lock.
+      b.disabled = Boolean(a.disabled) || (this.busy && !a.anytime);
+      if (a.anytime) { b.dataset.anytime = ''; b.addEventListener('click', () => a.onClick()); }
+      else b.addEventListener('click', () => this.run(a.onClick));
       return b;
     }));
   }
@@ -742,7 +744,7 @@ export class Table {
   async run(fn) {
     if (this.busy || !fn) return;
     this.busy = true;
-    this.actions.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    this.actions.querySelectorAll('button:not([data-anytime])').forEach(b => { b.disabled = true; });
     try { await fn(); } finally { this.busy = false; this.refreshActions?.(); }
   }
 

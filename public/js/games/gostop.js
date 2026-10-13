@@ -429,7 +429,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
     if (prompt) { t.setActions(prompt); return; }
     const mine = view.actor === ME;
     t.setActions([
-      ...(room.active && !mine ? [room.leaveAction()] : []),
+      ...(room.active ? [room.leaveAction()] : []),
       { label: options ? '취소' : mine ? '낼 패를 고르세요' : `${names[view.actor] || 'AI'} 차례`, ghost: true, disabled: !options, onClick: () => { options = null; selected = null; t.hint(''); refresh(); } },
       { label: '내기', primary: true, disabled: !mine || !selected || Boolean(options), onClick: () => commit(selected) }
     ]);

@@ -435,10 +435,11 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   }
 
   // Plays events in order, then snaps to the final view so nothing can drift.
+  // pk.halted cuts a replay short (getting up from a room mid-animation).
   async function playEvents(events, tb, { snap = true } = {}) {
     pk.animating = true;
     if (tb) current = tb;
-    try { for (const ev of events) { await play(ev, tb); paintMyHand(); } }
+    try { for (const ev of events) { if (pk.halted) return; await play(ev, tb); paintMyHand(); } }
     finally { pk.animating = false; }
     if (snap && tb) render(tb);
   }

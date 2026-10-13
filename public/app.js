@@ -32,6 +32,8 @@ import { errorToast, watchConnection } from './js/notice.js';
 import { hotStatus, clock, pct } from './js/hot.js';
 import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
+import { ensureTerms } from './js/terms.js';
+import { startPlaytime } from './js/playtime.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -729,6 +731,7 @@ function signedIn(next) {
   startNews();
   renderTiers();
   showSurface('lobby');
+  ensureTerms();
 }
 function signedOut(notice) {
   stopNews();
@@ -799,6 +802,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 renderLobby();
 showSurface('lobby');
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); } });
 else openSignIn(signedIn);
 dealVignette();
+startPlaytime({ isInTable: () => document.body.classList.contains('game-mode') });

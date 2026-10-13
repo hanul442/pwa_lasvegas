@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../lib/state.mjs';
 import { handleApi } from '../lib/api.mjs';
-import { slotLine, spinSlots, SLOT_SYMBOLS, REEL_WEIGHTS, STOPS, STRIP, JACKPOT_SEED, JACKPOT_RATE, JACKPOT_STAKE_CAP, STAR_LINE, LIGHTNING_LINE, SLOT_LIGHTNING_MULTIPLIERS, SLOT_LIGHTNING_STRIKE_COUNTS, rollSlotLightning, slotStrikes, lightningBoost } from '../lib/slots.mjs';
+import { slotLine, spinSlots, SLOT_SYMBOLS, REEL_WEIGHTS, STOPS, STRIP, JACKPOT_SEED, JACKPOT_RATE, JACKPOT_STAKE_CAP, STAR_LINE, LIGHTNING_LINE, FREE_SPINS, FREE_SPIN_MULT, FREE_SPIN_CAP, scatterReels, SLOT_LIGHTNING_MULTIPLIERS, SLOT_LIGHTNING_STRIKE_COUNTS, rollSlotLightning, slotStrikes, lightningBoost } from '../lib/slots.mjs';
 import { forceHotTable, HOT_BONUS } from '../lib/hot-table.mjs';
 import { instantRequestFingerprint, idempotentInstantRound } from '../lib/instant-idempotency.mjs';
 
 // These tests count exact payouts: keep the hot table bonus out of them whatever the hour.
 forceHotTable('off');
 
-test('reels have 64 stops and the base game returns about 90.7%', () => {
+test('reels have 64 stops and the base line returns about 91.8%', () => {
   assert.equal(STOPS, 64);
   // Spread out: no symbol sits next to itself more than a few times around the reel.
   const repeats = STRIP.filter((s, i) => s === STRIP[(i + 1) % STOPS]).length;
@@ -18,18 +18,34 @@ test('reels have 64 stops and the base game returns about 90.7%', () => {
   for (const a of SLOT_SYMBOLS) for (const b of SLOT_SYMBOLS) for (const c of SLOT_SYMBOLS) {
     rtp += (REEL_WEIGHTS[a] * REEL_WEIGHTS[b] * REEL_WEIGHTS[c]) / STOPS ** 3 * slotLine([a, b, c]).mult;
   }
-  assert.ok(rtp > 0.89 && rtp < 0.92, String(rtp));
+  assert.ok(Math.abs(rtp - 0.9182) < 0.0005, String(rtp));
+  // The FREE coins sit far apart, so a reel's window never shows two.
+  const coins = STRIP.flatMap((s, i) => (s === 'FREE' ? [i] : []));
+  assert.equal(coins.length, 3);
+  coins.forEach((c, i) => assert.ok((coins[(i + 1) % 3] - c + STOPS) % STOPS > 3));
+});
+
+test('the client reel matches the server reel stop for stop', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile(new URL('../public/js/games/slots.js', import.meta.url), 'utf8');
+  const weights = Function(`return ${src.match(/const WEIGHTS = (\{[^}]*\})/)[1]}`)();
+  assert.deepEqual(weights, REEL_WEIGHTS);
 });
 
 test('paylines: stars are wild, three stars are the jackpot', () => {
-  assert.equal(slotLine(['SEVEN', 'SEVEN', 'SEVEN']).mult, 80);
-  assert.equal(slotLine(['SEVEN', 'STAR', 'SEVEN']).mult, 160);
+  assert.equal(slotLine(['SEVEN', 'SEVEN', 'SEVEN']).mult, 100);
+  assert.equal(slotLine(['SEVEN', 'STAR', 'SEVEN']).mult, 200);
   assert.equal(slotLine(['STAR', 'STAR', 'BAR1']).mult, 30);
   assert.equal(slotLine(['BAR1', 'BAR3', 'BAR2']).mult, 4);
   assert.equal(slotLine(['H', 'D', 'H']).mult, 2);
   assert.equal(slotLine(['H', 'S', 'H']).mult, 0);
   assert.equal(slotLine(['STAR', 'S', 'H']).mult, 1);
   assert.equal(slotLine(['STAR', 'STAR', 'STAR']).jackpot, true);
+  // The FREE coin is no line symbol: three on the line pay nothing there, beside stars only the star pays.
+  assert.equal(slotLine(['FREE', 'FREE', 'FREE']).mult, 0);
+  assert.equal(slotLine(['STAR', 'FREE', 'FREE']).mult, 1);
+  assert.equal(slotLine(['STAR', 'STAR', 'FREE']).mult, 10);
+  assert.equal(slotLine(['FREE', 'BAR1', 'BAR2']).mult, 0);
 });
 
 test('the jackpot grows with every spin and pays in proportion to the bet', () => {
@@ -86,26 +102,26 @@ function exactRtp({ lightning }) {
 }
 
 test('lightning pays: its own table, a struck payline adds its multipliers, the plain table is untouched', () => {
-  assert.equal(slotLine(['SEVEN', 'SEVEN', 'SEVEN'], { lightning: true }).mult, 20);
-  assert.equal(slotLine(['SEVEN', 'STAR', 'SEVEN'], { lightning: true }).mult, 40);
+  assert.equal(slotLine(['SEVEN', 'SEVEN', 'SEVEN'], { lightning: true }).mult, 30);
+  assert.equal(slotLine(['SEVEN', 'STAR', 'SEVEN'], { lightning: true }).mult, 60);
   assert.equal(slotLine(['H', 'D', 'H'], { lightning: true }).mult, 1);
   assert.equal(slotLine(['STAR', 'S', 'H'], { lightning: true }).mult, 0, 'a lone star pays nothing on the lightning table');
   assert.equal(slotLine(['STAR', 'STAR', 'STAR'], { lightning: true }).mult, STAR_LINE);
-  assert.equal(slotLine(['SEVEN', 'SEVEN', 'SEVEN']).mult, 80);
-  assert.equal(LIGHTNING_LINE.SEVEN, 20);
+  assert.equal(slotLine(['SEVEN', 'SEVEN', 'SEVEN']).mult, 100);
+  assert.equal(LIGHTNING_LINE.SEVEN, 30);
   assert.equal(lightningBoost([{ reel: 0, row: 1, multiplier: 2 }, { reel: 2, row: 1, multiplier: 5 }, { reel: 1, row: 0, multiplier: 50 }]), 7);
   assert.equal(lightningBoost([{ reel: 1, row: 2, multiplier: 50 }]), 1);
 
   const state = defaultState();
   const stake = 2_000_000;
-  // 7 7 7 with 10× and 3× on the payline and 50× off it: 20 × (10 + 3) = 260× the stake.
+  // 7 7 7 with 10× and 3× on the payline and 50× off it: 30 × (10 + 3) = 390× the stake.
   const strikes = [{ reel: 0, row: 1, multiplier: 10 }, { reel: 2, row: 1, multiplier: 3 }, { reel: 1, row: 0, multiplier: 50 }];
   const r = spinSlots(state, { stake, maxBet: 10_000_000, stopsOverride: stopsFor('SEVEN', 'SEVEN', 'SEVEN'), lightning: strikes });
   assert.deepEqual(r.lightning, strikes);
-  assert.equal(r.lineMult, 20);
+  assert.equal(r.lineMult, 30);
   assert.equal(r.boost, 13);
-  assert.equal(r.mult, 260);
-  assert.equal(r.netPnl, stake * 260 - stake);
+  assert.equal(r.mult, 390);
+  assert.equal(r.netPnl, stake * 390 - stake);
   // Struck only off the line: the lightning table's plain pay, no boost.
   const off = spinSlots(state, { stake, maxBet: 10_000_000, stopsOverride: stopsFor('BAR1', 'BAR2', 'BAR3'), lightning: [{ reel: 1, row: 2, multiplier: 50 }] });
   assert.equal(off.mult, 1);
@@ -117,7 +133,7 @@ test('lightning pays: its own table, a struck payline adds its multipliers, the 
   // The plain table carries no lightning fields at all.
   const plain = spinSlots(state, { stake, maxBet: 10_000_000, stopsOverride: stopsFor('SEVEN', 'SEVEN', 'SEVEN') });
   assert.equal(plain.lightning, undefined);
-  assert.equal(plain.netPnl, stake * 80 - stake);
+  assert.equal(plain.netPnl, stake * 100 - stake);
   // Strikes that the rules could not have rolled are refused.
   const four = Array.from({ length: 4 }, (_, i) => ({ reel: i % 3, row: Math.floor(i / 3), multiplier: 2 }));
   for (const bad of [[], [{ reel: 3, row: 1, multiplier: 2 }], [{ reel: 0, row: 1, multiplier: 7 }], [{ reel: 0, row: 1, multiplier: 2 }, { reel: 0, row: 1, multiplier: 3 }], four]) {
@@ -150,7 +166,7 @@ test('lightning strikes: 1 to 3 distinct cells, 2× to 50×, low multipliers mos
 test('lightning RTP: exact and simulated, within 2 points of the plain table and under 100%', () => {
   const plain = exactRtp({ lightning: false });
   const lit = exactRtp({ lightning: true });
-  assert.ok(Math.abs(plain - 0.9069) < 0.0005, String(plain));
+  assert.ok(Math.abs(plain - 0.9182) < 0.0005, String(plain));
   assert.ok(Math.abs(lit - plain) < 0.02, `lightning ${lit} vs plain ${plain}`);
   assert.ok(lit < 1);
   // The engine itself, spun many times with a seeded generator, lands on the same number.
@@ -253,4 +269,88 @@ test('lightning slots wins still earn the hot table bonus', async () => {
       if (r.netPnl > 0) break;
     }
   } finally { forceHotTable('off'); }
+});
+
+// ---------- 프리 스핀 ----------
+// Exact chance that all three windows show a coin, and the whole return with the free spins.
+function withFreeSpins(lightning) {
+  let hits = 0;
+  for (let a = 0; a < STOPS; a++) for (let b = 0; b < STOPS; b++) for (let c = 0; c < STOPS; c++) if (scatterReels([a, b, c]) === 3) hits++;
+  const p = hits / STOPS ** 3;
+  const line = exactRtp({ lightning });
+  return { p, total: line * (1 + p * FREE_SPIN_MULT * FREE_SPINS / (1 - FREE_SPINS * p)) };
+}
+
+test('free spins: about 1 in 360 spins, and the whole game returns about 97% on either table', () => {
+  const plain = withFreeSpins(false), lit = withFreeSpins(true);
+  assert.ok(Math.abs(1 / plain.p - 360) < 1, String(1 / plain.p));
+  assert.ok(Math.abs(plain.total - 0.9707) < 0.0005, String(plain.total));
+  assert.ok(Math.abs(lit.total - 0.9720) < 0.0005, String(lit.total));
+  assert.ok(plain.total < 1 && lit.total < 1);
+});
+
+const coinStops = () => STRIP.flatMap((s, i) => (s === 'FREE' ? [i] : []));
+test('three coins in view play ten free spins at double pay inside the same round', () => {
+  const state = defaultState();
+  const stake = 1_000_000;
+  // A coin above, on and below the payline: the scatter counts the whole window.
+  const [a, b, c] = coinStops();
+  const stops = [(a + 1) % STOPS, b, (c - 1 + STOPS) % STOPS];
+  assert.equal(scatterReels(stops), 3);
+  assert.equal(scatterReels([(a + 2) % STOPS, b, c]), 2);
+  let seed = 7;
+  const rand = n => { seed = (seed * 1103515245 + 12345) % 2 ** 31; return seed % n; };
+  const r = spinSlots(state, { stake, maxBet: 10_000_000, rand, stopsOverride: stops });
+  assert.ok(r.freeSpins);
+  assert.equal(r.freeSpins.multiplier, FREE_SPIN_MULT);
+  assert.equal(r.freeSpins.spins.length, r.freeSpins.awarded);
+  assert.ok(r.freeSpins.awarded >= FREE_SPINS && r.freeSpins.awarded <= FREE_SPIN_CAP);
+  for (const spin of r.freeSpins.spins) {
+    assert.equal(spin.mult, slotLine(spin.reels).mult * FREE_SPIN_MULT);
+    assert.equal(spin.lightning, undefined);
+  }
+  const win = r.freeSpins.spins.reduce((x, s) => x + stake * s.mult + s.jackpot, 0);
+  assert.equal(r.freeSpins.win, win);
+  // r.jackpot is every pot win in the round, the base spin's and the free spins'.
+  assert.equal(r.netPnl, stake * r.mult + r.jackpot + stake * r.freeSpins.spins.reduce((x, s) => x + s.mult, 0) - stake);
+  // Free spins don't feed the pot: only the base spin's stake did.
+  assert.equal(state.jackpot.pool, JACKPOT_SEED + stake * JACKPOT_RATE);
+  // A lightning round's free spins each roll their own strikes.
+  const lit = spinSlots(defaultState(), { stake, maxBet: 10_000_000, rand, stopsOverride: stops, lightning: true });
+  for (const spin of lit.freeSpins.spins) {
+    assert.ok(spin.lightning.length >= 1);
+    const boosted = spin.lineMult > 0 && spin.line !== 'JACKPOT';
+    assert.equal(spin.mult, spin.lineMult * (boosted ? lightningBoost(spin.lightning) : 1) * FREE_SPIN_MULT);
+  }
+  // No coins, no free spins, no field.
+  assert.equal(spinSlots(defaultState(), { stake, maxBet: 10_000_000, stopsOverride: [at('C'), at('C'), at('H')] }).freeSpins, undefined);
+});
+
+test('a retrigger adds ten more free spins, never past the cap', () => {
+  // Every free spin lands on the coins: the round keeps retriggering until the cap.
+  const [a, b, c] = coinStops();
+  const queue = [];
+  const rand = n => { if (!queue.length) queue.push(a, b, c); return queue.shift() % n; };
+  const r = spinSlots(defaultState(), { stake: 1_000_000, maxBet: 10_000_000, rand, stopsOverride: [a, b, c] });
+  assert.equal(r.freeSpins.awarded, FREE_SPIN_CAP);
+  assert.equal(r.freeSpins.spins.length, FREE_SPIN_CAP);
+  assert.equal(r.freeSpins.spins.filter(s => s.retrigger).length, FREE_SPIN_CAP / FREE_SPINS - 1);
+});
+
+test('free spins settle through the API as one round', async () => {
+  const { call, state } = apiHarness();
+  for (let i = 0; i < 4000; i++) {
+    // Same balance every spin, so a lucky run never graduates the floor.
+    state().users.hanseo.account.available = 300_000_000;
+    const before = state().users.hanseo.account.available;
+    const res = await call({ stake: 10_000_000, floor: 'high-limit' }, `slot-free-key-${String(i).padStart(4, '0')}`);
+    assert.equal(res.status, 200);
+    const r = res.data.round;
+    assert.equal(res.data.state.user.account.available - before - (r.hotTable?.bonus || 0), r.netPnl);
+    if (r.freeSpins) {
+      assert.equal(r.netPnl, 10_000_000 * r.mult + r.jackpot + 10_000_000 * r.freeSpins.spins.reduce((x, s) => x + s.mult, 0) - 10_000_000);
+      return;
+    }
+  }
+  assert.fail('no free spins in 4000 spins');
 });

@@ -1,5 +1,7 @@
 // Slot machine: three reels behind glass, a pull handle and the floor's progressive jackpot.
 // The reels spin to the stops the server drew; the VEGAS star is wild and three take the pot.
+// A FREE coin in view on all three reels plays 10 free spins at double pay: the server settles
+// them in the same round and this plays them back one by one.
 import { api } from '../api.js';
 import { animate, sound, haptic, formatCH, formatFull, rollNumber, wait, ms, reducedMotion, el } from '../fx.js';
 import { Table } from '../table.js';
@@ -7,9 +9,11 @@ import { isBigWin } from '../bigwin.js';
 import { gameName } from '../names.js';
 
 const AUTO_COUNTS = [10, 25, 50];
+// Spins a set of coins awards, as FREE_SPINS in lib/slots.mjs.
+const FREE_SPINS = 10;
 
 // Same weights and strip order as lib/slots.mjs, so a stop index lands on the same symbol.
-const WEIGHTS = { STAR: 2, SEVEN: 3, BAR3: 5, BAR2: 7, BAR1: 9, S: 9, H: 9, D: 10, C: 10 };
+const WEIGHTS = { STAR: 2, SEVEN: 3, BAR3: 5, BAR2: 7, BAR1: 9, S: 9, H: 8, D: 9, C: 9, FREE: 3 };
 // Symbols spread along the reel (smooth weighted round-robin) so neighbours rarely repeat.
 function reelStrip(weights) {
   const total = Object.values(weights).reduce((a, b) => a + b, 0);
@@ -27,12 +31,12 @@ const STRIP = reelStrip(WEIGHTS);
 const LINE_LABEL = { JACKPOT: 'JACKPOT', SEVEN: '777', BAR3: 'Triple Bar', BAR2: 'Double Bar', BAR1: 'Bar', S: '♠ ♠ ♠', H: '♥ ♥ ♥', D: '♦ ♦ ♦', C: '♣ ♣ ♣', ANY_BAR: 'Any Bar', ALL_RED: 'All Red', ALL_BLACK: 'All Black', TWO_STARS: 'Two Stars', ONE_STAR: 'Star' };
 // Plain and 라이트닝 pays, as in lib/slots.mjs LINE and LIGHTNING_LINE.
 const PAYS = {
-  normal: [['★ ★ ★', '잭팟 + 500'], ['7 7 7', '80'], ['≡ ≡ ≡', '40'], ['= = =', '20'], ['— — —', '10'], ['같은 무늬 3개', '6'], ['바 아무거나 3개', '4'], ['빨강 또는 검정 3개', '2'], ['★ 와일드', '한 개 ×2 · 두 개 ×3']],
-  lightning: [['★ ★ ★', '잭팟 + 500 · 번개 제외'], ['7 7 7', '20'], ['≡ ≡ ≡', '10'], ['= = =', '5'], ['— — —', '3'], ['같은 무늬 3개', '2'], ['바 아무거나 3개', '1'], ['빨강 또는 검정 3개', '1'], ['★ 두 개', '3'], ['★ 한 개', '없음'], ['★ 와일드', '한 개 ×2 · 두 개 ×3'], ['가운데 줄 번개', '배수를 더해서 곱하기']]
+  normal: [['★ ★ ★', '잭팟 + 500'], ['7 7 7', '100'], ['≡ ≡ ≡', '50'], ['= = =', '25'], ['— — —', '10'], ['같은 무늬 3개', '6'], ['바 아무거나 3개', '4'], ['빨강 또는 검정 3개', '2'], ['★ 와일드', '한 개 ×2 · 두 개 ×3'], ['FREE 코인 3릴 어디든', '프리 스핀 10번 · 당첨 ×2']],
+  lightning: [['★ ★ ★', '잭팟 + 500 · 번개 제외'], ['7 7 7', '30'], ['≡ ≡ ≡', '14'], ['= = =', '6'], ['— — —', '3'], ['같은 무늬 3개', '2'], ['바 아무거나 3개', '1'], ['빨강 또는 검정 3개', '1'], ['★ 두 개', '3'], ['★ 한 개', '없음'], ['★ 와일드', '한 개 ×2 · 두 개 ×3'], ['가운데 줄 번개', '배수를 더해서 곱하기'], ['FREE 코인 3릴 어디든', '프리 스핀 10번 · 당첨 ×2']]
 };
 const PAY_NOTE = {
-  normal: '잭팟은 테이블 최대 베팅일 때 전부, 그보다 적으면 베팅 비율만큼 받아요.',
-  lightning: '릴이 멈추기 전에 번개가 칸 1~3개에 2~50배를 붙여요. 가운데 줄 번개만 세고, 여러 개면 더해요(5배 + 2배 = 7배). 기본 배당이 낮은 대신 맞으면 그 배수만큼 곱해져요. 잭팟은 번개로 곱하지 않아요.'
+  normal: '잭팟은 테이블 최대 베팅일 때 전부, 그보다 적으면 베팅 비율만큼 받아요. FREE 코인은 세 릴 모두 창 안 어디에 보이기만 하면 프리 스핀이 터지고, 프리 스핀 중에 또 나오면 10번이 더 붙어요.',
+  lightning: '릴이 멈추기 전에 번개가 칸 1~3개에 2~50배를 붙여요. 가운데 줄 번개만 세고, 여러 개면 더해요(5배 + 2배 = 7배). 기본 배당이 낮은 대신 맞으면 그 배수만큼 곱해져요. 잭팟은 번개로 곱하지 않아요. FREE 코인 프리 스핀에서도 매 스핀 번개가 쳐요.'
 };
 // 일반 or 라이트닝, remembered per device. The server strikes the cells; this only asks for them.
 const MODE_KEY = 'vegas:slots:mode';
@@ -45,6 +49,7 @@ function symbol(s) {
   const node = el('span', `slot-sym slot-sym--${s.toLowerCase()}`);
   if (s === 'STAR') node.innerHTML = '<i></i>';
   else if (s === 'SEVEN') node.textContent = '7';
+  else if (s === 'FREE') node.innerHTML = '<i>FREE</i>';
   else if (s.startsWith('BAR')) node.innerHTML = Array.from({ length: Number(s.slice(3)) }, () => '<b>BAR</b>').join('');
   else node.textContent = { S: '♠', H: '♥', D: '♦', C: '♣' }[s];
   return node;
@@ -63,6 +68,7 @@ export async function mountSlots(ctx) {
           <i class="slot-payline" aria-hidden="true"></i>
           <div class="slot-strikes" aria-hidden="true">${Array.from({ length: 9 }, (_, c) => `<span data-cell="${c}"></span>`).join('')}</div>
           <b class="slot-boost" data-boost aria-hidden="true"></b>
+          <div class="slot-free" data-free aria-live="polite" hidden><span data-free-count></span><strong data-free-win></strong></div>
         </div>
         <button type="button" class="slot-lever" data-lever aria-label="레버 당겨서 돌리기"><span class="slot-lever-arm"><i></i></span></button>
       </div>
@@ -84,6 +90,9 @@ export async function mountSlots(ctx) {
   const cells = [...t.body.querySelectorAll('[data-cell]')];
   const boostEl = t.body.querySelector('[data-boost]');
   const modeButtons = [...t.body.querySelectorAll('[data-mode]')];
+  const freeEl = t.body.querySelector('[data-free]');
+  const freeCount = t.body.querySelector('[data-free-count]');
+  const freeWin = t.body.querySelector('[data-free-win]');
   let mode = readMode();
   function showMode() {
     slot.classList.toggle('slot--lightning', mode === 'lightning');
@@ -155,10 +164,10 @@ export async function mountSlots(ctx) {
   const destroy = t.destroy.bind(t);
   t.destroy = () => { stopAuto(); clearInterval(drift); destroy(); };
 
-  async function spinReel(i, stop, { tease = false } = {}) {
+  async function spinReel(i, stop, { tease = false, fast = false } = {}) {
     const reel = reels[i], strip = reel.firstElementChild;
     const target = [STRIP[(stop + STRIP.length - 1) % STRIP.length], STRIP[stop], STRIP[(stop + 1) % STRIP.length]];
-    const filler = Array.from({ length: 18 + i * 6 + (tease ? 10 : 0) }, randomSymbol);
+    const filler = Array.from({ length: (fast ? 8 + i * 3 : 18 + i * 6) + (tease ? 10 : 0) }, randomSymbol);
     // Strip runs top to bottom: the new symbols, then what is showing now; it scrolls down.
     strip.replaceChildren(...[...target, ...filler, ...shown[i]].map(symbol));
     const h = reel.getBoundingClientRect().height / 3;
@@ -168,7 +177,7 @@ export async function mountSlots(ctx) {
       { transform: `translateY(${-travel}px)` },
       { transform: `translateY(${h * 0.18}px)`, offset: 0.93 },
       { transform: 'translateY(0)' }
-    ], { duration: (reducedMotion() ? 200 : 1300 + i * 420 + (tease ? 1200 : 0)), easing: 'cubic-bezier(.25,.1,.25,1)' });
+    ], { duration: (reducedMotion() ? 200 : fast ? 620 + i * 200 : 1300 + i * 420 + (tease ? 1200 : 0)), easing: 'cubic-bezier(.25,.1,.25,1)' });
     reel.classList.remove('is-spinning');
     strip.replaceChildren(...target.map(symbol));
     strip.getAnimations().forEach(a => a.cancel());
@@ -240,6 +249,88 @@ export async function mountSlots(ctx) {
   }
   autoButtons.forEach(b => b.addEventListener('click', () => startAuto(Number(b.dataset.auto))));
 
+  // Runs one spin's reels (and bolts) to a stop and lights its line. Returns the line's label.
+  // `fast` is a free spin: shorter reels, and its pay already carries the free-spin multiplier.
+  async function play(spin, { fast = false, freeMult = 1 } = {}) {
+    const { stops, reels: faces, line, lightning: strikes, boost } = spin;
+    const ticker = setInterval(() => sound.tick(), ms(110));
+    // Two stars on the first reels: the last one takes its time.
+    const tease = !fast && faces[0] === 'STAR' && faces[1] === 'STAR';
+    // The bolts land while the reels are still running (the first reel stops after 1.3 s).
+    await Promise.all([...stops.map((s, i) => spinReel(i, s, { tease: i === 2 && tease, fast })), strikes ? strike(strikes) : null]);
+    clearInterval(ticker);
+    const label = line ? `${LINE_LABEL[line] || line}${boost ? ` · ${boost}×` : ''}${freeMult > 1 ? ` · ×${freeMult}` : ''}` : '';
+    if (line) {
+      resultEl.textContent = label;
+      resultEl.classList.add('is-shown');
+      reels.forEach(r => r.classList.add('is-hit'));
+      setTimeout(() => reels.forEach(r => r.classList.remove('is-hit')), ms(fast ? 900 : 2400));
+    } else resultEl.classList.remove('is-shown');
+    // A line through struck cells carries its total multiplier on the payline.
+    if (boost) {
+      boostEl.textContent = `${boost}×`;
+      windowEl.classList.add('is-boosted');
+      cells.filter(c => c.classList.contains('is-on-line')).forEach(c => c.classList.add('is-lit-hit'));
+      sound.strike();
+    }
+    return label;
+  }
+
+  // The coins that set off the free spins: one in each reel's window, any row.
+  function markCoins() {
+    shown.forEach((faces, reel) => faces.forEach((f, row) => { if (f === 'FREE') cells[row * 3 + reel].classList.add('is-coin'); }));
+  }
+  // Plays the free spins the server already settled, one after another, with a running total
+  // on the badge over the window. A tap on the window or the lever skips to the end.
+  async function playFree(free, stake) {
+    markCoins();
+    slot.classList.add('slot--free');
+    freeEl.hidden = false;
+    freeCount.textContent = `FREE SPINS ${free.awarded}`;
+    freeWin.textContent = '×' + free.multiplier;
+    sound.win(); haptic([20, 40, 20]);
+    t.toast(`프리 스핀 ${free.awarded}번! 이번 당첨은 전부 ${free.multiplier}배`);
+    let skip = false;
+    const onSkip = () => { skip = true; };
+    windowEl.addEventListener('pointerdown', onSkip);
+    lever.addEventListener('pointerdown', onSkip);
+    await wait(reducedMotion() ? 300 : 1400);
+    let total = 0, awarded = FREE_SPINS;
+    try {
+      for (let k = 0; k < free.spins.length; k++) {
+        if (!t.root.isConnected) return;
+        const spin = free.spins[k];
+        freeCount.textContent = `FREE SPINS ${k + 1} / ${awarded}`;
+        clearStrikes();
+        if (skip) {
+          // Straight to the stops: no reels, no bolts.
+          spin.stops.forEach((stop, i) => { shown[i] = [STRIP[(stop + STRIP.length - 1) % STRIP.length], STRIP[stop], STRIP[(stop + 1) % STRIP.length]]; reels[i].firstElementChild.replaceChildren(...shown[i].map(symbol)); });
+        } else {
+          await play(spin, { fast: true, freeMult: free.multiplier });
+        }
+        const win = stake * spin.mult + spin.jackpot;
+        if (win > 0) {
+          total += win;
+          freeWin.textContent = `+${formatCH(total)}`;
+          if (!skip) { sound.chips(3); haptic(10); }
+        }
+        if (spin.retrigger) {
+          awarded = Math.min(free.awarded, awarded + FREE_SPINS);
+          freeCount.textContent = `FREE SPINS ${k + 1} / ${awarded}`;
+          if (!skip) { markCoins(); sound.win(); t.toast(`프리 스핀 ${FREE_SPINS}번 추가!`); await wait(900); }
+        }
+        if (!skip) await wait(win > 0 ? 650 : 260);
+      }
+    } finally {
+      windowEl.removeEventListener('pointerdown', onSkip);
+      lever.removeEventListener('pointerdown', onSkip);
+    }
+    freeCount.textContent = `FREE SPINS ${free.awarded} · 끝`;
+    freeWin.textContent = `+${formatCH(free.win)}`;
+    resultEl.textContent = `프리 스핀 +${formatCH(free.win)}`;
+    resultEl.classList.add('is-shown');
+  }
+
   // One spin. Resolves to { big, jackpot } once settled, or null if the request failed.
   // `spinMode` pins the mode for an auto run and for 다시 시도, which resends the same key.
   async function go(spinMode = mode) {
@@ -251,39 +342,24 @@ export async function mountSlots(ctx) {
     refreshActions();
     resultEl.classList.remove('is-shown');
     clearStrikes();
+    freeEl.hidden = true;
+    slot.classList.remove('slot--free');
     pull();
     let res;
     try { res = await api.slots(stake, t.tier.floor, lightning, key); }
     catch (e) { t.roundFailed(e, () => go(spinMode)); refreshActions(); return null; }
     t.roundDone();
     t.setServerState(res.state);
-    const { stops, reels: faces, line, netPnl: net, jackpot, lightning: strikes, boost } = res.round;
-    const ticker = setInterval(() => sound.tick(), ms(110));
-    // Two stars on the first reels: the last one takes its time.
-    const tease = faces[0] === 'STAR' && faces[1] === 'STAR';
-    // The bolts land while the reels are still running (the first reel stops after 1.3 s).
-    await Promise.all([...stops.map((s, i) => spinReel(i, s, { tease: i === 2 && tease })), strikes ? strike(strikes) : null]);
-    clearInterval(ticker);
+    const { line, netPnl: net, jackpot, boost, freeSpins } = res.round;
+    const label = await play(res.round);
     setPool(res.state.jackpot.pool);
-    const label = line ? `${LINE_LABEL[line] || line}${boost ? ` · ${boost}×` : ''}` : '';
-    if (line) {
-      resultEl.textContent = label;
-      resultEl.classList.add('is-shown');
-      reels.forEach(r => r.classList.add('is-hit'));
-      setTimeout(() => reels.forEach(r => r.classList.remove('is-hit')), ms(2400));
-    }
-    // A line through struck cells carries its total multiplier on the payline.
-    if (boost) {
-      boostEl.textContent = `${boost}×`;
-      windowEl.classList.add('is-boosted');
-      cells.filter(c => c.classList.contains('is-on-line')).forEach(c => c.classList.add('is-lit-hit'));
-      sound.strike();
-    }
     await wait(200);
+    if (freeSpins) await playFree(freeSpins, stake);
     const big = jackpot > 0 ? { title: 'JACKPOT', subtitle: `잭팟 +${formatCH(jackpot)}` }
+      : freeSpins && isBigWin(net, stake) ? { title: 'FREE SPINS', subtitle: `프리 스핀 ${freeSpins.awarded}번 +${formatCH(freeSpins.win)}` }
       : boost && isBigWin(net, stake) ? { title: `${boost}×`, subtitle: `라이트닝 ${LINE_LABEL[line] || line}` } : null;
     const hot = res.round.hotTable;
-    await t.settle(net + (hot?.bonus || 0), { label: line ? label : net ? '' : '본전', big, hot });
+    await t.settle(net + (hot?.bonus || 0), { label: freeSpins ? `프리 스핀 ${freeSpins.awarded}번` : line ? label : net ? '' : '본전', big, hot });
     await t.syncBalance();
     refreshActions();
     return { big: jackpot > 0 || isBigWin(net, stake), jackpot: jackpot > 0 };

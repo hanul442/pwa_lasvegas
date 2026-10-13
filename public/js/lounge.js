@@ -311,20 +311,32 @@ function hotBlock(state) {
 }
 
 // ---------- floor ladder ----------
-function floorBlock(state) {
+function floorBlock(state, onPass) {
   const floors = state.floors || [];
-  const next = floors.find(f => !f.unlocked);
+  // The next floor still to enter: reached by net worth (unlocked) and holding its skin (passed).
+  const next = floors.find(f => !f.entered && f.slug !== floors[0]?.slug);
   const box = el('section', 'lounge-block lounge-block--floor');
-  const top = [...floors].reverse().find(f => f.unlocked);
+  const top = [...floors].reverse().find(f => f.entered || f === floors[0]);
   const open = floors.filter(f => f.open).map(f => f.name).join(' · ');
   if (!next) { box.innerHTML = `<header class="lounge-head"><h2>${top?.name}</h2><small>가장 높은 층에 있어요</small></header>`; return box; }
-  box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 층</small>${next.name}</h2><small>${Math.round(next.progress * 100)}%</small></header>
-    <span class="mission-bar mission-bar--floor"><i style="width:${Math.round(next.progress * 100)}%"></i></span>
-    <p class="lounge-note">순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이면 올라가요. 지금 앉을 수 있는 곳은 ${open}이에요.</p>`;
+  const progress = next.unlocked ? 1 : next.progress;
+  const todo = [
+    next.unlocked ? '' : `순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이고`,
+    next.passed ? '' : `상점에서 ${next.name} 꾸미기를 하나 사면`
+  ].filter(Boolean).join(', ');
+  box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 층</small>${next.name}</h2><small>${Math.round(progress * 100)}%${next.passed ? ' · 입장권 보유' : ''}</small></header>
+    <span class="mission-bar mission-bar--floor"><i style="width:${Math.round(progress * 100)}%"></i></span>
+    <p class="lounge-note">${todo.replace(/고$/, '면')} 올라가요. 지금 앉을 수 있는 곳은 ${open}이에요.</p>`;
+  if (!next.passed) {
+    const b = el('button', `pill-button${next.unlocked ? ' pill-button--solid' : ''} floor-pass-go`, `${next.name} 꾸미기 보기`);
+    b.type = 'button';
+    b.addEventListener('click', () => onPass?.(next.slug));
+    box.append(b);
+  }
   return box;
 }
 
-export function renderLounge(root, state, onChanged) {
+export function renderLounge(root, state, onChanged, onPass) {
   if (!state?.engagement) { root.replaceChildren(); return; }
   const blocks = [];
   if (state.hotTable || state.hotNext) blocks.push(hotBlock(state));
@@ -334,14 +346,15 @@ export function renderLounge(root, state, onChanged) {
   blocks.push(missionsBlock(state, onChanged));
   const watch = watchBlock(state);
   if (watch) blocks.push(watch);
-  blocks.push(feedBlock(state), floorBlock(state));
+  blocks.push(feedBlock(state), floorBlock(state, onPass));
   root.replaceChildren(...blocks);
 }
 
 // ---------- floor unlock moment ----------
+// A floor counts once it can be entered: reached by net worth and its pass bought.
 export function celebrateFloors(state) {
-  const unlocked = state?.user?.account?.unlockedFloors;
-  if (!Array.isArray(unlocked)) return;
+  if (!Array.isArray(state?.floors)) return;
+  const unlocked = state.floors.filter(f => f.entered || f === state.floors[0]).map(f => f.slug);
   const key = `vegas:seen-floors:${playerId()}`;
   const seen = storageGet(key);
   storageSet(key, JSON.stringify(unlocked));

@@ -15,7 +15,6 @@ export const DEFAULTS = {
   guides: true,     // start the table coach the first time someone sits at a game
   awake: false,     // keep the screen on while sitting at a table
   bjHint: false,    // blackjack: light up the basic-strategy move on the player's turn
-  bacSqueeze: true  // baccarat: peel your side's cards open by hand (js/squeeze.js)
 };
 
 // How much each pace stretches or shrinks every animation and pause.

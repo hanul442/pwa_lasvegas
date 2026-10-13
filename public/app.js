@@ -357,7 +357,7 @@ function rechargeButton(r, solid) {
 
 // ---------- lobby ----------
 // Every table and event has its own key art (scripts/art.mjs draws them): a still life under the lamp.
-const art = (id, cls) => `<img class="${cls}" src="art/${id}.svg" alt="" width="480" height="360" loading="lazy" decoding="async">`;
+const art = (id, cls) => `<img class="${cls}" src="art/${id}.webp" alt="" width="480" height="360" loading="lazy" decoding="async">`;
 
 function gameRow(g) {
   const li = el('li');

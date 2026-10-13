@@ -1,8 +1,9 @@
 // Draws the key art for every game and event card: one 480×360 SVG per id in public/art/.
 // Each picture is a small still life lit from above in the black lounge: lacquer room, a pool
 // of light on the felt, and the game's own objects (cards, chips, plaques, wheel, dice, hwatu,
-// horses) drawn as real things with shadow and shine. Run `node scripts/art.mjs` after an edit;
-// the SVGs are committed so the app needs no build step.
+// horses) drawn as real things with shadow and shine. Run `node scripts/art.mjs` after an edit, then
+// `node scripts/art-webp.mjs` for the WebP pictures the app shows; both are committed so the app
+// needs no build step.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { hwatuSvg } from '../public/js/hwatu.js';
 

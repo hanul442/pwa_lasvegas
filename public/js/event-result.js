@@ -10,6 +10,8 @@ const WORDS = {
   rounders: { win: 'BOSS DOWN', lose: 'BUSTED', winLine: '현상금을 챙겼어요. 다음 보스가 기다려요.', loseLine: '보스가 판을 가져갔어요. 같은 자리에서 다시 도전할 수 있어요.' },
   oceans: { win: 'VAULT OPEN', winLine: '크루의 작전이 성공했어요.' },
   montecarlo: { win: 'GALA NIGHT', winLine: '몬테카를로의 밤이 당신 편이었어요.' },
+  casablanca: { win: 'PLAY IT AGAIN', winLine: '릭이 잔을 들어요. 이 밤은 당신 거예요.' },
+  godofgamblers: { win: '도신', winLine: '주사위 컵 아래 숫자를 다 읽었어요.' },
   tazza: { win: '타짜', winLine: '아귀도 고광렬도 손을 털었어요.' }
 };
 

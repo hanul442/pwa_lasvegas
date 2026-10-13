@@ -925,6 +925,8 @@
 .felt.felt--rounders{--felt-a:#3a2c1c;--felt-b:#241a10;--felt-c:#0c0805}
 .felt.felt--whale{--felt-a:#2c2a33;--felt-b:#17161c;--felt-c:#070709}
 .is-event--montecarlo .felt{--felt-a:#2f2450;--felt-b:#1c1534;--felt-c:#080611}
+.is-event--casablanca .felt{--felt-a:#3d2c1d;--felt-b:#261a10;--felt-c:#0d0905}
+.is-event--godofgamblers .felt{--felt-a:#5a1a16;--felt-b:#380e0b;--felt-c:#140403}
 .royale-boss{font:600 14px/1.2 var(--sans);color:#d9dde2}
 .royale-boss b{color:var(--white);font-weight:800}
 .ev-meter{display:inline-flex;align-items:center;gap:6px;color:#d9dde2;font-weight:600;vertical-align:middle;white-space:nowrap}

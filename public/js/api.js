@@ -110,9 +110,9 @@ export const api = {
   // Instant rounds take an optional idempotency `key`: a retry of the same bet passes the same one.
   baccarat: (stake, floor, betType, sideBets, event, key) => request('/api/baccarat/play', { method: 'POST', key, body: { stake, floor, betType, sideBets, ...(event ? { event } : {}) } }),
   // bets: [{ betType, target?, stake }], one per spot on the layout.
-  rouletteSpin: (bets, floor, lightning = false, key) => request('/api/roulette/spin', { method: 'POST', key, body: { bets, floor, ...(lightning ? { lightning: true } : {}) } }),
+  rouletteSpin: (bets, floor, lightning = false, event = null, key) => request('/api/roulette/spin', { method: 'POST', key, body: { bets, floor, ...(lightning ? { lightning: true } : {}), ...(event ? { event } : {}) } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
-  sicbo: (stake, floor, betType, target, key) => request('/api/sicbo/play', { method: 'POST', key, body: { stake, floor, betType, target } }),
+  sicbo: (stake, floor, betType, target, event = null, key) => request('/api/sicbo/play', { method: 'POST', key, body: { stake, floor, betType, target, ...(event ? { event } : {}) } }),
   slots: (stake, floor, key) => request('/api/slots/spin', { method: 'POST', key, body: { stake, floor } }),
   horsesCard: () => request('/api/horses/card'),
   horsesRace: (stake, floor, cardId, betType, pick) => request('/api/horses/race', { method: 'POST', body: { stake, floor, cardId, betType, pick } }),

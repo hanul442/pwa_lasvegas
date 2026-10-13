@@ -51,6 +51,8 @@ const GAMES = [
   { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
   { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: ctx => mountBlackjack(ctx, { event: 'oceans' }) },
   { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: ctx => mountHoldem(ctx, { tourney: 'rounders' }) },
+  { id: 'casablanca', event: 'casablanca', guide: 'roulette', name: 'Casablanca', blurb: '릭의 카페 뒷방 룰렛. 세 번 연속으로 이기면 릭의 보너스.', mount: ctx => mountRoulette(ctx, { event: 'casablanca' }) },
+  { id: 'godofgamblers', event: 'godofgamblers', guide: 'dice', name: 'God of Gamblers', blurb: '도신의 홍콩 식보. 네 번 연속으로 맞히면 도신 보너스.', mount: ctx => mountDice(ctx, { event: 'godofgamblers' }) },
   { id: 'whale', event: 'whale', guide: 'poker', name: 'The Whale Room', blurb: '최상위 부자 전용 홀덤 토너먼트. 바이인 1천억, 우승하면 ×10.', mount: ctx => mountHoldem(ctx, { tourney: 'whale' }) },
   { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: ctx => mountBaccarat(ctx, { event: 'montecarlo' }) }
 ];

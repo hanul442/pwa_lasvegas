@@ -1,5 +1,5 @@
-// The bank screen: credit grade, the loans a player carries, the four lenders, pay and
-// government support, and bankruptcy. Every number comes from the server (lib/bank.mjs).
+// The bank screen, simplest first: what I hold and owe, the free money I can take now, my
+// loans, the four lenders as one-line rows, bankruptcy, and past loans folded away. Every number comes from the server (lib/bank.mjs).
 import { api, errorMessage } from './api.js';
 import { el, formatCH, formatMoney, sound } from './fx.js';
 import { chipsToWallet, claimDaily } from './lounge.js';
@@ -167,16 +167,19 @@ function bankruptcySheet(state, onChanged) {
     title: `빚 ${won(bank.debt)}을 없앨까요?`,
     danger: true,
     build(body, setGo) {
+      const welfare = state.engagement?.support?.welfare;
       body.innerHTML = `<ul class="bank-terms-list">
         <li>모든 대출이 사라져요.</li>
         <li>지갑에 남은 ${won(state.user.account.available)}은 압류돼요.</li>
         <li>신용이 10등급(0점)으로 떨어지고, 3일 동안 1·2·3금융권을 쓸 수 없어요. 사채는 빌려줘요.</li>
-        <li>파산은 7일에 한 번만 신청할 수 있어요.</li></ul>`;
+        <li>파산은 7일에 한 번만 신청할 수 있어요.</li>
+        ${welfare && !welfare.claimed ? `<li>파산하면 구제금융 ${won(welfare.amount)}이 바로 들어와요 (하루 ${welfare.perDay}번까지).</li>` : ''}</ul>`;
       setGo({ text: '파산 신청하기' });
     },
-    async confirm() {
+    async confirm(go) {
       const out = await api.bankruptcy();
       sound.lose?.();
+      if (out.result?.bailout) await chipsToWallet(go, out.result.bailout);
       onChanged(out.state);
     }
   });
@@ -189,13 +192,12 @@ function creditBlock(state) {
   const ban = b.credit.bannedUntil && Date.parse(b.credit.bannedUntil) > Date.now()
     ? `<p class="bank-flag">파산 후 ${Math.ceil((Date.parse(b.credit.bannedUntil) - Date.now()) / 3_600_000)}시간 동안 제도권 대출이 막혀 있어요</p>` : '';
   box.innerHTML = `
-    <div class="bank-grade"><small>신용등급</small><strong>${b.credit.grade}<span>등급</span></strong>
-      <span class="bank-score" aria-label="신용 점수 ${score}점, 1000점 만점"><i style="width:${score / 10}%"></i></span><small>${score} / 1000점</small></div>
     <dl class="bank-sums">
       <div><dt>보유 칩</dt><dd>${won(a.available + a.locked)}</dd></div>
       <div><dt>빚</dt><dd class="${b.debt > 0 ? 'neg' : ''}">${b.debt > 0 ? '-' : ''}${won(b.debt)}</dd></div>
       <div><dt>순자산</dt><dd>${won(b.netWorth)}</dd></div>
-    </dl>${ban}`;
+    </dl>
+    <div class="bank-grade"><span>신용 <b>${b.credit.grade}등급</b></span><span class="bank-score" aria-label="신용 점수 ${score}점, 1000점 만점"><i style="width:${score / 10}%"></i></span><small>${score} / 1000</small></div>${ban}`;
   return box;
 }
 
@@ -221,16 +223,17 @@ function loansBlock(state, onChanged) {
 function lendersBlock(state, onChanged) {
   const b = state.bank;
   const box = el('section', 'bank-block');
-  box.innerHTML = `<header class="lounge-head"><h2>대출 받기</h2><small>한도는 내가 앉는 가장 낮은 테이블 기준</small></header>`;
+  box.innerHTML = `<header class="lounge-head"><h2>빌리기</h2><small>제때 갚으면 신용이 올라요</small></header>`;
   const list = el('ul', 'lender-list');
   for (const offer of b.lenders) {
     const li = el('li');
     const card = el('button', `lender lender--${offer.slug}`);
     card.type = 'button';
     card.disabled = !offer.eligible;
-    card.innerHTML = `<span class="lender-tier">${offer.name}</span><strong>${offer.house}</strong>
-      <span class="lender-terms"><b>하루 ${pct(offer.dailyRate)}</b><span>최대 ${won(offer.limit)}</span><span>${offer.maxGrade >= 10 ? '누구나' : `${offer.maxGrade}등급 이상`}</span></span>
-      ${offer.eligible ? '' : `<small>${offer.reason}</small>`}`;
+    card.innerHTML = `<span class="lender-main"><strong>${offer.house}</strong>
+      <span class="lender-terms"><b>하루 ${pct(offer.dailyRate)}</b><span>최대 ${won(offer.limit)}</span></span>
+      ${offer.eligible ? '' : `<small>${offer.reason}</small>`}</span><span class="lender-go" aria-hidden="true">${offer.eligible ? '빌리기' : `${offer.maxGrade}등급↑`}</span>`;
+    card.setAttribute('aria-label', `${offer.house}, 하루 ${pct(offer.dailyRate)}, 최대 ${won(offer.limit)}${offer.eligible ? ', 빌리기' : `, ${offer.reason}`}`);
     card.addEventListener('click', () => borrowSheet(state, offer, onChanged));
     li.append(card);
     list.append(li);
@@ -265,10 +268,10 @@ export function supportButtons(state, onChanged) {
 function payBlock(state, onChanged) {
   const eng = state.engagement, daily = eng.daily, sup = eng.support;
   const box = el('section', 'bank-block');
-  box.innerHTML = `<header class="lounge-head"><h2>급여 · 지원금</h2><small>매일 받는 돈</small></header>`;
+  box.innerHTML = `<header class="lounge-head"><h2>무료로 받기</h2><small>갚을 필요 없는 돈</small></header>`;
   const list = el('ul', 'pay-list');
   const row = (title, sub, label, enabled, run) => {
-    const li = el('li', 'pay-row');
+    const li = el('li', `pay-row${enabled ? ' is-ready' : ''}`);
     li.innerHTML = `<div class="mission-text"><span>${title}</span><small>${sub}</small></div>`;
     const btn = el('button', `pill-button${enabled ? ' pill-button--solid' : ''}`, label);
     btn.type = 'button';
@@ -277,12 +280,12 @@ function payBlock(state, onChanged) {
     li.append(btn);
     list.append(li);
   };
-  row('일급', `${daily.streak}일 연속 · 주급까지 ${daily.toWeekly}일 · 월급까지 ${daily.toMonthly}일<br>일급 ${won(daily.rates.daily)} · 주급 ${won(daily.rates.weekly)} · 월급 ${won(daily.rates.monthly)}`,
+  row('일급', `${daily.streak}일 연속 · 주급까지 ${daily.toWeekly}일 · 월급까지 ${daily.toMonthly}일`,
     daily.claimed ? '받음' : `+${formatCH(daily.reward)}`, !daily.claimed, btn => claimDaily(btn, onChanged));
   const claim = kind => btn => claimSupport(kind, btn, onChanged);
-  row('정부 지원금', '누구나 일주일에 한 번 · 월요일 0시에 새로 나와요', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
+  row('정부 지원금', '일주일에 한 번 · 월요일에 새로', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
   const left = sup.welfare.perDay - sup.welfare.taken;
-  row('구제금융', `파산했거나 순자산이 ${won(sup.welfare.below)} 미만이면 하루 ${sup.welfare.perDay}번까지 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
+  row('구제금융', `순자산 ${won(sup.welfare.below)} 미만일 때 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
   box.append(list);
   return box;
 }
@@ -304,8 +307,8 @@ const OUTCOME = { ON_TIME: '완납', LATE: '연체 후 완납', COLLECTED: '자�
 function historyBlock(state) {
   const rows = state.bank.history || [];
   if (!rows.length) return null;
-  const box = el('section', 'bank-block');
-  box.innerHTML = '<header class="lounge-head"><h2>지난 대출</h2></header>';
+  const box = el('details', 'bank-block bank-history');
+  box.innerHTML = `<summary class="lounge-head"><h2>지난 대출</h2><small>${rows.length}건</small></summary>`;
   const list = el('ul', 'ledger');
   for (const h of rows) {
     const lender = state.bank.lenders.find(l => l.slug === h.lender);
@@ -319,9 +322,9 @@ export function renderBank(root, state, onChanged) {
   if (!state?.bank) { root.textContent = '불러오는 중…'; return; }
   root.replaceChildren(...[
     creditBlock(state),
-    loansBlock(state, onChanged),
-    lendersBlock(state, onChanged),
     payBlock(state, onChanged),
+    state.bank.loans.length ? loansBlock(state, onChanged) : null,
+    lendersBlock(state, onChanged),
     bankruptcyBlock(state, onChanged),
     historyBlock(state)
   ].filter(Boolean));

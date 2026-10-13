@@ -216,8 +216,8 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     idle.cancel();
     rotorAngle = (rotorAngle + now) % 360;
     const idx = ORDER.indexOf(number);
-    const size = wheel.getBoundingClientRect().width;
-    const track = size * 0.455, pocket = size * 0.36;
+    // In ball heights (the ball is 5.5% of the wheel), so the drop holds at any wheel size.
+    const track = 0.455 / 0.055 * 100, pocket = 0.36 / 0.055 * 100;
     const landAt = Math.random() * 360;
     let target = landAt - idx * STEP;
     while (target < rotorAngle + 1080) target += 360;
@@ -232,13 +232,13 @@ export async function mountRoulette(ctx, { event = null } = {}) {
       rotor.animate([{ transform: `rotate(${rotorAngle}deg)` }, { transform: `rotate(${target}deg)` }], { duration, easing: 'cubic-bezier(.12,.62,.18,1)', fill: 'forwards' }).finished,
       orbit.animate([{ transform: `rotate(${ballAngle}deg)` }, { transform: `rotate(${ballTarget}deg)` }], { duration, easing: 'cubic-bezier(.08,.7,.2,1)', fill: 'forwards' }).finished,
       ball.animate([
-        { transform: `translateY(${-track}px)` },
-        { transform: `translateY(${-track}px)`, offset: 0.6 },
-        { transform: `translateY(${-pocket * 1.08}px)`, offset: 0.74 },
-        { transform: `translateY(${-pocket * 1.16}px)`, offset: 0.8 },
-        { transform: `translateY(${-pocket * 0.98}px)`, offset: 0.87 },
-        { transform: `translateY(${-pocket * 1.04}px)`, offset: 0.93 },
-        { transform: `translateY(${-pocket}px)` }
+        { transform: `translateY(${-track}%)` },
+        { transform: `translateY(${-track}%)`, offset: 0.6 },
+        { transform: `translateY(${-pocket * 1.08}%)`, offset: 0.74 },
+        { transform: `translateY(${-pocket * 1.16}%)`, offset: 0.8 },
+        { transform: `translateY(${-pocket * 0.98}%)`, offset: 0.87 },
+        { transform: `translateY(${-pocket * 1.04}%)`, offset: 0.93 },
+        { transform: `translateY(${-pocket}%)` }
       ], { duration, easing: 'linear', fill: 'forwards' }).finished
     ]);
     clearInterval(ticker);
@@ -249,7 +249,8 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     orbit.getAnimations().forEach(a => a.cancel());
     rotor.style.transform = `rotate(${rotorAngle}deg)`;
     orbit.style.transform = `rotate(${ballAngle}deg)`;
-    ball.getAnimations().forEach(a => { a.commitStyles?.(); a.cancel(); });
+    ball.getAnimations().forEach(a => a.cancel());
+    ball.style.transform = `translateY(${-pocket}%)`;
     resultEl.textContent = number;
     resultEl.className = `wheel-result wheel-result--${colorOf(number)} is-shown`;
     const li = document.createElement('li');
@@ -260,6 +261,44 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     const cell = t.body.querySelector(`[data-zone="N${number}"]`);
     cell?.classList.add('is-hit');
     setTimeout(() => cell?.classList.remove('is-hit'), 2600);
+  }
+
+  // 크게 보기: while the ball runs, the wheel lifts off the table into the middle of the screen
+  // over a dimmed felt, then settles back into its place once the number is called. A spot
+  // holds its place in the layout. Skipped when the wheel is already big (tablets, landscape)
+  // or motion is reduced.
+  async function lift() {
+    if (reducedMotion() || !t.root.isConnected) return null;
+    const from = wheel.getBoundingClientRect();
+    const size = Math.min(innerWidth * 0.9, innerHeight * 0.6, 520);
+    if (!from.width || size < from.width * 1.2) return null;
+    const hold = document.createElement('div');
+    hold.className = 'wheel-hold';
+    hold.style.width = `${from.width}px`;
+    hold.style.height = `${from.height}px`;
+    wheel.before(hold);
+    const shade = document.createElement('div');
+    shade.className = 'wheel-shade';
+    t.root.append(shade);
+    wheel.classList.add('is-lifted');
+    Object.assign(wheel.style, { left: `${(innerWidth - size) / 2}px`, top: `${(innerHeight - size) / 2 - innerHeight * 0.04}px`, width: `${size}px` });
+    const to = wheel.getBoundingClientRect();
+    const back = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
+    shade.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, fill: 'both' });
+    await wheel.animate([{ transform: back }, { transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.2,.8,.2,1)' }).finished.catch(() => {});
+    return { hold, shade };
+  }
+  async function land(lifted) {
+    if (!lifted) return;
+    const { hold, shade } = lifted;
+    const from = wheel.getBoundingClientRect(), to = hold.getBoundingClientRect();
+    const there = `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${to.width / from.width})`;
+    shade.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, fill: 'both' });
+    await wheel.animate([{ transform: 'none' }, { transform: there }], { duration: 420, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }).finished.catch(() => {});
+    wheel.getAnimations().forEach(a => a.cancel());
+    wheel.classList.remove('is-lifted');
+    wheel.style.left = wheel.style.top = wheel.style.width = '';
+    hold.remove(); shade.remove();
   }
 
   function refreshActions() {
@@ -287,9 +326,11 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     voice.say('no-more-bets', { cut: true });
     const strikes = res.round.lightning || null;
     if (strikes) await strike(strikes);
+    const lifted = await lift();
     await spinTo(res.round.number);
     voice.say(rouletteLine(res.round.number));
-    await wait(250);
+    await wait(lifted ? 1300 : 250);
+    await land(lifted);
     const hot = res.round.hotTable;
     const net = res.round.netPnl + (hot?.bonus || 0);
     // Each spot is paid or raked on its own.

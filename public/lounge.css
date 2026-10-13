@@ -293,6 +293,8 @@
 .bust-amount{color:#ff4f4f}
 .bust-note{margin:14px 0 0;max-width:34ch;color:var(--smoke);font-size:15px;line-height:1.5}
 .bust-roast{margin:10px 0 0;color:var(--white);font-size:17px;font-weight:600}
+.bust-bailout{margin:12px 0 0;color:var(--ivory);font-size:16px}
+.bust-bailout b{color:var(--white)}
 .bust .bigwin-actions{flex-wrap:wrap;justify-content:center}
 .feed-item--bankruptcy span::before{content:"";display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:#ff4f4f}
 
@@ -539,3 +541,33 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
   .slot-jackpot{padding:3px 14px 4px}
   .slot-jackpot strong{font-size:20px}
 }
+/* Bank, simplified: the sums lead in one card with the credit grade as a single line under them;
+   lenders are one-line rows; free money that is ready stands out, the rest stays quiet. */
+.bank-hero{display:grid;gap:14px}
+.bank-hero .bank-sums{margin:0;padding:0;border:0}
+.bank-hero .bank-sums dd{font-size:20px}
+.bank-hero .bank-grade{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;max-width:none;padding-top:12px;border-top:1px solid var(--hair);font-size:14px;color:var(--smoke)}
+.bank-hero .bank-grade b{color:var(--white);font-weight:600}
+.bank-hero .bank-score{margin:0}
+@media (min-width:760px){.bank-hero{grid-template-columns:none;gap:14px}.bank-hero .bank-sums{max-width:640px}}
+.pay-row{padding:10px 0}
+.pay-row .mission-text small{font-size:13px}
+.pay-row:not(.is-ready) .mission-text span{color:var(--smoke)}
+.pay-row:not(.is-ready) .pill-button{min-height:34px;border-color:transparent;color:var(--dim);font-size:13px}
+.lender-list{grid-template-columns:minmax(0,1fr);gap:0}
+.lender{display:flex;align-items:center;gap:12px;padding:12px 2px;border:0;border-top:1px solid var(--hair);border-radius:0;background:none}
+.lender-list li:first-child .lender{border-top:0}
+.lender:not(:disabled):hover{background:none;border-color:var(--hair)}
+.lender:disabled{opacity:.5}
+.lender-main{flex:1;min-width:0;display:grid;gap:2px}
+.lender strong{font:600 17px/1.2 var(--sans);font-stretch:100%;letter-spacing:0}
+.lender-terms{margin:0;font-size:13px}
+.lender small{margin:0;font-size:12.5px}
+.lender-go{flex:none;min-height:36px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--white);font-size:14px;font-weight:600}
+.lender:disabled .lender-go{border-color:transparent;color:var(--smoke);font-weight:500;font-size:13px}
+.lender--shark{border-color:var(--hair)}
+.bank-history>summary{cursor:pointer;list-style:none;margin:0}
+.bank-history>summary::-webkit-details-marker{display:none}
+.bank-history>summary h2::after{content:"";display:inline-block;width:7px;height:7px;margin:0 0 4px 10px;border-right:1.5px solid var(--dim);border-bottom:1.5px solid var(--dim);rotate:45deg;transition:rotate .2s}
+.bank-history[open]>summary h2::after{rotate:-135deg;margin-bottom:0}
+.bank-history[open]>summary{margin-bottom:10px}

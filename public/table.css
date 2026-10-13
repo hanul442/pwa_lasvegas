@@ -152,6 +152,8 @@
 .bet-tools{grid-area:tools;display:flex;gap:6px}
 .bet-tool{min-width:40px;height:36px;padding:0 9px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:14px;white-space:nowrap}
 .bet-tool:disabled{opacity:.3}
+.table-controls .bet-step{min-width:44px;font-size:22px;font-weight:500;line-height:1;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.table-controls .bet-step span{display:block;translate:0 -1px}
 .chip-tray{grid-area:tray;display:flex;justify-content:space-between;gap:6px;padding:8px 2px 4px;transition:opacity .25s}
 .chip-tray .chip{--size:clamp(44px,13vw,54px);transition:transform .18s var(--ease-out);touch-action:none}
 .chip-tray .chip[aria-pressed="true"]{transform:translateY(-7px)}
@@ -315,6 +317,11 @@
 .ball{position:absolute;left:50%;top:50%;width:5.5%;height:5.5%;margin:-2.75% 0 0 -2.75%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#d8d8d8 55%,#8a8a8a);box-shadow:0 2px 4px #000a;opacity:0}
 .wheel-result{position:absolute;left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%) scale(.3);opacity:0;border-radius:50%;display:grid;place-items:center;font:700 clamp(18px,6vw,30px) var(--display);letter-spacing:-.04em;color:#fff;box-shadow:0 0 0 3px #fff,0 10px 24px #000a;transition:transform .45s cubic-bezier(.2,1.6,.4,1),opacity .25s;pointer-events:none}
 .wheel-result.is-shown{opacity:1;transform:translate(-50%,-50%) scale(1)}
+/* 크게 보기: the wheel lifted off the table for the spin (js/games/roulette.js lift/land) */
+.wheel.is-lifted{position:fixed;z-index:61;margin:0;transform-origin:0 0}
+.wheel.is-lifted .wheel-result{font-size:clamp(30px,11vw,52px)}
+.wheel-hold{flex:none;aspect-ratio:1}
+.wheel-shade{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 46%,#0a0b0d99,#0a0b0de6 70%);pointer-events:none}
 .wheel-result--red{background:#8f2a2a}.wheel-result--black{background:#1a1714}.wheel-result--green{background:#2e5e45}
 .rl-history{display:flex;gap:4px;list-style:none;margin:0;padding:0;min-height:22px}
 .hist{min-width:26px;height:24px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font-size:13px}
@@ -411,9 +418,6 @@
   .action-row{min-width:0}
   .action{padding:0 10px;font-size:15px}
   .bet-readout strong{font-size:20px}
-  /* undo becomes its arrow here; the button keeps its spoken name */
-  .table-controls .bet-tool[data-tool="undo"]{font-size:0}
-  .table-controls .bet-tool[data-tool="undo"]::before{content:"↶";font-size:18px;line-height:1}
 }
 /* the smallest phones on their side: the control line is drawn a touch smaller instead of running off */
 @media (orientation:landscape) and (max-height:520px) and (max-width:699px){
@@ -952,51 +956,6 @@
   .pk-duel{animation:none}
 }
 
-/* ---------- baccarat squeeze (쪼기): js/squeeze.js ---------- */
-.card.is-lifted{visibility:hidden}
-.sq-stage{position:absolute;grid-row:2 / 4;grid-column:1;inset:0;z-index:30;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:10px;padding:10px 16px calc(14px + env(safe-area-inset-bottom));background:#0a0b0d;transition:background .3s}
-.sq-head{display:flex;align-items:baseline;justify-content:center;gap:14px;min-height:40px;transition:opacity .2s}
-.sq-title{font:650 22px var(--display);font-stretch:118%;letter-spacing:-.02em}
-.sq-stage--player .sq-title{color:#c7d6ea}.sq-stage--banker .sq-title{color:#ead0c9}
-.sq-note{font-size:15px;font-weight:600;color:var(--smoke)}
-.sq-total{font:700 34px/1 var(--display);font-variant-numeric:tabular-nums;color:var(--white)}
-.sq-total:empty{display:none}
-.sq-mat{position:relative;display:grid;place-items:center;border-radius:28px;
-  background:radial-gradient(70% 60% at 50% 40%,var(--felt-a,#22548a) 0,var(--felt-b,#143660) 55%,var(--felt-c,#08172d) 100%);
-  box-shadow:inset 0 0 0 1px #ffffff14,inset 0 0 60px #0009;transition:opacity .25s}
-.sq-cards{display:flex;justify-content:center;align-items:center;gap:clamp(12px,4vw,32px);padding:24px 12px}
-.sq-card{--card-w:clamp(112px,40vw,184px);position:relative;flex:none;width:var(--card-w);height:calc(var(--card-w) * 1.4);font-size:calc(var(--card-w) * .2);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab;border-radius:8%/5.7%;outline:none}
-.sq-card:focus-visible{box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--white)}
-.sq-card.is-grabbed{cursor:grabbing}
-.sq-card>.sq-back{transform:none;backface-visibility:visible;-webkit-backface-visibility:visible}
-.sq-flapwrap{position:absolute;inset:0;pointer-events:none;filter:drop-shadow(0 6px 10px #0009);visibility:hidden}
-.sq-card.is-bent .sq-flapwrap{visibility:visible}
-.sq-flap{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:0 0}
-.sq-face{backface-visibility:visible;-webkit-backface-visibility:visible;transform-origin:0 0}
-.sq-flap .sq-face{box-shadow:inset 0 0 0 1px #00000024}
-/* big faces: a smaller index and the pips drawn in from it, the way a real card leaves its margin */
-.sq-face .card-corner{font-size:.8em}
-.sq-face .card-pips{inset:18% 28%}
-.sq-face .card-pips i{font-size:.82em}
-/* the underside has no index, so the pips tell it */
-.sq-flap .card-corner{display:none}
-.sq-shade{position:absolute;inset:0;border-radius:8%/5.7%;pointer-events:none}
-.sq-open{position:absolute;inset:0;visibility:hidden;transform-origin:50% 50%}
-.sq-open .sq-face{transform:none}
-.sq-card.is-open{cursor:default}
-.sq-card.is-open>.sq-back{visibility:hidden}
-.sq-card.is-open .sq-open{visibility:visible}
-.sq-hint{margin:0;min-height:20px;text-align:center;font-size:15px;font-weight:600;color:var(--smoke);transition:opacity .2s}
-.sq-actions{display:flex;gap:8px;transition:opacity .2s}
-.sq-stage.is-done .sq-actions{opacity:0;pointer-events:none}
-.sq-stage.is-entering{background:#0a0b0d00}
-.sq-stage.is-entering .sq-mat,.sq-stage.is-leaving .sq-mat,.sq-stage.is-leaving .sq-head,.sq-stage.is-leaving .sq-hint,.sq-stage.is-leaving .sq-actions{opacity:0}
-.sq-stage.is-entering .sq-mat{transition:none}
-.sq-stage.is-leaving{background:#0a0b0d00;pointer-events:none}
-@media (min-width:520px){.sq-stage{padding-left:24px;padding-right:24px}.sq-actions{max-width:520px;width:100%;justify-self:center}}
-@media (max-height:640px){.sq-card{--card-w:clamp(90px,26vh,150px)}.sq-cards{padding:14px 10px}}
-@media (prefers-reduced-motion:reduce){.sq-card>.sq-back{animation:none!important}.sq-stage,.sq-mat,.sq-head,.sq-hint,.sq-actions{transition:none}}
-.sq-card:only-child{--card-w:clamp(120px,46vw,200px)}
 /* The table name opens the table switcher: a small chevron says it can be tapped. */
 .table-name[data-switch]{cursor:pointer;border-radius:8px}
 .table-name[data-switch] strong::after{content:"";flex:none;width:6px;height:6px;margin:-4px 2px 0;border-right:1.5px solid var(--smoke);border-bottom:1.5px solid var(--smoke);rotate:45deg}

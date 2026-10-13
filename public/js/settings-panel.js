@@ -173,8 +173,7 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
   ];
   const sections = [section('소리', audioRows), section('화면과 움직임', motionRows)];
   const gameRows = [
-    !compact || game === 'blackjack' ? add(toggle('bjHint', '블랙잭 정석 힌트', '내 차례에 기본 전략이 권하는 버튼을 밝혀 주고, 정석대로 친 비율을 테이블에 보여 줘요')) : null,
-    !compact || game === 'baccarat' ? add(toggle('bacSqueeze', '바카라 쪼기', '내가 건 쪽 카드를 손으로 모서리부터 들춰 봐요. 끄면 바로 뒤집혀요')) : null
+    !compact || game === 'blackjack' ? add(toggle('bjHint', '블랙잭 정석 힌트', '내 차례에 기본 전략이 권하는 버튼을 밝혀 주고, 정석대로 친 비율을 테이블에 보여 줘요')) : null
   ].filter(Boolean);
   if (gameRows.length) sections.push(section('게임', gameRows));
 

@@ -61,6 +61,16 @@ test('a streak bonus pays at the target, resets on a loss and ignores pushes', d
   assert.equal(user.account.available, before + 3000);
 }));
 
+test('a hedged multi-spot win leaves the run as it is', during('oceans', () => {
+  const state = defaultState();
+  const user = Object.values(state.users)[0];
+  const step = (net, stake) => trackEventStreak(state, user, { event: 'casablanca', net, stake, floorMin: 100, roundId: `h${++n}` });
+  assert.equal(step(100, 100).streak, 1, 'an even-money win counts');
+  assert.equal(step(1, 35).streak, 1, 'covering 35 numbers to net one chip is not a winning spin');
+  assert.equal(step(50, 100).streak, 2, 'winning half the stake still counts');
+  assert.equal(step(-35, 35).streak, 0);
+}));
+
 test("Ocean's blackjack seats the crew and reports the run", during('oceans', async () => {
   const store = memoryStore();
   await call(store, 'GET', '/api/state');

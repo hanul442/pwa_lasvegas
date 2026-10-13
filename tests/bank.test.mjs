@@ -122,8 +122,10 @@ test('bankruptcy wipes the debt, takes the wallet, sinks credit and bars the ban
   const status = bankruptcyStatus(u, NOON);
   assert.equal(status.eligible, true);
   const out = fileBankruptcy(state, u, NOON);
-  assert.deepEqual(out, { discharged: 800_000_000, seized: 100_000_000 });
-  assert.equal(u.account.available, 0);
+  // The wallet is seized, then the day's 구제금융 of 100억 is paid straight in (한서's call).
+  assert.deepEqual(out, { discharged: 800_000_000, seized: 100_000_000, bailout: 10_000_000_000 });
+  assert.equal(u.account.available, 10_000_000_000);
+  assert.equal(state.ledger.at(-1).type, 'WELFARE');
   assert.equal(debtOf(u), 0);
   assert.equal(u.credit.score, 0);
   assert.equal(gradeOf(u.credit.score), 10);
@@ -182,4 +184,19 @@ test('the bank over the API: borrow, play, repay, outgrow a floor', async () => 
   const support = await call('POST', '/api/support/claim', { kind: 'grant' });
   assert.equal(support.status, 200);
   assert.equal(support.data.claim.amount, 50_000_000);
+});
+
+test('going broke at a table pays the 구제금융 on the spot, ten times a day', () => {
+  const { state, u } = rookie();
+  for (let k = 0; k < 10; k++) {
+    u.account.available = 1_000_000;
+    settleHouseGame(state, u, { game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000, roundId: `bust-${k}` });
+    assert.equal(u.bankruptcies[0].bailout, 10_000_000_000, `bust ${k + 1}`);
+    assert.equal(u.account.available, 10_000_000_000);
+    u.account.available = 0;
+  }
+  u.account.available = 1_000_000;
+  settleHouseGame(state, u, { game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000, roundId: 'bust-11' });
+  assert.equal(u.bankruptcies[0].bailout, 0, 'the eleventh bust of the day gets nothing');
+  assert.equal(u.account.available, 0);
 });

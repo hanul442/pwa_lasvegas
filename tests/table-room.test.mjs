@@ -6,7 +6,7 @@ import { seotdaNet, seotdaOptions } from '../lib/seotda.mjs';
 import { gostopNet } from '../lib/gostop.mjs';
 import { matgoAiDecision, matgoNet } from '../lib/matgo.mjs';
 import { blackjackRoomNet, blackjackRoomOptions, blackjackRoomPublic } from '../lib/blackjack-room.mjs';
-import { validateStakeAgainstFloor } from '../lib/stakes.mjs';
+import { validateStakeAgainstFloor, validateRoomStake } from '../lib/stakes.mjs';
 import { FLOORS } from '../lib/constants.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
@@ -16,6 +16,7 @@ function seeded(seed) {
   return () => { x = (x + 0x6d2b79f5) >>> 0; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 const validateStake = (user, floor, stake) => validateStakeAgainstFloor(user, FLOORS.find(f => f.slug === floor), stake);
+const validateRoomHost = (user, floor, stake) => validateRoomStake(user, FLOORS.find(f => f.slug === floor), stake);
 
 function world(seed = 7) {
   seed += Number(process.env.ROOM_SEED || 0);
@@ -24,7 +25,7 @@ function world(seed = 7) {
   for (const uid of ['hanseo', 'min', 'june']) state.users[uid].account.available = Math.min(state.users[uid].account.available, 900_000_000);
   let clock = 1_000_000;
   const rand = seeded(seed);
-  const ctx = () => ({ now: clock, rand, validateStake });
+  const ctx = () => ({ now: clock, rand, validateStake: validateRoomHost });
   return { state, ctx, rand, advance: ms => { clock += ms; }, get now() { return clock; } };
 }
 const wealth = (state, ids) => ids.reduce((a, uid) => a + state.users[uid].account.available + state.users[uid].account.locked, 0);
@@ -305,8 +306,10 @@ test('friends sit together whatever floors each has reached or outgrown; only th
   const poor = state.users.june, rich = state.users.hanseo, mid = state.users.min;
   poor.account.available = 50_000_000; poor.account.unlockedFloors = ['gold-room'];
   mid.account.available = 30_000_000; mid.account.unlockedFloors = ['gold-room'];
-  // The rich friend has outgrown Gold Room and can't sit there alone, but can sit at a friend's room.
-  assert.throws(() => createRoom(state, rich, { game: 'seotda', stake: 1_000_000, floor: 'gold-room', size: 3 }, w.ctx()), /FLOOR_OUTGROWN/);
+  // The rich friend has outgrown Gold Room's solo tables, yet can open a room there or sit at a friend's.
+  assert.throws(() => validateStake(rich, 'gold-room', 1_000_000), /FLOOR_OUTGROWN/);
+  const own = createRoom(state, rich, { game: 'seotda', stake: 1_000_000, floor: 'gold-room', size: 3 }, w.ctx());
+  leaveRoom(state, rich, own.code, w.ctx());
   const low = createRoom(state, poor, { game: 'seotda', stake: 1_000_000, floor: 'gold-room', size: 3 }, w.ctx());
   joinRoom(state, rich, low.code, w.ctx());
   assert.ok(low.players[rich.id]);

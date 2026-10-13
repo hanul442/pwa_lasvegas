@@ -14,8 +14,8 @@ test('the bank economy keeps every balance and reopens floors on the new ladder,
   assert.equal(upgradeEconomy(state), true);
   assert.equal(state.users.hanseo.account.available, 95_000_000, 'balances stay as they were');
   assert.equal(state.ledger.length, ledger, 'no chips move');
-  // 9천5백만 covers only the Gold Room's threshold, which is open to everyone.
-  assert.deepEqual(state.users.hanseo.account.unlockedFloors, ['gold-room']);
+  // 9천5백만 covers High Limit's 3천만 threshold, not Salon Privé's 3억.
+  assert.deepEqual(state.users.hanseo.account.unlockedFloors, ['gold-room', 'high-limit']);
   assert.equal(state.users.hanseo.credit.score, 500);
   assert.equal(upgradeEconomy(state), false, 'runs once');
 });

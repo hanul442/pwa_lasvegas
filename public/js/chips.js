@@ -15,7 +15,7 @@ const STARS = [1, 2, 3, 4, 5, 5];
 const tier = (slug, name, min, level) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min), level, stars: STARS[level], h17: level >= 3 });
 
 // Six floors from 100만 in the Gold Room to 1천억 in The Vault, each ten times the last
-// (lib/constants.mjs FLOORS). A floor opens at ten of its smallest bets in net worth and
+// (lib/constants.mjs FLOORS). A floor opens at three of its smallest bets in net worth and
 // closes to anyone worth more than a hundred of them.
 export const TIERS = Object.fromEntries([
   ['gold-room', 'Gold Room', 1_000_000],

@@ -18,14 +18,14 @@ function player(amount) {
   return { state, u };
 }
 
-test('every floor above the Gold Room has a skin in each slot, priced 2–5× its smallest bet', () => {
+test('every floor above the Gold Room has a skin in each slot, priced a fifth to half of what opens it', () => {
   assert.deepEqual(Object.keys(PASS_ITEMS), FLOORS.slice(1).map(f => f.slug));
   for (const f of FLOORS.slice(1)) {
     const items = COSMETICS.filter(x => x.floor === f.slug);
     assert.deepEqual(items.map(x => x.slot).sort(), [...SLOTS].sort(), f.slug);
     for (const x of items) {
       assert.ok(isMoney(x.price), x.id);
-      assert.ok(x.price >= 2 * f.minBet && x.price <= 5 * f.minBet, x.id);
+      assert.ok(x.price >= f.threshold / 5 && x.price <= f.threshold / 2, x.id);
     }
   }
   assert.equal(new Set(COSMETICS.map(x => x.id)).size, COSMETICS.length, 'ids are unique');
@@ -49,7 +49,7 @@ test('reaching a floor by net worth is not enough: one of its skins opens it', (
 
   const bought = buyItem(state, u, 'felt-forest');
   assert.equal(bought.pass, 'high-limit', 'the first skin of a floor says it opened the floor');
-  assert.equal(u.account.available, 3 * 억 - 2 * high.minBet);
+  assert.equal(u.account.available, 3 * 억 - COSMETICS.find(x => x.id === 'felt-forest').price);
   assert.equal(buyItem(state, u, 'chips-onyx').pass, undefined, 'a second one opens nothing new');
   assert.doesNotThrow(() => validateStakeAgainstFloor(u, high, high.minBet));
   assert.equal(floorOpen(u, floor('gold-room')), false, 'now the Gold Room is outgrown');
@@ -60,13 +60,13 @@ test('reaching a floor by net worth is not enough: one of its skins opens it', (
 });
 
 test('a skin bought before the floor is reached waits for the net worth', () => {
-  const { state, u } = player(5_000_0000);
-  buyItem(state, u, 'frame-silver');
+  const { state, u } = player(2_500_0000);
+  buyItem(state, u, 'felt-forest');
   const high = floor('high-limit');
   assert.equal(hasFloorPass(u, high), true);
   assert.throws(() => validateStakeAgainstFloor(u, high, high.minBet), /FLOOR_LOCKED/);
-  equipItem(u, 'frame', 'frame-silver');
-  assert.equal(shopView(u).equipped.frame, 'frame-silver');
+  equipItem(u, 'felt', 'felt-forest');
+  assert.equal(shopView(u).equipped.felt, 'felt-forest');
 });
 
 test('floors players had reached before passes stay theirs; later players buy in', () => {

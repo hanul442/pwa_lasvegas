@@ -224,11 +224,18 @@ test('rooms over the API: create, list, join by code, poll with a cursor, act, l
 
   const listed = await call(store, 'min', 'GET', '/api/holdem/rooms');
   assert.ok(listed.data.rooms.some(r => r.code === code && r.host === 'HANSEO'));
-  // A room on a floor the viewer hasn't opened isn't offered, and its code doesn't let them in.
+  // Friends sit together whatever floors each has reached: a room on a floor the viewer hasn't
+  // opened is still offered, and someone short of its buy-in sits with everything they have.
   const vip = await call(store, 'zero', 'POST', '/api/holdem/rooms', { buyIn: 2_000_000_000, floor: 'penthouse' });
   assert.equal(vip.status, 201, JSON.stringify(vip.data));
-  assert.ok(!(await call(store, 'min', 'GET', '/api/holdem/rooms')).data.rooms.some(r => r.code === vip.data.room.code));
-  assert.equal((await call(store, 'min', 'POST', '/api/holdem/rooms/join', { code: vip.data.room.code })).data.error, 'FLOOR_LOCKED');
+  assert.ok((await call(store, 'min', 'GET', '/api/holdem/rooms')).data.rooms.some(r => r.code === vip.data.room.code));
+  const minChips = store.peek().users.min.account.available;
+  assert.ok(minChips < 2_000_000_000);
+  const short = await call(store, 'min', 'POST', '/api/holdem/rooms/join', { code: vip.data.room.code });
+  assert.equal(short.status, 200, JSON.stringify(short.data));
+  assert.equal(store.peek().users.min.account.locked, minChips);
+  assert.equal((await call(store, 'min', 'POST', '/api/holdem/rooms/leave', { code: vip.data.room.code })).status, 200);
+  assert.equal(store.peek().users.min.account.available, minChips);
   assert.equal((await call(store, 'june', 'POST', '/api/holdem/rooms/join', { code: 'ZZZZ' })).status, 404);
 
   const joined = await call(store, 'min', 'POST', '/api/holdem/rooms/join', { code }, 'k-join-min');

@@ -23,8 +23,15 @@ export class VegasFloor extends DurableObject {
     this.state = null;
   }
 
-  async read() {
-    if (this.state) return this.state;
+  // Requests arriving together before the floor is in memory share one read of storage, so they
+  // all hold the same object and no change is made to a copy that is then replaced.
+  read() {
+    if (this.state) return Promise.resolve(this.state);
+    this.reading ??= this.readStorage().finally(() => { this.reading = null; });
+    return this.reading;
+  }
+
+  async readStorage() {
     const count = await this.ctx.storage.get('state:n');
     if (!count) {
       const state = defaultState();

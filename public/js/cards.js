@@ -82,8 +82,10 @@ export async function flipCard(node, text, { duration = 360, squeeze = false } =
         { transform: 'rotateY(0deg) scale(1)' }
       ]
     : [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(90deg) scale(1.08)', offset: 0.5 }, { transform: 'rotateY(0deg)' }];
+  node.classList.add('is-turning');
   await animate(inner, frames, { duration: squeeze ? duration * 2.4 : duration, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'none' });
   node.classList.add('is-faceup');
+  node.classList.remove('is-turning');
 }
 
 // Deal one card from the shoe into `hand`. Face-down cards stay hidden until flipped.

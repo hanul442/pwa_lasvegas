@@ -47,3 +47,17 @@ test('ranking order is deterministic on ties', () => {
   const rows = buildRankingSnapshot(state).wealth.filter(row => ['hanseo','min'].includes(row.id));
   assert.deepEqual(rows.map(row => row.nickname), ['HANSEO','MIN']);
 });
+
+test('each bet answers with the top 50 of every board plus the player\'s own row, once', async () => {
+  const { rankingsFor } = await import('../lib/rankings.mjs');
+  const state = defaultState();
+  const base = state.users.hanseo;
+  for (let i = 0; i < 80; i++) state.users[`p${i}`] = { ...structuredClone(base), id: `p${i}`, nickname: `p${i}`, account: { ...structuredClone(base.account), available: 1e12 + i } };
+  state.users.hanseo.account.available = 0;
+  const view = rankingsFor(buildRankingSnapshot(state), 'hanseo');
+  assert.equal(view.wealth, undefined);
+  assert.equal(view.allTime.wealth.length, 51);
+  const me = view.allTime.wealth.at(-1);
+  assert.equal(me.id, 'hanseo');
+  assert.equal(me.rank, buildRankingSnapshot(state).wealth.find(r => r.id === 'hanseo').rank);
+});

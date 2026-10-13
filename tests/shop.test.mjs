@@ -122,7 +122,7 @@ test('debt you could pay by selling luxury blocks bankruptcy, and filing reposse
   assert.equal(bankruptcyStatus(v).eligible, true, '3.5억 back for the watch cannot cover 5억 of debt');
   fileBankruptcy(state, v);
   assert.deepEqual(v.luxury, []);
-  assert.deepEqual(state.ledger.at(-1).metadata.repossessed, ['watch-tourbillon']);
+  assert.deepEqual(state.ledger.find(tx => tx.userId === v.id && tx.type === 'DEBT_DISCHARGED').metadata.repossessed, ['watch-tourbillon']);
   verifyLedger(state);
 });
 

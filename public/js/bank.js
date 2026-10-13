@@ -167,16 +167,19 @@ function bankruptcySheet(state, onChanged) {
     title: `빚 ${won(bank.debt)}을 없앨까요?`,
     danger: true,
     build(body, setGo) {
+      const welfare = state.engagement?.support?.welfare;
       body.innerHTML = `<ul class="bank-terms-list">
         <li>모든 대출이 사라져요.</li>
         <li>지갑에 남은 ${won(state.user.account.available)}은 압류돼요.</li>
         <li>신용이 10등급(0점)으로 떨어지고, 3일 동안 1·2·3금융권을 쓸 수 없어요. 사채는 빌려줘요.</li>
-        <li>파산은 7일에 한 번만 신청할 수 있어요.</li></ul>`;
+        <li>파산은 7일에 한 번만 신청할 수 있어요.</li>
+        ${welfare && !welfare.claimed ? `<li>파산하면 구제금융 ${won(welfare.amount)}이 바로 들어와요 (하루 ${welfare.perDay}번까지).</li>` : ''}</ul>`;
       setGo({ text: '파산 신청하기' });
     },
-    async confirm() {
+    async confirm(go) {
       const out = await api.bankruptcy();
       sound.lose?.();
+      if (out.result?.bailout) await chipsToWallet(go, out.result.bailout);
       onChanged(out.state);
     }
   });

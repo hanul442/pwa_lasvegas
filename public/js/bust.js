@@ -44,6 +44,7 @@ export function bustMoment(bust, nickname) {
       <strong class="bigwin-amount bust-amount">-<span data-amount>0</span> <small>원</small></strong>
       <p class="bust-note">${gameName(bust.game) || '테이블'}에서 전 재산을 날렸어요.${w ? ` ${w}이에요.` : ''}</p>
       <p class="bust-roast">“${roastFor(bust.id)}”</p>
+      ${bust.bailout ? `<p class="bust-bailout">구제금융 <b>${formatCH(bust.bailout)}원</b>이 바로 들어왔어요.</p>` : ''}
       <div class="bigwin-actions">
         <button type="button" class="pill-button pill-button--solid" data-share>동네방네 자랑하기</button>
         <button type="button" class="pill-button" data-close>다시 일어서기</button>

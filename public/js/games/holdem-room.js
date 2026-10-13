@@ -339,7 +339,7 @@ export function createFriends(t, pk, bar, hooks) {
     const people = view.players.length;
     let line = '';
     if (!view.started) line = view.isHost ? `친구에게 코드 ${view.code}를 알려 주세요 · ${people}명 앉음` : `방장이 딜을 시작하길 기다리는 중 · ${people}명 앉음`;
-    else if (view.waiting) line = '다음 핸드부터 앉아요';
+    else if (view.waiting) line = '다음 핸드부터 AI 자리에 앉아요';
     pk.hintLine.hidden = !line;
     pk.hintLine.textContent = line;
   }

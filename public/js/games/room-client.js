@@ -292,7 +292,7 @@ export function createRoomClient(t, game, hooks) {
     const people = v.players.length;
     let line = '';
     if (!v.started) line = v.isHost ? `코드 ${v.code}를 친구에게 알려 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
-    else if (v.waiting) line = '다음 판부터 같이 해요';
+    else if (v.waiting) line = '다음 판부터 AI 자리에 앉아요';
     else if (v.round?.status === 'SETTLED') line = '다음 판을 곧 돌려요';
     statusEl.textContent = line;
     clearInterval(clockTimer);

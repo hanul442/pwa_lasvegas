@@ -155,6 +155,18 @@ test('the room is drawn from each viewer\'s own seat, and other hands stay hidde
   const late = roomView(room, 'june', {}, w.now);
   assert.equal(late.waiting, true);
   assert.equal(late.round, null);
+  // From the next deal they take the AI's seat.
+  assert.equal(room.round.seats.filter(s => s.kind === 'ai').length, 1);
+  for (let guard = 0; room.handNo === 1 && guard < 500; guard++) {
+    const actor = room.round.status === 'PLAYING' ? room.round.seats[room.round.turn] : null;
+    Object.values(room.players).forEach(p => { p.missed = 0; }); // run clocks out without standing anyone up
+    w.advance(actor?.kind === 'human' ? TURN_MS : NEXT_HAND_MS);
+    tick(state, room, w.ctx());
+  }
+  assert.equal(room.handNo, 2);
+  assert.ok(room.round.seats.some(s => s.userId === 'june'));
+  assert.equal(room.round.seats.filter(s => s.kind === 'ai').length, 0, 'the AI gave up its seat');
+  assert.equal(roomView(room, 'june', {}, w.now).playing, true);
 });
 
 test('a clock that runs out plays a free move; too many in a row and the table stands you up', () => {

@@ -275,9 +275,12 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     t.lock();
     lockMode(true);
     clearStrikes();
+    // The spin goes to the server while the AI players drop their last chips, not after.
+    const request = api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning', ev?.id, key);
+    request.catch(() => {});
     await crowd.close();
     let res;
-    try { res = await api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning', ev?.id, key); }
+    try { res = await request; }
     catch (e) { lockMode(false); t.roundFailed(e, spin); return; }
     t.roundDone();
     t.setServerState(res.state);

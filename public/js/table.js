@@ -79,8 +79,8 @@ export class Table {
       <div class="table-controls">
         <div class="bet-readout"><span>베팅</span><strong data-bet>0</strong><small data-hint></small></div>
         <div class="bet-tools" role="group" aria-label="베팅 조절">
-          <button class="bet-tool" type="button" data-tool="undo" aria-label="마지막 칩 되돌리기">되돌리기</button>
-          <button class="bet-tool" type="button" data-tool="half" aria-label="베팅 절반으로">½</button>
+          <button class="bet-tool bet-step" type="button" data-tool="less" aria-label="베팅 한 단계 줄이기"><span aria-hidden="true">−</span></button>
+          <button class="bet-tool bet-step" type="button" data-tool="more" aria-label="베팅 한 단계 늘리기"><span aria-hidden="true">+</span></button>
           <button class="bet-tool" type="button" data-tool="double" aria-label="베팅 두 배로">×2</button>
           <button class="bet-tool" type="button" data-tool="max" aria-label="최대 베팅">최대</button>
         </div>
@@ -109,8 +109,9 @@ export class Table {
       name.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSwitch(); } });
     }
     this.tools = root.querySelectorAll('[data-tool]');
-    root.querySelector('[data-tool="undo"]').addEventListener('click', () => this.undo());
-    root.querySelector('[data-tool="half"]').addEventListener('click', () => this.half());
+    // − and + move the bet one table minimum at a time; holding either keeps stepping.
+    this.holdStep(root.querySelector('[data-tool="less"]'), () => this.step(-1));
+    this.holdStep(root.querySelector('[data-tool="more"]'), () => this.step(1));
     root.querySelector('[data-tool="double"]').addEventListener('click', () => this.double());
     root.querySelector('[data-tool="max"]').addEventListener('click', () => this.max());
     this.renderTray();
@@ -338,32 +339,6 @@ export class Table {
   }
 
   // ---------- fine bet adjustments ----------
-  async undo() {
-    if (this.locked || this.busy || !this.history.length) return;
-    const zoneId = this.history.pop();
-    this.chipsOf(zoneId).pop();
-    const chip = this.stackOf(zoneId)?.lastElementChild;
-    sound.chip();
-    if (chip) await flyTo(chip, this.tray.getBoundingClientRect(), { duration: 300, fade: true }).then(() => chip.remove());
-    if (!this.chipsOf(zoneId).length) this.emptyZone(zoneId);
-    this.refreshBet();
-  }
-
-  async half() {
-    if (this.locked || this.busy || !this.total) return;
-    const step = Math.min(...this.tier.chips);
-    let changed = false;
-    for (const zoneId of this.betZones) {
-      const now = this.zoneTotal(zoneId);
-      // Halving never drops a bet under the table minimum.
-      const target = Math.max(this.sides.has(zoneId) || !this.zoneMin ? step : Math.ceil(this.tier.min / step) * step, Math.floor(now / 2 / step) * step);
-      if (target < now) { this.restack(zoneId, target); changed = true; }
-    }
-    if (!changed) return;
-    sound.chips(2);
-    this.refreshBet();
-  }
-
   async double() {
     if (this.locked || this.busy || !this.total) return;
     const tray = this.tray.getBoundingClientRect();
@@ -387,6 +362,55 @@ export class Table {
     if (!added) return this.reject(blocked || '칩이 부족해요');
     if (blocked) this.toast(blocked);
     this.refreshBet();
+  }
+
+  // One step down or up on the bet in play (the focused zone, or the one bet on the felt), a
+  // table minimum at a time. Stepping down from the minimum takes the bet off; stepping up on an
+  // empty table puts the minimum down.
+  async step(dir) {
+    if (this.locked || this.busy) return false;
+    const zoneId = this.maxZone;
+    if (!zoneId) { this.hint('베팅할 곳을 탭하세요'); return false; }
+    const unit = Math.min(...this.tier.chips);
+    const floor = this.sides.has(zoneId) || !this.zoneMin ? unit : this.tier.min;
+    const now = this.zoneTotal(zoneId);
+    if (dir < 0) {
+      if (!now) return false;
+      const target = now - unit < floor ? 0 : Math.floor((now - unit) / unit) * unit;
+      sound.chip(); haptic(8);
+      if (target) this.restack(zoneId, target);
+      else {
+        const stack = this.stackOf(zoneId);
+        const tray = this.tray.getBoundingClientRect();
+        await Promise.all([...stack.children].map(c => flyTo(c, tray, { duration: 260, fade: true })));
+        this.emptyZone(zoneId);
+      }
+      this.refreshBet();
+      return Boolean(target);
+    }
+    const target = now ? Math.floor(now / unit) * unit + unit : Math.max(floor, unit);
+    if (target > this.tier.max) { this.reject(`${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`); return false; }
+    if (this.total - now + target > this.available) { this.reject('칩이 부족해요'); return false; }
+    this.setFocus(zoneId);
+    this.restack(zoneId, target);
+    sound.chip(); haptic(8);
+    const top = this.stackOf(zoneId).lastElementChild;
+    if (top) flyFrom(top, this.tray.getBoundingClientRect(), { duration: 260, lift: 30 });
+    this.refreshBet();
+    return true;
+  }
+
+  // Press and hold: one step at once, then a step every ~110ms after a short pause.
+  holdStep(button, run) {
+    let timer = null;
+    const stop = () => { clearTimeout(timer); timer = null; };
+    const tick = async (delay) => { if (await run() !== false && timer !== null) timer = setTimeout(() => tick(110), delay); else stop(); };
+    let pressed = false;
+    button.addEventListener('pointerdown', e => { if (button.disabled || e.button > 0) return; pressed = true; stop(); timer = 0; tick(380); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => button.addEventListener(t, stop));
+    // Keyboard and screen readers click without a pointer: one step per click.
+    button.addEventListener('click', () => { if (pressed) { pressed = false; return; } run(); });
+    button.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   // The zone the 최대 button fills: the focused zone, the bet already down, or the only zone.
@@ -477,7 +501,7 @@ export class Table {
     });
     if (!this.locked) this.setBalance(this.available - this.total, { roll: false });
     const empty = !this.total;
-    this.tools.forEach(b => { b.disabled = b.dataset.tool === 'max' ? !this.maxZone : empty; });
+    this.tools.forEach(b => { b.disabled = b.dataset.tool === 'max' || b.dataset.tool === 'more' ? !this.maxZone : b.dataset.tool === 'less' ? !(this.maxZone && this.zoneTotal(this.maxZone)) : empty; });
     this.onBetChange?.();
   }
 

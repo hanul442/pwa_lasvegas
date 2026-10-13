@@ -136,8 +136,10 @@ export async function flipHwatu(node, id, { duration = 340, squeeze = false } = 
   const frames = squeeze
     ? [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(165deg) rotateX(18deg) scale(1.06)', offset: 0.5 }, { transform: 'rotateY(90deg) scale(1.1)', offset: 0.75 }, { transform: 'rotateY(0deg)' }]
     : [{ transform: 'rotateY(180deg)' }, { transform: 'rotateY(90deg) scale(1.08)', offset: 0.5 }, { transform: 'rotateY(0deg)' }];
+  node.classList.add('is-turning');
   await animate(inner, frames, { duration: squeeze ? duration * 3 : duration, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'none' });
   node.classList.add('is-faceup');
+  node.classList.remove('is-turning');
 }
 
 // The slap: a played card lands with a little bounce, the way a hwatu card hits the blanket.

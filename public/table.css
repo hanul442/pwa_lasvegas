@@ -71,15 +71,21 @@
 
 /* ---------- cards ---------- */
 .hand{display:flex;justify-content:center;align-items:flex-end;min-height:calc(var(--card-w) * 1.4)}
-.card{position:relative;flex:none;width:var(--card-w);height:calc(var(--card-w) * 1.4);perspective:900px;font-size:calc(var(--card-w) * .2);rotate:var(--tilt,0deg);will-change:transform}
+.card{position:relative;flex:none;width:var(--card-w);height:calc(var(--card-w) * 1.4);perspective:900px;font-size:calc(var(--card-w) * .2);rotate:var(--tilt,0deg)}
 .hand .card+.card{margin-left:calc(var(--card-w) * -.6)}
 .card.is-sideways{rotate:90deg;margin-left:calc(var(--card-w) * -.25)!important;margin-right:calc(var(--card-w) * .2)}
-.card-inner{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(180deg)}
-.card.is-faceup .card-inner{transform:rotateY(0)}
-.card-face,.card-back{position:absolute;inset:0;border-radius:8%/5.7%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card-inner{position:absolute;inset:0}
+.card-face,.card-back{position:absolute;inset:0;border-radius:8%/5.7%}
+/* At rest a card is flat and only its showing side is drawn, so a full table isn't dozens of 3D
+   layers for the phone to composite. The two-sided 3D card exists only while it turns (cards.js). */
+.card-inner>.card-face,.card.is-faceup .card-inner>.card-back{visibility:hidden}
+.card.is-faceup .card-inner>.card-face{visibility:visible}
+.card.is-turning .card-inner{transform-style:preserve-3d;transform:rotateY(180deg)}
+.card.is-turning .card-inner>.card-face,.card.is-turning .card-inner>.card-back{visibility:visible;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card.is-turning .card-inner>.card-back{transform:rotateY(180deg)}
 .card-face{background:linear-gradient(170deg,#fffefb,#f6f1e7);color:#1a1714;overflow:hidden;box-shadow:inset 0 0 0 1px #0000001a,0 1px 1px #0004,0 8px 18px #0006}
 .card-face.is-red{color:#a3221d}
-.card-back{transform:rotateY(180deg);
+.card-back{
   background:repeating-linear-gradient(45deg,#ffffff10 0 1px,transparent 1px 5px),repeating-linear-gradient(-45deg,#ffffff10 0 1px,transparent 1px 5px),linear-gradient(160deg,#1e2126,#0a0b0d);
   box-shadow:inset 0 0 0 calc(var(--card-w) * .045) #f4f5f7,inset 0 0 0 calc(var(--card-w) * .052) #0a0b0d,inset 0 0 0 calc(var(--card-w) * .062) #ffffff40,0 1px 1px #0004,0 8px 18px #0006}
 .card-back::after{content:"V";position:absolute;left:50%;top:50%;width:1.9em;height:1.9em;transform:translate(-50%,-50%);display:grid;place-items:center;border-radius:50%;background:#0a0b0d;box-shadow:0 0 0 1px #ffffff55;color:#f4f5f7;font:700 1.05em var(--display);font-stretch:125%}

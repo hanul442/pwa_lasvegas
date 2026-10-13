@@ -578,8 +578,8 @@
 .pk-myhand{display:none}
 .pk-seat--hero .pk-myhand:not(:empty){display:block;order:-1;margin:1px 0 2px;padding:1px 9px;border-radius:999px;background:var(--white);color:var(--ink);font:700 12px/1.35 var(--sans);font-style:normal;white-space:nowrap}
 .pk-seat.is-turn .pk-plate{box-shadow:0 0 0 1.5px var(--white),0 8px 18px #0009}
-.pk-seat.is-thinking .pk-plate{animation:pk-think 1s ease-in-out infinite}
-@keyframes pk-think{50%{box-shadow:0 0 0 4px #f4f5f733,0 8px 18px #0009}}
+.pk-seat.is-thinking .pk-plate::after{content:"";position:absolute;inset:-4px;border-radius:15px;box-shadow:0 0 0 4px #f4f5f733;opacity:0;pointer-events:none;animation:pk-think 1s ease-in-out infinite}
+@keyframes pk-think{50%{opacity:1}}
 .pk-seat.is-folded{opacity:.42}
 .pk-seat.is-showing{opacity:1}
 .pk-seat.is-out{opacity:.25}
@@ -757,7 +757,7 @@
 }
 @media (prefers-reduced-motion:reduce){
   .pk-button,.pk-tag{transition:opacity .01ms}
-  .pk-seat.is-thinking .pk-plate{animation:none}
+  .pk-seat.is-thinking .pk-plate::after{animation:none}
 }
 /* Short desktop windows and tablets: with AI players at the table the felt runs out of height,
    so cards, boxes and seats scale with the window height and the boxes stay on the felt. */

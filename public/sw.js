@@ -1,5 +1,5 @@
 // Offline app shell. Game and chip API responses are never cached: the server stays authoritative.
-const CACHE = 'vegas-shell-v61';
+const CACHE = 'vegas-shell-v62';
 const SHELL = [
   './', 'index.html', 'styles.css', 'table.css', 'hwatu.css', 'app.js', 'icon.svg', 'logo.svg', 'manifest.webmanifest',
   'js/config.js', 'js/music.js', 'js/api.js', 'js/fx.js', 'js/cards.js', 'js/chips.js', 'js/table.js',
@@ -29,6 +29,15 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
+  // The dealer's recorded lines never change once cut: answer from the cache at once, so the first
+  // call-out at a table isn't waiting on a phone network.
+  if (url.pathname.includes('/voice/') && url.pathname.endsWith('.mp3')) {
+    event.respondWith(caches.match(event.request).then(hit => hit || fetch(event.request).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(event.request, copy)); }
+      return res;
+    })));
+    return;
+  }
   // Network first so new builds show up immediately; fall back to the cached shell offline.
   event.respondWith(
     fetch(event.request)

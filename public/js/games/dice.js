@@ -122,9 +122,12 @@ export async function mountDice(ctx, { event = null } = {}) {
     const target = zone.startsWith('T') ? Number(zone.slice(1)) : undefined;
     const key = t.roundKey();
     t.lock();
+    // The bet goes to the server while the AI players drop their last chips, not after.
+    const request = api.sicbo(t.total, t.tier.floor, betType, target, ev?.id, key);
+    request.catch(() => {});
     await crowd.close();
     let res;
-    try { res = await api.sicbo(t.total, t.tier.floor, betType, target, ev?.id, key); }
+    try { res = await request; }
     catch (e) { t.roundFailed(e, go); return; }
     t.roundDone();
     t.setServerState(res.state);

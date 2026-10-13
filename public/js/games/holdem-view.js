@@ -506,13 +506,14 @@ export function createActionBar(t, pk) {
     const step = pk.bb / 2;
     return value >= l.maxRaiseTo ? l.maxRaiseTo : Math.max(l.minRaiseTo, Math.min(l.maxRaiseTo, Math.round(value / step) * step));
   };
-  // Opening a pot before the flop sizes in big blinds; after that, or facing a raise, in pot fractions.
+  // Raise sizes the way a Korean table says them: 따당 (double the bet in front), then 쿼터 / 하프 /
+  // 풀 (a quarter, half or all of the pot after calling). Sizes that land on the same amount show once.
   function presetsFor(l) {
     const pot = f => l.currentBet + (l.pot + l.toCall) * f;
-    const list = bar.street() === 'PREFLOP' && l.currentBet <= pk.bb
-      ? [['2.5BB', 2.5 * pk.bb], ['3BB', 3 * pk.bb], ['4BB', 4 * pk.bb]]
-      : [['⅓ 팟', pot(1 / 3)], ['½ 팟', pot(0.5)], ['¾ 팟', pot(0.75)], ['팟', pot(1)]];
-    return [...list.map(([label, v]) => [label, clampRaise(l, v)]).filter(([, v]) => v < l.maxRaiseTo), ['올인', l.maxRaiseTo]];
+    const list = [...(l.toCall > 0 ? [['따당', 2 * l.currentBet]] : []), ['쿼터', pot(0.25)], ['하프', pot(0.5)], ['풀', pot(1)]];
+    const seen = new Set([l.maxRaiseTo]);
+    const sized = list.map(([label, v]) => [label, clampRaise(l, v)]).filter(([, v]) => !seen.has(v) && seen.add(v));
+    return [...sized, ['올인', l.maxRaiseTo]];
   }
   function paintPresets() {
     presetsEl.style.setProperty('--n', shown.length);

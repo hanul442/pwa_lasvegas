@@ -6,7 +6,8 @@ const SHELL = [
   'js/games/blackjack.js', 'js/games/baccarat.js', 'js/games/roulette.js', 'js/games/dice.js', 'js/games/holdem.js', 'js/games/holdem-view.js', 'js/games/holdem-room.js',
   'js/hwatu.js', 'js/guide.js', 'js/guides.js', 'js/games/matgo.js', 'js/games/gostop.js', 'js/games/seotda.js', 'js/games/room-client.js', 'js/games/seat-elsewhere.js',
   'js/settings.js', 'js/settings-panel.js', 'js/auth.js', 'js/admin.js', 'js/bj-strategy.js',
-  'lounge.css', 'js/lounge.js', 'js/hot.js', 'js/bigwin.js', 'js/social.js', 'js/games/slots.js', 'js/games/horses.js', 'horses.css', 'js/voice.js', 'crowd.css', 'js/npc.js', 'js/notify.js', 'js/news.js', 'js/bust.js', 'icon-192.png', 'js/install.js', 'js/bank.js', 'js/double-down.js', 'js/double-or-nothing.js', 'js/event-table.js', 'js/event-result.js', 'js/poker-hand.js', 'js/squeeze.js', 'apple-touch-icon.png', 'icon-512.png', 'js/shop.js', 'shop.css', 'js/table-nav.js', 'js/names.js', 'js/notice.js', 'js/ledger.js'
+  'lounge.css', 'js/lounge.js', 'js/hot.js', 'js/bigwin.js', 'js/social.js', 'js/games/slots.js', 'js/games/horses.js', 'horses.css', 'js/voice.js', 'crowd.css', 'js/npc.js', 'js/notify.js', 'js/news.js', 'js/bust.js', 'icon-192.png', 'js/install.js', 'js/bank.js', 'js/double-down.js', 'js/double-or-nothing.js', 'js/event-table.js', 'js/event-result.js', 'js/poker-hand.js', 'js/squeeze.js', 'apple-touch-icon.png', 'icon-512.png', 'js/shop.js', 'shop.css', 'js/table-nav.js', 'js/names.js', 'js/notice.js', 'js/ledger.js',
+  ...'blackjack roulette baccarat dice poker slots horses matgo gostop seotda royale tazza oceans rounders montecarlo casablanca godofgamblers whale'.split(' ').map(id => `art/${id}.svg`)
 ];
 
 self.addEventListener('install', event => {

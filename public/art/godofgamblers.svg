@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" width="480" height="360" role="img" aria-label="도신">
+<defs>
+  <radialGradient id="room" cx="50%" cy="-8%" r="95%"><stop offset="0" stop-color="#2a2826"/><stop offset=".45" stop-color="#121214"/><stop offset="1" stop-color="#050506"/></radialGradient>
+  <radialGradient id="felt" cx="50%" cy="34%" r="70%"><stop offset="0" stop-color="#8a2635"/><stop offset=".55" stop-color="#4f1320"/><stop offset="1" stop-color="#1c050a"/></radialGradient>
+  <linearGradient id="rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a3e"/><stop offset=".18" stop-color="#151517"/><stop offset="1" stop-color="#060607"/></linearGradient>
+  <radialGradient id="pool" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6e6" stop-opacity=".2"/><stop offset=".6" stop-color="#fff6e6" stop-opacity=".05"/><stop offset="1" stop-color="#fff6e6" stop-opacity="0"/></radialGradient>
+  <radialGradient id="vig" cx="50%" cy="45%" r="75%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".72"/></radialGradient>
+  <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e5dc"/></linearGradient>
+  <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f4f2"/><stop offset=".35" stop-color="#8d8f93"/><stop offset=".55" stop-color="#e2e3e4"/><stop offset="1" stop-color="#4a4c50"/></linearGradient>
+  <filter id="sh" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".55"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="blur3"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .07"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+</defs>
+<rect width="480" height="360" fill="url(#room)"/>
+<g filter="url(#blur3)"><circle cx="119.07" cy="52.13" r="21.43" fill="#ffd2c4" opacity="0.05"/><circle cx="6.04" cy="36.62" r="18.42" fill="#ffd2c4" opacity="0.05"/><circle cx="128.08" cy="95.69" r="20.48" fill="#ffd2c4" opacity="0.07"/><circle cx="461.47" cy="16.96" r="16.74" fill="#ffd2c4" opacity="0.07"/><circle cx="4.73" cy="95.72" r="8.2" fill="#ffd2c4" opacity="0.06"/><circle cx="245.29" cy="20.76" r="16.58" fill="#ffd2c4" opacity="0.13"/><circle cx="306.08" cy="29.48" r="7.91" fill="#ffd2c4" opacity="0.06"/><circle cx="92.31" cy="8.29" r="18.72" fill="#ffd2c4" opacity="0.15"/><circle cx="398.05" cy="34.43" r="20.98" fill="#ffd2c4" opacity="0.05"/></g><ellipse cx="240" cy="664" rx="520" ry="560" fill="url(#rail)"/>
+  <ellipse cx="240" cy="664" rx="519" ry="559" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="1.2"/>
+  <ellipse cx="240" cy="686" rx="500" ry="558" fill="url(#felt)"/>
+  <ellipse cx="240" cy="686" rx="500" ry="558" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="3"/>
+  <ellipse cx="240" cy="220" rx="220" ry="120" fill="url(#pool)"/>
+  <ellipse cx="193.25" cy="262.52" rx="50.4" ry="24" fill="#000" opacity=".55" filter="url(#blur3)"/>
+    <polygon points="146.15,213.47 146.15,262.43 190,280 190,231.04" fill="#9c1225"/>
+      <g transform="matrix(0 48.96 43.85 17.57 146.15 213.47)"><circle cx="0.25" cy="0.25" r=".095" fill="#fbf7ee"/><circle cx="0.5" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.75" cy="0.75" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="146.15,213.47 146.15,262.43 190,280 190,231.04" fill="#000" opacity="0"/>
+    <polygon points="190,231.04 228.83,205.65 228.83,254.61 190,280" fill="#b8162c"/>
+      <g transform="matrix(38.83 -25.39 0 48.96 190 231.04)"><circle cx="0.25" cy="0.25" r=".095" fill="#fbf7ee"/><circle cx="0.75" cy="0.25" r=".095" fill="#fbf7ee"/><circle cx="0.5" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.25" cy="0.75" r=".095" fill="#fbf7ee"/><circle cx="0.75" cy="0.75" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="190,231.04 228.83,205.65 228.83,254.61 190,280" fill="#000" opacity="0"/>
+    <polygon points="146.15,213.47 184.98,188.08 228.83,205.65 190,231.04" fill="#d4243a"/>
+      <g transform="matrix(38.83 -25.39 43.85 17.57 146.15 213.47)"><circle cx="0.27" cy="0.23" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.23" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.77" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.77" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="146.15,213.47 184.98,188.08 228.83,205.65 190,231.04" fill="#000" opacity="0"/>
+    <polyline points="146.15,213.47 190,231.04 228.83,205.65" fill="none" stroke="#ff8a96" stroke-opacity=".7" stroke-width="1.2" stroke-linejoin="round"/>
+    <polyline points="190,231.04 190,280" fill="none" stroke="#ff8a96" stroke-opacity=".45" stroke-width="1"/>
+    <polygon points="146.15,213.47 184.98,188.08 228.83,205.65 190,231.04" fill="#fff" opacity=".07"/><ellipse cx="275.1" cy="250.61" rx="50.4" ry="24" fill="#000" opacity=".55" filter="url(#blur3)"/>
+    <polygon points="228.18,192.44 228.18,241.4 266,268 266,219.04" fill="#9c1225"/>
+      <g transform="matrix(0 48.96 37.82 26.6 228.18 192.44)"><circle cx="0.27" cy="0.27" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.73" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="228.18,192.44 228.18,241.4 266,268 266,219.04" fill="#000" opacity="0"/>
+    <polygon points="266,219.04 310.5,202.86 310.5,251.82 266,268" fill="#b8162c"/>
+      <g transform="matrix(44.5 -16.18 0 48.96 266 219.04)"><circle cx="0.27" cy="0.27" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.27" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.73" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.73" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="266,219.04 310.5,202.86 310.5,251.82 266,268" fill="#000" opacity="0"/>
+    <polygon points="228.18,192.44 272.68,176.26 310.5,202.86 266,219.04" fill="#d4243a"/>
+      <g transform="matrix(44.5 -16.18 37.82 26.6 228.18 192.44)"><circle cx="0.27" cy="0.23" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.23" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.77" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.77" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="228.18,192.44 272.68,176.26 310.5,202.86 266,219.04" fill="#000" opacity="0"/>
+    <polyline points="228.18,192.44 266,219.04 310.5,202.86" fill="none" stroke="#ff8a96" stroke-opacity=".7" stroke-width="1.2" stroke-linejoin="round"/>
+    <polyline points="266,219.04 266,268" fill="none" stroke="#ff8a96" stroke-opacity=".45" stroke-width="1"/>
+    <polygon points="228.18,192.44 272.68,176.26 310.5,202.86 266,219.04" fill="#fff" opacity=".07"/><ellipse cx="237.76" cy="308.4" rx="50.4" ry="24" fill="#000" opacity=".55" filter="url(#blur3)"/>
+    <polygon points="190.43,255.44 190.43,304.4 232,326 232,277.04" fill="#9c1225"/>
+      <g transform="matrix(0 48.96 41.57 21.6 190.43 255.44)"><circle cx="0.25" cy="0.25" r=".095" fill="#fbf7ee"/><circle cx="0.75" cy="0.25" r=".095" fill="#fbf7ee"/><circle cx="0.5" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.25" cy="0.75" r=".095" fill="#fbf7ee"/><circle cx="0.75" cy="0.75" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="190.43,255.44 190.43,304.4 232,326 232,277.04" fill="#000" opacity="0"/>
+    <polygon points="232,277.04 273.57,255.44 273.57,304.4 232,326" fill="#b8162c"/>
+      <g transform="matrix(41.57 -21.6 0 48.96 232 277.04)"><circle cx="0.25" cy="0.25" r=".095" fill="#fbf7ee"/><circle cx="0.5" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.75" cy="0.75" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="232,277.04 273.57,255.44 273.57,304.4 232,326" fill="#000" opacity="0"/>
+    <polygon points="190.43,255.44 232,233.84 273.57,255.44 232,277.04" fill="#d4243a"/>
+      <g transform="matrix(41.57 -21.6 41.57 21.6 190.43 255.44)"><circle cx="0.27" cy="0.23" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.23" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.5" r=".095" fill="#fbf7ee"/><circle cx="0.27" cy="0.77" r=".095" fill="#fbf7ee"/><circle cx="0.73" cy="0.77" r=".095" fill="#fbf7ee"/></g>
+      <polygon points="190.43,255.44 232,233.84 273.57,255.44 232,277.04" fill="#000" opacity="0"/>
+    <polyline points="190.43,255.44 232,277.04 273.57,255.44" fill="none" stroke="#ff8a96" stroke-opacity=".7" stroke-width="1.2" stroke-linejoin="round"/>
+    <polyline points="232,277.04 232,326" fill="none" stroke="#ff8a96" stroke-opacity=".45" stroke-width="1"/>
+    <polygon points="190.43,255.44 232,233.84 273.57,255.44 232,277.04" fill="#fff" opacity=".07"/>
+  <linearGradient id="dm1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".2" stop-color="#fff" stop-opacity=".04"/><stop offset=".8" stop-color="#fff" stop-opacity=".02"/><stop offset="1" stop-color="#fff" stop-opacity=".16"/></linearGradient>
+  <path d="M90 180C90 7.5 390 7.5 390 180A150 45 0 0 1 90 180Z" fill="url(#dm1)" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/>
+  <ellipse cx="240" cy="180" rx="150" ry="45" fill="none" stroke="url(#chrome)" stroke-width="3"/>
+  <path d="M135 127.5C141 78 180 57 222 51" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="240" cy="51" rx="15" ry="6" fill="url(#chrome)"/>
+  <rect x="234" y="33" width="12" height="18" fill="url(#chrome)"/>
+  <circle cx="240" cy="30" r="10.5" fill="url(#chrome)"/>
+  <g transform="translate(84 330) rotate(0)"><ellipse cx="0" cy="7.7" rx="57.04" ry="19.25" fill="#000" opacity=".5" filter="url(#blur3)"/><rect x="-46" y="5.93" width="92" height="6.9" fill="#9a8f7e"/><rect x="-46" y="5.93" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-0.97" width="92" height="6.9" fill="#9a8f7e"/><rect x="-46" y="-0.97" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-7.87" width="92" height="6.9" fill="#9a8f7e"/><rect x="-46" y="-7.87" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-14.77" width="92" height="6.9" fill="#9a8f7e"/><rect x="-46" y="-14.77" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-21.67" width="92" height="6.9" fill="#9a8f7e"/><rect x="-46" y="-21.67" width="92" height="1.72" fill="#fff" opacity=".18"/><g transform="translate(0 -34.5) scale(1 0.45)">
+    <rect x="-46" y="-28.52" width="92" height="57.04" rx="5.52" fill="#ece6d9"/>
+    <rect x="-38.64" y="-21.1" width="77.28" height="42.21" rx="2.76" fill="none" stroke="#3a332b" stroke-opacity=".4" stroke-width="1.2"/>
+    <rect x="-46" y="-28.52" width="92" height="23.96" rx="5.52" fill="#fff" opacity=".14"/>
+  </g><text x="0" y="-31.5" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="15.64" font-weight="700" fill="#3a332b" fill-opacity=".8" text-anchor="middle" transform="translate(0 -34.5) scale(1 0.45) translate(0 34.5)">1억</text></g><g transform="translate(402 330) rotate(-5)"><ellipse cx="0" cy="7.7" rx="57.04" ry="19.25" fill="#000" opacity=".5" filter="url(#blur3)"/><rect x="-46" y="5.93" width="92" height="6.9" fill="#0c0b0b"/><rect x="-46" y="5.93" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-0.97" width="92" height="6.9" fill="#0c0b0b"/><rect x="-46" y="-0.97" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-7.87" width="92" height="6.9" fill="#0c0b0b"/><rect x="-46" y="-7.87" width="92" height="1.72" fill="#fff" opacity=".18"/><rect x="-46" y="-14.77" width="92" height="6.9" fill="#0c0b0b"/><rect x="-46" y="-14.77" width="92" height="1.72" fill="#fff" opacity=".18"/><g transform="translate(0 -27.6) scale(1 0.45)">
+    <rect x="-46" y="-28.52" width="92" height="57.04" rx="5.52" fill="#1e1c1b"/>
+    <rect x="-38.64" y="-21.1" width="77.28" height="42.21" rx="2.76" fill="none" stroke="#e3d3b0" stroke-opacity=".4" stroke-width="1.2"/>
+    <rect x="-46" y="-28.52" width="92" height="23.96" rx="5.52" fill="#fff" opacity=".14"/>
+  </g><text x="0" y="-24.6" font-family="'Archivo','Helvetica Neue',Arial,sans-serif" font-size="15.64" font-weight="700" fill="#e3d3b0" fill-opacity=".8" text-anchor="middle" transform="translate(0 -27.6) scale(1 0.45) translate(0 27.6)">10억</text></g>
+<rect width="480" height="360" fill="url(#vig)"/><rect width="480" height="360" filter="url(#grain)"/>
+</svg>

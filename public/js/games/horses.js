@@ -189,6 +189,34 @@ export async function mountHorses(ctx) {
     // horses, far lane first
     const s = Math.min(1.25, Math.max(0.5, laneH * 1.5 / 40));
     view.horses.forEach((h, i) => drawHorse(h, X(h.d), top + 4 + laneH * (i + 1) - 2, s, laneH >= 24));
+    // A runner the camera has left behind (or that has run off the right) gets a tag at that edge
+    // of its lane: its number in its silks and how far it is off the lead.
+    const lead = Math.max(...view.horses.map(h => h.d));
+    view.horses.forEach((h, i) => {
+      const nose = X(h.d);
+      const behind = nose < 18, ahead = nose - 56 * s > W;
+      if (!behind && !ahead) return;
+      const mine = h.gate === view.mine;
+      const ph = Math.max(14, Math.min(20, laneH - 4)), cy = top + 4 + laneH * i + laneH / 2;
+      const gap = Math.round(lead - h.d);
+      const text = behind && gap > 0 ? `-${gap}m` : '';
+      g.font = `700 ${ph >= 18 ? 11 : 10}px Archivo, "Noto Sans KR", sans-serif`;
+      const tw = text ? g.measureText(text).width + 8 : 0;
+      const w = ph + 10 + tw, x0 = behind ? 4 : W - 4 - w;
+      // the pill, pointing off the edge the horse is beyond
+      g.fillStyle = '#0a0b0de6';
+      g.beginPath();
+      if (behind) { g.moveTo(x0, cy); g.lineTo(x0 + 7, cy - ph / 2); g.lineTo(x0 + w - ph / 2, cy - ph / 2); g.arc(x0 + w - ph / 2, cy, ph / 2, -Math.PI / 2, Math.PI / 2); g.lineTo(x0 + 7, cy + ph / 2); }
+      else { g.moveTo(x0 + w, cy); g.lineTo(x0 + w - 7, cy - ph / 2); g.lineTo(x0 + ph / 2, cy - ph / 2); g.arc(x0 + ph / 2, cy, ph / 2, -Math.PI / 2, Math.PI / 2, true); g.lineTo(x0 + w - 7, cy + ph / 2); }
+      g.closePath(); g.fill();
+      g.lineWidth = mine ? 2 : 1; g.strokeStyle = mine ? '#f4f5f7' : '#f4f5f744'; g.stroke();
+      // the gate number on its silk
+      const dot = behind ? x0 + 6 + (ph - 4) / 2 : x0 + ph / 2 + 1;
+      g.beginPath(); g.arc(dot, cy, (ph - 6) / 2, 0, 7); g.fillStyle = h.silk; g.fill();
+      g.fillStyle = ink(h.silk); g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(String(h.gate), dot, cy + 0.5);
+      if (text) { g.fillStyle = '#f4f5f7'; g.textAlign = 'left'; g.fillText(text, x0 + 6 + ph - 2, cy + 0.5); }
+    });
   }
 
   function drawHorse(h, noseX, groundY, s, tags) {

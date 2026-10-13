@@ -272,7 +272,10 @@ test('맞고 API locks a 10-point deposit and settles back to a clean ledger', a
   assert.equal(res.data.round.status, 'SETTLED');
   const account = res.data.state.user.account;
   assert.equal(account.locked, 0);
-  assert.equal(account.available, start + res.data.netPnl);
+  // A loss that empties the wallet pays the day's 구제금융 straight back in, so a bust lands on that.
+  const after = start + res.data.netPnl;
+  const bailout = res.data.state.user.bankruptcies?.[0]?.roundId === res.data.round.id ? res.data.state.user.bankruptcies[0].bailout || 0 : 0;
+  assert.equal(account.available, after + bailout);
 });
 
 test('섯다 API charges each raise and pays the pot', async () => {

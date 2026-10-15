@@ -4,7 +4,7 @@ import { defaultState, newUser, netWorth } from '../lib/state.mjs';
 import { LUXURY, COSMETICS, SELL_RATE, buyItem, sellItem, equipItem, shopView, itemById } from '../lib/shop.mjs';
 import { addLedger, floorsFor } from '../lib/economy.mjs';
 import { borrow, bankruptcyStatus, fileBankruptcy } from '../lib/bank.mjs';
-import { supportStatus } from '../lib/engagement.mjs';
+import { supportStatus, claimSupport } from '../lib/engagement.mjs';
 import { newsFor } from '../lib/news.mjs';
 import { buildRankingSnapshot } from '../lib/rankings.mjs';
 import { handleApi } from '../lib/api.mjs';
@@ -114,7 +114,7 @@ test('debt you could pay by selling luxury blocks bankruptcy, and filing reposse
   buyItem(state, u, 'car-gt');
   assert.equal(u.account.available, 0);
   assert.match(bankruptcyStatus(u).reason, /사치품/, '5.6억 back for the car covers 5억 of debt');
-  assert.equal(supportStatus(u).welfare.qualified, false, 'no bailout while holding a car to sell');
+  assert.equal(supportStatus(u).welfare.qualified, true, 'out of chips is enough for a bailout, car or not');
 
   const v = newUser(state, 'c', 'C');
   borrow(state, v, { lender: 'shark', amount: 5 * 억, days: 1 });
@@ -226,5 +226,17 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   assert.equal(sell.data.state.shop.assets, 0);
   const missing = await call('POST', '/api/shop/sell', { itemId: 'nope' }, 'sell-key-0000002');
   assert.equal(missing.status, 404);
+  verifyLedger(state);
+});
+
+test('out of chips pays the bailout whatever else the player owns (한서)', () => {
+  const state = defaultState(), u = newUser(state, 'rich', 'RICH');
+  addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20 * 억, referenceType: 'TEST' });
+  buyItem(state, u, 'car-gt');
+  buyItem(state, u, 'felt-forest');
+  assert.equal(supportStatus(u).welfare.qualified, false, 'still has chips');
+  addLedger(state, u, { type: 'ADMIN_DEDUCT', amount: -u.account.available, referenceType: 'TEST' });
+  assert.equal(supportStatus(u).welfare.qualified, true, 'a car and a felt do not block it');
+  assert.equal(claimSupport(state, u, 'welfare').amount, 100 * 억);
   verifyLedger(state);
 });

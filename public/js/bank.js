@@ -285,7 +285,7 @@ function payBlock(state, onChanged) {
   const claim = kind => btn => claimSupport(kind, btn, onChanged);
   row('정부 지원금', '일주일에 한 번 · 월요일에 새로', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
   const left = sup.welfare.perDay - sup.welfare.taken;
-  row('구제금융', `순자산 ${won(sup.welfare.below)} 미만일 때 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
+  row('구제금융', `칩 ${won(sup.welfare.below)} 미만일 때 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
   box.append(list);
   return box;
 }

@@ -3,6 +3,7 @@ import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, f
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
 import { errorMessage, newKey } from './api.js';
+import { maybeBust } from './bust.js';
 
 // The tallest stack drawn under a tray chip; past it a count says how many there are.
 const STACK_CAP = 10;
@@ -606,10 +607,14 @@ export class Table {
     this.locked = false;
     this.root.classList.remove('is-playing');
     this.refreshBet();
+    maybeBust(this.serverState);
   }
 
   setServerState(state) {
     if (state?.user?.account) this.available = state.user.account.available;
+    // A bust or a 구제금융 shows once the round on the felt is over, not while its cards are dealt.
+    this.serverState = state;
+    if (!this.locked) maybeBust(state);
     this.watchHot(state);
   }
 

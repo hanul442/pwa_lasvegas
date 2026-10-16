@@ -17,21 +17,35 @@ const ROASTS = [
 const roastFor = id => ROASTS[[...String(id)].reduce((n, c) => n + c.charCodeAt(0), 0) % ROASTS.length];
 
 const seenKey = () => `vegas:bust-seen:${playerId()}`;
+const bailSeenKey = () => `vegas:bailout-seen:${playerId()}`;
+const RECENT_MS = 60 * 60_000;
+
+// True once per id: marks it seen so a later state (the lobby after the table) doesn't show it again.
+function firstSight(key, item) {
+  if (!item?.id || Date.now() - Date.parse(item.createdAt) > RECENT_MS) return false;
+  try { if (localStorage.getItem(key) === item.id) return false; localStorage.setItem(key, item.id); } catch {}
+  return true;
+}
 
 function worth(bust) {
   const c = bust.comparisons?.[0];
   return c ? `${c.name} ${c.count}개 값` : '';
 }
 
-// Shows the moment once per bust, right after the hand that caused it.
+// Shows the moment once per bust, right after the hand that caused it, then the 구제금융 that
+// refilled the wallet (한서: money that appears by itself should say so). Tables call this with
+// every server state too, so it shows at the table rather than on the way out.
 export function maybeBust(state) {
-  const bust = state?.latestBust;
-  if (!bust?.id || Date.now() - Date.parse(bust.createdAt) > 60 * 60_000) return;
-  try { if (localStorage.getItem(seenKey()) === bust.id) return; localStorage.setItem(seenKey(), bust.id); } catch {}
-  setTimeout(() => bustMoment(bust, state.user?.nickname || ''), ms(1600));
+  const bust = state?.latestBust, bail = state?.latestBailout;
+  const showBust = firstSight(seenKey(), bust), showBail = firstSight(bailSeenKey(), bail);
+  if (!showBust && !showBail) return;
+  setTimeout(() => {
+    if (showBust) bustMoment(bust, state.user?.nickname || '', showBail ? () => bailoutMoment(bail) : null);
+    else bailoutMoment(bail);
+  }, ms(1600));
 }
 
-export function bustMoment(bust, nickname) {
+export function bustMoment(bust, nickname, then = null) {
   const node = el('div', 'bigwin bust');
   node.setAttribute('role', 'dialog');
   node.setAttribute('aria-label', `파산 -${formatFull(bust.sessionLoss)}원`);
@@ -44,7 +58,6 @@ export function bustMoment(bust, nickname) {
       <strong class="bigwin-amount bust-amount">-<span data-amount>0</span> <small>원</small></strong>
       <p class="bust-note">${gameName(bust.game) || '테이블'}에서 전 재산을 날렸어요.${w ? ` ${w}이에요.` : ''}</p>
       <p class="bust-roast">“${roastFor(bust.id)}”</p>
-      ${bust.bailout ? `<p class="bust-bailout">구제금융 <b>${formatCH(bust.bailout)}원</b>이 바로 들어왔어요.</p>` : ''}
       <div class="bigwin-actions">
         <button type="button" class="pill-button pill-button--solid" data-share>동네방네 자랑하기</button>
         <button type="button" class="pill-button" data-close>다시 일어서기</button>
@@ -58,7 +71,7 @@ export function bustMoment(bust, nickname) {
   const close = () => {
     removeEventListener('keydown', onKey, true);
     node.classList.remove('is-open');
-    setTimeout(() => node.remove(), ms(300));
+    setTimeout(() => { node.remove(); then?.(); }, ms(300));
   };
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
   addEventListener('keydown', onKey, true);
@@ -69,6 +82,39 @@ export function bustMoment(bust, nickname) {
     e.currentTarget.disabled = false;
   });
   node.querySelector('[data-share]').focus({ preventScroll: true });
+}
+
+// The bank refilled an empty wallet: what came in, and how many of today's are left.
+export function bailoutMoment(bail) {
+  const node = el('div', 'bigwin bailout');
+  node.setAttribute('role', 'dialog');
+  node.setAttribute('aria-label', `구제금융 +${formatFull(bail.amount)}원`);
+  const left = bail.perDay ? Math.max(0, bail.perDay - bail.nth) : null;
+  node.innerHTML = `
+    <div class="bigwin-inner">
+      <span class="bailout-mark" aria-hidden="true"></span>
+      <p class="bigwin-sub">BAILOUT</p>
+      <h2 class="bigwin-title">구제금융</h2>
+      <strong class="bigwin-amount">+<span data-amount>0</span> <small>원</small></strong>
+      <p class="bust-note">칩이 바닥나서 은행이 바로 채워 줬어요.${left === null ? '' : left ? ` 오늘 ${left}번 더 받을 수 있어요.` : ' 오늘은 이게 마지막이에요.'}</p>
+      <div class="bigwin-actions">
+        <button type="button" class="pill-button pill-button--solid" data-close>다시 테이블로</button>
+      </div>
+    </div>`;
+  document.body.append(node);
+  requestAnimationFrame(() => node.classList.add('is-open'));
+  sound.chips?.(6);
+  haptic([40, 40, 40]);
+  rollNumber(node.querySelector('[data-amount]'), 0, bail.amount, { duration: 1000, format: formatCH });
+  const close = () => {
+    removeEventListener('keydown', onKey, true);
+    node.classList.remove('is-open');
+    setTimeout(() => node.remove(), ms(300));
+  };
+  const onKey = e => { if (e.key === 'Escape' || e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); close(); } };
+  addEventListener('keydown', onKey, true);
+  node.querySelector('[data-close]').addEventListener('click', close);
+  node.querySelector('[data-close]').focus({ preventScroll: true });
 }
 
 export async function bustCard(bust, nickname = '') {

@@ -297,8 +297,7 @@
 .bust-amount{color:#ff4f4f}
 .bust-note{margin:14px 0 0;max-width:34ch;color:var(--smoke);font-size:15px;line-height:1.5}
 .bust-roast{margin:10px 0 0;color:var(--white);font-size:17px;font-weight:600}
-.bust-bailout{margin:12px 0 0;color:var(--ivory);font-size:16px}
-.bust-bailout b{color:var(--white)}
+.bailout-mark{width:22px;height:22px;margin-bottom:16px;background:var(--star);clip-path:var(--star-shape)}
 .bust .bigwin-actions{flex-wrap:wrap;justify-content:center}
 .feed-item--bankruptcy span::before{content:"";display:inline-block;width:8px;height:8px;margin-right:7px;border-radius:50%;background:#ff4f4f}
 

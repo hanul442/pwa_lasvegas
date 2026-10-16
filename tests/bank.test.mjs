@@ -200,3 +200,22 @@ test('going broke at a table pays the 구제금융 on the spot, ten times a day'
   assert.equal(u.bankruptcies[0].bailout, 0, 'the eleventh bust of the day gets nothing');
   assert.equal(u.account.available, 0);
 });
+
+test('a 구제금융 paid without asking comes back in the state once, for the popup (한서)', async () => {
+  let state = defaultState();
+  const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
+  const call = (method, path, body, who = 'rookie') => handleApi({ method, header: n => ({ 'x-player-id': who })[n], body: async () => body ?? {} }, new URL(`http://x${path}`), store, {});
+  const u = newUser(state, 'rookie', 'ROOKIE');
+  newUser(state, 'asker', 'ASKER');
+  // Asked for at the bank: the player pressed the button, so there is nothing to pop up.
+  assert.equal((await call('POST', '/api/support/claim', { kind: 'welfare' }, 'asker')).status, 200);
+  assert.equal((await call('GET', '/api/state', null, 'asker')).data.latestBailout, null);
+  assert.equal((await call('GET', '/api/state')).data.latestBailout, null);
+  u.account.available = 1_000_000;
+  settleHouseGame(state, u, { game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000, roundId: 'bust' });
+  const bail = (await call('GET', '/api/state')).data.latestBailout;
+  assert.equal(bail.amount, 10_000_000_000);
+  assert.equal(bail.nth, 1);
+  assert.equal(bail.perDay, 10);
+  assert.ok(bail.id && bail.createdAt);
+});

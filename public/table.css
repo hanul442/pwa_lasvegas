@@ -1075,3 +1075,11 @@
 /* On a phone my move's tag sits over my plate, not beside it: seven cards leave no room on the right. */
 @media (max-width:599px){.table-screen--sevenpoker .pk-seat--hero .pk-tag{left:auto;right:0;top:auto;bottom:calc(100% + 4px)}}
 .pk-seat:has([data-hand-name]) .sp-showing{display:none}
+
+/* "테이블을 바꿨어요": the card that says a round's result moved the player to another table. */
+.table-moved{position:absolute;left:50%;top:12px;z-index:23;display:grid;gap:3px;justify-items:center;width:max-content;max-width:calc(100% - 28px);padding:12px 20px 13px;border-radius:16px;background:#0c0d10;border:1px solid var(--hair-strong);box-shadow:0 18px 40px #000a;text-align:center;cursor:pointer;opacity:0;transform:translate(-50%,-10px);transition:opacity .3s,transform .3s var(--ease-out)}
+.table-moved.is-shown{opacity:1;transform:translate(-50%,0)}
+.table-moved-eyebrow{font:700 11px var(--sans);letter-spacing:.14em;color:#ffffff99}
+.table-moved strong{font:800 17px var(--sans);color:var(--white);letter-spacing:-.01em}
+.table-moved small{font-size:13px;color:#ffffffb3;line-height:1.35}
+@media (prefers-reduced-motion:reduce){.table-moved{transition:opacity .01ms}}

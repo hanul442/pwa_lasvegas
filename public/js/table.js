@@ -611,6 +611,32 @@ export class Table {
     this.root.classList.remove('is-playing');
     this.refreshBet();
     maybeBust(this.serverState);
+    this.idleDue = true;
+    setTimeout(() => this.maybeIdle(), 0);
+  }
+
+  // Once a round is over and nothing is moving, the app may move the player to another table
+  // (app.js tableAfterRound). A round that starts straight after its reset keeps it waiting.
+  maybeIdle() {
+    if (!this.idleDue || this.busy || this.locked || !this.root.isConnected) return;
+    this.idleDue = false;
+    this.onIdle?.(this.serverState);
+  }
+
+  // "테이블을 바꿨어요": a card at the top of the felt saying where the player was moved and why.
+  moved(title, reason) {
+    this.felt.querySelector('.table-moved')?.remove();
+    const node = el('div', 'table-moved');
+    node.setAttribute('role', 'status');
+    node.innerHTML = `<span class="table-moved-eyebrow">테이블을 바꿨어요</span><strong></strong><small></small>`;
+    node.querySelector('strong').textContent = title;
+    node.querySelector('small').textContent = reason;
+    const hide = () => { node.classList.remove('is-shown'); setTimeout(() => node.remove(), 400); };
+    node.addEventListener('click', hide);
+    this.felt.append(node);
+    requestAnimationFrame(() => node.classList.add('is-shown'));
+    sound.tick();
+    setTimeout(hide, 5200);
   }
 
   setServerState(state) {
@@ -753,7 +779,7 @@ export class Table {
     if (this.busy || !fn) return;
     this.busy = true;
     this.actions.querySelectorAll('button:not([data-anytime])').forEach(b => { b.disabled = true; });
-    try { await fn(); } finally { this.busy = false; this.refreshActions?.(); }
+    try { await fn(); } finally { this.busy = false; this.refreshActions?.(); this.maybeIdle(); }
   }
 
   onKey(handler) {

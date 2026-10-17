@@ -199,9 +199,10 @@ export function createFriends(t, pk, bar, hooks) {
   // Back to a room this person is still sitting in (reload, came back later).
   async function resume() {
     // Opened from a friend's invite link: sit at that room.
+    // (Already sitting in it, e.g. the host opening their own link: just go back to it.)
     const invited = takePendingJoin('holdem');
-    if (invited) { await join(invited); return; }
     const res = await api.holdemRooms();
+    if (invited && invited.toUpperCase() !== res.mine) { await join(invited); return; }
     if (!res.mine) return;
     const view = await api.holdemRoom(res.mine);
     await enter(view.room);

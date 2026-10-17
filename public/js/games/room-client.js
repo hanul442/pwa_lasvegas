@@ -157,9 +157,10 @@ export function createRoomClient(t, game, hooks) {
   // Back to a room this person is still sitting in (reload, came back later).
   async function resume() {
     // Opened from a friend's invite link: sit at that room.
+    // (Already sitting in it, e.g. the host opening their own link: just go back to it.)
     const invited = takePendingJoin(game);
-    if (invited) { await join(invited); return true; }
     const res = await api.rooms(game);
+    if (invited && invited.toUpperCase() !== res.mine?.code) { await join(invited); return true; }
     if (res.mine?.game !== game) return false;
     const view = await api.room(res.mine.code);
     await enter(view.room);

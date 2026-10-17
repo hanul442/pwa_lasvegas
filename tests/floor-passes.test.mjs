@@ -18,14 +18,14 @@ function player(amount) {
   return { state, u };
 }
 
-test('every floor above the Gold Room has a skin in each slot, priced a fifth to half of what opens it', () => {
+test('every floor above the Gold Room has a skin in each slot, priced one to three of its smallest bets', () => {
   assert.deepEqual(Object.keys(PASS_ITEMS), FLOORS.slice(1).map(f => f.slug));
   for (const f of FLOORS.slice(1)) {
     const items = COSMETICS.filter(x => x.floor === f.slug);
     assert.deepEqual(items.map(x => x.slot).sort(), [...SLOTS].sort(), f.slug);
     for (const x of items) {
       assert.ok(isMoney(x.price), x.id);
-      assert.ok(x.price >= f.threshold / 5 && x.price <= f.threshold / 2, x.id);
+      assert.ok(x.price >= f.minBet && x.price <= f.minBet * 3, x.id);
     }
   }
   assert.equal(new Set(COSMETICS.map(x => x.id)).size, COSMETICS.length, 'ids are unique');

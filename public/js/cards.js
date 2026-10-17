@@ -52,7 +52,7 @@ export function createCard(text, { faceUp = true } = {}) {
   node.dataset.card = text || 'HIDDEN';
   // A touch of hand-placed imperfection so stacks never look machine-aligned.
   node.style.setProperty('--tilt', `${(Math.random() * 4 - 2).toFixed(2)}deg`);
-  node.innerHTML = `<div class="card-inner"><div class="card-face${card && RED_SUITS.has(card.suit) ? ' is-red' : ''}">${card ? faceMarkup(card) : ''}</div><div class="${cardBackClass()}"></div></div>`;
+  node.innerHTML = `<div class="card-inner"><div class="card-face${card && RED_SUITS.has(card.suit) ? ' is-red' : ''}">${card ? faceMarkup(card) : ''}</div><div class="${cardBackClass()}"><i class="card-glint" aria-hidden="true"></i></div></div>`;
   if (faceUp && card) node.classList.add('is-faceup');
   node.setAttribute('role', 'img');
   node.setAttribute('aria-label', card ? `${card.rank}${card.suit}` : '뒷면 카드');

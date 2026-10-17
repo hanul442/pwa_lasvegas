@@ -1,8 +1,8 @@
 // 상점: luxury assets (사치품) to show off and skins (꾸미기) for the tables. Prices, ownership
 // and what is worn all come from the server (lib/shop.mjs); this screen only draws them.
 import { api, errorMessage } from './api.js';
-import { errorToast, toast } from './notice.js';
-import { el, formatCH, sound } from './fx.js';
+import { errorToast } from './notice.js';
+import { el, formatCH, sound, haptic, ms, reducedMotion } from './fx.js';
 import { createCard, setCardBack } from './cards.js';
 import { createChip } from './chips.js';
 
@@ -34,6 +34,90 @@ export function applyCosmetics(state) {
   const chips = eq.chips ? eq.chips.replace(/^chips-/, '') : '';
   if (chips) document.documentElement.dataset.chipAccent = chips;
   else delete document.documentElement.dataset.chipAccent;
+}
+
+// ---------- what owning something does (looks only: odds never change) ----------
+// Luxury: sitting down at a table, the dearest piece walks in with you. The dearer the piece,
+// the bigger the entrance: a plate, then a beam of light, then a shower of stars.
+export const luxuryLevel = (state, id) => {
+  const at = (state?.shop?.luxury || []).findIndex(x => x.id === id);
+  return at < 0 ? 1 : at >= 7 ? 3 : at >= 4 ? 2 : 1;
+};
+const LUX_FX = { 1: '테이블에 앉으면 오너 플레이트가 걸려요', 2: '테이블에 앉으면 오너 플레이트와 빛줄기가 함께 들어와요', 3: '테이블에 앉으면 오너 플레이트, 빛줄기, 쏟아지는 별로 입장해요' };
+export const luxuryEffect = (state, id) => LUX_FX[luxuryLevel(state, id)];
+// Skins: each bought one brings its own touch to the table.
+const SKIN_FX = { cardBack: '카드가 깔릴 때 뒷면에 빛이 스쳐요', felt: '테이블에 앉으면 펠트 위로 빛이 지나가요', chips: '칩을 걸 때마다 칩 둘레로 빛 고리가 퍼져요', frame: '랭킹과 프로필의 내 이름에 걸려요' };
+export const skinEffect = item => item.house ? null : SKIN_FX[item.slot];
+
+// The entrance: the dearest piece this player owns, on a plate across the top of the felt.
+export function ownerEntrance(state, felt) {
+  const mine = (state?.user?.luxury || []).map(x => luxuryItem(state, x.id)).filter(Boolean);
+  if (!felt || !mine.length) return;
+  const top = mine.reduce((a, b) => (b.price > a.price ? b : a));
+  const level = luxuryLevel(state, top.id);
+  const node = el('div', `owner-entrance owner-entrance--${level}`);
+  node.setAttribute('aria-hidden', 'true');
+  node.innerHTML = `${level >= 2 ? '<span class="owner-beam"></span>' : ''}<span class="owner-plate">${luxuryIcon(top.icon)}<span><small>${top.group} OWNER</small><b>${state.user.nickname}</b></span></span>`;
+  if (level >= 3 && !reducedMotion()) node.append(sparkles(14, 'owner-spark'));
+  felt.append(node);
+  setTimeout(() => node.remove(), ms(3000) + 200);
+}
+
+// A handful of little stars scattered at random, for the entrance and the purchase moment.
+function sparkles(n, cls) {
+  const box = el('span', `${cls}s`);
+  for (let i = 0; i < n; i++) {
+    const s = el('i', cls);
+    s.style.left = `${4 + Math.random() * 92}%`;
+    s.style.top = `${6 + Math.random() * 80}%`;
+    s.style.setProperty('--d', `${Math.round(Math.random() * 900)}ms`);
+    s.style.setProperty('--s', (0.5 + Math.random() * 0.9).toFixed(2));
+    box.append(s);
+  }
+  return box;
+}
+
+// ---------- the purchase moment ----------
+// Buying something stops the screen for a beat: the piece draws itself in light (a skin shows on
+// the table it will dress), and the dearer the piece, the more the room lights up.
+export function acquireMoment({ eyebrow, title, line = '', note = '', art, level = 1, stamp = '' }) {
+  return new Promise(resolve => {
+    const node = el('div', `acquire acquire--${level}`);
+    node.setAttribute('role', 'dialog');
+    node.setAttribute('aria-label', `${title} ${eyebrow}`);
+    node.innerHTML = `<div class="acquire-glow" aria-hidden="true"></div>${level >= 2 ? '<div class="acquire-beam" aria-hidden="true"></div>' : ''}
+      <div class="acquire-inner">
+        <div class="acquire-art"></div>
+        <p class="acquire-eyebrow">${eyebrow}</p>
+        <h2 class="acquire-title">${title}</h2>
+        ${line ? `<p class="acquire-line">${line}</p>` : ''}
+        ${note ? `<p class="acquire-note">${note}</p>` : ''}
+        ${stamp ? `<p class="acquire-stamp"><span aria-hidden="true"></span>${stamp}</p>` : ''}
+        <button type="button" class="pill-button pill-button--solid acquire-close">좋아요</button>
+      </div>`;
+    node.querySelector('.acquire-art').append(art);
+    if (!reducedMotion()) node.prepend(sparkles(level === 3 ? 34 : level === 2 ? 18 : 9, 'acquire-spark'));
+    // The line drawing traces itself: every stroke starts hidden and is drawn in.
+    node.querySelectorAll('.acquire-art .lux-icon :is(path,rect,circle)').forEach(p => p.setAttribute('pathLength', '1'));
+    document.body.append(node);
+    requestAnimationFrame(() => node.classList.add('is-open'));
+    sound.win();
+    setTimeout(() => sound.chips(level * 3), ms(380));
+    if (level >= 3) setTimeout(() => sound.win(), ms(900));
+    haptic(level >= 3 ? [30, 40, 30, 40, 140] : level === 2 ? [30, 40, 80] : 40);
+    let done = false;
+    const close = () => {
+      if (done) return;
+      done = true;
+      removeEventListener('keydown', onKey, true);
+      node.classList.remove('is-open');
+      setTimeout(() => { node.remove(); resolve(); }, ms(300));
+    };
+    const onKey = e => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); close(); } };
+    addEventListener('keydown', onKey, true);
+    node.addEventListener('click', e => { if (e.target === node || e.target.closest('.acquire-close')) close(); });
+    node.querySelector('.acquire-close').focus({ preventScroll: true });
+  });
 }
 
 // ---------- bottom sheet ----------
@@ -135,9 +219,15 @@ function buySheet(shop, item, available, onChanged) {
   const short = available < item.price;
   openSheet({
     eyebrow: `사치품 · ${item.group}`, title: item.name,
-    body: `<div class="shop-sheet-hero">${luxuryIcon(item.icon)}<div><b>${won(item.price)}</b><small>${short ? `${won(item.price - available)} 더 있어야 해요` : `사고 나면 ${won(available - item.price)} 남아요`}</small></div></div><p class="lounge-note">${item.blurb}. 프로필과 랭킹에 걸리고, 되팔면 ${won(item.resale)}(${pct(shop.sellRate)}%)가 돌아와요. 층 입장에는 들어가지 않아요.${item.headline ? ' 사면 라운지 소식으로 모두에게 알려져요.' : ''}</p>`,
+    body: `<div class="shop-sheet-hero">${luxuryIcon(item.icon)}<div><b>${won(item.price)}</b><small>${short ? `${won(item.price - available)} 더 있어야 해요` : `사고 나면 ${won(available - item.price)} 남아요`}</small></div></div><p class="lounge-note">${item.blurb}. 프로필과 랭킹에 걸리고, 되팔면 ${won(item.resale)}(${pct(shop.sellRate)}%)가 돌아와요. 층 입장에는 들어가지 않아요.${item.headline ? ' 사면 라운지 소식으로 모두에게 알려져요.' : ''}</p><p class="shop-fx"><span aria-hidden="true"></span>${luxuryEffect({ shop }, item.id)}</p>`,
     confirmText: short ? '' : `${won(item.price)}에 사기`,
-    confirm: short ? null : async () => { const out = await api.shopBuy(item.id); sound.chips(6); onChanged(out.state); }
+    confirm: short ? null : async () => {
+      const out = await api.shopBuy(item.id);
+      onChanged(out.state);
+      const level = luxuryLevel({ shop }, item.id);
+      const art = el('div', 'acquire-lux', luxuryIcon(item.icon));
+      acquireMoment({ eyebrow: item.id === 'casino' ? 'THE HOUSE IS YOURS' : 'NEW ACQUISITION', title: item.name, line: `${won(item.price)} · ${item.group}`, note: `효과: ${luxuryEffect({ shop }, item.id)}`, art, level });
+    }
   });
 }
 
@@ -253,16 +343,24 @@ function buySkinSheet(state, item, onChanged, pass) {
   const opens = pass && !pass.passed;
   const body = el('div');
   body.append(stage(state, item));
-  body.append(el('p', 'lounge-note', `<b>${won(item.price)}</b> · ${item.blurb}. 사면 바로 장착하고, 꾸미기는 되팔 수 없어요.${opens ? ` <b>${pass.name} 입장권이 같이 생겨요${pass.unlocked ? '. 바로 앉을 수 있어요' : `. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요`}.</b>` : ''}${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
+  body.append(el('p', 'lounge-note', `<b>${won(item.price)}</b> · ${item.blurb}. 사면 바로 장착하고, 꾸미기는 되팔 수 없어요.${skinEffect(item) ? ` 효과: ${skinEffect(item)}.` : ''}${opens ? ` <b>${pass.name} 입장권이 같이 생겨요${pass.unlocked ? '. 바로 앉을 수 있어요' : `. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요`}.</b>` : ''}${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
   openSheet({
     eyebrow: `${SLOT_NAME[item.slot]}${item.floor && pass ? ` · ${pass.name}` : ''}`, title: item.name, body,
     confirmText: short ? '' : `${won(item.price)}에 사고 장착`,
     confirm: short ? null : async () => {
       const bought = await api.shopBuy(item.id);
       const out = await api.shopEquip(item.slot, item.id);
-      sound.chips(4);
       onChanged(out.state);
-      if (bought.purchase?.pass && pass) toast(pass.unlocked ? `${pass.name} 입장권이 생겼어요. 이제 ${pass.name} 테이블에 앉을 수 있어요.` : `${pass.name} 입장권이 생겼어요. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요.`);
+      const newPass = bought.purchase?.pass && pass;
+      const art = stage(out.state, null);
+      art.classList.add('acquire-stage');
+      acquireMoment({
+        eyebrow: 'NEW LOOK', title: item.name, art,
+        level: newPass ? 2 : 1,
+        line: `${SLOT_NAME[item.slot]} · ${won(item.price)}`,
+        note: skinEffect(item) ? `효과: ${skinEffect(item)}` : '',
+        stamp: newPass ? (pass.unlocked ? `${pass.name} 입장권 · 지금 앉을 수 있어요` : `${pass.name} 입장권 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : ''
+      });
     }
   });
 }

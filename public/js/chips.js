@@ -7,11 +7,11 @@ import { el, formatCH } from './fx.js';
 const STEPS = [1, 2, 5, 10];
 // One colour per chip value from 100만 to 1조, rising through the floors. A table's 10× chip is
 // the next table's 1× chip, so the two share a colour and no rack repeats one.
-const COLORS = 'teal purple wine ivory pink gold black wine ivory teal gold pink black ivory wine gold wine black ivory'.split(' ');
+const COLORS = 'teal purple wine ivory pink gold black wine ivory teal gold pink black ivory wine gold wine black ivory purple black teal ivory wine gold'.split(' ');
 // A table is a floor: same slug, same name. Its range runs from the smallest bet to ten times it.
 // Higher floors play harder (lib/constants.mjs DIFFICULTY_STARS, H17_FROM_LEVEL): sharper AI, and
 // from the Penthouse up the blackjack dealer hits soft 17.
-const STARS = [1, 2, 3, 4, 5, 5];
+const STARS = [1, 2, 3, 4, 5, 5, 5, 5];
 const tier = (slug, name, min, level) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min), level, stars: STARS[level], h17: level >= 3 });
 
 // Six floors from 100만 in the Gold Room to 1천억 in The Vault, each ten times the last
@@ -23,7 +23,9 @@ export const TIERS = Object.fromEntries([
   ['salon-prive', 'Salon Privé', 100_000_000],
   ['penthouse', 'Penthouse', 1_000_000_000],
   ['sky-lounge', 'Sky Lounge', 10_000_000_000],
-  ['vault', 'The Vault', 100_000_000_000]
+  ['vault', 'The Vault', 100_000_000_000],
+  ['crown', 'The Crown', 1_000_000_000_000],
+  ['olympus', 'Olympus', 10_000_000_000_000]
 ].map(([slug, name, min], i) => [slug, tier(slug, name, min, i)]));
 
 // The cheapest table in the casino.

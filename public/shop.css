@@ -245,3 +245,30 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .pass-state{grid-column:2/-1;font-size:13px;color:var(--smoke);line-height:1.4}
 .pass-floor.is-due .pass-state{color:var(--white)}
 .pass-floor .skin-grid{margin-top:2px}
+
+/* ---------- The Crown and Olympus (floors above the Vault) ---------- */
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-royal,.skin-preview.felt--skin-royal,.skin-stage.felt--skin-royal{--felt-a:#45285f;--felt-b:#28163a;--felt-c:#0d0614}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-ultramarine,.skin-preview.felt--skin-ultramarine,.skin-stage.felt--skin-ultramarine{--felt-a:#22357a;--felt-b:#13204d;--felt-c:#050a1c}
+/* The Crown: a silver crown on black lacquer. */
+.card-back.back--crown{
+  background:
+    linear-gradient(#d9dde3,#d9dde3) 50% 54%/30% 4% no-repeat,
+    conic-gradient(from 135deg at 50% 46%,#d9dde3 0 90deg,transparent 90deg) 34% 47%/12% 12% no-repeat,
+    conic-gradient(from 135deg at 50% 42%,#d9dde3 0 90deg,transparent 90deg) 50% 44%/14% 14% no-repeat,
+    conic-gradient(from 135deg at 50% 46%,#d9dde3 0 90deg,transparent 90deg) 66% 47%/12% 12% no-repeat,
+    repeating-linear-gradient(45deg,#ffffff0a 0 1px,transparent 1px 7px),
+    radial-gradient(120% 90% at 30% 10%,#2a2233,#0c0a10 70%)}
+/* Olympus: marble columns under a laurel ring. */
+.card-back.back--olympus{
+  background:
+    radial-gradient(circle at 50% 34%,transparent 0 13%,#f1ece2cc 13.5% 15%,transparent 15.5%),
+    repeating-linear-gradient(90deg,#f1ece2 0 3%,#cfc8bb 3% 4%,transparent 4% 12%) 50% 82%/60% 34% no-repeat,
+    linear-gradient(#f1ece2,#f1ece2) 50% 64%/66% 4% no-repeat,
+    linear-gradient(#f1ece2,#f1ece2) 50% 99%/70% 4% no-repeat,
+    radial-gradient(120% 90% at 30% 10%,#26344f,#0a0e18 70%)}
+:root[data-chip-accent="crown"],.chip-accent--crown{--chip-inlay:#e8dcc2f5;--chip-inlay-w:2.6;--chip-halo:1;--plaque-inlay:#e8dcc2e6;--plaque-outline:#e8dcc2d9}
+:root[data-chip-accent="olympus"],.chip-accent--olympus{--chip-inlay:#f4f1eaff;--chip-inlay-w:2;--chip-halo:1;--plaque-inlay:#f4f1ea;--plaque-outline:#c9d2e8}
+.name-frame--crown{position:relative;border:1px solid #e8dcc2;box-shadow:0 0 0 2px #0a0b0d,0 0 0 3px #e8dcc280;background:linear-gradient(180deg,#e8dcc21c,#e8dcc205);padding-left:22px}
+.name-frame--crown::before{content:"";position:absolute;left:6px;top:50%;width:11px;height:8px;margin-top:-4px;background:#e8dcc2;clip-path:polygon(0 100%,0 20%,25% 60%,50% 0,75% 60%,100% 20%,100% 100%)}
+.name-frame--olympus{position:relative;border:1px solid #f4f1ea;background:linear-gradient(180deg,#f4f1ea24,#c9d2e80a);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #c9d2e8a0,0 0 14px #c9d2e840;padding-left:22px}
+.name-frame--olympus::before{content:"";position:absolute;left:6px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;border:1.5px solid #f4f1ea;border-top-color:transparent}

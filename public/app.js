@@ -115,11 +115,11 @@ function setTierHeader(game) {
 }
 
 // Tables this player can sit at right now, by the tier picker's rules.
-function sittableTiers(game) {
-  const available = state?.user?.account?.available ?? 0;
+function sittableTiers(game, st = state) {
+  const available = st?.user?.account?.available ?? 0;
   if (game.event) { const e = eventEntry(eventOf(game)); return e?.open ? [e.tier.slug] : []; }
   return Object.values(TIERS).filter(t => {
-    const f = state?.floors?.find(x => x.slug === t.floor);
+    const f = st?.floors?.find(x => x.slug === t.floor);
     return (f ? f.open : t === FIRST_TIER) && available >= t.min;
   }).map(t => t.slug);
 }
@@ -177,6 +177,28 @@ function openSwitcher() {
   });
 }
 
+// After a round, a table the player can no longer sit at gives way to one they can, with a card
+// saying so: after losses below its smallest bet, down to the highest table they can afford; after
+// outgrowing its floor, up to the next open one. The same check runs on sitting down. Event tables
+// and friends' rooms stay put, and so does poker, played from a buy-in on the table. With nowhere
+// to go (chips under the cheapest table) the bust and 구제금융 screens take over.
+const BUY_IN_GAMES = new Set(['poker', 'sevenpoker']);
+function tableAfterRound(st) {
+  const t = activeTable, cur = TIERS[activeTier];
+  if (!st?.user || !t || !cur || !selectedGame || selectedGame.event || BUY_IN_GAMES.has(selectedGame.id) || t.root.classList.contains('is-room')) return;
+  const open = sittableTiers(selectedGame, st);
+  if (open.includes(cur.slug)) return;
+  const tiers = Object.values(TIERS).filter(x => open.includes(x.slug));
+  if (!tiers.length) return;
+  const up = Boolean(st.floors?.find(f => f.slug === cur.floor)?.outgrown);
+  const to = up ? tiers.find(x => x.min > cur.min) || tiers.at(-1) : [...tiers].reverse().find(x => x.min < cur.min) || tiers[0];
+  const reason = up
+    ? `자산이 커져서 ${cur.name}을 졸업하고 위층으로 올라왔어요.`
+    : `칩이 ${cur.name} 최소 베팅 ${formatCH(cur.min)}보다 적어서 옮겼어요.`;
+  applyState(st);
+  openTable(to.slug).then(() => activeTable?.moved?.(`${to.name} · ${formatCH(to.min)}–${formatCH(to.max)}`, reason));
+}
+
 // A floor this player has outgrown (net worth above 100× its minimum) stays shut; only a seat they
 // already hold in a room there can bring them back.
 const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[slug]?.floor)?.outgrown);
@@ -202,6 +224,9 @@ async function openTable(tier, { seated = false } = {}) {
   music.theme(selectedGame.event ? 'noir' : selectedGame.id);
   const backLabel = tableOverTiers ? '테이블 고르기로 나가기' : `${BACK_TO[returnSurface]}${returnSurface === 'lobby' ? '로' : '으로'} 나가기`;
   activeTable = await selectedGame.mount({ mount: tableMount, tier, state, backLabel, onSwitch: openSwitcher, onLeave: () => leaveTable() });
+  // Also on sitting down: a table picked from 최근 테이블 may no longer fit the player's chips.
+  activeTable.onIdle = st => tableAfterRound(st || state);
+  if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
   attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');

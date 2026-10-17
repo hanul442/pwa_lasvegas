@@ -73,5 +73,25 @@ export function renderAdmin(root, state, onChanged) {
     });
   }
   paint();
-  root.append(box);
+  root.append(box, errorBox());
+}
+
+// 오류 기록: what broke on players' phones and on the server, newest first.
+const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+function errorBox() {
+  const box = el('section', 'admin-panel admin-errors');
+  box.setAttribute('aria-labelledby', 'admin-errors-title');
+  box.innerHTML = `<h2 class="sub-head" id="admin-errors-title">오류 기록 <small>폰·서버에서 난 오류</small></h2><ul class="ledger admin-log" data-errors><li><span>불러오는 중…</span></li></ul>
+    <div class="admin-error-actions"><button type="button" class="pill-button" data-reload>새로고침</button><button type="button" class="pill-button" data-clear>모두 지우기</button></div>`;
+  const list = box.querySelector('[data-errors]');
+  async function load(call = api.adminErrors) {
+    try {
+      const { errors } = await call();
+      list.innerHTML = errors.length ? errors.map(x => `<li class="admin-error"><details><summary><span><b class="admin-error-src">${x.source === 'server' ? '서버' : '폰'}</b> ${esc(x.message)}</span><small>${x.count}번 · ${esc(x.players.join(', ') || '로그인 전')} · ${ago(x.lastAt)}</small></summary><p>${esc(x.where)}</p>${x.stack ? `<pre>${esc(x.stack)}</pre>` : ''}<p>${esc(x.ua)} ${esc(x.build)}</p></details></li>`).join('') : '<li><span>오류가 없어요</span></li>';
+    } catch (e) { list.innerHTML = `<li><span>${esc(errorMessage(e))}</span></li>`; }
+  }
+  box.querySelector('[data-reload]').addEventListener('click', () => load());
+  box.querySelector('[data-clear]').addEventListener('click', () => load(api.adminErrorsClear));
+  load();
+  return box;
 }

@@ -82,6 +82,8 @@ export const api = {
   resetPassword: (username, code, password) => request('/api/auth/reset', { method: 'POST', body: { username, code, password } }),
   adminResetPassword: userId => request('/api/admin/password', { method: 'POST', body: { userId } }),
   adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
+  adminErrors: () => request('/api/admin/errors'),
+  adminErrorsClear: () => request('/api/admin/errors/clear', { method: 'POST' }),
   state: () => request('/api/state'),
   news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   pushKey: () => request('/api/push/key'),

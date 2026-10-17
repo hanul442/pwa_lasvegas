@@ -459,3 +459,15 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .auth-error.is-ok{color:var(--white)}
 .admin-note{margin:0 0 10px;color:var(--dim);font-size:13px;line-height:1.5}
 .account-tool .pill-button,.account-code .pill-button{flex:none;white-space:nowrap}
+
+/* 운영자 오류 기록 (public/js/admin.js) */
+.admin-errors .admin-error{display:block}
+.admin-error details{width:100%}
+.admin-error summary{display:flex;flex-direction:column;gap:2px;cursor:pointer;list-style:none}
+.admin-error summary::-webkit-details-marker{display:none}
+.admin-error summary span{overflow-wrap:anywhere}
+.admin-error summary small{color:var(--dim);font-size:12px}
+.admin-error-src{display:inline-block;margin-right:6px;padding:0 6px;border-radius:4px;border:1px solid var(--hair-strong);font:700 11px var(--sans)}
+.admin-error p{margin:6px 0 0;color:var(--smoke);font-size:12px;overflow-wrap:anywhere}
+.admin-error pre{margin:6px 0 0;max-height:180px;overflow:auto;padding:8px;border-radius:8px;background:var(--ink);color:var(--smoke);font:11px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-error-actions{display:flex;gap:8px;margin-top:12px}

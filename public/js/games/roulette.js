@@ -281,7 +281,9 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     wheel.before(hold);
     const shade = document.createElement('div');
     shade.className = 'wheel-shade';
-    t.root.append(shade);
+    // The wheel leaves the felt for the lift: the felt is its own layer (isolation), so a wheel
+    // left inside it would sit under the shade and spin dimmed, as if behind dark glass.
+    t.root.append(shade, wheel);
     wheel.classList.add('is-lifted');
     Object.assign(wheel.style, { left: `${(innerWidth - size) / 2}px`, top: `${(innerHeight - size) / 2 - innerHeight * 0.04}px`, width: `${size}px` });
     const to = wheel.getBoundingClientRect();
@@ -300,7 +302,7 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     wheel.getAnimations().forEach(a => a.cancel());
     wheel.classList.remove('is-lifted');
     wheel.style.left = wheel.style.top = wheel.style.width = '';
-    hold.remove(); shade.remove();
+    hold.replaceWith(wheel); shade.remove();
   }
 
   function refreshActions() {

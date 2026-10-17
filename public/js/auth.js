@@ -21,6 +21,7 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
   api.authOptions().then(out => { claimable = out.claimable || []; if (gate) render(); }).catch(() => {});
 
   function render(error = '') {
+    if (mode === 'reset') return renderReset(error);
     const signup = mode === 'signup';
     const claim = signup ? claimable[0] : null;
     gate.innerHTML = `
@@ -34,7 +35,7 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
             ${signup ? '<small>랭킹에 보이는 이름이에요. 한글·영문·숫자 2~12자.</small>' : ''}</label>
           <label class="auth-field"><span>비밀번호</span>
             <input name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" maxlength="72" required>
-            ${signup ? '<small>6자 이상.</small>' : ''}</label>
+            ${signup ? '<small>6자 이상.</small>' : '<small><button type="button" class="auth-link" data-forgot>비밀번호를 잊었어요</button></small>'}</label>
           ${claim ? `<label class="auth-claim"><input type="checkbox" name="claim" value="${claim.id}"><span><b>${claim.nickname} 기록 이어받기</b><small>지금까지 ${claim.nickname} 프로필에 쌓인 칩과 전적을 이 계정으로 가져와요. 한 계정만 이어받을 수 있어요.</small></span></label>` : ''}
           ${signup ? '<label class="auth-claim auth-terms"><input type="checkbox" name="terms" required><span><b>만 19세 이상이며 이용약관에 동의해요</b><small><button type="button" class="auth-link" data-terms>이용약관 보기</button></small></span></label>' : ''}
           <p class="auth-error" role="alert">${error}</p>
@@ -45,6 +46,7 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
       </div>`;
     mountInstallButton(gate.querySelector('[data-auth-install]'));
     const form = gate.querySelector('form');
+    gate.querySelector('[data-forgot]')?.addEventListener('click', () => { mode = 'reset'; render(); gate.querySelector('input')?.focus(); });
     gate.querySelector('[data-terms]')?.addEventListener('click', e => { e.preventDefault(); openTerms(); });
     gate.querySelector('[data-auth-mode]').addEventListener('click', () => { mode = signup ? 'login' : 'signup'; render(); gate.querySelector('input')?.focus(); });
     form.querySelectorAll('input').forEach(input => input.addEventListener('input', () => { gate.querySelector('.auth-error').textContent = ''; }));
@@ -64,6 +66,48 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
         submit.disabled = false;
         gate.querySelector('.auth-error').textContent = errorMessage(err);
         (err.code === 'USERNAME_TAKEN' || err.code === 'INVALID_USERNAME' ? form.username : form.password).focus();
+      }
+    });
+  }
+  // 비밀번호 찾기: accounts have no email, so the way back is the recovery code the player made
+  // in their profile, or a temporary password from the operator.
+  function renderReset(error = '') {
+    gate.innerHTML = `
+      <div class="auth-card">
+        <img class="auth-logo" src="logo.svg" alt="VEGAS" width="132" height="28">
+        <h1 id="auth-title">비밀번호 찾기</h1>
+        <p class="auth-lede">프로필에서 만들어 둔 복구 코드로 새 비밀번호를 정해요.</p>
+        <form class="auth-form" novalidate>
+          <label class="auth-field"><span>이름</span>
+            <input name="username" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="12" required></label>
+          <label class="auth-field"><span>복구 코드</span>
+            <input name="code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="ABCD-EFGH-JKLM" required>
+            <small>복구 코드는 한 번 쓰면 사라져요. 로그인한 뒤 프로필에서 새로 만들어 두세요.</small></label>
+          <label class="auth-field"><span>새 비밀번호</span>
+            <input name="password" type="password" autocomplete="new-password" maxlength="72" required>
+            <small>6자 이상.</small></label>
+          <p class="auth-error" role="alert">${error}</p>
+          <button class="pill-button pill-button--solid auth-submit" type="submit">새 비밀번호로 로그인</button>
+        </form>
+        <p class="auth-note">복구 코드를 만들어 두지 않았다면 운영자에게 임시 비밀번호를 받아 로그인한 뒤, 프로필에서 비밀번호를 바꿔 주세요.</p>
+        <p class="auth-switch">비밀번호가 기억났나요? <button type="button" data-auth-mode>로그인하기</button></p>
+      </div>`;
+    const form = gate.querySelector('form');
+    gate.querySelector('[data-auth-mode]').addEventListener('click', () => { mode = 'login'; render(); gate.querySelector('input')?.focus(); });
+    form.querySelectorAll('input').forEach(input => input.addEventListener('input', () => { gate.querySelector('.auth-error').textContent = ''; }));
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const submit = form.querySelector('.auth-submit');
+      submit.disabled = true;
+      try {
+        const out = await api.resetPassword(form.username.value.trim(), form.code.value, form.password.value);
+        saveSession(out.token, out.state.user.id);
+        close();
+        onSignedIn(out.state);
+      } catch (err) {
+        submit.disabled = false;
+        gate.querySelector('.auth-error').textContent = errorMessage(err);
+        (err.code === 'INVALID_PASSWORD' ? form.password : err.code === 'INVALID_USERNAME' ? form.username : form.code).focus();
       }
     });
   }

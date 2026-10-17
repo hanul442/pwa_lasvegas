@@ -2,6 +2,7 @@
 import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
+import { renderAccountTools, forgetShownCode } from './js/account.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
@@ -738,12 +739,15 @@ function renderProfile() {
     <h2 class="sub-head">층</h2><ul class="floor-rows">${floors}</ul>
     <div data-ledger></div>
     <h2 class="sub-head">계정</h2>
-    <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
+    <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>
+    <div data-account-tools></div>`;
   renderAchievements(root.querySelector('[data-achievements]'));
   root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
   renderLedger(root.querySelector('[data-ledger]'), state);
+  renderAccountTools(root.querySelector('[data-account-tools]'), state, applyState);
   renderAdmin(root, state, applyState);
   root.querySelector('[data-sign-out]').addEventListener('click', async () => {
+    forgetShownCode();
     await forgetDevice();
     await api.logout().catch(() => {});
     signedOut();

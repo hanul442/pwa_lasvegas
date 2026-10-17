@@ -295,6 +295,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .auth-submit{width:100%;min-height:50px;font-size:16px}
 .auth-switch{margin:22px 0 0;color:var(--smoke);font-size:14px;text-align:center}
 .auth-switch button{border:0;background:none;padding:10px 4px;color:var(--white);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.auth-note{margin:18px 0 0;color:var(--dim);font-size:13px;line-height:1.55;text-align:center}
 .account-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--smoke)}
 .account-row b{color:var(--white)}
 
@@ -424,3 +425,17 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .rest-banner-text small{color:var(--smoke);font-size:13px}
 .rest-banner .pill-button{flex:none}
 @media (prefers-reduced-motion:reduce){.rest-gate,.rest-banner{transition:none}}
+.account-tools{display:grid;gap:12px;margin-top:14px}
+.account-tool{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;color:var(--smoke)}
+.account-tool b{display:block;color:var(--white)}
+.account-tool small{display:block;margin-top:3px;color:var(--dim);font-size:13px;line-height:1.45}
+.account-password{display:block}
+.account-password summary{cursor:pointer;list-style:none}
+.account-password summary::-webkit-details-marker{display:none}
+.account-password form{display:grid;gap:14px;margin-top:14px}
+.account-code{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:14px 16px;border-radius:14px;background:var(--panel, rgba(255,255,255,.06))}
+.account-code code{font:600 19px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;color:var(--white)}
+.account-code small{flex-basis:100%;color:var(--dim);font-size:13px}
+.auth-error.is-ok{color:var(--white)}
+.admin-note{margin:0 0 10px;color:var(--dim);font-size:13px;line-height:1.5}
+.account-tool .pill-button,.account-code .pill-button{flex:none;white-space:nowrap}

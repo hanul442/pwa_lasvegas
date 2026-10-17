@@ -112,7 +112,7 @@ test('the daily bonus reminder comes once in the morning, never at night or mid-
   assert.equal(messageFor(state, u, kst(9)), null); // too early for the morning slot
   const first = planPushes(state, kst(10));
   assert.equal(first.length, 1);
-  assert.match(first[0].message.title, /오늘 일급 100억 원/);
+  assert.match(first[0].message.title, /오늘 일급 10억 원/);
   assert.equal(planPushes(state, kst(11)).length, 0); // once a day
   // Someone playing right now is left alone.
   const fresh = subscribedPlayer(kst(9, 0));

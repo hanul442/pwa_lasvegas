@@ -23,7 +23,7 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
   const start = u.account.available;
   const first = claimDaily(state, u, WED);
   assert.equal(first.amount, rate('daily', base));
-  assert.equal(first.amount, 10_000_000_000, '일급 is at least 100억');
+  assert.equal(first.amount, 1_000_000_000, '일급 is at least 10억');
   assert.throws(() => claimDaily(state, u, WED + 1000), /DAILY_ALREADY_CLAIMED/);
   assert.equal(dailyStatus(u, WED).claimed, true);
   assert.equal(dailyStatus(u, WED).toWeekly, 6);
@@ -55,16 +55,16 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   // Mid-way through High Limit (1억–10억 net worth), so a payout doesn't graduate the floor.
   u.account.available = 300_000_000;
   const grant = claimSupport(state, u, 'grant', WED);
-  assert.equal(grant.amount, 50 * tableBase(u));
+  assert.equal(grant.amount, 5 * tableBase(u));
   assert.throws(() => claimSupport(state, u, 'grant', WED + DAY), /SUPPORT_ALREADY_CLAIMED/);
   const base = tableBase(u);
-  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 50 * base, 'next week pays again');
+  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 5 * base, 'next week pays again');
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
   u.account.available = 200_000;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
-  // Ten a day, 100억 each.
-  assert.deepEqual(WELFARE_STEPS, Array(10).fill(10_000_000_000));
-  assert.equal(claimSupport(state, u, 'welfare', WED).amount, 10_000_000_000);
+  // Ten a day, 10억 each.
+  assert.deepEqual(WELFARE_STEPS, Array(10).fill(1_000_000_000));
+  assert.equal(claimSupport(state, u, 'welfare', WED).amount, 1_000_000_000);
   assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /WELFARE_NOT_QUALIFIED/, 'only while broke');
   for (const step of WELFARE_STEPS.slice(1)) {
     u.account.available = 0; // lost it all again
@@ -73,8 +73,8 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   u.account.available = 0;
   assert.equal(supportStatus(u, WED).welfare.claimed, true);
   assert.throws(() => claimSupport(state, u, 'welfare', WED + 2000), /SUPPORT_ALREADY_CLAIMED/);
-  // A new day starts back at 100억, and a save from before (only the day) counts as one taken.
-  assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, 10_000_000_000);
+  // A new day starts back at 10억, and a save from before (only the day) counts as one taken.
+  assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, 1_000_000_000);
   u.support.welfare = dayKey(WED + 2 * DAY); u.account.available = 0;
   assert.equal(supportStatus(u, WED + 2 * DAY).welfare.taken, 1);
 });

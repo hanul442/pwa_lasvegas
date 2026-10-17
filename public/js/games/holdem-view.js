@@ -9,7 +9,10 @@ import { voice, handLine, betLine } from '../voice.js';
 import { handName } from '../poker-hand.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
-const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB' };
+// 7포커 (sevenpoker.js) plays on this felt too, with its Korean bet sizes and the ante.
+const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB', ANTE: '앤티', BBING: '삥', DDADANG: '따당', QUARTER: '쿼터', HALF: '하프' };
+// Moves that put a new size on the table: the tag shows the amount and lights up.
+const SIZED = new Set(['BET', 'RAISE', 'ALL_IN', 'BBING', 'DDADANG', 'QUARTER', 'HALF']);
 // Big blind per table: a tenth of its smallest bet in 200만s, never under 200만 (lib/holdem-session.mjs).
 export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2_000_000, Math.round(t.min / 10 / 2_000_000) * 2_000_000)]));
 const STACK_MAX = 6; // chips in the tower beside each player's plate
@@ -61,7 +64,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     // Plate text for a seat; drivers may replace it.
     nameOf: (i, s) => (i === pk.me ? '나' : s.name),
     noteOf: (i, s) => (s.kind === 'bot' ? STYLE_LABEL[s.style] || '' : ''),
-    onEnd: null // (summary) => void, after the default banner
+    onEnd: null, // (summary) => void, after the default banner
+    labels: { ...ACT_LABEL }, // what each move is called on a seat's tag; drivers may rename them
+    gameLabel: '홀덤', // the big-win card's subtitle
+    paintHands: null // () => void, replaces the hero's hand-name pill (7포커 reads seven cards)
   };
   const setStakes = tier => { pk.bb = BLINDS[tier] || BLINDS[Object.keys(BLINDS)[0]]; pk.chipSet = [pk.bb, ...(TIERS[tier] || t.tier).chips.filter(v => v > pk.bb)]; };
   setStakes(t.tier.slug);
@@ -120,6 +126,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   function setStack(i, stack) { const e = seatEls[i]; if (!e) return; e.stack = stack; e.node.querySelector('[data-stack]').textContent = formatCH(stack); paintChips(e, stack); }
   // What my two cards make with the board so far ("원페어", "플러시"…), always on my plate.
   function paintMyHand() {
+    if (pk.paintHands) return pk.paintHands();
     const e = seatEls[pk.me]; if (!e) return;
     const up = box => [...box.children].filter(c => c.classList.contains('is-faceup')).map(c => c.dataset.card);
     const mine = up(e.cards);
@@ -291,7 +298,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       }
       case 'blind':
         setStack(ev.seat, ev.stack);
-        tag(ev.seat, ACT_LABEL[ev.kind]);
+        tag(ev.seat, pk.labels[ev.kind]);
         await pushChips(ev.seat, ev.bet);
         break;
       case 'deal': {
@@ -313,15 +320,17 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         // A bot thinks for a short beat. The table never waits on the dealer's voice: a call-out
         // he has no time for is simply skipped (see the drop option below).
         if (ev.seat !== me) { seatEls[ev.seat].node.classList.add('is-thinking'); markTurn(ev.seat); await wait(ev.timeout ? 200 : (duel ? 700 : 320) + Math.random() * 280); seatEls[ev.seat].node.classList.remove('is-thinking'); }
-        const label = ev.action === 'CALL' || ev.action === 'BET' || ev.action === 'RAISE' || ev.action === 'ALL_IN' ? `${ACT_LABEL[ev.action]}${ev.action === 'CALL' ? '' : ` ${formatCH(ev.bet)}`}` : ACT_LABEL[ev.action];
-        tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : ev.action === 'ALL_IN' || ev.action === 'RAISE' || ev.action === 'BET' ? 'aggr' : '');
-        say(ev.seat, ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
+        const label = SIZED.has(ev.action) ? `${pk.labels[ev.action]} ${formatCH(ev.bet)}` : pk.labels[ev.action];
+        tag(ev.seat, ev.timeout ? `시간 초과 · ${label}` : label, ev.action === 'FOLD' ? 'fold' : SIZED.has(ev.action) ? 'aggr' : '');
+        // The bots' table talk knows Hold'em's words; a 7포커 bet size talks like a raise.
+        say(ev.seat, SIZED.has(ev.action) && !CHATTER.SHARK[ev.action] ? 'RAISE' : ev.action, ev.action === 'ALL_IN' ? 0.9 : 0.35);
         // The dealer reads only a new size on the table, by its amount alone: "Sixty thousand".
         // A call (the same amount again) goes unsaid. The newest call-out replaces any still
         // waiting, so he never falls behind the table and the table never waits for him.
         if (ev.action === 'ALL_IN') voice.say('all-in', { cut: true });
         else if (ev.action === 'CHECK') voice.say('check', { next: true });
         else if (ev.action === 'BET' || ev.action === 'RAISE') voice.say(betLine(ev.action, ev.bet), { next: true });
+        else if (SIZED.has(ev.action)) voice.say(betLine('RAISE', ev.bet), { next: true });
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));
@@ -414,7 +423,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
           target.node.append(name);
         }
         // A full house or better at showdown is a moment.
-        if (ev.seat === me && BIG_HANDS.has(ev.hand)) await t.bigWin(ev.amount, { title: ev.hand, subtitle: '홀덤' });
+        if (ev.seat === me && BIG_HANDS.has(ev.hand)) await t.bigWin(ev.amount, { title: ev.hand, subtitle: pk.gameLabel });
         break;
       }
       case 'end': {

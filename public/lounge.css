@@ -583,6 +583,9 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .tier-emblem .tier-cut{fill:none;stroke:var(--t-line);stroke-opacity:.55;stroke-width:1.2}
 .tier-emblem .tier-shine{fill:var(--t-a);opacity:.55}
 .tier-emblem .tier-star{fill:var(--t-line)}
+.tier-emblem--iron{--t-a:#8a8f96;--t-b:#2e3135;--t-line:#c9cdd2}
+.tier-emblem--emerald{--t-a:#5fd39a;--t-b:#16452f;--t-line:#dcffec}
+.tier-emblem--grandmaster{--t-a:#ff6f91;--t-b:#4d1226;--t-line:#ffe1ea}
 .tier-emblem--silver{--t-a:#d7dce3;--t-b:#5d636c;--t-line:#ffffff}
 .tier-emblem--gold{--t-a:#e2c27a;--t-b:#6b5426;--t-line:#fff3d1}
 .tier-emblem--platinum{--t-a:#9fe0d8;--t-b:#24524f;--t-line:#e9fffb}
@@ -598,7 +601,8 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .rank-bar i{display:block;height:100%;background:var(--white);border-radius:2px}
 .rank-note{margin:10px 0 0;font-size:12px}
 .season-mytier{display:flex;align-items:center;gap:8px;font:650 15px var(--sans)}
-.tier-ladder{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.tier-ladder{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+@media (max-width:719px){.tier-ladder{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .tier-ladder li{display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:10px;border:1px solid transparent;text-align:center}
 .tier-ladder li span{font:600 11px var(--sans);white-space:nowrap}
 .tier-ladder li small{color:var(--dim);font-size:10px;white-space:nowrap}

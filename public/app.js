@@ -36,6 +36,9 @@ import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/t
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
+import { watchErrors } from './js/error-report.js';
+
+watchErrors();
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 

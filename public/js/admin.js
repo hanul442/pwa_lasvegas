@@ -4,7 +4,7 @@ import { formatCH, formatFull, el } from './fx.js';
 
 const PRESETS = [1e8, 5e8, 1e9, 1e10];
 // Survives the profile re-rendering after every state change.
-const ui = { mode: 'grant', amount: PRESETS[2], target: null, message: '', ok: false };
+const ui = { mode: 'grant', amount: PRESETS[2], target: null, message: '', ok: false, temp: null, armed: false };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
 export function renderAdmin(root, state, onChanged) {
@@ -34,10 +34,22 @@ export function renderAdmin(root, state, onChanged) {
         <p class="admin-msg${ok ? ' is-ok' : ''}" role="status">${esc(message)}</p>
         <button type="submit" class="pill-button pill-button--solid">${formatCH(amount)} ${mode === 'grant' ? '지급하기' : '회수하기'}</button>
       </form>
+      <h3 class="admin-log-head">비밀번호 초기화</h3>
+      <p class="admin-note">위에서 고른 플레이어에게 임시 비밀번호를 만들어 줘요. 그 플레이어는 모든 기기에서 로그아웃되고, 받은 비밀번호로 들어와 프로필에서 바꾸면 돼요.</p>
+      ${ui.temp ? `<p class="account-code"><span>${esc(ui.temp.username)}</span><code>${esc(ui.temp.password)}</code><small>지금만 보여요. 플레이어에게 전해 주세요.</small></p>` : ''}
+      <button type="button" class="pill-button${ui.armed ? ' is-armed' : ''}" data-reset-password>${ui.armed ? '한 번 더 누르면 초기화해요' : '임시 비밀번호 만들기'}</button>
       <h3 class="admin-log-head">최근 운영 기록</h3>
       <ul class="ledger admin-log">${log || '<li><span>아직 기록이 없어요</span></li>'}</ul>`;
     const form = box.querySelector('form');
-    form.player.addEventListener('change', () => { ui.target = form.player.value; });
+    form.player.addEventListener('change', () => { ui.target = form.player.value; ui.temp = null; ui.armed = false; paint(); });
+    box.querySelector('[data-reset-password]').addEventListener('click', async e => {
+      if (!ui.armed) { ui.armed = true; paint(); box.querySelector('[data-reset-password]').focus(); return; }
+      ui.armed = false;
+      e.target.disabled = true;
+      try { ui.temp = await api.adminResetPassword(ui.target); }
+      catch (err) { ui.temp = null; Object.assign(ui, { message: errorMessage(err), ok: false }); }
+      paint();
+    });
     box.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { ui.mode = b.dataset.mode; paint(); }));
     box.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { ui.amount = Number(b.dataset.amount); paint(); }));
     form.custom.addEventListener('change', () => {

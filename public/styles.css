@@ -45,7 +45,10 @@ button:disabled{cursor:not-allowed}
 .sound-toggle.is-muted{opacity:.45}
 .settings-toggle svg,.table-settings svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
 .settings-toggle.is-active{color:var(--white);border-color:var(--hair-strong)}
-.wallet{display:flex;align-items:center;gap:6px;min-height:44px;padding:0;border:0;background:none;color:inherit}
+.wallet{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-height:44px;padding:0;border:0;background:none;color:inherit}
+.wallet-main{display:flex;align-items:baseline;gap:6px}
+.wallet-held{font-style:normal;font-size:11px;line-height:1.2;color:var(--smoke);white-space:nowrap;font-variant-numeric:tabular-nums}
+.wallet-held[hidden]{display:none}
 .wallet-chip{display:none}
 .wallet strong{font:600 17px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .wallet small{color:var(--smoke);font-size:13px}

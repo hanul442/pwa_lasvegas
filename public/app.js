@@ -72,6 +72,7 @@ const playable = g => !g.event || Boolean(eventOf(g));
 const surfaces = [...document.querySelectorAll('[data-surface]')];
 const navItems = [...document.querySelectorAll('[data-nav]')];
 const walletEl = document.querySelector('[data-wallet]');
+const walletHeld = document.querySelector('[data-wallet-held]');
 const tableMount = document.querySelector('[data-table-mount]');
 let state = null;
 let lastLobbyTrigger = null;
@@ -300,6 +301,11 @@ function applyState(next) {
   if (shownWallet === null || shownWallet === available) walletEl.textContent = formatCH(available);
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
+  // The top bar is the wallet; chips still on a table get their own small line so 0원 never
+  // reads as "everything is gone" while the bank counts them.
+  const held = state.user.account.locked;
+  walletHeld.hidden = !(held > 0);
+  walletHeld.textContent = held > 0 ? `테이블 ${formatCH(held)}` : '';
   applyCosmetics(state);
   paintNavDots(state);
   renderRecharge();
@@ -328,13 +334,20 @@ function tableStillThere(game, tier) {
   if (!game || !playable(game) || !TIERS[tier]) return false;
   return !game.event || eventEntry(eventOf(game))?.tier.slug === tier;
 }
+const resumeTier = (r, game) => (TIERS[r.floor] ? r.floor : (lastTier(game.id) || FIRST_TIER.slug));
+// The bank's "테이블로 가기": back to the first open round, as the lobby's 이어하기 does.
+document.addEventListener('vegas:resume', e => {
+  const r = (state?.openRounds || []).find(x => !x.left);
+  const game = r && GAMES.find(g => g.id === r.game);
+  if (game && playable(game)) sitAt(game, resumeTier(r, game), e.detail?.trigger, { seated: true });
+});
 function renderResume() {
   const slot = document.querySelector('[data-resume]');
-  const open = (state?.openRounds || []).map(r => ({ r, game: GAMES.find(g => g.id === r.game) })).filter(x => x.game && playable(x.game));
+  const open = (state?.openRounds || []).filter(r => !r.left).map(r => ({ r, game: GAMES.find(g => g.id === r.game) })).filter(x => x.game && playable(x.game));
   slot.hidden = !open.length;
   if (!open.length) { slot.replaceChildren(); return; }
   const { r, game } = open[0];
-  const tier = TIERS[r.floor] ? r.floor : (lastTier(game.id) || FIRST_TIER.slug);
+  const tier = resumeTier(r, game);
   const locked = r.locked || state.user.account.locked || 0;
   const b = el('button', 'resume-button');
   b.type = 'button';

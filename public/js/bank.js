@@ -193,13 +193,31 @@ function creditBlock(state) {
     ? `<p class="bank-flag">파산 후 ${Math.ceil((Date.parse(b.credit.bannedUntil) - Date.now()) / 3_600_000)}시간 동안 제도권 대출이 막혀 있어요</p>` : '';
   box.innerHTML = `
     <dl class="bank-sums">
-      <div><dt>보유 칩</dt><dd>${won(a.available + a.locked)}</dd></div>
+      <div><dt>지갑</dt><dd>${won(a.available)}</dd></div>
       <div><dt>빚</dt><dd class="${b.debt > 0 ? 'neg' : ''}">${b.debt > 0 ? '-' : ''}${won(b.debt)}</dd></div>
       <div><dt>순자산</dt><dd>${won(b.netWorth)}</dd></div>
     </dl>
+    ${heldLine(state)}
     <div class="bank-grade"><span>신용 <b>${b.credit.grade}등급</b></span><span class="bank-score" aria-label="신용 점수 ${score}점, 1000점 만점"><i style="width:${score / 10}%"></i></span><small>${score} / 1000</small></div>${ban}`;
+  const go = box.querySelector('[data-held-go]');
+  if (go) go.addEventListener('click', () => resumeTable(go));
   return box;
 }
+
+// Chips still on a table (a round not finished, a poker seat not left) are the player's but not in
+// the wallet: the top bar shows the wallet, so the bank says where the rest is and how it comes back.
+const GAME_NAMES = { blackjack: '블랙잭', matgo: '맞고', gostop: '고스톱', seotda: '섯다', poker: '홀덤', sevenpoker: '7포커' };
+const resumable = state => (state.openRounds || []).find(r => !r.left) || null;
+function heldLine(state) {
+  const locked = state.user.account.locked;
+  if (!(locked > 0)) return '';
+  const open = state.openRounds || [], r = resumable(state), left = open.find(x => x.left);
+  const where = r ? `${r.event ? '이벤트 테이블' : GAME_NAMES[r.game] || '테이블'}${r.room ? ` · 친구 방 ${r.room}` : ''}` : left ? `${GAME_NAMES[left.game] || '친구 방'} · 친구 방 ${left.room}` : '';
+  const how = '판이 끝나면 지갑으로 돌아와요';
+  return `<div class="bank-held"><span class="bank-held-text">테이블에 걸린 칩 <b>${won(locked)}</b><small>${where ? `${where} · ` : ''}${how}</small></span>${r ? '<button class="pill-button" type="button" data-held-go>테이블로 가기</button>' : ''}</div>`;
+}
+// app.js owns the tables; it opens the open round when asked.
+function resumeTable(btn) { document.dispatchEvent(new CustomEvent('vegas:resume', { detail: { trigger: btn } })); }
 
 function loansBlock(state, onChanged) {
   const b = state.bank;
@@ -284,8 +302,14 @@ function payBlock(state, onChanged) {
     daily.claimed ? '받음' : `+${formatCH(daily.reward)}`, !daily.claimed, btn => claimDaily(btn, onChanged));
   const claim = kind => btn => claimSupport(kind, btn, onChanged);
   row('정부 지원금', '일주일에 한 번 · 월요일에 새로', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
-  const left = sup.welfare.perDay - sup.welfare.taken;
-  row('구제금융', `칩 ${won(sup.welfare.below)} 미만일 때 · 오늘 ${left}번 남음`, sup.welfare.claimed ? '오늘 다 받음' : sup.welfare.qualified ? `+${formatCH(sup.welfare.amount)}` : '대상 아님', sup.welfare.qualified && !sup.welfare.claimed, claim('welfare'));
+  const w = sup.welfare, left = w.perDay - w.taken;
+  // Say why it can't be taken, in the player's terms: chips still on a table, or chips in the wallet.
+  if (w.claimed) row('구제금융', `오늘 ${w.perDay}번 다 받았어요 · 내일 다시 받을 수 있어요`, '오늘 다 받음', false, () => {});
+  else if (w.qualified) row('구제금융', `칩 ${won(w.below)} 미만일 때 · 오늘 ${left}번 남음`, `+${formatCH(w.amount)}`, true, claim('welfare'));
+  else if (w.reason === 'TABLE') {
+    const r = resumable(state);
+    row('구제금융', `테이블에 ${won(w.onTable)}이 걸려 있어요 · 판이 끝난 뒤 칩이 ${won(w.below)} 밑이면 받아요`, r ? '테이블로 가기' : '판 끝나면', Boolean(r), resumeTable);
+  } else row('구제금융', `칩이 ${won(w.below)} 미만일 때 받아요 · 지금 지갑에 ${won(state.user.account.available)}`, '대상 아님', false, () => {});
   box.append(list);
   return box;
 }

@@ -145,9 +145,11 @@
 .name-frame--onyx::before,.name-frame--onyx::after{content:"";position:absolute;width:5px;height:5px;border-color:#e9eef3;border-style:solid}
 .name-frame--onyx::before{left:2px;top:2px;border-width:1px 0 0 1px}
 .name-frame--onyx::after{right:2px;bottom:2px;border-width:0 1px 1px 0}
-.name-frame--platinum{border:1px solid transparent;background:linear-gradient(#0d0e10,#0d0e10) padding-box,linear-gradient(110deg,#8d949e,#ffffff 30%,#9aa1ab 50%,#ffffff 70%,#8d949e) border-box;background-size:100% 100%,220% 100%;animation:plate-sheen 5s linear infinite}
+.name-frame--platinum{border:1px solid transparent;background:linear-gradient(#0d0e10,#0d0e10) padding-box,linear-gradient(110deg,#8d949e,#ffffff 30%,#9aa1ab 50%,#ffffff 70%,#8d949e) border-box;background-size:100% 100%,220% 100%;animation:plate-sheen 5s linear 2}
 .name-frame--diamond{position:relative;border:1px solid #fff;background:linear-gradient(180deg,#ffffff1c,#ffffff05);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #ffffff80,0 0 12px #ffffff40;padding-left:20px}
 .name-frame--diamond::before{content:"";position:absolute;left:6px;top:50%;width:9px;height:9px;margin-top:-4.5px;background:var(--star);clip-path:var(--star-shape)}
+/* The sheen crosses twice when the plate appears, then rests: a moving background is repainted
+   every frame, and a ranking full of platinum plates kept the phone busy for nothing. */
 @keyframes plate-sheen{to{background-position:0 0,-220% 0}}
 @media (prefers-reduced-motion:reduce){.name-frame--platinum{animation:none}}
 .skin-preview--frame{font:600 17px var(--sans);letter-spacing:-.01em;padding:0 10px}

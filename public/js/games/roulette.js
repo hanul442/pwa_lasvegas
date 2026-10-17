@@ -32,7 +32,9 @@ function wheelSvg() {
     return `<path data-n="${n}" d="M${p(R, a0)} A${R},${R} 0 0 1 ${p(R, a1)} L${p(r, a1)} A${r},${r} 0 0 0 ${p(r, a0)} Z" fill="${fill}"/>${label}`;
   }).join('');
   const frets = ORDER.map((_, i) => `<line x1="0" y1="-60" x2="0" y2="-86" transform="rotate(${(i + 0.5) * STEP})"/>`).join('');
-  return `<svg class="wheel-rotor" viewBox="-100 -100 200 200" aria-hidden="true">
+  // The turning is done on a plain box around the drawing: a box's rotation runs on the GPU,
+  // while rotating the <svg> itself makes the browser lay out and repaint every number each frame.
+  return `<div class="wheel-rotor" aria-hidden="true"><svg viewBox="-100 -100 200 200">
     <defs>
       <radialGradient id="cone" cx="40%" cy="35%"><stop offset="0" stop-color="#6b5038"/><stop offset=".55" stop-color="#3a2a1e"/><stop offset="1" stop-color="#1a120c"/></radialGradient>
       <radialGradient id="hub" cx="40%" cy="35%"><stop offset="0" stop-color="#efe2c4"/><stop offset="1" stop-color="#8c7448"/></radialGradient>
@@ -43,7 +45,7 @@ function wheelSvg() {
     <circle r="60" fill="url(#cone)"/>
     <circle r="56" fill="none" stroke="#bfa476" stroke-opacity=".4" stroke-width=".8"/>
     <g class="turret">${[0, 90, 180, 270].map(a => `<rect x="-2.5" y="-40" width="5" height="34" rx="2.5" transform="rotate(${a})" fill="url(#hub)"/>`).join('')}<circle r="10" fill="url(#hub)"/></g>
-  </svg>`;
+  </svg></div>`;
 }
 
 function boardMarkup() {

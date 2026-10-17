@@ -38,7 +38,7 @@ import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
 import { watchErrors } from './js/error-report.js';
-import { tierEmblem, tierName, rankBadges, maybeSeasonMoment } from './js/rank.js';
+import { tierEmblem, tierName, rankBadges, maybeSeasonMoment, TIERS as TIERS_RANK } from './js/rank.js';
 
 watchErrors();
 
@@ -659,10 +659,10 @@ function renderRanking() {
   }
   const rs = state?.rankSeason;
   if (rankPeriod === 'tier' && rs) {
-    const ladder = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'legend'];
+    const ladder = Object.keys(TIERS_RANK);
     const lastTier = rs.last?.podium?.length ? `<p class="season-last">${rs.last.name} 챌린저 ${rs.last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '';
     head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${timeLeft(rs.season.endsAt)} 남음 · 1일 0시에 모두 초기화</small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>
-      <ol class="tier-ladder" aria-label="티어 기준">${ladder.map(id => `<li class="${id === rs.tier ? 'is-me' : ''}">${tierEmblem(id, { size: 26, label: false })}<span>${tierName(id)}</span><small>${{ bronze: '시작', silver: '10억', gold: '100억', platinum: '1천억', diamond: '1조', master: '10조', legend: '100조' }[id]}</small></li>`).join('')}</ol>${lastTier}`;
+      <ol class="tier-ladder" aria-label="티어 기준">${ladder.map(id => `<li class="${id === rs.tier ? 'is-me' : ''}">${tierEmblem(id, { size: 26, label: false })}<span>${tierName(id)}</span><small>${TIERS_RANK[id].label}</small></li>`).join('')}</ol>${lastTier}`;
   }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');

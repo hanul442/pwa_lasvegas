@@ -3,22 +3,25 @@
 import { el, formatCH, sound } from './fx.js';
 
 export const TIERS = {
-  bronze: { name: '브론즈', min: 0 },
-  silver: { name: '실버', min: 1e9 },
-  gold: { name: '골드', min: 1e10 },
-  platinum: { name: '플래티넘', min: 1e11 },
-  diamond: { name: '다이아몬드', min: 1e12 },
-  master: { name: '마스터', min: 1e13 },
-  legend: { name: '레전드', min: 1e14 }
+  iron: { name: '아이언', min: 0, label: '시작' },
+  bronze: { name: '브론즈', min: 1e8, label: '1억' },
+  silver: { name: '실버', min: 1e9, label: '10억' },
+  gold: { name: '골드', min: 1e10, label: '100억' },
+  platinum: { name: '플래티넘', min: 1e11, label: '1천억' },
+  emerald: { name: '에메랄드', min: 5e11, label: '5천억' },
+  diamond: { name: '다이아몬드', min: 1e12, label: '1조' },
+  master: { name: '마스터', min: 1e13, label: '10조' },
+  grandmaster: { name: '그랜드마스터', min: 5e13, label: '50조' },
+  legend: { name: '레전드', min: 1e14, label: '100조' }
 };
 export const tierName = id => TIERS[id]?.name || id;
 
 // A faceted hexagon in the tier's metal; higher tiers add a cut and a star.
 export function tierEmblem(id, { size = 40, label = true } = {}) {
-  const t = TIERS[id] ? id : 'bronze';
+  const t = TIERS[id] ? id : 'iron';
   const rank = Object.keys(TIERS).indexOf(t);
-  const star = rank >= 4 ? '<path class="tier-star" d="M24 15.5l2.3 4.8 5.2.6-3.9 3.6 1 5.2-4.6-2.6-4.6 2.6 1-5.2-3.9-3.6 5.2-.6z"/>' : '';
-  const cut = rank >= 2 ? '<path class="tier-cut" d="M24 9.5 36.5 16.7v14.6L24 38.5 11.5 31.3V16.7z"/>' : '';
+  const star = rank >= 6 ? '<path class="tier-star" d="M24 15.5l2.3 4.8 5.2.6-3.9 3.6 1 5.2-4.6-2.6-4.6 2.6 1-5.2-3.9-3.6 5.2-.6z"/>' : '';
+  const cut = rank >= 3 ? '<path class="tier-cut" d="M24 9.5 36.5 16.7v14.6L24 38.5 11.5 31.3V16.7z"/>' : '';
   return `<svg class="tier-emblem tier-emblem--${t}" width="${size}" height="${size}" viewBox="0 0 48 48" ${label ? `role="img" aria-label="${tierName(t)}"` : 'aria-hidden="true"'}><path class="tier-face" d="M24 3 42.2 13.5v21L24 45 5.8 34.5v-21z"/>${cut}<path class="tier-shine" d="M24 3 42.2 13.5 24 24 5.8 13.5z"/>${star}</svg>`;
 }
 

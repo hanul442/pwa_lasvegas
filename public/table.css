@@ -328,7 +328,7 @@
 .wheel.is-lifted{position:fixed;z-index:61;margin:0;transform-origin:0 0}
 .wheel.is-lifted .wheel-result{font-size:clamp(30px,11vw,52px)}
 .wheel-hold{flex:none;aspect-ratio:1}
-.wheel-shade{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 46%,#0a0b0d99,#0a0b0de6 70%);pointer-events:none}
+.wheel-shade{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 46%,#0a0b0d66,#0a0b0dbf 70%);pointer-events:none}
 .wheel-result--red{background:#8f2a2a}.wheel-result--black{background:#1a1714}.wheel-result--green{background:#2e5e45}
 .rl-history{display:flex;gap:4px;list-style:none;margin:0;padding:0;min-height:22px}
 .hist{min-width:26px;height:24px;padding:0 4px;border-radius:4px;display:grid;place-items:center;font-size:13px}

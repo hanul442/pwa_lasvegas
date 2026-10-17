@@ -37,7 +37,7 @@ test('the dealer never falls behind the bots, and bots speak one at a time', asy
 test('events live in their own tab, out of the game lists', async () => {
   const html = await read('index.html');
   const app = await read('app.js');
-  assert.match(html, /data-nav="events">이벤트</);
+  assert.match(html, /data-nav="events">.*<b class="nav-label">이벤트</);
   assert.match(html, /data-surface="events"/);
   assert.match(app, /GAMES\.filter\(g => !g\.event\)/);
   assert.match(app, /if \(name === 'events'\) renderEventTab\(\)/);

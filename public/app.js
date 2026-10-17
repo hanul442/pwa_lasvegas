@@ -2,6 +2,7 @@
 import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
+import { renderAccountTools, forgetShownCode } from './js/account.js';
 import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
@@ -245,6 +246,21 @@ async function refresh() {
 
 const isActive = name => document.querySelector(`[data-surface="${name}"]`).classList.contains('is-active');
 
+// A warm dot on a tab that has money waiting: free pay or support in 은행, an achievement reward
+// in 프로필. The tab's spoken name says so too.
+function paintNavDots(st) {
+  const eng = st.engagement || {}, sup = eng.support || {};
+  const bank = Boolean((eng.daily && !eng.daily.claimed) || (sup.grant && !sup.grant.claimed) || (sup.welfare?.qualified && !sup.welfare.claimed));
+  const ach = (st.achievements || []).filter(a => a.done && !a.claimed).length;
+  for (const [name, on, note] of [['bank', bank, '받을 돈 있음'], ['profile', ach > 0, `받을 업적 보상 ${ach}개`]]) {
+    const dot = document.querySelector(`[data-dot="${name}"]`);
+    if (!dot) continue;
+    dot.hidden = !on;
+    const label = dot.parentElement.querySelector('.nav-label').textContent;
+    if (on) dot.parentElement.setAttribute('aria-label', `${label}, ${note}`); else dot.parentElement.removeAttribute('aria-label');
+  }
+}
+
 // Every fresh server state lands here: wallet, lobby lounge, ranking and profile.
 function applyState(next) {
   state = next;
@@ -254,6 +270,7 @@ function applyState(next) {
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
   shownWallet = available;
   applyCosmetics(state);
+  paintNavDots(state);
   renderRecharge();
   renderGameLists();
   maybeBust(state);
@@ -739,12 +756,15 @@ function renderProfile() {
     <h2 class="sub-head">층</h2><ul class="floor-rows">${floors}</ul>
     <div data-ledger></div>
     <h2 class="sub-head">계정</h2>
-    <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`;
+    <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>
+    <div data-account-tools></div>`;
   renderAchievements(root.querySelector('[data-achievements]'));
   root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
   renderLedger(root.querySelector('[data-ledger]'), state);
+  renderAccountTools(root.querySelector('[data-account-tools]'), state, applyState);
   renderAdmin(root, state, applyState);
   root.querySelector('[data-sign-out]').addEventListener('click', async () => {
+    forgetShownCode();
     await forgetDevice();
     await api.logout().catch(() => {});
     signedOut();
@@ -779,7 +799,22 @@ function renderAchievements(box) {
   const all = el('ul', 'mission-list');
   all.append(...[...open.slice(ready.length ? 4 : 6), ...done].map(row));
   more.append(all);
-  box.replaceChildren(ul, more);
+  // Several rewards waiting: one tap takes them all, one after another.
+  const takeAll = ready.length > 1 ? el('button', 'pill-button pill-button--solid ach-all', `보상 ${ready.length}개 모두 받기 · ${formatCH(ready.reduce((n, a) => n + a.reward, 0))}`) : null;
+  if (takeAll) {
+    takeAll.type = 'button';
+    takeAll.addEventListener('click', async () => {
+      takeAll.disabled = true;
+      let last = null, sum = 0;
+      for (const a of ready) {
+        try { const out = await api.achievementClaim(a.id); sum += out.claim.amount; last = out.state; }
+        catch (e) { if (e?.code !== 'ACHIEVEMENT_ALREADY_CLAIMED') { errorToast(e); break; } }
+      }
+      if (sum) await chipsToWallet(takeAll, sum);
+      if (last) applyState(last); else takeAll.disabled = false;
+    });
+  }
+  box.replaceChildren(...(takeAll ? [takeAll] : []), ul, more);
 }
 
 // The notification sheet only interrupts the menus, never a hand in progress.

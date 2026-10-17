@@ -11,18 +11,49 @@
 .shop-summary--two{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 6px}
 .shop-note{margin:12px 0 4px;color:var(--smoke);font-size:14px;line-height:1.6}
 
-.shop-list,.skin-grid,.showcase-list{list-style:none;margin:0;padding:0}
-.shop-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--hair)}
+.skin-grid,.showcase-list,.lux-shelf,.lux-grid,.skin-slots{list-style:none;margin:0;padding:0}
 .lux-icon{width:44px;height:44px;color:var(--white);opacity:.9}
-.shop-row-text{display:grid;min-width:0}
-.shop-row-name{font:600 16px/1.35 var(--sans);letter-spacing:-.01em}
-.shop-row-text small{color:var(--smoke);font-size:13px;line-height:1.45}
-.shop-price{margin-top:3px;font:600 15px var(--sans);font-variant-numeric:tabular-nums}
-.shop-tag{display:inline-block;margin-left:6px;padding:1px 7px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--white);font-size:11px;font-weight:600;vertical-align:2px}
-.shop-row.is-owned .lux-icon{opacity:1}
-.shop-row.is-owned .shop-price{color:var(--smoke);font-weight:500}
-.shop-row.is-short .lux-icon,.shop-row.is-short .shop-row-name{opacity:.55}
-.shop-buy{min-height:40px;padding:0 16px;font-size:14px;flex:none}
+.shop-head{margin-top:26px}
+.shop-empty{margin:4px 0 0;padding:18px;border:1px dashed var(--hair-strong);border-radius:16px;color:var(--smoke);font-size:14px;line-height:1.6}
+
+/* my collection: a shelf of what I own, dearest first */
+.lux-shelf{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 6px;margin:0 -2px;scrollbar-width:none}
+.lux-shelf::-webkit-scrollbar{display:none}
+.lux-shelf li{flex:none;scroll-snap-align:start}
+.lux-piece{display:grid;justify-items:start;gap:2px;width:132px;min-height:132px;padding:14px;border:1px solid var(--hair-strong);border-radius:16px;text-align:left;
+  background:radial-gradient(120% 90% at 20% 0,#22262d,#0d0e10 70%)}
+.lux-piece .lux-icon{width:40px;height:40px;opacity:1;margin-bottom:8px}
+.lux-piece-name{font:600 14px/1.3 var(--sans);letter-spacing:-.01em}
+.lux-piece small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
+
+/* the next goal: the cheapest piece not owned, and how close the chips are */
+.lux-goal{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:6px 14px;width:100%;margin-top:14px;padding:14px 16px 16px;border:1px solid var(--hair);border-radius:16px;background:#0d0e10;text-align:left}
+.lux-goal-label{grid-column:1/-1;font-size:13px;color:var(--smoke)}
+.lux-goal-text{display:grid;min-width:0}
+.lux-goal-text b{font:600 16px/1.35 var(--sans)}
+.lux-goal-text small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
+.lux-goal-bar{grid-column:1/-1;height:3px;margin-top:6px;border-radius:3px;background:var(--hair);overflow:hidden}
+.lux-goal-bar i{display:block;height:100%;background:var(--white);border-radius:inherit}
+.lux-goal.is-ready{border-color:var(--hair-strong)}
+.lux-goal.is-ready .lux-goal-text small{color:var(--white)}
+
+/* the ladder: cards are the buttons */
+.lux-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+@media (min-width:640px){.lux-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1000px){.lux-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.lux-grid li{display:flex}
+.lux-card{position:relative;display:grid;align-content:start;justify-items:start;gap:1px;width:100%;padding:14px;border:1px solid var(--hair);border-radius:16px;background:#0d0e10;text-align:left;transition:border-color .2s}
+.lux-card .lux-icon{width:40px;height:40px;margin-bottom:12px}
+.lux-card-group{font-size:13px;color:var(--smoke)}
+.lux-card-name{font:600 15px/1.3 var(--sans);letter-spacing:-.01em}
+.lux-card-price{margin-top:6px;font:600 17px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.lux-card-own,.lux-card-need,.lux-card-buy{margin-top:2px;font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.lux-card-own{display:inline-flex;align-items:center;gap:5px;color:var(--white)}
+.lux-card-own i{width:9px;height:9px;background:var(--star);clip-path:var(--star-shape);flex:none}
+.lux-card.is-owned{border-color:var(--hair-strong);background:radial-gradient(120% 80% at 20% 0,#1e2228,#0d0e10 70%)}
+.lux-card.is-short .lux-icon,.lux-card.is-short .lux-card-name,.lux-card.is-short .lux-card-price{opacity:.6}
+@media (hover:hover){.lux-card:hover,.lux-piece:hover,.lux-goal:hover{border-color:#ffffff66}}
+.lux-card:focus-visible,.lux-piece:focus-visible,.lux-goal:focus-visible,.skin-slot:focus-visible{outline:2px solid var(--white);outline-offset:2px}
 
 /* sheets */
 .shop-sheet-body{margin-top:6px}
@@ -31,18 +62,23 @@
 .shop-sheet-hero b{display:block;font:600 24px var(--sans);font-variant-numeric:tabular-nums}
 .shop-sheet-hero small{color:var(--smoke);font-size:13px}
 .shop-sheet .lounge-note b{color:var(--white)}
+.shop-sheet .skin-stage{margin:12px 0 4px}
 
 /* skins */
 .skin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
 @media (min-width:640px){.skin-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:720px){.skin-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .skin-tile{position:relative;display:grid;grid-template-rows:auto auto auto;gap:10px;padding:12px;border:1px solid var(--hair);border-radius:16px;background:#0d0e10;min-width:0}
 .skin-tile.is-equipped{border-color:var(--white);box-shadow:inset 0 0 0 1px var(--white)}
 .skin-tile.is-locked .skin-preview{opacity:.5}
 .skin-text{display:grid;min-width:0}
 .skin-name{font:600 15px/1.3 var(--sans)}
 .skin-text small{color:var(--smoke);font-size:12.5px;line-height:1.45}
-.skin-act{min-height:36px;padding:0 14px;font-size:14px;justify-self:start}
-.skin-on{position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--white)}
+.skin-act{min-height:38px;padding:0 14px;font-size:14px;justify-self:start}
+.skin-price{font-weight:600;font-variant-numeric:tabular-nums}
+.skin-price.is-short{color:var(--smoke)}
+.skin-lock{font-size:13px;color:var(--smoke);align-self:center}
+.skin-on{display:inline-flex;align-items:center;gap:6px;min-height:38px;font-size:14px;font-weight:600;color:var(--white)}
 .skin-on::before{content:"";width:8px;height:8px;background:var(--star);clip-path:var(--star-shape)}
 .skin-preview{height:96px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:10px;background:radial-gradient(80% 90% at 50% 0,#1c2026,#0a0b0d);overflow:hidden}
 .skin-preview--cardBack{--card-w:54px}
@@ -121,12 +157,12 @@
 
 /* ---------- felts (table.js adds felt--skin-name to solo tables) ----------
    Event tables keep their own felt: not under .is-event, and never on an event felt. */
-.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-forest,.skin-preview.felt--skin-forest{--felt-a:#1d5e45;--felt-b:#0f3b2b;--felt-c:#041710}
-.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-oxblood,.skin-preview.felt--skin-oxblood{--felt-a:#5f1b25;--felt-b:#3b0e16;--felt-c:#160407}
-.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-navy,.skin-preview.felt--skin-navy{--felt-a:#1d365c;--felt-b:#10213f;--felt-c:#050b18}
-.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-teal,.skin-preview.felt--skin-teal{--felt-a:#1b6466;--felt-b:#0d3d40;--felt-c:#031618}
-.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-obsidian,.skin-preview.felt--skin-obsidian{--felt-a:#35303f;--felt-b:#17141d;--felt-c:#050407}
-.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-charcoal,.skin-preview.felt--skin-charcoal{--felt-a:#3a3d42;--felt-b:#222428;--felt-c:#0b0c0e}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-forest,.skin-preview.felt--skin-forest,.skin-stage.felt--skin-forest{--felt-a:#1d5e45;--felt-b:#0f3b2b;--felt-c:#041710}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-oxblood,.skin-preview.felt--skin-oxblood,.skin-stage.felt--skin-oxblood{--felt-a:#5f1b25;--felt-b:#3b0e16;--felt-c:#160407}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-navy,.skin-preview.felt--skin-navy,.skin-stage.felt--skin-navy{--felt-a:#1d365c;--felt-b:#10213f;--felt-c:#050b18}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-teal,.skin-preview.felt--skin-teal,.skin-stage.felt--skin-teal{--felt-a:#1b6466;--felt-b:#0d3d40;--felt-c:#031618}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-obsidian,.skin-preview.felt--skin-obsidian,.skin-stage.felt--skin-obsidian{--felt-a:#35303f;--felt-b:#17141d;--felt-c:#050407}
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-charcoal,.skin-preview.felt--skin-charcoal,.skin-stage.felt--skin-charcoal{--felt-a:#3a3d42;--felt-b:#222428;--felt-c:#0b0c0e}
 
 /* ---------- chip accents (shop.js sets data-chip-accent on the page) ---------- */
 :root[data-chip-accent="ivory"],.chip-accent--ivory{--chip-inlay:#fffffff0;--chip-inlay-w:1.9;--chip-halo:0;--plaque-inlay:#ffffffd9;--plaque-outline:#ffffff59}
@@ -145,9 +181,11 @@
 .name-frame--onyx::before,.name-frame--onyx::after{content:"";position:absolute;width:5px;height:5px;border-color:#e9eef3;border-style:solid}
 .name-frame--onyx::before{left:2px;top:2px;border-width:1px 0 0 1px}
 .name-frame--onyx::after{right:2px;bottom:2px;border-width:0 1px 1px 0}
-.name-frame--platinum{border:1px solid transparent;background:linear-gradient(#0d0e10,#0d0e10) padding-box,linear-gradient(110deg,#8d949e,#ffffff 30%,#9aa1ab 50%,#ffffff 70%,#8d949e) border-box;background-size:100% 100%,220% 100%;animation:plate-sheen 5s linear infinite}
+.name-frame--platinum{border:1px solid transparent;background:linear-gradient(#0d0e10,#0d0e10) padding-box,linear-gradient(110deg,#8d949e,#ffffff 30%,#9aa1ab 50%,#ffffff 70%,#8d949e) border-box;background-size:100% 100%,220% 100%;animation:plate-sheen 5s linear 2}
 .name-frame--diamond{position:relative;border:1px solid #fff;background:linear-gradient(180deg,#ffffff1c,#ffffff05);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #ffffff80,0 0 12px #ffffff40;padding-left:20px}
 .name-frame--diamond::before{content:"";position:absolute;left:6px;top:50%;width:9px;height:9px;margin-top:-4.5px;background:var(--star);clip-path:var(--star-shape)}
+/* The sheen crosses twice when the plate appears, then rests: a moving background is repainted
+   every frame, and a ranking full of platinum plates kept the phone busy for nothing. */
 @keyframes plate-sheen{to{background-position:0 0,-220% 0}}
 @media (prefers-reduced-motion:reduce){.name-frame--platinum{animation:none}}
 .skin-preview--frame{font:600 17px var(--sans);letter-spacing:-.01em;padding:0 10px}
@@ -159,7 +197,6 @@
 .pass-floor{scroll-margin-top:110px;border-radius:20px;outline:1px solid transparent;outline-offset:8px;transition:outline-color 1.2s}
 .pass-floor.is-focus{outline-color:#ffffff8c;animation:pass-focus 2.6s ease-out forwards}
 @keyframes pass-focus{70%{outline-color:#ffffff8c}to{outline-color:transparent}}
-.pass-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pass-mark{width:13px;height:13px;clip-path:var(--star-shape);background:#ffffff38;flex:none}
 .pass-floor.is-passed .pass-mark{background:var(--star)}
 .pass-floor.is-due .pass-head small{color:var(--white)}
@@ -167,3 +204,44 @@
 .tier-card.needs-pass{cursor:pointer}
 .tier-card.needs-pass small{color:var(--white)}
 .tier-card.needs-pass{border-style:dashed}
+
+/* ---------- what I wear: one picture of the whole look ---------- */
+.skin-worn{border:1px solid var(--hair);border-radius:20px;background:#0d0e10;overflow:hidden}
+.skin-stage{--felt-a:#1f6b4f;--felt-b:#114030;--felt-c:#051a12;position:relative;display:grid;grid-template-columns:auto auto;grid-template-rows:1fr auto;align-items:center;justify-content:center;gap:10px 26px;min-height:168px;padding:22px 18px 16px;
+  background:radial-gradient(90% 120% at 50% 0,var(--felt-a) 0,var(--felt-b) 55%,var(--felt-c) 100%);box-shadow:inset 0 0 0 1px #ffffff14,inset 0 -30px 60px #0007}
+.skin-stage.felt-swatch--house{--felt-a:#1f6b4f;--felt-b:#114030;--felt-c:#051a12}
+.shop-sheet .skin-stage{border-radius:16px;min-height:150px}
+.skin-stage-cards{--card-w:50px;display:flex}
+.skin-stage-cards .card{rotate:-7deg}
+.skin-stage-cards .card+.card{margin-left:-26px;rotate:6deg;translate:0 4px}
+.skin-stage-chips{--chip:40px;display:flex;align-items:flex-end}
+.skin-stage-chips{gap:6px}
+.skin-stage-name{grid-column:1/-1;justify-self:center;font:600 15px var(--sans);letter-spacing:-.01em;padding:4px 12px;border-radius:999px;background:#0008}
+.skin-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--hair)}
+.skin-slots li{display:flex;min-width:0}
+.skin-slots li+li{border-left:1px solid var(--hair)}
+.skin-slot{display:grid;align-content:center;gap:1px;width:100%;min-height:58px;padding:8px 10px;border:0;background:none;text-align:left;min-width:0}
+.skin-slot small{font-size:12px;color:var(--smoke);white-space:nowrap}
+.skin-slot span{font:600 13.5px/1.3 var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skin-slot.is-active{background:#ffffff0d;box-shadow:inset 0 -2px 0 var(--white)}
+@media (max-width:420px){.skin-slots{grid-template-columns:repeat(2,minmax(0,1fr))}.skin-slots li:nth-child(3){border-left:0}.skin-slots li:nth-child(n+3){border-top:1px solid var(--hair)}}
+
+/* the view switch under it: floors, or one slot at a time */
+.shop-filter{display:flex;gap:8px;margin:18px -16px 0;padding:0 16px 2px;overflow-x:auto;scrollbar-width:none}
+.shop-filter::-webkit-scrollbar{display:none}
+.shop-filter-chip{flex:none;min-height:40px;padding:0 15px;border:1px solid var(--hair-strong);border-radius:999px;background:none;color:var(--smoke);font-size:14px;white-space:nowrap}
+.shop-filter-chip.is-active{background:var(--white);border-color:var(--white);color:var(--ink);font-weight:600}
+
+/* floors fold: the one worth buying into opens by itself */
+details.pass-floor{margin-top:12px;padding:0 14px;border:1px solid var(--hair);border-radius:18px;background:#0b0c0e}
+details.pass-floor[open]{padding-bottom:14px}
+details.pass-floor.is-due{border-color:var(--hair-strong)}
+.pass-floor>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:4px 10px;min-height:60px;padding:12px 0}
+.pass-floor>summary::-webkit-details-marker{display:none}
+.pass-floor>summary::after{grid-column:4;grid-row:1;content:"";width:8px;height:8px;border:solid var(--smoke);border-width:0 1.5px 1.5px 0;rotate:45deg;translate:0 -2px;transition:rotate .2s}
+.pass-floor[open]>summary::after{rotate:225deg;translate:0 2px}
+.pass-name{font:600 19px var(--display);font-stretch:112%;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pass-count{grid-column:3;grid-row:1;font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.pass-state{grid-column:2/-1;font-size:13px;color:var(--smoke);line-height:1.4}
+.pass-floor.is-due .pass-state{color:var(--white)}
+.pass-floor .skin-grid{margin-top:2px}

@@ -672,6 +672,34 @@
 .pk-roomchip{position:absolute;left:8px;top:6px;z-index:8;display:flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--hair-strong);background:#0a0b0dcc;color:var(--white);font:500 12px var(--sans)}
 .pk-roomchip[hidden]{display:none}
 .pk-roomchip b{font:700 13px var(--display);font-stretch:112%;letter-spacing:.18em}
+/* friends' tournaments: cash/tournament switch, AI toggle, rules, list badge */
+.pk-mode{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:#ffffff0a;box-shadow:inset 0 0 0 1px var(--hair)}
+.pk-mode button{min-height:40px;border:0;border-radius:999px;background:none;color:var(--smoke);font:600 14px var(--sans)}
+.pk-mode button[aria-checked="true"]{background:var(--white);color:var(--ink)}
+.pk-mode button:focus-visible,.pk-toggle input:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.pk-tourney-rules{display:grid;gap:4px;margin:0;padding:0 0 0 2px;list-style:none;font:500 13px/1.45 var(--sans);color:#d9dde2}
+.pk-tourney-rules[hidden]{display:none}
+.pk-tourney-rules li{display:flex;gap:8px}
+.pk-tourney-rules li::before{content:"";flex:none;width:4px;height:4px;margin-top:.62em;border-radius:50%;background:var(--star)}
+.pk-toggle{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 12px;border-radius:14px;background:#ffffff08;box-shadow:inset 0 0 0 1px var(--hair);cursor:pointer}
+.pk-toggle[hidden]{display:none}
+.pk-toggle input{flex:none;width:20px;height:20px;margin:0;accent-color:var(--white)}
+.pk-toggle span{display:grid;gap:1px;line-height:1.35}
+.pk-toggle b{font:600 14px var(--sans);color:var(--white)}
+.pk-toggle small{font-size:12px;color:var(--smoke)}
+.pk-badge{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:999px;border:1px solid #f3cf7a66;color:var(--star);font:700 11px/1.5 var(--sans);font-style:normal;letter-spacing:.02em;vertical-align:1px}
+.pk-room-row button:disabled{background:#ffffff1f;color:var(--smoke)}
+/* the level clock sits top right, across from the room code chip, at every size */
+.royale-hud.pk-tourney-hud{top:6px;bottom:auto;left:auto;right:8px;transform:none;display:grid;gap:1px;padding:4px 9px;text-align:right}
+.royale-hud.pk-tourney-hud[hidden]{display:none}
+.pk-tourney-hud i{font-style:normal}
+@media (max-width:480px){
+  .pk-hud-long{display:none}
+  .royale-hud.pk-tourney-hud{right:4px;padding:3px 7px;font-size:10px;letter-spacing:-.01em}
+}
+@media (max-height:820px) and (orientation:portrait){
+  .royale-hud.pk-tourney-hud span:nth-child(2){display:none}
+}
 .pk-seat.is-empty .pk-plate{background:none;box-shadow:inset 0 0 0 1px #ffffff2e;color:var(--smoke)}
 .pk-seat.is-empty{opacity:.6}
 .pk-seat.is-human [data-name]::before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--star);clip-path:var(--star-shape);vertical-align:1px}

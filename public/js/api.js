@@ -140,6 +140,7 @@ export const api = {
   holdemRoomAction: (code, handNo, seq, action, amount, cursor) => request('/api/holdem/rooms/action', { method: 'POST', body: { code, handNo, seq, action, amount, cursor } }),
   holdemRoomLeave: code => request('/api/holdem/rooms/leave', { method: 'POST', body: { code } }),
   holdemRoomShow: (code, cursor) => request('/api/holdem/rooms/show', { method: 'POST', body: { code, cursor } }),
+  holdemRoomChat: (code, line, cursor) => request('/api/holdem/rooms/chat', { method: 'POST', body: { code, ...line, cursor } }),
   // Friends' rooms for 섯다, 고스톱 and 맞고: the same shape, one route set for all three.
   rooms: game => request(`/api/rooms${game ? `?game=${game}` : ''}`),
   room: (code, cursor) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),
@@ -147,11 +148,14 @@ export const api = {
   roomJoin: code => request('/api/rooms/join', { method: 'POST', body: { code } }),
   roomStart: (code, cursor) => request('/api/rooms/start', { method: 'POST', body: { code, cursor } }),
   roomAction: (code, handNo, seq, move, cursor) => request('/api/rooms/action', { method: 'POST', body: { code, handNo, seq, ...move, cursor } }),
-  roomLeave: code => request('/api/rooms/leave', { method: 'POST', body: { code } })
+  roomLeave: code => request('/api/rooms/leave', { method: 'POST', body: { code } }),
+  roomChat: (code, line, cursor) => request('/api/rooms/chat', { method: 'POST', body: { code, ...line, cursor } })
 };
 
 const MESSAGES = {
   AUTH_REQUIRED: '다시 로그인해 주세요.',
+  CHAT_EMPTY: '보낼 말을 적어 주세요.',
+  CHAT_TOO_FAST: '조금 천천히 보내 주세요.',
   BAD_CREDENTIALS: '이름이나 비밀번호가 맞지 않아요.',
   ACCOUNT_LOCKED: '비밀번호를 여러 번 틀렸어요. 10분 뒤에 다시 시도해 주세요.',
   USERNAME_TAKEN: '이미 쓰고 있는 이름이에요. 다른 이름을 골라 주세요.',

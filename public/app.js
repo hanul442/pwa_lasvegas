@@ -34,6 +34,7 @@ import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet, sh
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
+import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
@@ -788,6 +789,15 @@ const inMenus = () => !document.body.classList.contains('game-mode') && !documen
 const askReady = () => Boolean(state) && !dailyDue(state) && Object.values(state.user?.stats || {}).some(s => s.rounds > 0);
 
 // ---------- account ----------
+// A friend's invite link: once signed in, open that game; its room screen then takes the seat.
+function openInvite() {
+  const invite = pendingJoin();
+  if (!invite || !state) return;
+  const game = GAMES.find(g => g.id === invite.screen && !g.event);
+  if (!game) { dropPendingJoin(); return; }
+  const tier = TIERS[invite.tier] ? invite.tier : (lastTier(game.id) || FIRST_TIER.slug);
+  sitAt(game, tier, null, { seated: true });
+}
 function signedIn(next) {
   shownWallet = null;
   applyState(next);
@@ -796,6 +806,7 @@ function signedIn(next) {
   renderTiers();
   showSurface('lobby');
   ensureTerms();
+  openInvite();
 }
 function signedOut(notice) {
   stopNews();
@@ -865,8 +876,9 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 
 renderLobby();
 showSurface('lobby');
+capturePendingJoin();
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); } });
 else openSignIn(signedIn);
 dealVignette();
 startPlaytime({ isInTable: () => document.body.classList.contains('game-mode') });

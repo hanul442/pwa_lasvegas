@@ -2,6 +2,8 @@
 // sit at a friend's. The server owns the table; this screen polls it every 1.5 s while it is
 // visible and replays only the events it hasn't played yet, so a friend's raise lands the same
 // way a bot's does. Whoever holds the turn gets a ring that runs down their 25 seconds.
+import { shareInvite, takePendingJoin } from '../invite.js';
+import { createRoomChat } from '../room-chat.js';
 import { api, errorMessage } from '../api.js';
 import { el, formatCH, flyFrom, flyTo, sound, wait } from '../fx.js';
 import { createChip, breakdown, TIERS } from '../chips.js';
@@ -118,11 +120,10 @@ export function createFriends(t, pk, bar, hooks) {
   chipEl.type = 'button';
   chipEl.hidden = true;
   oval.append(chipEl);
-  chipEl.addEventListener('click', async () => {
-    const line = `VEGAS 홀덤 방 코드 ${code} · 홀덤에서 "친구와 함께"를 누르고 코드로 입장해 주세요.`;
-    try { await navigator.clipboard.writeText(line); t.toast('초대 문구를 복사했어요'); }
-    catch { t.toast(`방 코드 ${code}`); }
-  });
+  chipEl.addEventListener('click', () => shareInvite({ game: 'holdem', label: '홀덤', code, tier: room?.tier, toast: m => t.toast(m) }));
+  const chat = createRoomChat(t, { send: line => api.holdemRoomChat(code, line), onView: v => chat.sync(v.chat) });
+  chat.button.classList.add('chat-open--corner');
+  oval.append(chat.button);
   const tableName = t.root.querySelector('.table-name span');
   const tableNameText = tableName.textContent;
 
@@ -158,6 +159,9 @@ export function createFriends(t, pk, bar, hooks) {
 
   // Back to a room this person is still sitting in (reload, came back later).
   async function resume() {
+    // Opened from a friend's invite link: sit at that room.
+    const invited = takePendingJoin('holdem');
+    if (invited) { await join(invited); return; }
     const res = await api.holdemRooms();
     if (!res.mine) return;
     const view = await api.holdemRoom(res.mine);
@@ -178,9 +182,10 @@ export function createFriends(t, pk, bar, hooks) {
     t.locked = true;
     t.root.classList.add('is-room');
     tableName.textContent = `친구 방 · 블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`;
-    chipEl.innerHTML = `<span>방 코드</span><b>${view.code}</b>`;
-    chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 초대 문구 복사`);
+    chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
+    chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
     chipEl.hidden = false;
+    chat.show(true);
     await applyRoom(view, null, Date.now());
     // The buy-in becomes my stack: chips off the felt when I made the room, out of the wallet when I joined.
     const mine = pk.seatEls[pk.me];
@@ -212,6 +217,7 @@ export function createFriends(t, pk, bar, hooks) {
     stop();
     active = false;
     room = null;
+    chat.show(false);
     code = null;
     chipEl.hidden = true;
     t.root.classList.remove('is-room');
@@ -295,6 +301,7 @@ export function createFriends(t, pk, bar, hooks) {
       await standDown('테이블에서 일어났어요'); return;
     }
     room = view;
+    chat.sync(view.chat);
     dealAt = view.nextAt ? (at ?? Date.now()) + (view.nextAt - view.serverNow) : null;
     let events = view.events;
     // Another reply already played part of this (a poll and a move crossing on the wire).
@@ -338,7 +345,7 @@ export function createFriends(t, pk, bar, hooks) {
     pk.markTurn(tb.toAct);
     const people = view.players.length;
     let line = '';
-    if (!view.started) line = view.isHost ? `친구에게 코드 ${view.code}를 알려 주세요 · ${people}명 앉음` : `방장이 딜을 시작하길 기다리는 중 · ${people}명 앉음`;
+    if (!view.started) line = view.isHost ? `초대를 눌러 친구에게 링크를 보내 주세요 · ${people}명 앉음` : `방장이 딜을 시작하길 기다리는 중 · ${people}명 앉음`;
     else if (view.waiting) line = '다음 핸드부터 AI 자리에 앉아요';
     pk.hintLine.hidden = !line;
     pk.hintLine.textContent = line;
@@ -479,6 +486,6 @@ export function createFriends(t, pk, bar, hooks) {
     get active() { return active; },
     legal, refreshActions, open, resume, street: () => room?.table.street,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },
-    stop: () => { stop(); active = false; document.removeEventListener('visibilitychange', onVisible); }
+    stop: () => { stop(); active = false; chat.destroy(); document.removeEventListener('visibilitychange', onVisible); }
   };
 }

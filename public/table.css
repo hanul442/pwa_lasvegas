@@ -1040,3 +1040,38 @@
 /* in a tournament the level clock takes the corner, so the talk button sits just under it */
 .is-tourney .chat-open--corner{top:70px}
 @media (max-width:480px){.is-tourney .chat-open--corner{top:44px;right:4px}}
+
+/* ---------- 7포커 (sevenpoker.js): seven cards a seat on the Hold'em felt ----------
+   Cards overlap so a whole hand fits a folded phone: an opponent's hand shows each card's corner
+   index; mine shows a little more, and my hidden cards (the first two and the 히든) sit lower,
+   in a cooler white, so the table can tell at a glance what only I can see. */
+.table-screen--sevenpoker .pk-board{display:none}
+.table-screen--sevenpoker .pk-deck{position:relative;top:auto;right:auto;rotate:-8deg;margin-bottom:14px}
+.table-screen--sevenpoker .pk-seat .pk-cards{--card-w:clamp(24px,6.6vw,40px);display:flex}
+.table-screen--sevenpoker .pk-seat .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.52)}
+.table-screen--sevenpoker .pk-seat:not(.pk-seat--hero) .card[data-card^="10"] .card-corner b{letter-spacing:-.16em;font-size:2em}
+.table-screen--sevenpoker .pk-seat--hero .pk-cards{--card-w:clamp(44px,11.5vw,66px);padding-bottom:7px}
+.table-screen--sevenpoker .pk-seat--hero .pk-cards .card+.card{margin-left:calc(var(--card-w) * -.42)}
+.table-screen--sevenpoker .pk-seat--hero .card.is-hole{translate:0 7px}
+.table-screen--sevenpoker .pk-seat--hero .card.is-hole .card-face{background:linear-gradient(170deg,#eef1f5,#dfe3ea)}
+.table-screen--sevenpoker .pk-seat--hero .pk-cards.is-picking .card{cursor:pointer;translate:0 -4px;transition:translate .18s var(--ease-out)}
+.table-screen--sevenpoker .pk-seat--hero .pk-cards.is-picking .card .card-face{background:linear-gradient(170deg,#fffefb,#f6f1e7);box-shadow:inset 0 0 0 1px #0000001a,0 0 0 2px var(--star),0 8px 18px #0006}
+@media (hover:hover){.table-screen--sevenpoker .pk-seat--hero .pk-cards.is-picking .card:hover{translate:0 -10px}}
+.sp-showing{position:relative;z-index:3;margin:-4px 0 3px;padding:1px 8px;border-radius:999px;background:#0a0b0de6;box-shadow:0 0 0 1px #ffffff2e;color:var(--ivory);font:600 11px/1.4 var(--sans);white-space:nowrap}
+.sp-showing:empty{display:none}
+.pk-seat.is-lead .pk-plate::before{content:"선";position:absolute;left:-9px;top:-9px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:var(--white);color:var(--ink);font:800 11px var(--sans);box-shadow:0 2px 0 #9aa0a8,0 6px 10px #0008}
+.pk-seat--r.is-lead .pk-plate::before{left:auto;right:-9px}
+.sp-bets .pk-presets button{display:grid;place-content:center;gap:1px;height:46px;line-height:1.15}
+.sp-bets .pk-presets b{font:650 14px var(--sans)}
+.sp-bets .pk-presets small{font-size:12px;color:var(--smoke);font-variant-numeric:tabular-nums}
+@media (min-width:600px){.table-screen--sevenpoker .sp-bets{grid-template-columns:1fr}}
+@media (max-height:820px) and (orientation:portrait){
+  .table-screen--sevenpoker .pk-seat--hero .pk-cards{--card-w:clamp(40px,10.5vw,54px)}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .table-screen--sevenpoker .pk-seat--hero .pk-cards{--card-w:38px}
+  .table-screen--sevenpoker .pk-seat:not(.pk-seat--hero) .pk-cards{--card-w:24px}
+}
+/* On a phone my move's tag sits over my plate, not beside it: seven cards leave no room on the right. */
+@media (max-width:599px){.table-screen--sevenpoker .pk-seat--hero .pk-tag{left:auto;right:0;top:auto;bottom:calc(100% + 4px)}}
+.pk-seat:has([data-hand-name]) .sp-showing{display:none}

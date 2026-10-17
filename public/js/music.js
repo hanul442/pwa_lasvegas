@@ -695,6 +695,8 @@ const THEMES = {
   // 경마 borrows the surf band at a gallop.
   horses: { tempo: 172, bar: slotsBar },
   poker: { tempo: 126, bar: pokerBar },
+  // 7포커 borrows the Hold'em band, a touch slower.
+  sevenpoker: { tempo: 118, bar: pokerBar },
   matgo: { tempo: 96, bar: (at, i) => hwatuBar(at, i, 'matgo') },
   gostop: { tempo: 112, bar: (at, i) => hwatuBar(at, i, 'gostop') },
   seotda: { tempo: 84, bar: (at, i) => hwatuBar(at, i, 'seotda') }

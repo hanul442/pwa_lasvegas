@@ -518,6 +518,14 @@ ART.whale = () => {
     <rect x="-86" y="-58" width="172" height="44" rx="10" fill="#fff" opacity=".25"/></g>`, { label: 'The Whale Room' });
 };
 
+// 7포커: a seven-card stud hand laid out on the felt the Korean way, two hidden cards, four open
+// sevens and the 히든 card face down at the end, with the pot in front.
+ART.sevenpoker = () => svg('poker', `${bokeh(17, '#ffe2c2')}${table()}
+  ${card(70, 214, 'back', { rot: -6, scale: .92 })}${card(112, 210, 'back', { rot: -3, scale: .92 })}
+  ${['7s', '7h', '7d', '7c'].map((c, i) => card(176 + i * 58, 206 - (i === 1 || i === 2 ? 4 : 0), c, { scale: 1.02, rot: (i - 1.5) * 2 })).join('')}
+  ${card(414, 214, 'back', { rot: 7, scale: .92 })}
+  ${chip(150, 318, 24, 'black', 7)}${chip(240, 322, 24, 'gold', 9)}${chip(330, 318, 24, 'wine', 6)}`, { label: '7포커' });
+
 const out = new URL('../public/art/', import.meta.url);
 mkdirSync(out, { recursive: true });
 for (const [name, draw] of Object.entries(ART)) writeFileSync(new URL(`${name}.svg`, out), draw());

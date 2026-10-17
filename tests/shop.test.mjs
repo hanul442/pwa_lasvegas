@@ -237,6 +237,6 @@ test('out of chips pays the bailout whatever else the player owns (한서)', () 
   assert.equal(supportStatus(u).welfare.qualified, false, 'still has chips');
   addLedger(state, u, { type: 'ADMIN_DEDUCT', amount: -u.account.available, referenceType: 'TEST' });
   assert.equal(supportStatus(u).welfare.qualified, true, 'a car and a felt do not block it');
-  assert.equal(claimSupport(state, u, 'welfare').amount, 100 * 억);
+  assert.equal(claimSupport(state, u, 'welfare').amount, 10 * 억);
   verifyLedger(state);
 });

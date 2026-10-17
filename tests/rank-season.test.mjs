@@ -7,15 +7,20 @@ import { tierFor, monthBoundary, rankView, rankStandings, settleFinishedRankSeas
 const OCT = Date.parse('2026-10-20T03:00:00Z'), NOV = Date.parse('2026-11-01T00:30:00+09:00');
 const at = (t, fn) => { const real = Date.now; Date.now = () => t; try { return fn(); } finally { Date.now = real; } };
 
-test('tiers climb by peak net worth, each ten times the last', () => {
-  assert.equal(tierFor(0).id, 'bronze');
+test('tiers climb by peak net worth, ten of them from 아이언 to 레전드', () => {
+  assert.equal(RANK_TIERS.length, 10);
+  assert.equal(tierFor(0).id, 'iron');
+  assert.equal(tierFor(99_999_999).id, 'iron');
+  assert.equal(tierFor(100_000_000).id, 'bronze');
   assert.equal(tierFor(999_999_999).id, 'bronze');
   assert.equal(tierFor(1_000_000_000).id, 'silver');
   assert.equal(tierFor(15_000_000_000).id, 'gold');
   assert.equal(tierFor(2_886e8).id, 'platinum');
+  assert.equal(tierFor(5e11).id, 'emerald');
   assert.equal(tierFor(1e12).id, 'diamond');
+  assert.equal(tierFor(5e13).id, 'grandmaster');
   assert.equal(tierFor(1e14).id, 'legend');
-  for (let i = 2; i < RANK_TIERS.length; i++) assert.equal(RANK_TIERS[i].min, RANK_TIERS[i - 1].min * 10);
+  for (let i = 1; i < RANK_TIERS.length; i++) assert.ok(RANK_TIERS[i].min > RANK_TIERS[i - 1].min);
   assert.equal(monthBoundary(Date.parse('2026-10-31T14:59:00Z')).id, 'rank-2026-10', '23:59 on the 31st in Seoul');
   assert.equal(monthBoundary(Date.parse('2026-10-31T15:00:00Z')).id, 'rank-2026-11', 'midnight in Seoul');
   assert.match(monthBoundary(OCT).name, /프리시즌/);
@@ -33,7 +38,7 @@ test('a month closes once: badges for the tier reached, then everyone starts aga
   });
   const view = at(OCT, () => rankView(state, u));
   assert.equal(view.tier, 'platinum');
-  assert.equal(view.next.id, 'diamond');
+  assert.equal(view.next.id, 'emerald');
   assert.ok(view.season.preseason);
   assert.equal(at(OCT, () => rankStandings(state))[0].id, 'hanseo', 'demo players never rank');
   assert.ok(!at(OCT, () => rankStandings(state)).some(r => r.id === m.id));
@@ -55,7 +60,7 @@ test('a month closes once: badges for the tier reached, then everyone starts aga
   assert.deepEqual(u.loans, []);
   assert.deepEqual(u.account.unlockedFloors, ['gold-room']);
   assert.equal(state.ledger.at(-1).type, 'SEASON_RESET');
-  assert.equal(at(NOV, () => rankView(state, u)).tier, 'bronze');
+  assert.equal(at(NOV, () => rankView(state, u)).tier, 'iron');
   assert.equal(at(NOV, () => rankView(state, u)).season.preseason, false);
   // Only once.
   assert.equal(at(NOV + 3600e3, () => settleFinishedRankSeason(state)), null);

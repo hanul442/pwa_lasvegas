@@ -272,3 +272,70 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .name-frame--crown::before{content:"";position:absolute;left:6px;top:50%;width:11px;height:8px;margin-top:-4px;background:#e8dcc2;clip-path:polygon(0 100%,0 20%,25% 60%,50% 0,75% 60%,100% 20%,100% 100%)}
 .name-frame--olympus{position:relative;border:1px solid #f4f1ea;background:linear-gradient(180deg,#f4f1ea24,#c9d2e80a);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #c9d2e8a0,0 0 14px #c9d2e840;padding-left:22px}
 .name-frame--olympus::before{content:"";position:absolute;left:6px;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;border:1.5px solid #f4f1ea;border-top-color:transparent}
+
+/* ---------- what owning something does at the table (looks only) ---------- */
+/* A bought card back: a glint crosses it as it lands. */
+.card-glint{display:none}
+.card-back[class*="back--"]>.card-glint{display:block;position:absolute;inset:0;z-index:1;border-radius:inherit;overflow:hidden;pointer-events:none}
+.card-back[class*="back--"]>.card-glint::before{content:"";position:absolute;top:-25%;bottom:-25%;left:-55%;width:40%;background:linear-gradient(100deg,transparent,#ffffff70 50%,transparent);transform:skewX(-16deg);animation:card-glint .9s cubic-bezier(.3,.7,.3,1) .15s both}
+@keyframes card-glint{from{translate:0}to{translate:430%}}
+/* A bought felt: light passes over it once as the player sits down. */
+.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza)::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,#ffffff24 50%,transparent 65%);transform:translateX(-100%);animation:felt-sheen 2.2s cubic-bezier(.3,.6,.3,1) .35s both}
+@keyframes felt-sheen{to{transform:translateX(100%)}}
+/* A bought chip line: each chip put down sends a ring of light out from its rim. */
+:root[data-chip-accent] .bet-stack:not(.bet-stack--payout) .chip:last-child{animation:chip-halo .8s ease-out both}
+@keyframes chip-halo{from{outline:2px solid #fff6dcd9;outline-offset:0}to{outline:2px solid transparent;outline-offset:calc(var(--size,40px) * .5)}}
+
+/* Luxury owners walk in: the dearest piece on a plate across the top of the felt. */
+.owner-entrance{position:absolute;z-index:6;left:0;right:0;top:12px;display:flex;justify-content:center;pointer-events:none;animation:owner-in 3s var(--ease-out) both}
+@keyframes owner-in{0%{opacity:0;transform:translateY(-12px)}12%,78%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
+.owner-plate{position:relative;display:inline-flex;align-items:center;gap:10px;padding:7px 18px 7px 10px;border-radius:999px;background:#0a0b0deb;box-shadow:0 0 0 1px #fff6dc59,0 12px 30px #000b}
+.owner-plate .lux-icon{width:32px;height:32px;color:var(--star);opacity:1}
+.owner-plate>span{display:grid;line-height:1.25;text-align:left}
+.owner-plate small{font:600 13px var(--sans);letter-spacing:.1em;color:var(--smoke)}
+.owner-plate b{font:600 15px var(--sans);letter-spacing:-.01em;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.owner-beam{position:absolute;top:-12px;left:50%;width:260px;height:200px;margin-left:-130px;background:radial-gradient(60% 100% at 50% 0,#fff6dc38,transparent 75%);clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);animation:owner-beam 2.6s ease both}
+@keyframes owner-beam{0%{opacity:0}25%,70%{opacity:1}100%{opacity:0}}
+.owner-sparks,.acquire-sparks{position:absolute;inset:0;pointer-events:none}
+.owner-sparks{inset:-8px 8% auto;height:120px}
+.owner-spark,.acquire-spark{position:absolute;width:10px;height:10px;background:var(--star);clip-path:var(--star-shape);transform:scale(0);animation:spark 1.5s ease var(--d) both}
+@keyframes spark{0%{transform:scale(0);opacity:0}40%{transform:scale(var(--s)) rotate(45deg);opacity:1}100%{transform:scale(0) rotate(90deg) translateY(18px);opacity:0}}
+
+/* The effect line in a buy sheet */
+.shop-fx{display:flex;align-items:flex-start;gap:8px;margin:10px 0 0;font-size:14px;line-height:1.5;color:var(--white)}
+.shop-fx span{flex:none;width:10px;height:10px;margin-top:6px;background:var(--star);clip-path:var(--star-shape)}
+
+/* ---------- the purchase moment ---------- */
+.acquire{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:24px;overflow:hidden;background:radial-gradient(60% 50% at 50% 42%,#20242bf2,#040506f7);opacity:0;transition:opacity .3s}
+.acquire.is-open{opacity:1}
+.acquire-glow{position:absolute;left:50%;top:38%;width:min(90vw,560px);aspect-ratio:1;margin:calc(min(90vw,560px) / -2) 0 0 calc(min(90vw,560px) / -2);border-radius:50%;background:radial-gradient(closest-side,#fff6dc33,transparent);animation:acquire-glow 1.6s var(--ease-out) both;pointer-events:none}
+@keyframes acquire-glow{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.acquire-beam{position:absolute;left:50%;top:38%;width:220vmax;height:220vmax;margin:-110vmax 0 0 -110vmax;background:repeating-conic-gradient(from 0deg,#fff6dc0f 0 3deg,transparent 3deg 24deg);animation:acquire-turn 18s linear infinite,acquire-glow 1.2s ease both;pointer-events:none}
+@keyframes acquire-turn{to{transform:rotate(1turn)}}
+.acquire-inner{position:relative;display:grid;justify-items:center;gap:6px;max-width:440px;text-align:center}
+.acquire-art{margin-bottom:16px}
+.acquire-lux .lux-icon{display:block;width:clamp(110px,34vw,150px);height:clamp(110px,34vw,150px);color:var(--star);opacity:1;stroke-width:1.1}
+.acquire-lux .lux-icon :is(path,rect,circle){stroke-dasharray:1;stroke-dashoffset:1;animation:lux-draw 1.5s cubic-bezier(.4,0,.2,1) .2s forwards}
+@keyframes lux-draw{to{stroke-dashoffset:0}}
+.acquire-stage{position:relative;width:min(84vw,360px);border-radius:18px;overflow:hidden;animation:acquire-rise .7s var(--ease-out) both}
+.acquire-stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 35%,#ffffff33 50%,transparent 65%);transform:translateX(-100%);animation:felt-sheen 1.6s ease .45s both}
+.acquire-eyebrow{margin:0;color:var(--smoke);font:500 13px var(--sans);letter-spacing:.2em}
+.acquire-title{margin:0;font:600 clamp(28px,8.4vw,48px)/1.12 var(--display);font-stretch:112%;letter-spacing:-.02em;animation:acquire-rise .7s var(--ease-out) .45s both}
+.acquire-line{margin:2px 0 0;color:var(--star);font:600 16px/1.5 var(--sans);font-variant-numeric:tabular-nums;animation:acquire-rise .7s var(--ease-out) .6s both}
+.acquire-note{margin:6px 0 0;max-width:320px;color:var(--smoke);font-size:14px;line-height:1.55;animation:acquire-rise .7s var(--ease-out) .75s both}
+.acquire-stamp{display:inline-flex;align-items:center;gap:8px;margin:14px 0 0;padding:8px 14px;border:1px solid #fff6dc66;border-radius:999px;color:var(--white);font-size:14px;line-height:1.4;animation:acquire-stamp .5s cubic-bezier(.2,1.4,.4,1) .95s both}
+.acquire-stamp span{flex:none;width:10px;height:10px;background:var(--star);clip-path:var(--star-shape)}
+@keyframes acquire-stamp{from{transform:scale(1.5);opacity:0}to{transform:none;opacity:1}}
+@keyframes acquire-rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.acquire-close{margin-top:24px;min-width:140px}
+.acquire-spark{width:12px;height:12px}
+.acquire--3 .acquire-spark{animation-iteration-count:2}
+
+@media (prefers-reduced-motion:reduce){
+  .card-back[class*="back--"]>.card-glint,.owner-beam,.owner-sparks,.acquire-beam,.acquire-sparks,.acquire-stage::after{display:none}
+  .table-screen .felt.felt--skin::before{display:none}
+  :root[data-chip-accent] .bet-stack .chip:last-child,.acquire-glow,.acquire-title,.acquire-line,.acquire-note,.acquire-stamp,.acquire-stage{animation:none}
+  .acquire-lux .lux-icon :is(path,rect,circle){animation:none;stroke-dashoffset:0}
+  .owner-entrance{animation:none}
+}

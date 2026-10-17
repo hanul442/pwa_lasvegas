@@ -10,7 +10,7 @@ import { buildRankingSnapshot } from '../lib/rankings.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { isMoney } from '../lib/constants.mjs';
 
-const 억 = 100_000_000;
+const 억 = 100_000_000, 조 = 10_000 * 억;
 
 // The chain check from scripts/verify-ledger.mjs, run on an in-memory state.
 function verifyLedger(state) {
@@ -33,9 +33,9 @@ function rich(amount = 3_000 * 억) {
   return { state, u };
 }
 
-test('the catalog climbs from 1억 to over 1조, every price in 100만s', () => {
-  assert.equal(LUXURY[0].price, 억);
-  assert.ok(LUXURY.at(-1).price >= 10_000 * 억);
+test('the catalog climbs from 10억 to 10조 and beyond, every price in 100만s', () => {
+  assert.equal(LUXURY[0].price, 10 * 억);
+  assert.ok(LUXURY.at(-1).price >= 10 * 조);
   for (let k = 1; k < LUXURY.length; k++) assert.ok(LUXURY[k].price > LUXURY[k - 1].price, `${LUXURY[k].id} is dearer than the one before`);
   for (const x of [...LUXURY, ...COSMETICS]) assert.ok(x.price === 0 || isMoney(x.price), x.id);
   for (const g of ['시계', '슈퍼카', '요트', '아파트', '빌딩', '전용기', '섬', '카지노']) assert.ok(LUXURY.some(x => x.group === g), g);
@@ -58,9 +58,9 @@ test('buying is a PURCHASE debit and selling back pays 70% of the price, both on
 
   const sold = sellItem(state, u, 'apt-gangnam');
   assert.equal(SELL_RATE, 0.7);
-  assert.equal(sold.amount, 105 * 억);
+  assert.equal(sold.amount, apt.price * 7 / 10);
   assert.equal(state.ledger.at(-1).type, 'RESALE');
-  assert.equal(u.account.available, before - apt.price + 105 * 억);
+  assert.equal(u.account.available, before - apt.price + apt.price * 7 / 10);
   assert.deepEqual(u.luxury, []);
   assert.throws(() => sellItem(state, u, 'apt-gangnam'), /ITEM_NOT_OWNED/);
   assert.throws(() => sellItem(state, u, 'felt-navy'), /ITEM_NOT_SELLABLE/);
@@ -92,7 +92,7 @@ test('a retried buy with the same key runs once', () => {
 });
 
 test('assets never open floors: floors run on chips minus debt alone', () => {
-  const { state, u } = rich(1_000 * 억);
+  const { state, u } = rich(itemById('building').price);
   const floorsBefore = floorsFor(u).map(f => [f.slug, f.unlocked]);
   buyItem(state, u, 'building');
   assert.equal(u.account.available, 0);
@@ -109,16 +109,18 @@ test('assets never open floors: floors run on chips minus debt alone', () => {
 
 test('debt you could pay by selling luxury blocks bankruptcy, and filing repossesses it', () => {
   const state = defaultState(), u = newUser(state, 'b', 'B');
-  addLedger(state, u, { type: 'ADMIN_GRANT', amount: 3 * 억, referenceType: 'TEST' });
+  addLedger(state, u, { type: 'ADMIN_GRANT', amount: 5 * 억, referenceType: 'TEST' });
   borrow(state, u, { lender: 'shark', amount: 5 * 억, days: 1 });
-  buyItem(state, u, 'car-gt');
+  buyItem(state, u, 'watch-steel');
   assert.equal(u.account.available, 0);
-  assert.match(bankruptcyStatus(u).reason, /사치품/, '5.6억 back for the car covers 5억 of debt');
+  assert.match(bankruptcyStatus(u).reason, /사치품/, '7억 back for the watch covers 5억 of debt');
   assert.equal(supportStatus(u).welfare.qualified, true, 'out of chips is enough for a bailout, car or not');
 
   const v = newUser(state, 'c', 'C');
   borrow(state, v, { lender: 'shark', amount: 5 * 억, days: 1 });
-  buyItem(state, v, 'watch-tourbillon');
+  addLedger(state, v, { type: 'ADMIN_DEDUCT', amount: -v.account.available, referenceType: 'TEST' });
+  // Bought before the 2026-10-17 price rise: resale follows what was paid.
+  v.luxury = [{ id: 'watch-tourbillon', price: 5 * 억, boughtAt: new Date().toISOString() }];
   assert.equal(bankruptcyStatus(v).eligible, true, '3.5억 back for the watch cannot cover 5억 of debt');
   fileBankruptcy(state, v);
   assert.deepEqual(v.luxury, []);
@@ -139,7 +141,7 @@ test('skins: free and earned ones need no purchase, bought ones do, and only own
   buyItem(state, u, 'felt-navy');
   assert.equal(state.ledger.at(-1).type, 'PURCHASE');
   assert.equal(u.account.available, 20 * 억 - itemById('felt-navy').price);
-  assert.equal(itemById('felt-navy').price, 6_000 * 10_000, 'the Salon Privé felt is a fifth of the 3억 that opens the floor');
+  assert.equal(itemById('felt-navy').price, 억, 'the Salon Privé felt costs one of its 1억 bets');
   equipItem(u, 'felt', 'felt-navy');
   assert.equal(u.cosmetics.equipped.felt, 'felt-navy');
   assert.throws(() => buyItem(state, u, 'felt-navy'), /ITEM_ALREADY_OWNED/);
@@ -156,7 +158,7 @@ test('skins: free and earned ones need no purchase, bought ones do, and only own
 });
 
 test('a top-shelf purchase makes the news for everyone else', () => {
-  const { state, u } = rich(30_000 * 억);
+  const { state, u } = rich(60 * 조);
   newUser(state, 'friend', 'FRIEND');
   const since = Date.now() - 1000;
   buyItem(state, u, 'yacht');
@@ -165,7 +167,7 @@ test('a top-shelf purchase makes the news for everyone else', () => {
   assert.equal(state.feed[0].type, 'LUXURY');
   const [item] = newsFor(state, 'friend', since);
   assert.equal(item.type, 'LUXURY');
-  assert.match(item.body, /RICH님이 나만의 카지노를 2조/);
+  assert.match(item.body, /RICH님이 나만의 카지노를 50조/);
   assert.equal(item.push, true);
   assert.equal(newsFor(state, 'rich', since).length, 0, 'not news to the buyer');
   const row = buildRankingSnapshot(state).wealth.find(r => r.id === 'rich');
@@ -175,6 +177,8 @@ test('a top-shelf purchase makes the news for everyone else', () => {
 
 test('the shop over the API: state shape, buy, sell, equip and error codes', async () => {
   let state = defaultState();
+  addLedger(state, state.users.hanseo, { type: 'ADMIN_GRANT', amount: 10 * 억, referenceType: 'TEST' });
+  const start = state.users.hanseo.account.available, watchPrice = itemById('watch-steel').price;
   const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
   const call = (method, path, body, key) => handleApi({ method, header: n => ({ 'x-player-id': 'hanseo', 'x-idempotency-key': key })[n], body: async () => body ?? {} }, new URL(`http://x${path}`), store, {});
 
@@ -193,20 +197,20 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   const buy = await call('POST', '/api/shop/buy', { itemId: 'car-hyper' }, 'buy-key-00000001');
   assert.equal(buy.status, 409);
   assert.equal(buy.data.error, 'INSUFFICIENT_BANKROLL');
-  const watch = await call('POST', '/api/shop/buy', { itemId: 'watch-tourbillon' }, 'buy-key-00000002');
+  const watch = await call('POST', '/api/shop/buy', { itemId: 'watch-steel' }, 'buy-key-00000002');
   assert.equal(watch.status, 200, JSON.stringify(watch.data));
-  assert.equal(watch.data.state.user.account.available, 5 * 억);
-  assert.equal(watch.data.state.shop.assets, 5 * 억);
-  assert.equal(watch.data.state.user.assets, 5 * 억);
-  assert.equal(watch.data.state.shop.luxury.find(x => x.id === 'watch-tourbillon').owned, true);
-  const replay = await call('POST', '/api/shop/buy', { itemId: 'watch-tourbillon' }, 'buy-key-00000002');
+  assert.equal(watch.data.state.user.account.available, start - watchPrice);
+  assert.equal(watch.data.state.shop.assets, watchPrice);
+  assert.equal(watch.data.state.user.assets, watchPrice);
+  assert.equal(watch.data.state.shop.luxury.find(x => x.id === 'watch-steel').owned, true);
+  const replay = await call('POST', '/api/shop/buy', { itemId: 'watch-steel' }, 'buy-key-00000002');
   assert.equal(replay.status, 200);
   assert.equal(replay.data.replayed, true);
-  assert.equal(replay.data.state.user.account.available, 5 * 억);
+  assert.equal(replay.data.state.user.account.available, start - watchPrice);
 
   const felt = await call('POST', '/api/shop/buy', { itemId: 'felt-navy' }, 'buy-key-00000003');
   assert.equal(felt.status, 200);
-  assert.equal(felt.data.state.user.account.available, 5 * 억 - itemById('felt-navy').price);
+  assert.equal(felt.data.state.user.account.available, start - watchPrice - itemById('felt-navy').price);
   const on = await call('POST', '/api/shop/equip', { slot: 'felt', itemId: 'felt-navy' });
   assert.equal(on.data.state.user.cosmetics.equipped.felt, 'felt-navy');
   assert.equal(on.data.state.shop.equipped.felt, 'felt-navy');
@@ -219,10 +223,10 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   assert.equal(off.data.state.user.cosmetics.equipped.felt, null);
   assert.equal(off.data.state.shop.cosmetics.find(x => x.id === 'felt-house').equipped, true);
 
-  const sell = await call('POST', '/api/shop/sell', { itemId: 'watch-tourbillon' }, 'sell-key-0000001');
+  const sell = await call('POST', '/api/shop/sell', { itemId: 'watch-steel' }, 'sell-key-0000001');
   assert.equal(sell.status, 200);
-  assert.equal(sell.data.sale.amount, 3.5 * 억);
-  assert.equal(sell.data.state.user.account.available, 8.5 * 억 - itemById('felt-navy').price);
+  assert.equal(sell.data.sale.amount, watchPrice * 7 / 10);
+  assert.equal(sell.data.state.user.account.available, start - watchPrice * 3 / 10 - itemById('felt-navy').price);
   assert.equal(sell.data.state.shop.assets, 0);
   const missing = await call('POST', '/api/shop/sell', { itemId: 'nope' }, 'sell-key-0000002');
   assert.equal(missing.status, 404);
@@ -231,7 +235,7 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
 
 test('out of chips pays the bailout whatever else the player owns (한서)', () => {
   const state = defaultState(), u = newUser(state, 'rich', 'RICH');
-  addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20 * 억, referenceType: 'TEST' });
+  addLedger(state, u, { type: 'ADMIN_GRANT', amount: 200 * 억, referenceType: 'TEST' });
   buyItem(state, u, 'car-gt');
   buyItem(state, u, 'felt-forest');
   assert.equal(supportStatus(u).welfare.qualified, false, 'still has chips');

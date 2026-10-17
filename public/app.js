@@ -37,6 +37,7 @@ import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
 import { watchErrors } from './js/error-report.js';
+import { tierEmblem, tierName, rankBadges, maybeSeasonMoment } from './js/rank.js';
 
 watchErrors();
 
@@ -277,13 +278,13 @@ function applyState(next) {
   renderRecharge();
   renderGameLists();
   maybeBust(state);
-  renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop);
+  renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop, openRankBoard);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();
   if (isActive('bank')) renderBank(document.querySelector('[data-bank]'), state, applyState);
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { celebrateFloors(state); maybeOpenDaily(state, applyState); }
+  if (isActive('lobby')) { maybeSeasonMoment(state); celebrateFloors(state); maybeOpenDaily(state, applyState); }
 }
 
 // The lobby's way back in: a round still holding chips, then the last three tables played.
@@ -601,11 +602,14 @@ function renderEventTier(grid, { tier, entry, open }) {
 // ---------- ranking ----------
 // "이번 주" is the weekly season (resets Monday 00:00 KST, top three get prizes); "전체" is all time.
 const RANK_TABS = {
+  tier: [['tier', '이번 달 최고 순자산']],
   season: [['profit', '수익'], ['wins', '승리'], ['highRoller', '베팅량']],
   allTime: [['wealth', '순자산'], ['profit', '수익'], ['highRoller', '베팅량']]
 };
-let rankPeriod = 'season';
-let rankTab = 'profit';
+let rankPeriod = 'tier';
+let rankTab = 'tier';
+// The lobby's season card opens the monthly tier board.
+function openRankBoard() { rankPeriod = 'tier'; rankTab = 'tier'; showSurface('ranking', { focus: true }); }
 function timeLeft(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());
   const d = Math.floor(ms / 86_400_000), h = Math.floor(ms / 3_600_000) % 24, m = Math.floor(ms / 60_000) % 60;
@@ -633,7 +637,8 @@ function renderRanking() {
   const season = state?.rankings?.season;
   if (!season) rankPeriod = 'allTime';
   const period = document.querySelector('[data-rank-period]');
-  period.replaceChildren(...[['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
+  period.classList.add('segmented--three');
+  period.replaceChildren(...[['tier', '월간 티어'], ['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';
     b.setAttribute('role', 'radio');
@@ -649,6 +654,13 @@ function renderRanking() {
     head.innerHTML = `<div class="season-card"><div><strong>${season.name}</strong><small>${timeLeft(season.endsAt)} 남음 · 월요일 0시에 새로 시작</small></div><ol class="season-prizes" aria-label="상금은 각자 앉는 가장 낮은 테이블 최소 베팅의 배수"><li><b>1위</b> ×300</li><li><b>2위</b> ×200</li><li><b>3위</b> ×100</li></ol></div>`
       + (last?.podium?.length ? `<p class="season-last">지난 시즌 ${last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '');
   }
+  const rs = state?.rankSeason;
+  if (rankPeriod === 'tier' && rs) {
+    const ladder = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'legend'];
+    const lastTier = rs.last?.podium?.length ? `<p class="season-last">${rs.last.name} 챌린저 ${rs.last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '';
+    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${timeLeft(rs.season.endsAt)} 남음 · 1일 0시에 모두 초기화</small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>
+      <ol class="tier-ladder" aria-label="티어 기준">${ladder.map(id => `<li class="${id === rs.tier ? 'is-me' : ''}">${tierEmblem(id, { size: 26, label: false })}<span>${tierName(id)}</span><small>${{ bronze: '시작', silver: '10억', gold: '100억', platinum: '1천억', diamond: '1조', master: '10조', legend: '100조' }[id]}</small></li>`).join('')}</ol>${lastTier}`;
+  }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
   tabs.replaceChildren(...RANK_TABS[rankPeriod].map(([key, label]) => {
@@ -659,12 +671,14 @@ function renderRanking() {
     b.addEventListener('click', () => { rankTab = key; renderRanking(); });
     return b;
   }));
-  const rows = (rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
+  const rows = (rankPeriod === 'tier' ? state?.rankings?.tier : rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
+  // On the tier board every name carries its tier.
+  const emblem = r => (rankPeriod === 'tier' && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
   const me = state?.user?.id;
   const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
   // Each row wears the player's three dearest luxury pieces (lib/shop.mjs); a tap opens their collection.
   const showcase = r => (r.showcase || []).map(id => luxuryItem(state, id)).filter(Boolean).map(x => luxuryIcon(x.icon, 'rank-lux')).join('');
-  const board = rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
+  const board = rankPeriod === 'tier' ? `tier:${state?.rankSeason?.season.id}` : rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
   const move = rankMoves(board, rows);
   const moveTag = r => {
     const m = move.get(r.id);
@@ -688,7 +702,7 @@ function renderRanking() {
   podium.replaceChildren(...[2, 1, 3].map(n => top.find(r => r.rank === n)).filter(Boolean).map(r => {
     const li = el('li', `podium-spot podium-spot--${r.rank}${r.id === me ? ' is-me' : ''}`);
     const lux = showcase(r);
-    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
+    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
     open(li, r);
     return li;
   }));
@@ -709,7 +723,7 @@ function renderRanking() {
   document.querySelector('[data-rank-list]').replaceChildren(...rest.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}`);
     const lux = showcase(r);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
     open(li, r);
     return li;
   }));
@@ -724,7 +738,7 @@ function renderProfile() {
   const u = state.user, a = u.account;
   const floors = state.floors.map(f => `<li class="floor-row${f.open ? ' is-open' : ''}${f.outgrown ? ' is-outgrown' : ''}"><span>${f.name}${f.outgrown ? ' <small>졸업</small>' : f.unlocked && !f.passed ? ' <small>입장 꾸미기 필요</small>' : ''}</span><span class="floor-bar"><i style="width:${Math.round(f.progress * 100)}%"></i></span></li>`).join('');
   const eng = state.engagement || {};
-  const badges = (eng.badges || []).map(b => `<li class="badge badge--${b.rank}"><span class="badge-star" aria-hidden="true"></span><b>${b.rank}위</b><small>${b.name}</small></li>`).join('');
+  const badges = (eng.badges || []).filter(b => b.kind !== 'RANK').map(b => `<li class="badge badge--${b.rank}"><span class="badge-star" aria-hidden="true"></span><b>${b.rank}위</b><small>${b.name}</small></li>`).join('');
   // Per-game record: win rate, biggest win and net, most played first.
   const games = Object.entries(u.stats || {}).sort((x, y) => y[1].rounds - x[1].rounds).map(([g, s]) => {
     const rate = s.rounds ? Math.round((s.wins / s.rounds) * 100) : 0;
@@ -752,7 +766,8 @@ function renderProfile() {
     <h2 class="sub-head">자산 <small>${formatCH(assets)}원 · 사치품 ${owned.length}점</small></h2>
     ${showcase}
     <button type="button" class="pill-button profile-shop" data-go-shop>상점 가기</button>
-    ${badges ? `<h2 class="sub-head">시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
+    ${state.rankSeason?.history?.length ? `<h2 class="sub-head">월간 시즌 기록 <small>최고 ${tierName(state.rankSeason.best?.tier || state.rankSeason.history[0].tier)}</small></h2>${rankBadges(state.rankSeason.history)}` : ''}
+    ${badges ? `<h2 class="sub-head">주간 시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
     <h2 class="sub-head">업적 <small>${(state.achievements || []).filter(x => x.claimed).length} / ${(state.achievements || []).length}</small></h2><div data-achievements></div>
     <h2 class="sub-head">게임별 기록</h2>
     ${games ? `<div class="game-stats-wrap"><table class="game-stats"><thead><tr><th scope="col">게임</th><th scope="col">판</th><th scope="col">승률</th><th scope="col">최대 승리</th><th scope="col">손익</th></tr></thead><tbody>${games}</tbody></table></div>` : '<p class="lounge-note">아직 플레이한 게임이 없어요.</p>'}

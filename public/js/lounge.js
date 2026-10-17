@@ -1,5 +1,6 @@
 // The lobby's daily layer: 일급·주급·월급, today's missions, the lucky-card rescue,
 // the lounge news feed and the floor-unlock moment.
+import { rankBlock } from './rank.js';
 import { api, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip, TIERS, FIRST_TIER } from './chips.js';
@@ -336,11 +337,13 @@ function floorBlock(state, onPass) {
   return box;
 }
 
-export function renderLounge(root, state, onChanged, onPass) {
+export function renderLounge(root, state, onChanged, onPass, onRank) {
   if (!state?.engagement) { root.replaceChildren(); return; }
   const blocks = [];
   if (state.hotTable || state.hotNext) blocks.push(hotBlock(state));
   if (state.engagement.rescue?.eligible) blocks.push(rescueBlock(state, onChanged));
+  const rank = rankBlock(state, onRank);
+  if (rank) blocks.push(rank);
   const invites = duelInviteBlock(state, onChanged);
   if (invites) blocks.push(invites);
   blocks.push(missionsBlock(state, onChanged));

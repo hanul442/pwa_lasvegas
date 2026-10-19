@@ -262,7 +262,7 @@ function lendersBlock(state, onChanged) {
 
 // The server pays each support at most once per period, so retrying after a dropped connection
 // can't pay twice.
-async function claimSupport(kind, btn, onChanged) {
+export async function claimSupport(kind, btn, onChanged) {
   btn.disabled = true;
   try { const out = await api.supportClaim(kind); await chipsToWallet(btn, out.claim.amount); onChanged(out.state); }
   catch (e) { btn.disabled = false; errorToast(e, () => claimSupport(kind, btn, onChanged)); }

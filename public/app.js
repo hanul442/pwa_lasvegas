@@ -3,10 +3,9 @@ import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { renderAccountTools, forgetShownCode } from './js/account.js';
-import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el, flyFrom } from './js/fx.js';
+import { formatCH, formatFull, rollNumber, isMuted, setMuted, sound, el } from './js/fx.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
-import { createCard, flipCard } from './js/cards.js';
 import { TIERS, FIRST_TIER, createChip } from './js/chips.js';
 import { mountBlackjack } from './js/games/blackjack.js';
 import { mountBaccarat } from './js/games/baccarat.js';
@@ -22,16 +21,16 @@ import { mountSlots } from './js/games/slots.js';
 import { mountHorses } from './js/games/horses.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
-import { renderDuels } from './js/social.js';
-import { renderLounge, maybeOpenDaily, dailyButton, dailyDue, celebrateFloors, gameName, chipsToWallet } from './js/lounge.js';
+import { renderDuels, watchBlock } from './js/social.js';
+import { renderLounge, openDailySheet, dailyDue, celebrateFloors, gameName, chipsToWallet, missionsBlock, feedBlock, floorBlock } from './js/lounge.js';
 import { startNotifications, maybeAsk, forgetDevice } from './js/notify.js';
 import { mountInstallButton } from './js/install.js';
 import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
-import { renderBank, supportButtons } from './js/bank.js';
+import { renderBank, claimSupport } from './js/bank.js';
 import { renderLedger } from './js/ledger.js';
 import { errorToast, watchConnection } from './js/notice.js';
-import { hotStatus, clock, pct } from './js/hot.js';
+import { hotStatus, clock, pct, startTime } from './js/hot.js';
 import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
@@ -81,20 +80,29 @@ let activeTable = null;
 let shownWallet = null;
 
 // ---------- navigation ----------
+const NAV_GROUP = { shop: 'bank', ranking: 'profile', settings: 'profile' };
 function showSurface(name, { focus = false } = {}) {
   const target = surfaces.find(s => s.dataset.surface === name);
   if (!target) return;
   surfaces.forEach(s => s.classList.toggle('is-active', s === target));
-  navItems.forEach(item => item.classList.toggle('is-active', item.dataset.nav === name));
+  // The bottom menu has five places; 지갑 holds 은행 and 상점, 내 정보 holds 프로필, 랭킹 and 설정,
+  // each switched by the small tabs at the top of the page.
+  const group = NAV_GROUP[name] || name;
+  navItems.forEach(item => {
+    const sub = item.classList.contains('subtab');
+    const on = sub ? item.dataset.nav === name : item.classList.contains('nav-item') && item.dataset.nav === group;
+    item.classList.toggle('is-active', on);
+    if (sub) item.setAttribute('aria-selected', String(on));
+  });
   document.body.classList.toggle('game-mode', name === 'table');
   document.body.classList.toggle('tier-mode', name === 'tiers');
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
   if (name === 'events') renderEventTab();
-  if (name === 'lobby' && state) { celebrateFloors(state); maybeOpenDaily(state, applyState); setTimeout(() => maybeAsk(), 1200); }
+  if (name === 'lobby' && state) { celebrateFloors(state); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
-  if (name === 'bank') renderBank(document.querySelector('[data-bank]'), state, applyState);
+  if (name === 'bank') { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (name === 'shop') renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (name === 'settings') openSettings(); else closeSettings();
   syncWakeLock();
@@ -308,16 +316,18 @@ function applyState(next) {
   walletHeld.textContent = held > 0 ? `테이블 ${formatCH(held)}` : '';
   applyCosmetics(state);
   paintNavDots(state);
-  renderRecharge();
+  document.querySelector('[data-avatar]').textContent = [...(state.user.nickname || '나')].slice(0, 2).join('');
+  renderResume();
   renderGameLists();
   maybeBust(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop, openRankBoard);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();
-  if (isActive('bank')) renderBank(document.querySelector('[data-bank]'), state, applyState);
+  if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state); celebrateFloors(state); maybeOpenDaily(state, applyState); }
+  if (isActive('lobby')) { maybeSeasonMoment(state); celebrateFloors(state); }
+  sheetPaint?.();
 }
 
 // The lobby's way back in: a round still holding chips, then the last three tables played.
@@ -355,66 +365,12 @@ function renderResume() {
   b.addEventListener('click', () => sitAt(game, tier, b, { seated: true }));
   slot.replaceChildren(b);
 }
-function renderRecent() {
-  const slot = document.querySelector('[data-recent]');
-  const available = state?.user?.account?.available ?? 0;
-  const items = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).filter(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier)).slice(0, 3);
-  slot.hidden = !items.length;
-  if (!items.length) { slot.replaceChildren(); return; }
-  const list = el('ul', 'recent-list');
-  for (const { game, tier: slug } of items) {
-    const tier = TIERS[slug];
-    const short = available < tier.min;
-    const li = el('li');
-    const b = el('button', 'recent-table');
-    b.type = 'button';
-    b.innerHTML = `${icon(game.guide || game.id)}<span class="recent-name">${game.name}</span><span class="recent-tier">${tier.name} · ${formatCH(tier.min)}–${formatCH(tier.max)}${short ? ' · 칩이 부족해요' : ''}</span>`;
-    b.setAttribute('aria-label', `${game.name} ${tier.name}에 다시 앉기${short ? ', 칩이 부족해요' : ''}`);
-    b.disabled = short;
-    b.addEventListener('click', () => sitAt(game, slug, b));
-    li.append(b);
-    list.append(li);
-  }
-  slot.replaceChildren(el('h2', 'recent-head', '<span id="recent-title">최근 테이블</span>'), list);
-}
-
-function renderRecharge() {
-  const slot = document.querySelector('[data-recharge-slot]');
-  const r = state?.recharge;
-  slot.replaceChildren();
-  renderResume();
-  renderRecent();
-  // Short of the cheapest table: the free chips lead as solid buttons (pay first, then recharge,
-  // then 구제금융 or 정부 지원금; two at most) and the bank loan follows, outlined, as the
-  // secondary way back in.
-  const broke = Boolean(state?.bank && state.user.account.available < state.bank.base);
-  const note = document.querySelector('[data-vignette-note]');
-  if (note) note.textContent = broke ? '무료 칩을 받고 바로 앉아요' : '지금 바로 앉을 수 있어요';
-  const daily = dailyButton(state, applyState, { solid: broke });
-  if (broke) {
-    const free = [daily, r?.eligible ? rechargeButton(r, true) : null, ...supportButtons(state, applyState)].filter(Boolean);
-    slot.append(...free.slice(0, 2));
-    const b = el('button', 'pill-button', '은행에서 빌리기');
-    b.type = 'button';
-    b.addEventListener('click', () => showSurface('bank', { focus: true }));
-    slot.append(b);
-    return;
-  }
-  if (daily) slot.append(daily);
-  if (r?.eligible) slot.append(rechargeButton(r, false));
-}
-
 // The server grants a recharge at most once per cooldown, so a retry after a dropped
 // connection can't pay twice.
-function rechargeButton(r, solid) {
-  const b = el('button', `pill-button${solid ? ' pill-button--solid' : ''}`, `칩 충전 +${formatCH(r.amount)}`);
-  b.type = 'button';
-  b.addEventListener('click', async () => {
-    b.disabled = true;
-    try { await api.recharge(); sound.chips(6); } catch (e) { b.disabled = false; errorToast(e, () => b.click()); }
-    refresh();
-  });
-  return b;
+async function rechargeClaim(b) {
+  b.disabled = true;
+  try { await api.recharge(); sound.chips(6); } catch (e) { b.disabled = false; errorToast(e, () => rechargeClaim(b)); }
+  refresh();
 }
 
 // ---------- lobby ----------
@@ -466,22 +422,60 @@ function entryMin() {
   });
   return (open.length ? Math.min(...open.map(t => t.min)) : FIRST_TIER.min);
 }
-const GROUPS = [['카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'poker', 'sevenpoker', 'slots', 'horses']], ['화투', ['matgo', 'gostop', 'seotda']]];
+// Three kinds of tables, as the home cards and the 게임 tab's filter split them.
+const KINDS = [['casino', '카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'slots', 'horses']], ['poker', '포커', ['poker', 'sevenpoker']], ['hwatu', '화투', ['matgo', 'gostop', 'seotda']]];
+const POPULAR = ['blackjack', 'poker', 'seotda', 'roulette', 'matgo', 'baccarat', 'gostop', 'sevenpoker', 'dice', 'slots', 'horses'];
+let homeKind = 'all';
+let gamesKind = 'all';
 const groupHead = (text, aside = '') => {
   const li = el('li', 'game-group');
   li.setAttribute('role', 'presentation');
   li.innerHTML = `<span>${text}</span>${aside ? `<small>${aside}</small>` : ''}`;
   return li;
 };
+// 전체 · 카지노 · 포커 · 화투: built once, then only the selection moves so focus stays put.
+function filterTabs(root, current, onPick) {
+  if (!root.childElementCount) {
+    for (const [id, name] of [['all', '전체'], ...KINDS]) {
+      const b = el('button', 'filter-tab', name);
+      b.type = 'button';
+      b.dataset.kind = id;
+      b.setAttribute('role', 'radio');
+      b.addEventListener('click', () => onPick(id));
+      root.append(b);
+    }
+  }
+  root.querySelectorAll('[data-kind]').forEach(b => { const on = b.dataset.kind === current; b.classList.toggle('is-active', on); b.setAttribute('aria-checked', String(on)); });
+}
 
-// Both lists show the everyday tables (events live in the 이벤트 tab); the 게임 tab groups them.
+// The home row: tall picture cards to flick through.
+function popCard(g) {
+  const li = el('li');
+  const b = el('button', 'pop-card');
+  b.type = 'button';
+  b.dataset.game = g.id;
+  const hot = hotStatus(state).live;
+  const isHot = hot && hot.game === g.id;
+  if (isHot) b.classList.add('is-hot');
+  b.innerHTML = `${art(g.id, 'pop-art')}${isHot ? `<span class="hot-badge">HOT ${pct(hot)}</span>` : ''}<span class="pop-text"><b>${g.name}</b><small>${g.tag}</small></span>`;
+  b.addEventListener('click', () => chooseGame(b));
+  li.append(b);
+  return li;
+}
+
+// Home shows the popular row (filtered by kind); the 게임 tab lists every everyday table by kind.
+// Events live in the 이벤트 tab.
 function renderGameLists() {
   const games = GAMES.filter(g => !g.event);
   const byId = id => games.find(g => g.id === id);
   const stake = `최소 ${formatCH(entryMin())}원부터 앉을 수 있어요`;
-  document.querySelector('[data-game-grid]').replaceChildren(groupHead('테이블', stake), ...games.map(gameRow));
-  document.querySelector('[data-floor-list]').replaceChildren(...GROUPS.flatMap(([name, ids], i) => [groupHead(name, i ? '' : stake), ...ids.map(byId).filter(Boolean).map(gameRow)]));
-  renderEvents();
+  const homeIds = homeKind === 'all' ? POPULAR : KINDS.find(k => k[0] === homeKind)[2];
+  document.querySelector('[data-game-grid]').replaceChildren(...homeIds.map(byId).filter(Boolean).map(popCard));
+  filterTabs(document.querySelector('[data-home-filter]'), homeKind, k => { homeKind = k; renderGameLists(); });
+  const kinds = gamesKind === 'all' ? KINDS : KINDS.filter(k => k[0] === gamesKind);
+  document.querySelector('[data-floor-list]').replaceChildren(...kinds.flatMap(([, name, ids], i) => [groupHead(name, i ? '' : stake), ...ids.map(byId).filter(Boolean).map(gameRow)]));
+  filterTabs(document.querySelector('[data-games-filter]'), gamesKind, k => { gamesKind = k; renderGameLists(); });
+  renderHome();
 }
 
 // The hot badge follows the clock: the countdown ticks, and the lists redraw when a window opens or closes.
@@ -492,26 +486,182 @@ setInterval(() => {
   const key = live ? `${live.game}:${live.startsAt}` : '';
   if (key !== shownHot) { shownHot = key; renderGameLists(); return; }
   if (live) document.querySelectorAll('[data-hot-left]').forEach(n => { n.textContent = clock(Date.parse(live.endsAt) - now); });
+  const next = !live && hotStatus(state).next;
+  if (next) document.querySelectorAll('[data-hot-next]').forEach(n => { n.textContent = clock(Date.parse(next.startsAt) - now); });
 }, 1000);
 // The lounge's hot table block sends players straight to that game's tables.
 addEventListener('vegas:choose-game', event => {
-  const row = document.querySelector(`.surface.is-active .game-row[data-game="${event.detail?.game}"]`) || document.querySelector(`.game-row[data-game="${event.detail?.game}"]`);
-  if (row) chooseGame(row);
+  const id = event.detail?.game;
+  if (!GAMES.some(g => g.id === id)) return;
+  let row = document.querySelector(`.surface.is-active [data-game="${id}"]`);
+  if (!row) { row = el('button'); row.dataset.game = id; }
+  chooseGame(row);
 });
 
-// The lobby carries one slim teaser for this week's event; the 이벤트 tab has the rest.
-function renderEvents() {
-  const slot = document.querySelector('[data-events]');
-  const g = GAMES.find(x => x.event && eventOf(x) && !eventOf(x).always);
-  const ev = g && eventOf(g);
-  slot.hidden = !ev;
-  if (!ev) { slot.replaceChildren(); return; }
-  const b = el('button', `event-banner event-banner--teaser event-banner--${g.id}`);
+// ---------- home ----------
+// Home is four things: this week's event as one big banner, the three kinds of tables plus events
+// as four cards, a strip of today's small things (pay, missions, season, hot table), and the
+// popular games row. Everything else lives in its tab.
+const weekGame = () => GAMES.find(x => x.event && eventOf(x) && !eventOf(x).always);
+function renderHome() {
+  renderHero();
+  renderCats();
+  renderToday();
+  if (isActive('events')) renderEventTab();
+}
+
+function heroButton(text, cls, onClick) {
+  const b = el('button', cls, text);
   b.type = 'button';
-  b.innerHTML = `${art(ev.id, 'event-art')}<span class="event-kicker">이번 주 이벤트 · ${timeLeft(ev.until)} 남음</span><strong class="event-title">${ev.title}</strong><span class="event-cta">이벤트 보기</span>`;
-  b.addEventListener('click', () => showSurface('events', { focus: true }));
-  slot.replaceChildren(b);
-  if (document.querySelector('[data-surface="events"]').classList.contains('is-active')) renderEventTab();
+  b.addEventListener('click', () => onClick(b));
+  return b;
+}
+function renderHero() {
+  const slot = document.querySelector('[data-home-hero]');
+  const g = weekGame();
+  const ev = g && eventOf(g);
+  const card = el('div', 'home-hero-card');
+  const actions = el('div', 'home-actions');
+  const goEvents = () => showSurface('events', { focus: true });
+  if (ev) {
+    const e = eventEntry(ev);
+    card.style.setProperty('--hero-art', `url(art/${ev.id}.webp)`);
+    card.innerHTML = `<span class="home-kicker">이번 주 이벤트 · ${timeLeft(ev.until)} 남음</span><h2 class="home-title">${ev.title}</h2><p class="home-lede">${ev.blurb}</p>`;
+    if (e?.open) {
+      const go = heroButton('입장하기', 'home-cta', b => chooseGame(b));
+      go.dataset.game = g.id;
+      actions.append(go, heroButton('자세히', 'home-ghost', goEvents));
+    } else {
+      actions.append(heroButton('이벤트 보기', 'home-cta', goEvents));
+      if (e) actions.append(el('span', 'home-note', `입장 · 보유 칩 ${formatCH(e.entry)} 이상`));
+    }
+  } else {
+    const bj = GAMES[0];
+    card.style.setProperty('--hero-art', `url(art/${bj.id}.webp)`);
+    card.innerHTML = `<span class="home-kicker">지금 바로</span><h2 class="home-title">${bj.name}</h2><p class="home-lede">${bj.blurb}</p>`;
+    const go = heroButton('바로 앉기', 'home-cta', b => chooseGame(b));
+    go.dataset.game = bj.id;
+    actions.append(go);
+  }
+  card.append(actions);
+  slot.replaceChildren(card);
+}
+
+function renderCats() {
+  const slot = document.querySelector('[data-home-cats]');
+  const name = id => GAMES.find(g => g.id === id)?.name;
+  const ev = weekGame() && eventOf(weekGame());
+  const list = (ids, n = 3) => ids.slice(0, n).map(name).join(' · ') + (ids.length > n ? ` 외 ${ids.length - n}` : '');
+  const cards = [
+    ...KINDS.map(([id, label, ids]) => ({ id, label, sub: list(ids), art: ids[0] === 'blackjack' ? 'blackjack' : ids[0], go: () => { gamesKind = id; renderGameLists(); showSurface('games', { focus: true }); } })),
+    { id: 'event', label: '이벤트', sub: ev ? ev.title : '매주 바뀌는 테이블', art: ev?.id || 'royale', go: () => showSurface('events', { focus: true }) }
+  ];
+  slot.replaceChildren(...cards.map(c => {
+    const b = el('button', `home-cat home-cat--${c.id}`, `<span class="home-cat-text"><b>${c.label}</b><small>${c.sub}</small></span><span class="home-cat-go">${c.id === 'event' ? '입장' : '플레이'}</span>`);
+    b.type = 'button';
+    b.style.setProperty('--cat-art', `url(art/${c.art}.webp)`);
+    b.addEventListener('click', c.go);
+    return b;
+  }));
+}
+
+// A sheet holding one lounge block (missions, tables to watch); it repaints with every new state.
+let sheetPaint = null;
+function openBlockSheet(make) {
+  sheetPaint?.close();
+  const scrim = el('div', 'lounge-scrim');
+  const sheet = el('section', 'lounge-sheet lounge-sheet--block');
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  const shut = el('button', 'sheet-close', '닫기');
+  shut.type = 'button';
+  const body = el('div', 'lounge-sheet-body');
+  sheet.append(shut, body);
+  const paint = () => {
+    const node = make();
+    if (!node) { close(); return; }
+    body.replaceChildren(node);
+    sheet.setAttribute('aria-label', node.querySelector('h2')?.textContent || '');
+  };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  function close() {
+    if (sheetPaint !== paint) return;
+    sheetPaint = null;
+    removeEventListener('keydown', onKey, true);
+    scrim.classList.remove('is-open'); sheet.classList.remove('is-open');
+    setTimeout(() => { scrim.remove(); sheet.remove(); }, 320);
+  }
+  paint.close = close;
+  sheetPaint = paint;
+  paint();
+  document.body.append(scrim, sheet);
+  addEventListener('keydown', onKey, true);
+  scrim.addEventListener('click', close);
+  shut.addEventListener('click', close);
+  requestAnimationFrame(() => { scrim.classList.add('is-open'); sheet.classList.add('is-open'); shut.focus({ preventScroll: true }); });
+}
+
+function todayChip({ mark, title, sub, hot = false, disabled = false, label, onClick }) {
+  const b = el('button', `today-chip${hot ? ' is-hot' : ''}`);
+  b.type = 'button';
+  b.disabled = disabled;
+  b.innerHTML = `<span class="today-mark" aria-hidden="true">${mark}</span><span class="today-text"><b>${title}</b><small>${sub}</small></span>`;
+  if (label) b.setAttribute('aria-label', label);
+  b.addEventListener('click', () => onClick(b));
+  return b;
+}
+const MARK = {
+  pay: '<svg viewBox="0 0 24 24"><path d="M5 7.5h14v10H5zM9 12.5h6M12 10v5"/></svg>',
+  back: '<svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.1-5M5 4v4h4"/></svg>',
+  mission: '<svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg>',
+  hot: '<svg viewBox="0 0 24 24"><path d="M12 4c.5 3.4 4.5 5.2 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.2-3.6 2-4.5.3 1.6 1.2 2.4 2 2.6C11 9.4 11.2 6.6 12 4z"/></svg>',
+  watch: '<svg viewBox="0 0 24 24"><path d="M3 12s3.3-5.5 9-5.5S21 12 21 12s-3.3 5.5-9 5.5S3 12 3 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+  bank: '<svg viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9M5 9.5v8M9.7 9.5v8M14.3 9.5v8M19 9.5v8M3.5 20h17"/></svg>'
+};
+function renderToday() {
+  const slot = document.querySelector('[data-home-today]');
+  if (!state?.user) { slot.replaceChildren(); return; }
+  const chips = [];
+  const eng = state.engagement || {}, sup = eng.support || {}, r = state.recharge;
+  const available = state.user.account.available;
+  const broke = Boolean(state.bank && available < state.bank.base);
+  // Free money first: pay, then 구제금융·정부 지원금 and the recharge. Short of every table with
+  // nothing free left, the bank.
+  const daily = eng.daily;
+  if (daily && !daily.claimed) {
+    const kind = daily.pay.monthly ? '월급' : daily.pay.weekly ? '주급' : '일급';
+    chips.push(todayChip({ mark: MARK.pay, title: `오늘 ${kind} +${formatCH(daily.reward)}`, sub: '눌러서 받기', hot: true, onClick: () => openDailySheet(state, applyState) }));
+  }
+  for (const [kind, name] of [['welfare', '구제금융'], ['grant', '정부 지원금']]) {
+    const s = sup[kind];
+    const ready = kind === 'welfare' ? s?.qualified && !s.claimed : s && !s.claimed;
+    if (ready) chips.push(todayChip({ mark: MARK.pay, title: `${name} +${formatCH(s.amount)}`, sub: '갚지 않아도 돼요', hot: true, onClick: b => claimSupport(kind, b, applyState) }));
+  }
+  if (r?.eligible) chips.push(todayChip({ mark: MARK.pay, title: `칩 충전 +${formatCH(r.amount)}`, sub: '무료', hot: broke, onClick: rechargeClaim }));
+  if (broke && !chips.length) chips.push(todayChip({ mark: MARK.bank, title: '은행에서 빌리기', sub: '칩이 모자라요', hot: true, onClick: () => showSurface('bank', { focus: true }) }));
+  // The last table played, if it is still there for this player.
+  const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier));
+  if (recent) {
+    const tier = TIERS[recent.tier];
+    const short = available < tier.min;
+    chips.push(todayChip({ mark: MARK.back, title: `다시 앉기 · ${recent.game.name}`, sub: short ? '칩이 부족해요' : `${tier.name} · ${formatCH(tier.min)}–${formatCH(tier.max)}`, disabled: short, label: `${recent.game.name} ${tier.name}에 다시 앉기${short ? ', 칩이 부족해요' : ''}`, onClick: b => sitAt(recent.game, recent.tier, b) }));
+  }
+  const { live, next, now } = hotStatus(state);
+  const hotGo = game => () => dispatchEvent(new CustomEvent('vegas:choose-game', { detail: { game } }));
+  if (live) chips.push(todayChip({ mark: MARK.hot, title: `지금 핫 · ${live.label}`, sub: `이기면 +${pct(live)} · <span data-hot-left>${clock(Date.parse(live.endsAt) - now)}</span> 남음`, hot: true, onClick: hotGo(live.game) }));
+  const ms = eng.missions;
+  if (ms?.items?.length) {
+    const ready = ms.items.filter(i => i.done && !i.claimed).length;
+    const done = ms.items.filter(i => i.done).length;
+    const sub = ready ? `보상 ${ready}개 받기` : ms.swept || done === ms.items.length ? '오늘은 모두 끝냈어요' : `모두 하면 보너스 +${formatCH(ms.sweepBonus)}`;
+    chips.push(todayChip({ mark: MARK.mission, title: `오늘의 미션 ${done}/${ms.items.length}`, sub, hot: ready > 0, onClick: () => openBlockSheet(() => state?.engagement?.missions && missionsBlock(state, applyState)) }));
+  }
+  const rs = state.rankSeason;
+  if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier)}`, sub: rs.next ? `${tierName(rs.next.id)}까지 ${formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
+  if (!live && next) chips.push(todayChip({ mark: MARK.hot, title: `${startTime(next)} 핫 테이블`, sub: `${next.label} · <span data-hot-next>${clock(Date.parse(next.startsAt) - now)}</span> 뒤`, onClick: hotGo(next.game) }));
+  const watching = watchBlock(state);
+  if (watching) chips.push(todayChip({ mark: MARK.watch, title: '지금 플레이 중', sub: `${watching.querySelectorAll('li').length}개 테이블 구경하기`, onClick: () => openBlockSheet(() => watchBlock(state)) }));
+  slot.replaceChildren(...chips);
 }
 
 const dayLabel = iso => new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'Asia/Seoul' });
@@ -557,28 +707,11 @@ function renderEventTab() {
     li.innerHTML = `<span>${dayLabel(ev.from)}</span><b>${ev.title}</b><small>${ev.kicker}</small>`;
     return li;
   }));
+  document.querySelector('[data-event-feed]').replaceChildren(...(state?.engagement ? [feedBlock(state)] : []));
 }
-
-function renderLobby() {
-  renderGameLists();
-  const vignette = document.querySelector('[data-vignette]');
-  vignette.addEventListener('click', () => chooseGame(vignette));
-}
-
-// The lobby's one orchestrated moment: a hand is dealt under the lamp.
-async function dealVignette() {
-  const hand = document.querySelector('[data-vignette-hand]');
-  const chips = document.querySelector('[data-vignette-chips]');
-  const shoe = { left: innerWidth, top: -120, width: 0, height: 0 };
-  [50_000_000, 20_000_000, 20_000_000, 10_000_000, 10_000_000].forEach((v, i) => {
-    const c = createChip(v); c.style.setProperty('--i', i); c.style.setProperty('--jx', `${(i % 2) - 0.5}px`); chips.append(c);
-  });
-  for (const t of ['A♠', 'K♥']) {
-    const card = createCard(t, { faceUp: false });
-    hand.append(card);
-    await flyFrom(card, shoe, { duration: 620, spin: -30, scale: .8, lift: 20 });
-    await flipCard(card, t, { duration: 420 });
-  }
+// 지갑's 은행 page ends with the next floor and what it takes to get there.
+function renderBankFloor() {
+  document.querySelector('[data-bank-floor]').replaceChildren(...(state?.floors?.length ? [floorBlock(state, openPassShop)] : []));
 }
 
 // ---------- tiers ----------
@@ -968,11 +1101,10 @@ mountInstallButton(document.querySelector('[data-install]'));
 watchConnection(refresh);
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
-renderLobby();
+renderGameLists();
 showSurface('lobby');
 capturePendingJoin();
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
 if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); } });
 else openSignIn(signedIn);
-dealVignette();
 startPlaytime({ isInTable: () => document.body.classList.contains('game-mode') });

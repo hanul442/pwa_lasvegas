@@ -438,15 +438,6 @@
 .resume-text strong{font:650 16px/1.25 var(--sans)}
 .resume-text small{font-size:13px;color:#3d4249;overflow-wrap:anywhere}
 .resume-go{flex:none;font-size:18px}
-.recent-tables{margin:6px 0 10px}
-.recent-head{margin:0 0 8px;font:600 13px/1.2 var(--sans);letter-spacing:.06em;color:var(--smoke)}
-.recent-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.recent-table{width:100%;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:center;padding:10px 12px;border:1px solid var(--hair-strong);border-radius:14px;background:var(--ink-2);color:var(--white);text-align:left}
-.recent-table .game-row-icon{grid-row:1 / 3;width:40px;height:40px;padding:8px}
-.recent-name{font:560 16px/1.15 var(--display);font-stretch:112%}
-.recent-tier{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13px;color:var(--dim)}
-.recent-table:disabled{opacity:.5}
-.recent-table:active{opacity:.7}
 .event-cta.is-locked{background:none;color:var(--smoke);border:1px solid var(--hair-strong);font-weight:600}
 .table-switcher{max-height:min(86vh,720px);overflow-y:auto;overscroll-behavior:contain}
 .switcher-label{margin:18px 0 8px;font:600 13px/1.2 var(--sans);letter-spacing:.06em;color:var(--smoke)}

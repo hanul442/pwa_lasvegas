@@ -7,8 +7,8 @@
   --star:#fff6dc;
   --star-shape:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);
   --signal:#ff4f4f;
-  /* the one bright colour outside the felt: main buttons, the active tab, money waiting */
-  --go:#3ee27f;--go-ink:#04140a;--go-soft:#3ee27f24;
+  /* main buttons and the active tab: white on black lacquer; colour stays on the felt and chips */
+  --go:var(--white);--go-ink:var(--ink);
   --hair:rgba(255,255,255,.1);--hair-strong:rgba(255,255,255,.28);
   --display:Archivo,"Noto Sans KR",system-ui,sans-serif;
   --sans:Archivo,"Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;
@@ -70,7 +70,7 @@ button:disabled{cursor:not-allowed}
   background:radial-gradient(50% 64% at 50% 34%,#1d7a58 0,#0f5139 40%,#062a1d 74%,#03140e 100%);
   box-shadow:inset 0 0 0 1px #ffffff14,inset 0 -40px 80px #0009,0 30px 60px #000a}
 .pill-button{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--ivory);font-size:15px}
-.pill-button--solid{background:var(--go);color:var(--go-ink);border-color:var(--go);font-weight:700}
+.pill-button--solid{background:var(--white);color:var(--ink);border-color:var(--white);font-weight:600}
 .pill-button:disabled{opacity:.6}
 .pill-button.is-active{background:var(--ivory);color:var(--walnut);border-color:var(--ivory)}
 
@@ -225,10 +225,10 @@ button:disabled{cursor:not-allowed}
 /* Each tab is a line icon over its name; a warm dot marks a tab with money waiting to be taken. */
 .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .nav-icon{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.nav-item.is-active .nav-icon{stroke-width:2;color:var(--go)}
+.nav-item.is-active .nav-icon{stroke-width:2}
 .nav-label{font:inherit;font-size:clamp(11px,3.1vw,12.5px);font-weight:500;letter-spacing:-.01em}
 .nav-item.is-active .nav-label{font-weight:700}
-.nav-dot{position:absolute;top:9px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--go);box-shadow:0 0 0 2px #0a0b0d}
+.nav-dot{position:absolute;top:9px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--star);box-shadow:0 0 0 2px #0a0b0d}
 .nav-dot[hidden]{display:none}
 .game-mode .bottom-nav,.game-mode .topbar{display:none}
 .game-mode .surface-stack{width:100%;padding:0}
@@ -461,7 +461,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .home-hero-card{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:220px;height:100%;padding:22px 20px 20px;border-radius:20px;overflow:hidden;isolation:isolate;
   background:linear-gradient(90deg,#0a0b0df0 0,#0a0b0d99 52%,#0a0b0d1a),var(--hero-art) 70% 70%/cover,#111}
 .home-hero-card::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffffff14}
-.home-kicker{font:700 12.5px/1.2 var(--sans);letter-spacing:.08em;color:var(--go)}
+.home-kicker{font:700 12.5px/1.2 var(--sans);letter-spacing:.08em;color:var(--star)}
 .home-title{margin:2px 0 0;font:700 clamp(28px,8vw,34px)/1.1 var(--display);font-stretch:118%;letter-spacing:-.02em}
 .home-lede{margin:0;max-width:24em;color:var(--smoke);font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .home-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
@@ -485,7 +485,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .home-today::-webkit-scrollbar,.pop-row::-webkit-scrollbar,.filter-tabs::-webkit-scrollbar,.subtabs::-webkit-scrollbar{display:none}
 .home-today:empty{display:none}
 .today-chip{flex:none;display:flex;align-items:center;gap:10px;max-width:250px;padding:10px 14px 10px 10px;border:1px solid var(--hair);border-radius:14px;background:var(--ink-2);color:var(--white);text-align:left;scroll-snap-align:start}
-.today-chip.is-hot{border-color:#3ee27f73}
+.today-chip.is-hot{border-color:var(--hair-strong)}
 .today-chip:disabled{opacity:.55}
 .today-mark{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink-3);color:var(--white)}
 .today-mark>svg:not(.tier-emblem){width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

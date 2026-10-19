@@ -365,6 +365,30 @@ function buySkinSheet(state, item, onChanged, pass) {
   });
 }
 
+// A skin bought in an earlier month: buying it again is this month's pass to its floor.
+function renewSheet(state, item, onChanged, pass) {
+  const available = state.user.account.available;
+  const short = available < item.price;
+  const body = el('div');
+  body.append(stage(state, item));
+  body.append(el('p', 'lounge-note', `입장권은 한 달 동안만 유지돼요. 이미 가진 꾸미기를 다시 사면 <b>${pass ? pass.name : '이 층'} 입장권</b>이 이번 시즌 동안 생겨요.${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
+  openSheet({
+    eyebrow: `입장권 갱신${pass ? ` · ${pass.name}` : ''}`, title: item.name, body,
+    confirmText: short ? '' : `${won(item.price)}에 갱신`,
+    confirm: short ? null : async () => {
+      const out = await api.shopBuy(item.id);
+      onChanged(out.state);
+      const art = stage(out.state, null);
+      art.classList.add('acquire-stage');
+      acquireMoment({
+        eyebrow: 'PASS', title: pass ? `${pass.name} 입장권` : item.name, art, level: 2,
+        line: `${item.name} · ${won(item.price)}`,
+        stamp: pass ? (pass.unlocked ? '이번 시즌 · 지금 앉을 수 있어요' : `이번 시즌 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : ''
+      });
+    }
+  });
+}
+
 async function equip(item, onChanged, button) {
   if (button) button.disabled = true;
   try { const out = await api.shopEquip(item.slot, item.house ? null : item.id); sound.chip(); onChanged(out.state); }
@@ -378,7 +402,14 @@ function skinTile(state, item, onChanged, pass, { showFloor = false } = {}) {
   const where = showFloor && pass ? pass.name : SLOT_NAME[item.slot];
   const status = item.owned ? (item.house ? '기본' : item.achievement ? '업적 보상' : '보유') : item.achievement ? `업적 「${item.achievementLabel}」` : null;
   li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}</span><small>${where}${status ? ` · ${status}` : ''}</small>`));
-  if (item.equipped) {
+  if (item.renewable && pass && !pass.passed) {
+    const short = available < item.price;
+    const b = el('button', `pill-button skin-act skin-price${short ? ' is-short' : ''}`, `갱신 ${won(item.price)}`);
+    b.type = 'button';
+    b.setAttribute('aria-label', `${item.name}로 ${pass.name} 입장권 갱신, ${won(item.price)}`);
+    b.addEventListener('click', () => renewSheet(state, item, onChanged, pass));
+    li.append(b);
+  } else if (item.equipped) {
     li.append(el('span', 'skin-on', '장착 중'));
   } else if (item.owned) {
     const b = el('button', 'pill-button skin-act', '장착');
@@ -457,7 +488,7 @@ function cosmeticsTab(state, onChanged, rerender) {
       section.addEventListener('toggle', () => floorOpenByHand.set(pass.slug, section.open));
       const state_ = pass.passed
         ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`)
-        : pass.unlocked ? '순자산 충족 · 하나만 사면 입장' : `순자산 ${formatCH(pass.threshold)}원 + 꾸미기 하나`;
+        : pass.unlocked ? '순자산 충족 · 하나만 사거나 갱신하면 입장' : `순자산 ${formatCH(pass.threshold)}원 + 이번 달 입장권`;
       const head = el('summary', 'pass-head', `<span class="pass-mark" aria-hidden="true"></span><span class="pass-name">${pass.name}</span><span class="pass-count">${owned}/${items.length}</span><small class="pass-state">${state_}</small>`);
       section.append(head);
       const grid = el('ul', 'skin-grid');

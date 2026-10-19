@@ -107,7 +107,9 @@ test('assets never open floors: floors run on chips minus debt alone', () => {
   assert.equal(v.account.progressionValue, 1_000_000);
 });
 
-test('debt you could pay by selling luxury blocks bankruptcy, and filing repossesses it', () => {
+test('debt you could pay by selling luxury blocks bankruptcy, and filing repossesses it', t => {
+  // Mid-month: no new loans in a month's last three days (lib/bank.mjs LOAN_FREEZE_DAYS).
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-14T03:00:00Z') });
   const state = defaultState(), u = newUser(state, 'b', 'B');
   addLedger(state, u, { type: 'ADMIN_GRANT', amount: 5 * 억, referenceType: 'TEST' });
   borrow(state, u, { lender: 'shark', amount: 5 * 억, days: 1 });
@@ -187,7 +189,7 @@ test('the shop over the API: state shape, buy, sell, equip and error codes', asy
   assert.equal(s.shop.assets, 0);
   assert.equal(s.shop.luxury.length, LUXURY.length);
   assert.deepEqual(Object.keys(s.shop.luxury[0]).sort(), ['blurb', 'boughtAt', 'group', 'headline', 'icon', 'id', 'name', 'owned', 'paid', 'price', 'resale'].sort());
-  assert.deepEqual(Object.keys(s.shop.cosmetics[0]).sort(), ['achievement', 'achievementLabel', 'blurb', 'equipped', 'floor', 'house', 'id', 'name', 'owned', 'price', 'slot'].sort());
+  assert.deepEqual(Object.keys(s.shop.cosmetics[0]).sort(), ['achievement', 'achievementLabel', 'blurb', 'equipped', 'floor', 'house', 'id', 'name', 'owned', 'price', 'renewable', 'slot'].sort());
   assert.deepEqual(s.shop.equipped, { cardBack: null, felt: null, chips: null, frame: null });
   assert.deepEqual(s.user.cosmetics, { owned: [], equipped: { cardBack: null, felt: null, chips: null, frame: null } });
   assert.deepEqual(s.user.luxury, []);

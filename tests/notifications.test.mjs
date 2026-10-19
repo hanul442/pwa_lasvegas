@@ -112,7 +112,7 @@ test('the daily bonus reminder comes once in the morning, never at night or mid-
   assert.equal(messageFor(state, u, kst(9)), null); // too early for the morning slot
   const first = planPushes(state, kst(10));
   assert.equal(first.length, 1);
-  assert.match(first[0].message.title, /오늘 일급 10억 원/);
+  assert.match(first[0].message.title, /오늘 일급 1억 원/);
   assert.equal(planPushes(state, kst(11)).length, 0); // once a day
   // Someone playing right now is left alone.
   const fresh = subscribedPlayer(kst(9, 0));
@@ -207,7 +207,7 @@ test('a jackpot pushes to subscribed players right away, at most every two hours
     const { pushFeed } = await import('../lib/engagement.mjs');
     state.users.min.account.available = 0;
     await store.mutate(s => pushFeed(s, { type: 'JACKPOT', actorId: 'min', game: 'Slots', amount: 300_000_000, createdAt: new Date(kst(14) + 1000).toISOString() }));
-    await handleApi(req, new URL('http://x/api/recharge/auto'), store, { pushFetch });
+    await handleApi({ ...req, body: async () => ({ kind: 'welfare' }) }, new URL('http://x/api/support/claim'), store, { pushFetch });
     assert.equal(seen.length, 1);
     assert.ok(u.push.sent.newsAt);
     clock = kst(15);

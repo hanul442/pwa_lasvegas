@@ -23,7 +23,7 @@ test('일급 every day, 주급 on every seventh day in a row, 월급 on the 28th
   const start = u.account.available;
   const first = claimDaily(state, u, WED);
   assert.equal(first.amount, rate('daily', base));
-  assert.equal(first.amount, 1_000_000_000, '일급 is at least 10억');
+  assert.equal(first.amount, 100_000_000, '일급 is at least 1억');
   assert.throws(() => claimDaily(state, u, WED + 1000), /DAILY_ALREADY_CLAIMED/);
   assert.equal(dailyStatus(u, WED).claimed, true);
   assert.equal(dailyStatus(u, WED).toWeekly, 6);
@@ -62,8 +62,8 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
   u.account.available = 200_000;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
-  // Ten a day, 10억 each.
-  assert.deepEqual(WELFARE_STEPS, Array(10).fill(1_000_000_000));
+  // Ten a day: 10억, then 5억, then 1억 each.
+  assert.deepEqual(WELFARE_STEPS, [1_000_000_000, 500_000_000, ...Array(8).fill(100_000_000)]);
   assert.equal(claimSupport(state, u, 'welfare', WED).amount, 1_000_000_000);
   assert.throws(() => claimSupport(state, u, 'welfare', WED + 1000), /WELFARE_NOT_QUALIFIED/, 'only while broke');
   for (const step of WELFARE_STEPS.slice(1)) {
@@ -150,21 +150,16 @@ test('a finished season pays its podium once and leaves a badge', () => {
   assert.equal(state.users.ann.account.available, before.ann + prizes.ann);
 });
 
-test('lucky card rescue only opens on an empty wallet while the recharge cools down', () => {
+test('the lucky card rescue is retired: an empty wallet gets the 구제금융 instead', () => {
   const state = defaultState(); const u = state.users.hanseo;
-  assert.equal(rescueStatus(u, WED).eligible, false);
   u.account.available = 0;
   u.recharge.lastAt = new Date(WED - 60_000).toISOString();
   u.recharge.dailyDate = new Date(WED).toISOString().slice(0, 10);
   const status = rescueStatus(u, WED);
   assert.equal(status.broke, true);
-  assert.equal(status.eligible, true);
-  const out = playRescue(state, u, 1, () => 0, WED);
-  assert.equal(out.cards.length, 3);
-  assert.equal(new Set(out.cards).size, 3);
-  assert.equal(totalBalance(u), out.amount);
-  assert.equal(out.amount, out.cards[1]);
-  assert.throws(() => playRescue(state, u, 0, Math.random, WED + 1000), /RESCUE_NOT_AVAILABLE/);
+  assert.equal(status.eligible, false);
+  assert.throws(() => playRescue(state, u, 0, Math.random, WED), /RESCUE_NOT_AVAILABLE/);
+  assert.equal(totalBalance(u), 0);
 });
 
 test('API exposes engagement and the claim routes', async () => {

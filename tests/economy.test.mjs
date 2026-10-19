@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../lib/store.mjs';
 import { newUser } from '../lib/state.mjs';
-import { floorsFor, addLedger, autoRecharge, lockBet, settleHouseGame, settleLockedHouseGame, requestRecharge, reviewRecharge } from '../lib/economy.mjs';
+import { floorsFor, addLedger, autoRecharge, rechargeStatus, lockBet, settleHouseGame, settleLockedHouseGame, requestRecharge, reviewRecharge } from '../lib/economy.mjs';
 
 function fresh(){return defaultState()}
 
@@ -64,12 +64,12 @@ test('admin grant changes bankroll but never qualified P/L',()=>{
   assert.equal(u.account.qualifiedPnl,0);
 });
 
-test('auto recharge only tops up to 5천만',()=>{
+test('the free auto recharge is retired: the 구제금융 covers an empty wallet',()=>{
   const s=fresh(),u=s.users.hanseo;
   u.account.available=12_000_000;
-  autoRecharge(s,u);
-  assert.equal(u.account.available,50_000_000);
-  assert.equal(u.recharge.total,38_000_000);
+  assert.equal(rechargeStatus(u).eligible,false);
+  assert.throws(()=>autoRecharge(s,u),/RECHARGE_NOT_AVAILABLE/);
+  assert.equal(u.account.available,12_000_000);
 });
 
 test('holding 100억 opens High Limit, and it stays open after losing it',()=>{

@@ -123,9 +123,9 @@ test('bankruptcy wipes the debt, takes the wallet, sinks credit and bars the ban
   const status = bankruptcyStatus(u, NOON);
   assert.equal(status.eligible, true);
   const out = fileBankruptcy(state, u, NOON);
-  // The wallet is seized, then the day's 구제금융 of 10억 is paid straight in (한서's call).
-  assert.deepEqual(out, { discharged: 800_000_000, seized: 100_000_000, bailout: 1_000_000_000 });
-  assert.equal(u.account.available, 1_000_000_000);
+  // The wallet is seized, then the day's 구제금융 of 100억 is paid straight in (한서's call).
+  assert.deepEqual(out, { discharged: 800_000_000, seized: 100_000_000, bailout: 10_000_000_000 });
+  assert.equal(u.account.available, 10_000_000_000);
   assert.equal(state.ledger.at(-1).type, 'WELFARE');
   assert.equal(debtOf(u), 0);
   assert.equal(u.credit.score, 0);
@@ -218,7 +218,7 @@ test('a 구제금융 paid without asking comes back in the state once, for the p
   u.account.available = 1_000_000;
   settleHouseGame(state, u, { game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000, roundId: 'bust' });
   const bail = (await call('GET', '/api/state')).data.latestBailout;
-  assert.equal(bail.amount, 1_000_000_000);
+  assert.equal(bail.amount, 10_000_000_000);
   assert.equal(bail.nth, 1);
   assert.equal(bail.perDay, 10);
   assert.ok(bail.id && bail.createdAt);

@@ -267,6 +267,13 @@ window.addEventListener('popstate', event => {
   if (document.body.classList.contains('game-mode') || document.body.classList.contains('tier-mode')) { showSurface(returnSurface); restoreTrigger(); }
 });
 window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveTable(); });
+// The table's wallet pill: leave the table (as ← does) and land on 지갑.
+addEventListener('vegas:open-wallet', () => {
+  if (!document.body.classList.contains('game-mode')) { showSurface('bank', { focus: true }); return; }
+  returnSurface = 'bank';
+  if (history.state?.vegasSurface === 'table') history.go(tableOverTiers ? -2 : -1);
+  else showSurface('bank', { focus: true });
+});
 // A room screen sends someone back to the table where they still hold a seat.
 addEventListener('vegas:open-table', event => {
   const game = GAMES.find(g => g.id === event.detail?.game);

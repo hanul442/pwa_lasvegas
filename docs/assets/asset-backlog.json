@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-09-21T14:16:00+09:00",
+  "batch_size": {
+    "min": 2,
+    "max": 4
+  },
+  "items": [
+    {
+      "asset_id": "VEG-LBY-001",
+      "module": "lobby",
+      "category": "background",
+      "role": "hero_background",
+      "priority": 100,
+      "status": "backlog",
+      "target_path": "public/assets/lobby/veg-lobby-hero-bg-v01.webp",
+      "aspect_ratio": "16:9",
+      "use": "Lobby hero / ambient background",
+      "prompt_hint": "dark premium casino floor ambience, warm antique-gold practical lights, subtle green felt tables, cinematic depth, central negative space, no text, no logos"
+    },
+    {
+      "asset_id": "VEG-BJ-001",
+      "module": "blackjack",
+      "category": "game_card",
+      "role": "thumbnail_background",
+      "priority": 95,
+      "status": "backlog",
+      "target_path": "public/assets/games/blackjack/veg-blackjack-card-bg-v01.webp",
+      "aspect_ratio": "16:9",
+      "use": "Lobby Blackjack game card",
+      "prompt_hint": "premium blackjack table detail, green felt, tasteful ivory playing cards and black-gold chips, cinematic low-key lighting, negative space for UI text, no text"
+    },
+    {
+      "asset_id": "VEG-ROU-001",
+      "module": "roulette",
+      "category": "game_card",
+      "role": "thumbnail_background",
+      "priority": 94,
+      "status": "backlog",
+      "target_path": "public/assets/games/roulette/veg-roulette-card-bg-v01.webp",
+      "aspect_ratio": "16:9",
+      "use": "Lobby Roulette game card",
+      "prompt_hint": "luxury roulette wheel close-up, burgundy black and antique gold, cinematic shallow depth, negative space for UI text, no text"
+    },
+    {
+      "asset_id": "VEG-DICE-001",
+      "module": "dice",
+      "category": "game_card",
+      "role": "thumbnail_background",
+      "priority": 93,
+      "status": "backlog",
+      "target_path": "public/assets/games/dice/veg-dice-card-bg-v01.webp",
+      "aspect_ratio": "16:9",
+      "use": "Lobby Dice game card",
+      "prompt_hint": "ivory casino dice on dark felt and leather, restrained burgundy accent, gold edge light, premium cinematic, negative space, no text"
+    },
+    {
+      "asset_id": "VEG-PKR-001",
+      "module": "poker",
+      "category": "game_card",
+      "role": "thumbnail_background",
+      "priority": 92,
+      "status": "backlog",
+      "target_path": "public/assets/games/poker/veg-poker-card-bg-v01.webp",
+      "aspect_ratio": "16:9",
+      "use": "Lobby Poker game card",
+      "prompt_hint": "premium poker table, controlled fan of cards and chip stacks, green-black felt, warm gold rim lighting, cinematic, negative space, no text"
+    },
+    {
+      "asset_id": "VEG-SHR-001",
+      "module": "shared",
+      "category": "texture",
+      "role": "felt_texture",
+      "priority": 75,
+      "status": "backlog",
+      "target_path": "public/assets/shared/textures/veg-shared-felt-v01.webp",
+      "aspect_ratio": "1:1",
+      "use": "Reusable table texture",
+      "prompt_hint": "seamless deep green luxury casino felt texture, subtle fibers, even lighting, tileable, no objects, no text"
+    }
+  ]
+}

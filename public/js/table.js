@@ -10,7 +10,7 @@ import { maybeBust } from './bust.js';
 const STACK_CAP = 10;
 
 // Narrow phones show the balance as 12억 5천만 so the top bar keeps room for its buttons.
-const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
+const balanceText = value => formatCH(value);
 
 // Per-device memory of the chip last picked and the last bet placed, per game and table.
 const memoryKey = (game, tier, what) => `vegas:${what}:${game}:${tier}`;

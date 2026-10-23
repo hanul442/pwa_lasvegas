@@ -67,7 +67,7 @@ export function bustMoment(bust, nickname, then = null) {
   requestAnimationFrame(() => node.classList.add('is-open'));
   sound.lose?.();
   haptic([200, 80, 200]);
-  rollNumber(node.querySelector('[data-amount]'), 0, bust.sessionLoss, { duration: 1200 });
+  rollNumber(node.querySelector('[data-amount]'), 0, bust.sessionLoss, { duration: 1200, format: formatCH });
   const close = () => {
     removeEventListener('keydown', onKey, true);
     node.classList.remove('is-open');

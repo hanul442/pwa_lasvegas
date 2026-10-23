@@ -3,7 +3,7 @@
 // A FREE coin in view on all three reels plays 10 free spins at double pay: the server settles
 // them in the same round and this plays them back one by one.
 import { api } from '../api.js';
-import { animate, sound, haptic, formatCH, formatFull, rollNumber, wait, ms, reducedMotion, el } from '../fx.js';
+import { animate, sound, haptic, formatCH, rollNumber, wait, ms, reducedMotion, el } from '../fx.js';
 import { Table } from '../table.js';
 import { isBigWin } from '../bigwin.js';
 import { gameName } from '../names.js';
@@ -144,7 +144,7 @@ export async function mountSlots(ctx) {
     if (calm) { sound.strike(); haptic(12); }
   }
   let pool = ctx.state?.jackpot?.pool ?? 0;
-  poolEl.textContent = formatFull(pool);
+  poolEl.textContent = formatCH(pool);
 
   // Each reel shows three symbols: above, on and below the payline.
   const shown = reels.map(() => [randomSymbol(), randomSymbol(), randomSymbol()]);
@@ -152,7 +152,7 @@ export async function mountSlots(ctx) {
 
   function setPool(next) {
     if (next === pool) return;
-    rollNumber(poolEl, pool, next, { duration: 900 });
+    rollNumber(poolEl, pool, next, { duration: 900, format: formatCH });
     pool = next;
   }
 

@@ -37,7 +37,7 @@ import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
 import { watchErrors } from './js/error-report.js';
-import { tierEmblem, tierName, rankBadges, maybeSeasonMoment, TIERS as TIERS_RANK } from './js/rank.js';
+import { tierEmblem, tierName, rankBadges, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
 
 watchErrors();
 
@@ -333,7 +333,7 @@ function applyState(next) {
   if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state); celebrateFloors(state); }
+  if (isActive('lobby')) { maybeSeasonMoment(state); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); }
   sheetPaint?.();
 }
 
@@ -664,7 +664,11 @@ function renderToday() {
     chips.push(todayChip({ mark: MARK.mission, title: `오늘의 미션 ${done}/${ms.items.length}`, sub, hot: ready > 0, onClick: () => openBlockSheet(() => state?.engagement?.missions && missionsBlock(state, applyState)) }));
   }
   const rs = state.rankSeason;
-  if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier)}`, sub: rs.next ? `${tierName(rs.next.id)}까지 ${formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
+  // The season's last week: the countdown sits up front, next to the money.
+  if (rs && seasonEnding(rs)) {
+    const left = seasonLeft(rs), d = Math.ceil(left / 86_400_000);
+    chips.splice(Math.min(chips.length, 1), 0, todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: left <= 86_400_000 ? '오늘 자정 시즌 초기화' : `시즌 초기화 D-${d}`, sub: `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(left)}</span> · 지금 ${tierName(rs.tier)}`, hot: true, label: `시즌 초기화까지 ${seasonClock(left)}, 지금 ${tierName(rs.tier)}`, onClick: openSeasonEnd }));
+  } else if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier)}`, sub: rs.next ? `${tierName(rs.next.id)}까지 ${formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
   if (!live && next) chips.push(todayChip({ mark: MARK.hot, title: `${startTime(next)} 핫 테이블`, sub: `${next.label} · <span data-hot-next>${clock(Date.parse(next.startsAt) - now)}</span> 뒤`, onClick: hotGo(next.game) }));
   const watching = watchBlock(state);
   if (watching) chips.push(todayChip({ mark: MARK.watch, title: '지금 플레이 중', sub: `${watching.querySelectorAll('li').length}개 테이블 구경하기`, onClick: () => openBlockSheet(() => watchBlock(state)) }));
@@ -791,6 +795,13 @@ let rankPeriod = 'tier';
 let rankTab = 'tier';
 // The lobby's season card opens the monthly tier board.
 function openRankBoard() { rankPeriod = 'tier'; rankTab = 'tier'; showSurface('ranking', { focus: true }); }
+// The season-end warning (js/rank.js): what resets at midnight and what stays.
+function openSeasonEnd() {
+  openBlockSheet(() => state?.rankSeason && seasonEndBlock(state, {
+    onShop: () => { sheetPaint?.close(); showSurface('shop', { focus: true }); },
+    onBoard: () => { sheetPaint?.close(); openRankBoard(); }
+  }));
+}
 function timeLeft(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());
   const d = Math.floor(ms / 86_400_000), h = Math.floor(ms / 3_600_000) % 24, m = Math.floor(ms / 60_000) % 60;
@@ -838,9 +849,11 @@ function renderRanking() {
   const rs = state?.rankSeason;
   if (rankPeriod === 'tier' && rs) {
     const ladder = Object.keys(TIERS_RANK);
-    const lastTier = rs.last?.podium?.length ? `<p class="season-last">${rs.last.name} 챌린저 ${rs.last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')}</p>` : '';
-    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${timeLeft(rs.season.endsAt)} 남음 · 1일 0시에 모두 초기화</small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>
+    const lastTier = rs.last?.podium?.length ? `<p class="season-last">${rs.last.name} 챌린저 ${rs.last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')} <button type="button" class="link-button" data-last-season>결과 보기</button></p>` : '';
+    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · 1일 0시에 모두 초기화 <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>
       <ol class="tier-ladder" aria-label="티어 기준">${ladder.map(id => `<li class="${id === rs.tier ? 'is-me' : ''}">${tierEmblem(id, { size: 26, label: false })}<span>${tierName(id)}</span><small>${TIERS_RANK[id].label}</small></li>`).join('')}</ol>${lastTier}`;
+    head.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
+    head.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true }));
   }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
@@ -1106,6 +1119,7 @@ paintSound();
 
 mountInstallButton(document.querySelector('[data-install]'));
 watchConnection(refresh);
+watchSeasonEnd(() => state);
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 renderGameLists();

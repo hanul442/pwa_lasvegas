@@ -619,3 +619,34 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .event-result-rows span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .event-result-rows small{font-size:13px;color:var(--smoke)}
 .event-result-rows li:first-child small{color:var(--star)}
+
+/* 시즌 마감 (js/rank.js seasonEndBlock): the clock, where I stand, what goes and what stays. */
+.link-button{padding:0 2px;border:0;background:none;color:var(--white);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.season-end{display:grid;gap:6px;text-align:center}
+.season-end-kicker{color:var(--smoke);font-size:13px;letter-spacing:.04em}
+.season-end h2{margin:0}
+.season-end-clock{margin:2px 0 0;font:560 clamp(40px,12vw,60px)/1 var(--display);font-stretch:118%;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.season-end-when{margin:0 0 8px;color:var(--smoke);font-size:13px}
+.season-end-me{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1px solid var(--hair-strong);border-radius:16px;background:linear-gradient(180deg,#ffffff0d,#ffffff03);color:var(--white);text-align:left;font:inherit}
+.season-end-me span{display:grid;gap:3px;min-width:0}
+.season-end-me b{font:650 18px/1.15 var(--display);font-stretch:112%}
+.season-end-me small{color:var(--smoke);font-size:13px;line-height:1.4}
+.season-end-lists{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;text-align:left}
+.season-end-lists>div{padding:12px 14px;border:1px solid var(--hair);border-radius:14px}
+.season-end-lists h3{margin:0 0 6px;font-size:14px;font-weight:650}
+.season-end-lists ul{display:grid;gap:5px;margin:0;padding:0;list-style:none;color:var(--smoke);font-size:13px;line-height:1.35}
+.season-end-lists li{position:relative;padding-left:14px}
+.season-end-lists li::before{content:'';position:absolute;left:0;top:.55em;width:7px;height:1.5px;background:currentColor}
+.season-end-lists ul.is-keep li{color:var(--white)}
+.season-end-lists ul.is-keep li::before{width:6px;height:6px;top:.4em;border-radius:50%;background:var(--star,#fff6dc)}
+.season-end-tip{margin:6px 0 0;color:var(--smoke);font-size:13px;line-height:1.5;text-align:left}
+.season-end-actions{display:flex;justify-content:flex-end;margin-top:6px}
+@media (max-width:360px){.season-end-lists{grid-template-columns:1fr}}
+.rank-moment-podium{display:grid;gap:6px;width:min(320px,86vw);margin:4px 0 10px;padding:0;list-style:none}
+.rank-moment-podium li{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--hair);border-radius:12px;text-align:left}
+.rank-moment-podium li.is-me{border-color:var(--hair-strong);background:#ffffff0a}
+.rank-moment-podium b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.rank-moment-podium small{margin:0;font-variant-numeric:tabular-nums}
+.rank-moment-place{width:16px;font:600 15px/1 var(--display);color:var(--smoke)}
+.floor-moment .rank-moment-reset{max-width:340px;margin:0 0 16px;font-size:13px;line-height:1.55}
+.rank-moment-champ{margin:-2px 0 4px;padding:4px 12px;border:1px solid var(--hair-strong);border-radius:99px;font-size:14px;font-weight:600;letter-spacing:.02em}

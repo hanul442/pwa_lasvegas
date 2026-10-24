@@ -84,3 +84,43 @@ test('a peak noted in a new month before the close still counts for the old mont
   const closed = at(NOV, () => settleFinishedRankSeason(state));
   assert.equal(closed.podium[0].tier, 'gold');
 });
+
+test('the month that ended is due until closed, and the results show what the fresh start took', async () => {
+  const { rankSeasonDue } = await import('../lib/rank-season.mjs');
+  const state = defaultState();
+  const u = state.users.hanseo;
+  at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); u.luxury = [{ id: 'watch', price: 1e8, boughtAt: 'x' }]; });
+  assert.equal(rankSeasonDue(state, OCT), false);
+  assert.equal(rankSeasonDue(state, NOV), true);
+  const chips = u.account.available;
+  at(NOV, () => settleFinishedRankSeason(state));
+  assert.equal(rankSeasonDue(state, NOV), false);
+  const last = at(NOV, () => rankView(state, u)).last;
+  assert.equal(last.id, 'rank-2026-10');
+  assert.equal(last.mine.tier, 'gold');
+  assert.deepEqual(last.reset, { chips, luxury: 1, loans: 0 });
+});
+
+test('the hourly cron closes the month at midnight, then the 1st announces each badge', async () => {
+  const { messageFor, planPushes } = await import('../lib/notifications.mjs');
+  const { prepareState } = await import('../lib/api.mjs');
+  const state = defaultState();
+  const u = state.users.hanseo;
+  u.push = { subs: [{ endpoint: 'https://push.example.com/x', keys: { p256dh: 'a'.repeat(87), auth: 'b'.repeat(22) } }], sent: {}, lastSeenAt: null };
+  const LASTDAY = Date.parse('2026-10-31T13:00:00+09:00');
+  at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); });
+  const warn = messageFor(state, u, LASTDAY);
+  assert.equal(warn.slot, 'seasonEnd');
+  assert.match(warn.title, /오늘 자정/);
+  assert.match(warn.body, /골드/);
+  at(LASTDAY, () => planPushes(state, LASTDAY));
+  assert.equal(u.push.sent.seasonEnd, 'rank-2026-10');
+  assert.notEqual(messageFor(state, u, LASTDAY + 3_600_000)?.slot, 'seasonEnd', 'once a season');
+  // Nobody plays overnight: the cron's own prepare closes October.
+  at(NOV, () => prepareState(state));
+  assert.equal(u.rankHistory[0].season, 'rank-2026-10');
+  const morning = Date.parse('2026-11-01T10:00:00+09:00');
+  const result = messageFor(state, u, morning);
+  assert.equal(result.slot, 'seasonStart');
+  assert.match(result.title, /10월 시즌 결과: 골드/);
+});

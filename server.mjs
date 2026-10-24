@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadState, mutate } from './lib/store.mjs';
-import { handleApi } from './lib/api.mjs';
+import { handleApi, prepareState } from './lib/api.mjs';
 import { runPushRound } from './lib/notifications.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +35,6 @@ const server=http.createServer(async(req,res)=>{const url=new URL(req.url,`http:
 server.listen(PORT,'0.0.0.0',()=>console.log(`SOCIAL VEGAS listening on http://0.0.0.0:${PORT}`));
 // Same hourly reminder round the Worker's cron runs.
 // Like the cron, it runs on the hour, as that hour's 핫 테이블 opens (lib/hot-table.mjs).
-const pushRound=()=>runPushRound(store).catch(e=>console.error('push round',e));
+const pushRound=()=>runPushRound(store,{prepare:prepareState}).catch(e=>console.error('push round',e));
 const HOUR=60*60*1000;
 setTimeout(()=>{pushRound();setInterval(pushRound,HOUR).unref();},HOUR-Date.now()%HOUR+2000).unref();

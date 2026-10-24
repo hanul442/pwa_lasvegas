@@ -84,6 +84,7 @@ export const api = {
   adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
   adminErrors: () => request('/api/admin/errors'),
   adminErrorsClear: () => request('/api/admin/errors/clear', { method: 'POST' }),
+  adminUsage: () => request('/api/admin/usage'),
   state: () => request('/api/state'),
   news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   pushKey: () => request('/api/push/key'),

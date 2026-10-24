@@ -1,6 +1,7 @@
 // 월간 랭크 시즌 on screen (lib/rank-season.mjs): the tier emblem, the lobby card that shows how
 // far the next tier is, and a season-end moment for the badge just earned.
 import { el, formatCH, sound } from './fx.js';
+import { toast } from './notice.js';
 
 export const TIERS = {
   iron: { name: '아이언', min: 0, label: '시작' },
@@ -53,19 +54,108 @@ export function rankBadges(history = []) {
   return `<ul class="rank-history">${history.map(h => `<li>${tierEmblem(h.tier, { size: 34 })}<span><b>${tierName(h.tier)}${h.rank && h.rank <= 3 ? ` · 챌린저 ${h.rank}위` : ''}</b><small>${h.name} · ${h.rank}위 / ${h.of}명 · 최고 ${formatCH(h.peak)}</small></span></li>`).join('')}</ul>`;
 }
 
-// Once per season, the first look after it closed: the badge I earned.
-export function maybeSeasonMoment(state) {
-  const mine = state.rankSeason?.last?.mine;
-  if (!mine || mine.season !== state.rankSeason.history?.[0]?.season) return;
-  const key = `vegas:rank-moment:${mine.season}:${state.user.id}`;
+// ---------- the month's end ----------
+// The last week of a season counts down on home; the last three days and the last day each open
+// the warning once; at a table the last hour, ten minutes and minute come as toasts.
+const DAY = 86_400_000;
+export const seasonLeft = rs => (rs ? Math.max(0, Date.parse(rs.season.endsAt) - Date.now()) : Infinity);
+export const seasonEnding = rs => seasonLeft(rs) <= 7 * DAY;
+const pad = n => String(n).padStart(2, '0');
+export function seasonClock(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(s / 86400), hms = `${pad(Math.floor(s / 3600) % 24)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+  return d ? `${d}일 ${hms}` : hms;
+}
+const seasonShort = name => String(name || '').replace(' (프리시즌)', '');
+const endDay = iso => new Date(Date.parse(iso)).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', timeZone: 'Asia/Seoul' });
+
+// Every [data-season-clock] on screen ticks down to its data-ends.
+setInterval(() => {
+  document.querySelectorAll('[data-season-clock]').forEach(n => { n.textContent = seasonClock(Date.parse(n.dataset.ends) - Date.now()); });
+}, 1000);
+
+const RESETS = ['칩 (테이블 위 칩 포함)', '사치품', '빚과 대출', '열린 층과 입장권'];
+const KEEPS = ['꾸미기와 명패', '배지와 업적', '게임 기록', '이번 달 티어 배지'];
+
+// The warning sheet: the clock, where I stand, and what goes and what stays.
+export function seasonEndBlock(state, { onShop, onBoard } = {}) {
+  const r = state.rankSeason;
+  if (!r) return null;
+  const box = el('section', 'season-end');
+  const nextLine = r.next ? `${tierName(r.next.id)}까지 ${formatCH(r.next.need)}` : '최고 티어예요';
+  box.innerHTML = `
+    <span class="season-end-kicker">${seasonShort(r.season.name)} 마감${r.season.preseason ? ' · 첫 초기화' : ''}</span>
+    <h2>시즌 초기화까지</h2>
+    <p class="season-end-clock" data-season-clock data-ends="${r.season.endsAt}" role="timer">${seasonClock(seasonLeft(r))}</p>
+    <p class="season-end-when">${endDay(r.season.endsAt)} 0시 (한국 시간)</p>
+    <button type="button" class="season-end-me" data-board>${tierEmblem(r.tier, { size: 44 })}<span><b>지금 ${tierName(r.tier)}</b><small>이번 달 최고 순자산 ${formatCH(r.peak)} · ${nextLine}</small></span></button>
+    <div class="season-end-lists">
+      <div><h3>초기화돼요</h3><ul>${RESETS.map(x => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h3>그대로 남아요</h3><ul class="is-keep">${KEEPS.map(x => `<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    <p class="season-end-tip">티어는 이번 달에 찍은 최고 순자산으로 정해져서, 마지막에 잃어도 내려가지 않아요. 칩은 사라지지만 꾸미기는 남아요.</p>
+    <div class="season-end-actions"><button type="button" class="pill-button" data-shop>상점 보기</button></div>`;
+  box.querySelector('[data-shop]').addEventListener('click', () => { sound.tick(); onShop?.(); });
+  box.querySelector('[data-board]').addEventListener('click', () => { sound.tick(); onBoard?.(); });
+  return box;
+}
+
+// Opens the warning once when three days are left and once more on the last day.
+export function maybeSeasonWarning(state, open) {
+  const r = state.rankSeason;
+  if (!r || !state.user) return;
+  const left = seasonLeft(r);
+  const stage = left <= DAY ? 'day' : left <= 3 * DAY ? 'three' : null;
+  if (!stage) return;
+  const key = `vegas:season-warn:${r.season.id}:${stage}:${state.user.id}`;
   try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { return; }
+  open();
+}
+
+// At a table (or anywhere) the last hour, ten minutes and minute are called out.
+const CALLS = [[60, '시즌 초기화까지 1시간 남았어요. 자정에 칩·사치품·빚이 정리돼요.'], [10, '시즌 초기화까지 10분! 테이블에 걸린 칩도 함께 정리돼요.'], [1, '1분 뒤 시즌 초기화예요.']];
+const called = new Set();
+export function watchSeasonEnd(getState) {
+  setInterval(() => {
+    const r = getState()?.rankSeason;
+    if (!r) return;
+    const min = seasonLeft(r) / 60_000;
+    for (const [at, text] of CALLS) {
+      const key = `${r.season.id}:${at}`;
+      if (min <= at && min > at - 1.5 && !called.has(key)) { called.add(key); toast(text, { duration: 6000 }); }
+    }
+  }, 15_000);
+}
+
+// Once per season, the first look after it closed: the badge I earned, the podium, and what the
+// fresh start cleared. Also opens on demand from the tier board.
+export function maybeSeasonMoment(state, { force = false } = {}) {
+  const last = state.rankSeason?.last;
+  if (!last || !state.user) return;
+  const { mine, reset } = last;
+  if (!force && !mine && !reset) return;
+  const key = `vegas:rank-moment:${last.id || mine?.season}:${state.user.id}`;
+  if (!force) { try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { return; } }
   const node = el('div', 'floor-moment rank-moment');
-  node.setAttribute('role', 'status');
-  node.innerHTML = `<div class="floor-moment-inner">${tierEmblem(mine.tier, { size: 84 })}<p>${mine.name} 결과</p><h2>${tierName(mine.tier)}${mine.rank <= 3 ? ` · 챌린저 ${mine.rank}위` : ''}</h2><small>${mine.of}명 중 ${mine.rank}위 · 최고 순자산 ${formatCH(mine.peak)}<br>새 시즌이 시작됐어요. Gold Room부터 다시 올라가요.</small><button type="button" class="pill-button pill-button--solid">새 시즌 시작</button></div>`;
+  node.setAttribute('role', 'dialog');
+  node.setAttribute('aria-modal', 'true');
+  node.setAttribute('aria-label', `${seasonShort(last.name)} 결과`);
+  const podium = (last.podium || []).map(p => `<li${p.userId === state.user.id ? ' class="is-me"' : ''}><span class="rank-moment-place">${p.rank}</span>${tierEmblem(p.tier, { size: 24, label: false })}<b>${p.nickname}</b><small>${formatCH(p.peak)}</small></li>`).join('');
+  const cleared = reset ? [reset.chips ? `칩 ${formatCH(reset.chips)}` : '', reset.luxury ? `사치품 ${reset.luxury}개` : '', reset.loans ? `대출 ${reset.loans}건` : ''].filter(Boolean).join(' · ') : '';
+  node.innerHTML = `<div class="floor-moment-inner">
+    ${mine ? tierEmblem(mine.tier, { size: 84 }) : ''}
+    <p>${seasonShort(last.name)} 결과</p>
+    <h2>${mine ? tierName(mine.tier) : '새 시즌'}</h2>${mine && mine.rank <= 3 ? `<span class="rank-moment-champ">챌린저 ${mine.rank}위</span>` : ''}
+    ${mine ? `<small>${mine.of}명 중 ${mine.rank}위 · 최고 순자산 ${formatCH(mine.peak)}</small>` : ''}
+    ${podium ? `<ol class="rank-moment-podium" aria-label="챌린저">${podium}</ol>` : ''}
+    <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}꾸미기·명패·배지·업적은 그대로예요. Gold Room부터 다시 올라가요.</p>
+    <button type="button" class="pill-button pill-button--solid">${force ? '닫기' : '새 시즌 시작'}</button></div>`;
   document.body.append(node);
-  sound.win();
+  if (!force) sound.win();
   requestAnimationFrame(() => node.classList.add('is-open'));
-  const close = () => { node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); };
+  const close = () => { node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); removeEventListener('keydown', onKey, true); };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  addEventListener('keydown', onKey, true);
   node.querySelector('button').addEventListener('click', close);
   node.querySelector('button').focus({ preventScroll: true });
 }

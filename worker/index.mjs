@@ -1,7 +1,7 @@
 // Cloudflare Worker for the game API. One Durable Object holds the whole floor's state,
 // so every bet is applied in order, just like the Node server's file store.
 import { DurableObject } from 'cloudflare:workers';
-import { handleApi } from '../lib/api.mjs';
+import { handleApi, prepareState } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
 import { runPushRound } from '../lib/notifications.mjs';
 import { compactHistory } from '../lib/history.mjs';
@@ -90,7 +90,7 @@ export class VegasFloor extends DurableObject {
   // Hourly cron: send whatever reminders are due. Only the scheduled() handler below can reach this.
   async pushRound() {
     const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
-    return runPushRound(store, { subject: this.env.VAPID_SUBJECT });
+    return runPushRound(store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
   }
 
   async fetch(request) {

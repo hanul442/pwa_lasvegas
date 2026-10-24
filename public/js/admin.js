@@ -73,7 +73,7 @@ export function renderAdmin(root, state, onChanged) {
     });
   }
   paint();
-  root.append(box, errorBox());
+  root.append(usageBox(), box, errorBox());
 }
 
 // 오류 기록: what broke on players' phones and on the server, newest first.
@@ -92,6 +92,53 @@ function errorBox() {
   }
   box.querySelector('[data-reload]').addEventListener('click', () => load());
   box.querySelector('[data-clear]').addEventListener('click', () => load(api.adminErrorsClear));
+  load();
+  return box;
+}
+
+// 이용 현황 (lib/usage.mjs): headline counts, daily players for two weeks, games this week, and
+// who came last. Kept between profile repaints and fetched again at most once a minute.
+let usage = { at: 0, data: null, error: '' };
+const dayText = key => { const [, m, d] = key.split('-'); return `${Number(m)}/${Number(d)}`; };
+const dateText = iso => (iso ? new Date(iso).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }) : '-');
+function usageMarkup(r) {
+  const t = r.totals;
+  const tiles = [['지금', t.now, '10분 안에 들어온 사람'], ['오늘', t.today, '오늘 들어온 사람'], ['7일', t.week, '7일 동안 들어온 사람'], ['30일', t.month, '30일 동안 들어온 사람']];
+  const max = Math.max(1, ...r.daily.map(d => d.active || 0));
+  const bars = r.daily.map((d, i) => {
+    const [, mm, dd] = d.day.split('-');
+    const label = i === 0 || dd === '01' ? `${Number(mm)}/${Number(dd)}` : String(Number(dd));
+    const h = d.active ? Math.max(4, Math.round((d.active / max) * 100)) : 0;
+    const tip = `${dayText(d.day)} · 접속 ${d.active ?? '기록 없음'}명${d.rounds != null ? ` · ${d.rounds}판` : ''} · 가입 ${d.signups}명`;
+    return `<li title="${tip}" aria-label="${tip}"><span class="usage-bar-val">${d.active ?? ''}</span><span class="usage-bar" style="height:${h}%"></span><span class="usage-bar-day">${label}</span><span class="usage-bar-new">${d.signups ? `+${d.signups}` : ''}</span></li>`;
+  }).join('');
+  const games = r.games.length ? r.games.slice(0, 12).map(g => `<li><span>${esc(g.game)}</span><b>${g.rounds.toLocaleString('ko-KR')}판</b></li>`).join('') : '<li><span>아직 기록이 없어요</span></li>';
+  const players = r.players.slice(0, 30).map(p => `<li><span>${esc(p.nickname)}<small>가입 ${dateText(p.joinedAt)} · 칩 ${formatCH(p.worth)}</small></span><b>${p.lastSeenAt ? ago(Date.parse(p.lastSeenAt)) : '-'}</b></li>`).join('');
+  return `
+    <dl class="usage-tiles">${tiles.map(([k, v, label]) => `<div title="${label}"><dt>${k}</dt><dd>${v}<small>명</small></dd></div>`).join('')}</dl>
+    <p class="admin-note">가입 ${t.players}명 · 이번 주 새로 ${t.signupsWeek}명 · 오늘 ${t.roundsToday.toLocaleString('ko-KR')}판 · 7일 ${t.roundsWeek.toLocaleString('ko-KR')}판</p>
+    <h3 class="admin-log-head">하루 접속자 <small>최근 14일 · 아래 +는 가입</small></h3>
+    <ol class="usage-chart" aria-label="최근 14일 하루 접속자">${bars}</ol>
+    <h3 class="admin-log-head">게임별 판수 <small>최근 7일</small></h3>
+    <ul class="ledger admin-log">${games}</ul>
+    <h3 class="admin-log-head">최근 들어온 사람</h3>
+    <ul class="ledger admin-log">${players}</ul>
+    ${r.since ? `<p class="admin-note">판수와 하루 기록은 ${dateText(r.since + 'T12:00:00+09:00')}부터 쌓여요. 그 전 날짜의 접속자는 남은 기록으로 센 거라 실제보다 적을 수 있어요.</p>` : ''}`;
+}
+function usageBox() {
+  const box = el('section', 'admin-panel admin-usage');
+  box.setAttribute('aria-labelledby', 'admin-usage-title');
+  box.innerHTML = `<h2 class="sub-head" id="admin-usage-title">이용 현황 <small>사람들이 얼마나 쓰는지</small></h2><div data-usage></div><div class="admin-error-actions"><button type="button" class="pill-button" data-reload>새로고침</button></div>`;
+  const body = box.querySelector('[data-usage]');
+  const paint = () => { body.innerHTML = usage.data ? usageMarkup(usage.data) : `<p class="admin-note">${esc(usage.error || '불러오는 중…')}</p>`; };
+  async function load(force = false) {
+    if (!force && usage.data && Date.now() - usage.at < 60_000) return;
+    try { usage = { at: Date.now(), data: await api.adminUsage(), error: '' }; }
+    catch (e) { usage = { ...usage, error: errorMessage(e) }; }
+    if (box.isConnected) paint();
+  }
+  box.querySelector('[data-reload]').addEventListener('click', () => load(true));
+  paint();
   load();
   return box;
 }

@@ -6,6 +6,8 @@ import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock } from './social.js';
 import { errorToast } from './notice.js';
 import { gameName } from './names.js';
+import { bragButton } from './share.js';
+import { bragFloor } from './brags.js';
 
 export { gameName };
 
@@ -236,15 +238,50 @@ export function feedText(f) {
   }
 }
 
-export function feedBlock(state) {
+// 동네방네: under someone else's moment, 👏🔥😂 with counts; under mine, just the counts.
+const REACTS = [['clap', '👏', '축하해요'], ['fire', '🔥', '대단해요'], ['lol', '😂', '웃겨요']];
+function reactRow(f, mine, onChanged) {
+  const row = el('div', 'feed-react');
+  const paint = react => {
+    const counts = react?.counts || {};
+    row.replaceChildren(...REACTS.map(([kind, emoji, label]) => {
+      const n = counts[kind] || 0;
+      if (mine && !n) return null;
+      const b = el('button', `feed-react-btn${react?.mine === kind ? ' is-on' : ''}`, `${emoji}${n ? `<small>${n}</small>` : ''}`);
+      b.type = 'button';
+      b.setAttribute('aria-label', `${label}${n ? ` ${n}명` : ''}`);
+      b.setAttribute('aria-pressed', String(react?.mine === kind));
+      if (mine) { b.disabled = true; return b; }
+      b.addEventListener('click', async () => {
+        sound.tick(); haptic(8);
+        // Show it straight away; the server's count follows.
+        const was = react?.mine;
+        const next = { counts: { ...counts }, mine: was === kind ? null : kind };
+        if (was) next.counts[was] = Math.max(0, (next.counts[was] || 0) - 1);
+        if (next.mine) next.counts[kind] = (next.counts[kind] || 0) + 1;
+        f.react = next; paint(next);
+        if (next.mine) animate(row.querySelector('.is-on'), [{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 320 });
+        try { const out = await api.feedReact(f.id, next.mine || ''); f.react = out.react; paint(out.react); onChanged?.(out.state); }
+        catch (e) { f.react = react; paint(react); errorToast(e); }
+      });
+      return b;
+    }).filter(Boolean));
+  };
+  paint(f.react);
+  return row;
+}
+
+export function feedBlock(state, onChanged) {
   const items = (state.engagement.feed || []).filter(f => f.type !== 'SYSTEM').slice(0, 8);
   const box = el('section', 'lounge-block');
-  box.innerHTML = '<header class="lounge-head"><h2>라운지 소식</h2><small>모두의 큰 순간</small></header>';
+  box.innerHTML = '<header class="lounge-head"><h2>라운지 소식</h2><small>축하하거나 놀려 주세요</small></header>';
   const list = el('ul', 'feed-list');
   if (!items.length) list.append(el('li', 'feed-empty', '아직 조용해요. 첫 번째 큰 승리를 만들어 보세요.'));
+  const me = state.user?.id;
   for (const f of items) {
     const li = el('li', `feed-item feed-item--${f.type.toLowerCase().replace(/_/g, '-')}`);
-    li.innerHTML = `<span>${feedText(f)}</span><small>${ago(f.createdAt)}</small>`;
+    li.innerHTML = `<div class="feed-main"><span>${feedText(f)}</span><small>${ago(f.createdAt)}</small></div>`;
+    if (f.actorId) li.append(reactRow(f, f.actorId === me, onChanged));
     list.append(li);
   }
   box.append(list);
@@ -301,18 +338,21 @@ export function celebrateFloors(state) {
   try { before = JSON.parse(seen) || []; } catch {}
   const fresh = unlocked.filter(s => !before.includes(s));
   const floor = state.floors?.find(f => f.slug === fresh[fresh.length - 1]);
-  if (floor) floorMoment(floor);
+  if (floor) floorMoment(floor, state.user?.nickname || '');
 }
 
-function floorMoment(floor) {
+function floorMoment(floor, nickname = '') {
   const node = el('div', 'floor-moment');
   node.setAttribute('role', 'status');
-  node.innerHTML = `<div class="floor-moment-inner"><span class="floor-star" aria-hidden="true"></span><p>새 층이 열렸어요</p><h2>${floor.name}</h2><small>${formatCH(floor.minBet)} – ${formatCH(floor.maxBet)}원 테이블</small><button type="button" class="pill-button pill-button--solid">입장하기</button></div>`;
+  node.innerHTML = `<div class="floor-moment-inner"><span class="floor-star" aria-hidden="true"></span><p>새 층이 열렸어요</p><h2>${floor.name}</h2><small>${formatCH(floor.minBet)} – ${formatCH(floor.maxBet)}원 테이블</small><div class="moment-actions"><button type="button" class="pill-button" data-close>입장하기</button></div></div>`;
   document.body.append(node);
   sound.win(); haptic([30, 60, 30, 60, 60]);
   requestAnimationFrame(() => node.classList.add('is-open'));
-  const close = () => { node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); };
-  node.querySelector('button').addEventListener('click', close);
-  node.querySelector('button').focus({ preventScroll: true });
-  setTimeout(close, 6000);
+  const close = () => { clearTimeout(timer); node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); };
+  // Sharing holds the moment open until the player is back from the share sheet.
+  const brag = bragButton(async () => { clearTimeout(timer); await bragFloor(floor, nickname); });
+  node.querySelector('.moment-actions').prepend(brag);
+  node.querySelector('[data-close]').addEventListener('click', close);
+  brag.focus({ preventScroll: true });
+  const timer = setTimeout(close, 6000);
 }

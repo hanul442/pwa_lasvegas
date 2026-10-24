@@ -2,6 +2,7 @@
 // and the phone shakes in your hand. From there the win can be saved or shared as a card.
 import { el, sound, haptic, rollNumber, formatMoney, animate, ms, reducedMotion } from './fx.js';
 import { createChip } from './chips.js';
+import { loadLogo, drawStar as star, shareImage } from './share.js';
 
 const BRAGS = ['“오늘은 내가 하우스”', '“딜러가 울고 갔어요”', '“동네방네 자랑합니다”', '“이 맛에 앉아 있죠”'];
 const RAIN = [50_000_000, 10_000_000, 20_000_000, 100_000_000, 20_000_000, 500_000_000, 1_000_000_000];
@@ -66,7 +67,7 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '' 
       node.classList.remove('is-open');
       setTimeout(() => { node.remove(); resolve(); }, ms(300));
     };
-    const onKey = e => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); close(); } };
+    const onKey = e => { if (e.key === 'Escape' || (e.key === 'Enter' && !e.target.closest?.('[data-share]'))) { e.preventDefault(); e.stopPropagation(); close(); } };
     addEventListener('keydown', onKey, true);
     // It goes away on its own unless the player reaches for the share button.
     let timer = setTimeout(close, ms(4200) + 600);
@@ -82,27 +83,7 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '' 
 }
 
 // ---------- share card ----------
-let logoImage = null;
-export function loadLogo() {
-  if (logoImage) return logoImage;
-  logoImage = new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = 'logo.svg';
-  });
-  return logoImage;
-}
-
-function star(ctx, x, y, r, color) {
-  // The VEGAS four-point star, same proportions as --star-shape.
-  const pts = [[0, -1], [0.2, -0.2], [1, 0], [0.2, 0.2], [0, 1], [-0.2, 0.2], [-1, 0], [-0.2, -0.2]];
-  ctx.beginPath();
-  pts.forEach(([px, py], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, x + px * r, y + py * r));
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-}
+export { loadLogo };
 
 export async function winCard({ title, amount, game, nickname = '' }) {
   const W = 1080, H = 1350;
@@ -145,16 +126,5 @@ export async function winCard({ title, amount, game, nickname = '' }) {
 
 export async function shareWin({ title, amount, game, nickname = '' }) {
   const blob = await winCard({ title, amount, game, nickname });
-  if (!blob) return;
-  const file = new File([blob], 'vegas-big-win.png', { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'VEGAS 대박', text: `VEGAS에서 ${title}! ${formatMoney(amount)} 벌었어요` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'vegas-big-win.png';
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return shareImage({ blob, filename: 'vegas-big-win.png', title: 'VEGAS 대박', text: `VEGAS ${game ? `${game}에서 ` : ''}${title}! ${formatMoney(amount)} 벌었어요 🎰`, nickname });
 }

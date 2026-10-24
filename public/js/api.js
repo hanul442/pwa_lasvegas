@@ -86,6 +86,7 @@ export const api = {
   adminErrorsClear: () => request('/api/admin/errors/clear', { method: 'POST' }),
   adminUsage: () => request('/api/admin/usage'),
   state: () => request('/api/state'),
+  feedReact: (id, kind) => request('/api/feed/react', { method: 'POST', body: { id, kind } }),
   news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   pushKey: () => request('/api/push/key'),
   pushSubscribe: subscription => request('/api/push/subscribe', { method: 'POST', body: { subscription } }),

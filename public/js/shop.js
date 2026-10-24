@@ -5,6 +5,8 @@ import { errorToast } from './notice.js';
 import { el, formatCH, sound, haptic, ms, reducedMotion } from './fx.js';
 import { createCard, setCardBack } from './cards.js';
 import { createChip } from './chips.js';
+import { bragButton } from './share.js';
+import { bragPurchase } from './brags.js';
 
 const won = n => `${formatCH(n)}원`;
 
@@ -81,6 +83,7 @@ function sparkles(n, cls) {
 // Buying something stops the screen for a beat: the piece draws itself in light (a skin shows on
 // the table it will dress), and the dearer the piece, the more the room lights up.
 export function acquireMoment({ eyebrow, title, line = '', note = '', art, level = 1, stamp = '' }) {
+  const brag = () => bragPurchase({ eyebrow, title, line });
   return new Promise(resolve => {
     const node = el('div', `acquire acquire--${level}`);
     node.setAttribute('role', 'dialog');
@@ -93,9 +96,10 @@ export function acquireMoment({ eyebrow, title, line = '', note = '', art, level
         ${line ? `<p class="acquire-line">${line}</p>` : ''}
         ${note ? `<p class="acquire-note">${note}</p>` : ''}
         ${stamp ? `<p class="acquire-stamp"><span aria-hidden="true"></span>${stamp}</p>` : ''}
-        <button type="button" class="pill-button pill-button--solid acquire-close">좋아요</button>
+        <div class="moment-actions"><button type="button" class="pill-button acquire-close">좋아요</button></div>
       </div>`;
     node.querySelector('.acquire-art').append(art);
+    node.querySelector('.moment-actions').prepend(bragButton(brag, '자랑하기'));
     if (!reducedMotion()) node.prepend(sparkles(level === 3 ? 34 : level === 2 ? 18 : 9, 'acquire-spark'));
     // The line drawing traces itself: every stroke starts hidden and is drawn in.
     node.querySelectorAll('.acquire-art .lux-icon :is(path,rect,circle)').forEach(p => p.setAttribute('pathLength', '1'));
@@ -113,10 +117,10 @@ export function acquireMoment({ eyebrow, title, line = '', note = '', art, level
       node.classList.remove('is-open');
       setTimeout(() => { node.remove(); resolve(); }, ms(300));
     };
-    const onKey = e => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); close(); } };
+    const onKey = e => { if (e.key === 'Escape' || (e.key === 'Enter' && !e.target.closest?.('.brag-button'))) { e.preventDefault(); e.stopPropagation(); close(); } };
     addEventListener('keydown', onKey, true);
     node.addEventListener('click', e => { if (e.target === node || e.target.closest('.acquire-close')) close(); });
-    node.querySelector('.acquire-close').focus({ preventScroll: true });
+    node.querySelector('.brag-button').focus({ preventScroll: true });
   });
 }
 

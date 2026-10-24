@@ -1,7 +1,9 @@
 // 월간 랭크 시즌 on screen (lib/rank-season.mjs): the tier emblem, the lobby card that shows how
 // far the next tier is, and a season-end moment for the badge just earned.
-import { el, formatCH, sound } from './fx.js';
+import { el, formatCH, sound, haptic } from './fx.js';
 import { toast } from './notice.js';
+import { bragButton } from './share.js';
+import { bragTier } from './brags.js';
 
 export const TIERS = {
   iron: { name: '아이언', min: 0, label: '시작' },
@@ -149,13 +151,42 @@ export function maybeSeasonMoment(state, { force = false } = {}) {
     ${mine ? `<small>${mine.of}명 중 ${mine.rank}위 · 최고 순자산 ${formatCH(mine.peak)}</small>` : ''}
     ${podium ? `<ol class="rank-moment-podium" aria-label="챌린저">${podium}</ol>` : ''}
     <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}꾸미기·명패·배지·업적은 그대로예요. Gold Room부터 다시 올라가요.</p>
-    <button type="button" class="pill-button pill-button--solid">${force ? '닫기' : '새 시즌 시작'}</button></div>`;
+    <div class="moment-actions"><button type="button" class="pill-button${mine ? '' : ' pill-button--solid'}" data-close>${force ? '닫기' : '새 시즌 시작'}</button></div></div>`;
   document.body.append(node);
   if (!force) sound.win();
   requestAnimationFrame(() => node.classList.add('is-open'));
   const close = () => { node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); removeEventListener('keydown', onKey, true); };
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
   addEventListener('keydown', onKey, true);
-  node.querySelector('button').addEventListener('click', close);
-  node.querySelector('button').focus({ preventScroll: true });
+  node.querySelector('[data-close]').addEventListener('click', close);
+  if (mine) node.querySelector('.moment-actions').prepend(bragButton(() => bragTier({ tier: mine.tier, name: tierName(mine.tier), season: seasonShort(last.name), rank: mine.rank, of: mine.of, peak: mine.peak }), '티어 자랑하기'));
+  node.querySelector('.moment-actions button').focus({ preventScroll: true });
+}
+
+// Mid-month, climbing a tier stops the screen for a beat (once per tier, per device) with a card
+// to brag with. The first look of a month only remembers where the player stands.
+export function celebrateTier(state) {
+  const r = state?.rankSeason;
+  if (!r?.tier || !state.user) return;
+  const order = Object.keys(TIERS);
+  const now = order.indexOf(r.tier);
+  const key = `vegas:tier-seen:${r.season.id}:${state.user.id}`;
+  let seen = null;
+  try { seen = localStorage.getItem(key); localStorage.setItem(key, r.tier); } catch { return; }
+  if (seen === null || order.indexOf(seen) < 0 || now <= order.indexOf(seen) || now <= 0) return;
+  const node = el('div', 'floor-moment rank-moment tier-up');
+  node.setAttribute('role', 'dialog');
+  node.setAttribute('aria-label', `${tierName(r.tier)} 승급`);
+  node.innerHTML = `<div class="floor-moment-inner">${tierEmblem(r.tier, { size: 96 })}<p>티어 승급</p><h2>${tierName(r.tier)}</h2>
+    <small>이번 달 최고 순자산 ${formatCH(r.peak)}${r.next ? ` · 다음 ${tierName(r.next.id)}까지 ${formatCH(r.next.need)}` : ' · 최고 티어'}</small>
+    <div class="moment-actions"><button type="button" class="pill-button" data-close>계속</button></div></div>`;
+  document.body.append(node);
+  sound.win(); haptic([30, 50, 30, 50, 120]);
+  requestAnimationFrame(() => node.classList.add('is-open'));
+  const close = () => { clearTimeout(timer); node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); };
+  const brag = bragButton(async () => { clearTimeout(timer); await bragTier({ tier: r.tier, name: tierName(r.tier), season: seasonShort(r.season.name), peak: r.peak, up: true }); });
+  node.querySelector('.moment-actions').prepend(brag);
+  node.querySelector('[data-close]').addEventListener('click', close);
+  brag.focus({ preventScroll: true });
+  const timer = setTimeout(close, 7000);
 }

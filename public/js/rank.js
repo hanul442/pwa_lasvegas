@@ -80,7 +80,7 @@ const RESETS = ['칩 (테이블 위 칩 포함)', '사치품', '빚과 대출', 
 const KEEPS = ['꾸미기와 명패', '배지와 업적', '게임 기록', '이번 달 티어 배지'];
 
 // The warning sheet: the clock, where I stand, and what goes and what stays.
-export function seasonEndBlock(state, { onShop, onBoard } = {}) {
+export function seasonEndBlock(state, { onShop, onBoard, onWrapped } = {}) {
   const r = state.rankSeason;
   if (!r) return null;
   const box = el('section', 'season-end');
@@ -96,7 +96,8 @@ export function seasonEndBlock(state, { onShop, onBoard } = {}) {
       <div><h3>그대로 남아요</h3><ul class="is-keep">${KEEPS.map(x => `<li>${x}</li>`).join('')}</ul></div>
     </div>
     <p class="season-end-tip">티어는 이번 달에 찍은 최고 순자산으로 정해져서, 마지막에 잃어도 내려가지 않아요. 칩은 사라지지만 꾸미기는 남아요.</p>
-    <div class="season-end-actions"><button type="button" class="pill-button" data-shop>상점 보기</button></div>`;
+    <div class="season-end-actions">${state.wrapped?.live && onWrapped ? '<button type="button" class="pill-button pill-button--solid" data-wrapped>이번 달 결산 미리 보기</button>' : ''}<button type="button" class="pill-button" data-shop>상점 보기</button></div>`;
+  box.querySelector('[data-wrapped]')?.addEventListener('click', () => { sound.tick(); onWrapped(state.wrapped.live); });
   box.querySelector('[data-shop]').addEventListener('click', () => { sound.tick(); onShop?.(); });
   box.querySelector('[data-board]').addEventListener('click', () => { sound.tick(); onBoard?.(); });
   return box;
@@ -131,7 +132,7 @@ export function watchSeasonEnd(getState) {
 
 // Once per season, the first look after it closed: the badge I earned, the podium, and what the
 // fresh start cleared. Also opens on demand from the tier board.
-export function maybeSeasonMoment(state, { force = false } = {}) {
+export function maybeSeasonMoment(state, { force = false, onWrapped } = {}) {
   const last = state.rankSeason?.last;
   if (!last || !state.user) return;
   const { mine, reset } = last;
@@ -142,6 +143,8 @@ export function maybeSeasonMoment(state, { force = false } = {}) {
   node.setAttribute('role', 'dialog');
   node.setAttribute('aria-modal', 'true');
   node.setAttribute('aria-label', `${seasonShort(last.name)} 결과`);
+  // VEGAS 랩드 for the month just closed (js/wrapped.js), when this player played it.
+  const wrapped = onWrapped ? (state.wrapped?.history || []).find(h => h.season === last.id && h.rounds) : null;
   const podium = (last.podium || []).map(p => `<li${p.userId === state.user.id ? ' class="is-me"' : ''}><span class="rank-moment-place">${p.rank}</span>${tierEmblem(p.tier, { size: 24, label: false })}<b>${p.nickname}</b><small>${formatCH(p.peak)}</small></li>`).join('');
   const cleared = reset ? [reset.chips ? `칩 ${formatCH(reset.chips)}` : '', reset.luxury ? `사치품 ${reset.luxury}개` : '', reset.loans ? `대출 ${reset.loans}건` : ''].filter(Boolean).join(' · ') : '';
   node.innerHTML = `<div class="floor-moment-inner">
@@ -151,7 +154,8 @@ export function maybeSeasonMoment(state, { force = false } = {}) {
     ${mine ? `<small>${mine.of}명 중 ${mine.rank}위 · 최고 순자산 ${formatCH(mine.peak)}</small>` : ''}
     ${podium ? `<ol class="rank-moment-podium" aria-label="챌린저">${podium}</ol>` : ''}
     <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}꾸미기·명패·배지·업적은 그대로예요. Gold Room부터 다시 올라가요.</p>
-    <div class="moment-actions"><button type="button" class="pill-button${mine ? '' : ' pill-button--solid'}" data-close>${force ? '닫기' : '새 시즌 시작'}</button></div></div>`;
+    <div class="rank-moment-actions moment-actions">${wrapped ? `<button type="button" class="pill-button pill-button--solid" data-wrapped>${seasonShort(last.name)} 결산 카드 보기</button>` : ''}
+    <button type="button" class="pill-button${wrapped ? '' : ' pill-button--solid'}" data-close>${force ? '닫기' : '새 시즌 시작'}</button></div></div>`;
   document.body.append(node);
   if (!force) sound.win();
   requestAnimationFrame(() => node.classList.add('is-open'));
@@ -159,7 +163,12 @@ export function maybeSeasonMoment(state, { force = false } = {}) {
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
   addEventListener('keydown', onKey, true);
   node.querySelector('[data-close]').addEventListener('click', close);
-  if (mine) node.querySelector('.moment-actions').prepend(bragButton(() => bragTier({ tier: mine.tier, name: tierName(mine.tier), season: seasonShort(last.name), rank: mine.rank, of: mine.of, peak: mine.peak }), '티어 자랑하기'));
+  node.querySelector('[data-wrapped]')?.addEventListener('click', () => { close(); onWrapped(wrapped); });
+  if (mine) {
+    const brag = bragButton(() => bragTier({ tier: mine.tier, name: tierName(mine.tier), season: seasonShort(last.name), rank: mine.rank, of: mine.of, peak: mine.peak }), '티어 자랑하기');
+    if (wrapped) { brag.classList.remove('pill-button--solid'); node.querySelector('[data-wrapped]').after(brag); }
+    else { node.querySelector('[data-close]').classList.remove('pill-button--solid'); node.querySelector('.moment-actions').prepend(brag); }
+  }
   node.querySelector('.moment-actions button').focus({ preventScroll: true });
 }
 

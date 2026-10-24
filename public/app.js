@@ -37,6 +37,7 @@ import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
 import { watchErrors } from './js/error-report.js';
+import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
 import { setBragName, bragButton } from './js/share.js';
 import { bragRank } from './js/brags.js';
@@ -338,7 +339,7 @@ function applyState(next) {
   if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
+  if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -804,9 +805,12 @@ function openRankBoard() { rankPeriod = 'tier'; rankTab = 'tier'; showSurface('r
 function openSeasonEnd() {
   openBlockSheet(() => state?.rankSeason && seasonEndBlock(state, {
     onShop: () => { sheetPaint?.close(); showSurface('shop', { focus: true }); },
-    onBoard: () => { sheetPaint?.close(); openRankBoard(); }
+    onBoard: () => { sheetPaint?.close(); openRankBoard(); },
+    onWrapped: w => { sheetPaint?.close(); showWrapped(w); }
   }));
 }
+// VEGAS 랩드: a month in story cards (js/wrapped.js).
+function showWrapped(w) { openWrapped(w, { nickname: state?.user?.nickname || '' }); }
 function timeLeft(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());
   const d = Math.floor(ms / 86_400_000), h = Math.floor(ms / 3_600_000) % 24, m = Math.floor(ms / 60_000) % 60;
@@ -858,7 +862,7 @@ function renderRanking() {
     head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · 1일 0시에 모두 초기화 <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>
       <ol class="tier-ladder" aria-label="티어 기준">${ladder.map(id => `<li class="${id === rs.tier ? 'is-me' : ''}">${tierEmblem(id, { size: 26, label: false })}<span>${tierName(id)}</span><small>${TIERS_RANK[id].label}</small></li>`).join('')}</ol>${lastTier}`;
     head.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
-    head.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true }));
+    head.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true, onWrapped: showWrapped }));
   }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
@@ -972,6 +976,7 @@ function renderProfile() {
     <h2 class="sub-head">자산 <small>${formatCH(assets)}원 · 사치품 ${owned.length}점</small></h2>
     ${showcase}
     <button type="button" class="pill-button profile-shop" data-go-shop>상점 가기</button>
+    <div data-wrapped-list></div>
     ${state.rankSeason?.history?.length ? `<h2 class="sub-head">월간 시즌 기록 <small>최고 ${tierName(state.rankSeason.best?.tier || state.rankSeason.history[0].tier)}</small></h2>${rankBadges(state.rankSeason.history)}` : ''}
     ${badges ? `<h2 class="sub-head">주간 시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
     <h2 class="sub-head">업적 <small>${(state.achievements || []).filter(x => x.claimed).length} / ${(state.achievements || []).length}</small></h2><div data-achievements></div>
@@ -982,6 +987,8 @@ function renderProfile() {
     <h2 class="sub-head">계정</h2>
     <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>
     <div data-account-tools></div>`;
+  const wl = wrappedBlock(state);
+  if (wl) root.querySelector('[data-wrapped-list]').replaceWith(wl);
   renderAchievements(root.querySelector('[data-achievements]'));
   root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
   renderLedger(root.querySelector('[data-ledger]'), state);

@@ -193,7 +193,7 @@ export async function mountMatgo(ctx) {
         await wait(160);
         model.floor = model.floor.filter(id => !e.cards.includes(id));
         model.captured[e.seat].push(...e.cards);
-        sound.card();
+        sound.gather();
         await layout(model, { duration: 400 });
       } else if (e.type === 'steal') {
         model.captured[e.from] = model.captured[e.from].filter(id => id !== e.card);

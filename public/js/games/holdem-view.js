@@ -304,6 +304,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       case 'deal': {
         const mine = tb?.seats?.[me]?.cards || [];
         const dealt = new Map(ev.order.map(i => [i, []]));
+        sound.shuffle(); await wait(420);
         for (let pass = 0; pass < 2; pass++) for (const i of ev.order) {
           const card = createCard('HIDDEN', { faceUp: false });
           seatEls[i].cards.append(card);

@@ -71,7 +71,7 @@ export function mountNightly(slot, { getState, applyState, openTable, toast }) {
         <div><dt>상금</dt><dd>${formatCH(v.prize)}</dd></div>
         <div><dt>${status === 'REG' ? '등록' : '참가'}</dt><dd>${status === 'REG' ? v.people : v.field}<small>명</small></dd></div>
       </dl>
-      <p class="nightly-pay">${payouts}${v.payouts.length > 3 ? ` 외 ${v.payouts.length - 3}명` : ''} · 빈 자리는 AI가 앉아요</p>`;
+      <p class="nightly-pay">${payouts}${v.payouts.length > 3 ? ` 외 ${v.payouts.length - 3}명` : ''} · 빈 자리는 AI가 앉아요${status === 'REG' && v.last?.winner ? `<br>지난번 우승 · ${v.last.winner.kind === 'bot' ? 'AI ' : ''}${v.last.winner.name}${v.last.top?.find(r => r.me) ? ` · 나는 ${v.last.top.find(r => r.me).place}위` : ''}` : ''}</p>`;
     // Who's in (before), and the places so far (live and after).
     const rows = status === 'REG' ? v.names.map(n => ({ text: n, me: v.registered && n === getState()?.user?.nickname })) : v.top.map(r => ({ text: `${r.name} ${placeText(r)}`, me: r.me }));
     if (rows.length) {

@@ -479,6 +479,41 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .home-cat-text small{font-size:12.5px;color:#ffffffc4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .home-cat-go{padding:7px 13px;border-radius:9px;background:#000000a3;font:700 13px/1 var(--sans)}
 .home-cat:active,.pop-card:active,.today-chip:active{transform:scale(.98)}
+.home-nightly:empty{display:none}
+/* 매일 밤 9시 홀덤 토너먼트 (js/nightly.js): black lacquer, one green felt glow, white numbers */
+.nightly-card{position:relative;display:grid;gap:12px;padding:18px 18px 16px;border-radius:20px;overflow:hidden;isolation:isolate;
+  background:radial-gradient(120% 90% at 110% -10%,#0f5a35b3 0,#0b3a2440 38%,transparent 62%),linear-gradient(180deg,#14171b,#0d0f12);box-shadow:inset 0 0 0 1px var(--hair)}
+.nightly-card::before{content:"";position:absolute;right:-44px;top:58px;width:170px;height:170px;z-index:-1;border-radius:50%;opacity:.12;
+  background:repeating-conic-gradient(#fff 0 12deg,transparent 12deg 30deg);-webkit-mask:radial-gradient(circle,transparent 0 40%,#000 41% 62%,transparent 63%);mask:radial-gradient(circle,transparent 0 40%,#000 41% 62%,transparent 63%)}
+.nightly-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nightly-kicker{font:700 12.5px/1.2 var(--sans);letter-spacing:.08em;color:var(--star)}
+.nightly-when{padding:5px 10px;border-radius:999px;background:#ffffff14;font:700 12px/1 var(--sans);font-variant-numeric:tabular-nums;color:var(--white)}
+.nightly-live{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#ff4f4f1f;color:#ffd6d6;font:800 12px/1 var(--sans);letter-spacing:.1em}
+.nightly-live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 0 #ff4f4f99;animation:nightly-pulse 1.6s ease-out infinite}
+@keyframes nightly-pulse{to{box-shadow:0 0 0 8px #ff4f4f00}}
+@media (prefers-reduced-motion:reduce){.nightly-live::before{animation:none}}
+.nightly-main{display:grid;gap:2px}
+.nightly-big{font:700 clamp(40px,12vw,54px)/1 var(--display);font-stretch:118%;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--white)}
+.nightly-big small{margin-left:4px;font-size:.45em;font-weight:600;color:var(--dim)}
+.nightly-big--name{font-size:clamp(28px,8vw,36px);overflow-wrap:anywhere}
+.nightly-sub{color:var(--smoke);font-size:14px}
+.nightly-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:0;border-radius:14px;overflow:hidden;background:var(--hair)}
+.nightly-stats>div{padding:10px 12px;background:#0f1114}
+.nightly-stats dt{color:var(--dim);font-size:12px;line-height:1.2}
+.nightly-stats dd{margin:3px 0 0;font:700 17px/1.15 var(--display);font-stretch:110%;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nightly-stats dd small{margin-left:1px;font:500 12px var(--sans);color:var(--dim)}
+.nightly-pay{margin:-2px 0 0;color:var(--dim);font-size:12.5px;line-height:1.45}
+.nightly-names{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.nightly-names li{padding:4px 9px;border-radius:999px;background:#ffffff0d;box-shadow:inset 0 0 0 1px var(--hair);font-size:12.5px;color:var(--smoke)}
+.nightly-names li.is-me{background:var(--white);color:var(--ink);font-weight:700}
+.nightly-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.nightly-cta:disabled{opacity:.45}
+.nightly-cta:disabled::after{content:""}
+.nightly-done{display:inline-flex;align-items:center;gap:6px;min-height:46px;padding:0 16px;border-radius:12px;background:#ffffff12;font:800 15px/1 var(--sans);color:var(--white)}
+.nightly-done::before{content:"";width:14px;height:8px;margin-top:-4px;border:solid var(--white);border-width:0 0 2.5px 2.5px;transform:rotate(-45deg)}
+.nightly-note{color:var(--dim);font-size:13px}
+@media (min-width:720px){.nightly-card{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:center;column-gap:24px;padding:24px}
+  .nightly-head,.nightly-actions{grid-column:1/-1}.nightly-pay,.nightly-names{grid-column:2}}
 .home-today{display:flex;gap:8px;margin:0 calc(-1 * max(20px,env(safe-area-inset-left)));padding:2px max(20px,env(safe-area-inset-left));overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-inline:max(20px,env(safe-area-inset-left))}
 .home-today::-webkit-scrollbar,.pop-row::-webkit-scrollbar,.filter-tabs::-webkit-scrollbar,.subtabs::-webkit-scrollbar{display:none}
 .home-today:empty{display:none}

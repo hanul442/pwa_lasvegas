@@ -147,6 +147,10 @@ export const api = {
   sevenAction: (sessionId, handNo, seq, action, index) => request('/api/sevenpoker/action', { method: 'POST', body: { sessionId, handNo, seq, action, ...(index === undefined ? {} : { index }) } }),
   sevenNext: (sessionId, handNo) => request('/api/sevenpoker/next', { method: 'POST', body: { sessionId, handNo } }),
   sevenLeave: sessionId => request('/api/sevenpoker/leave', { method: 'POST', body: { sessionId } }),
+  // 매일 밤 9시 홀덤 토너먼트 (lib/nightly-tourney.mjs).
+  nightly: () => request('/api/nightly'),
+  nightlyRegister: () => request('/api/nightly/register', { method: 'POST', body: {} }),
+  nightlyUnregister: () => request('/api/nightly/unregister', { method: 'POST', body: {} }),
   // Friends' rooms. cursor { hand, from } asks for the events after what this screen has played.
   holdemRooms: () => request('/api/holdem/rooms'),
   holdemRoom: (code, cursor) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),
@@ -239,6 +243,10 @@ const MESSAGES = {
   NOT_IN_ROOM: '이 방에서 이미 일어났어요.',
   NOT_HOST: '딜은 방장이 시작해요.',
   TOURNEY_STARTED: '이미 시작한 토너먼트예요. 중간에는 들어갈 수 없어요.',
+  NIGHTLY_CLOSED: '밤 9시 토너먼트 등록이 마감됐어요. 내일 자정부터 다시 받아요.',
+  NIGHTLY_FULL: '오늘 밤 토너먼트는 자리가 다 찼어요.',
+  NOT_REGISTERED: '등록하지 않은 토너먼트예요.',
+  NIGHTLY_TABLE: '밤 9시 토너먼트 테이블은 등록한 사람만 앉아요.',
   NOT_ENOUGH_PLAYERS: '토너먼트는 두 명 이상 앉아야 시작할 수 있어요.',
   OPEN_SOLO_ROUND: '혼자 하던 판을 먼저 끝내 주세요.',
   HAND_IN_PROGRESS: '이미 게임이 시작됐어요.',

@@ -1040,7 +1040,9 @@
 .chat-open--corner{position:absolute;right:8px;top:6px;z-index:8}
 /* in a tournament the level clock takes the corner, so the talk button sits just under it */
 .is-tourney .chat-open--corner{top:70px}
-@media (max-width:480px){.is-tourney .chat-open--corner{top:44px;right:4px}}
+@media (max-width:480px){.is-tourney .chat-open--corner{top:62px;right:4px}}
+/* short phones show the clock in two lines (its middle line hides), so the button comes up */
+@media (max-width:480px) and (max-height:820px) and (orientation:portrait){.is-tourney .chat-open--corner{top:44px}}
 
 /* ---------- 7포커 (sevenpoker.js): seven cards a seat on the Hold'em felt ----------
    Cards overlap so a whole hand fits a folded phone: an opponent's hand shows each card's corner

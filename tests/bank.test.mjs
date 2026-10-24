@@ -4,6 +4,7 @@ import { defaultState, newUser, netWorth, debtOf } from '../lib/state.mjs';
 import { LENDERS, MAX_LOANS, CREDIT_OVERDUE, CREDIT_ON_TIME, gradeOf, borrow, repay, processLoans, fileBankruptcy, bankruptcyStatus, bankView, lenderOffer } from '../lib/bank.mjs';
 import { achievementsView, claimAchievement } from '../lib/achievements.mjs';
 import { settleHouseGame } from '../lib/economy.mjs';
+import { WELFARE_STEPS } from '../lib/engagement.mjs';
 import { handleApi } from '../lib/api.mjs';
 
 const DAY = 86_400_000;
@@ -155,7 +156,9 @@ test('achievements pay once, counted in the table base', () => {
   assert.equal(achievementsView(u).find(a => a.id === 'loan-first').claimed, true);
 });
 
-test('the bank over the API: borrow, play, repay, outgrow a floor', async () => {
+test('the bank over the API: borrow, play, repay, outgrow a floor', async t => {
+  // Mid-month: no new loans in a month's last three days (lib/bank.mjs LOAN_FREEZE_DAYS).
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-14T03:00:00Z') });
   let state = defaultState();
   const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
   const call = (method, path, body, who = 'rookie') => handleApi({ method, header: n => ({ 'x-player-id': who })[n], body: async () => body ?? {} }, new URL(`http://x${path}`), store, {});
@@ -183,16 +186,17 @@ test('the bank over the API: borrow, play, repay, outgrow a floor', async () => 
   assert.equal(spin.data.error, 'FLOOR_OUTGROWN');
   const support = await call('POST', '/api/support/claim', { kind: 'grant' });
   assert.equal(support.status, 200);
-  assert.equal(support.data.claim.amount, 50_000_000);
+  assert.equal(support.data.claim.amount, 5_000_000);
 });
 
-test('going broke at a table pays the 구제금융 on the spot, ten times a day', () => {
+test('going broke at a table pays the 구제금융 on the spot, ten times a day, smaller after the first two', () => {
   const { state, u } = rookie();
   for (let k = 0; k < 10; k++) {
     u.account.available = 1_000_000;
     settleHouseGame(state, u, { game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000, roundId: `bust-${k}` });
-    assert.equal(u.bankruptcies[0].bailout, 10_000_000_000, `bust ${k + 1}`);
-    assert.equal(u.account.available, 10_000_000_000);
+    const step = WELFARE_STEPS[k];
+    assert.equal(u.bankruptcies[0].bailout, step, `bust ${k + 1}`);
+    assert.equal(u.account.available, step);
     u.account.available = 0;
   }
   u.account.available = 1_000_000;

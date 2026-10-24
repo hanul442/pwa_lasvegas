@@ -207,7 +207,7 @@ export const formatFull = value => `${Math.round(Number(value) || 0).toLocaleStr
 export const formatWon = value => `${formatFull(value)}원`;
 
 // Animated number roll for balances and payouts.
-export function rollNumber(el, from, to, { duration = 700, format = formatFull } = {}) {
+export function rollNumber(el, from, to, { duration = 700, format = formatCH } = {}) {
   const d = ms(duration);
   if (d < 80 || from === to) { el.textContent = format(to); return Promise.resolve(); }
   return new Promise(resolve => {

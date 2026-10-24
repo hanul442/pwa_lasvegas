@@ -3,8 +3,7 @@
 import { api, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip, TIERS, FIRST_TIER } from './chips.js';
-import { duelInviteBlock, watchBlock } from './social.js';
-import { hotStatus, clock, pct, startTime } from './hot.js';
+import { duelInviteBlock } from './social.js';
 import { errorToast } from './notice.js';
 import { gameName } from './names.js';
 
@@ -64,9 +63,11 @@ function weekDots(daily) {
   return dots;
 }
 
+let dailyOpen = false;
 export function openDailySheet(state, onChanged, { onClose } = {}) {
   const daily = state.engagement.daily;
-  if (daily.claimed) return false;
+  if (daily.claimed || dailyOpen) return false;
+  dailyOpen = true;
   const scrim = el('div', 'lounge-scrim');
   const sheet = el('section', 'lounge-sheet');
   sheet.setAttribute('role', 'dialog');
@@ -88,6 +89,7 @@ export function openDailySheet(state, onChanged, { onClose } = {}) {
   const close = () => {
     if (closed) return;
     closed = true;
+    dailyOpen = false;
     scrim.classList.remove('is-open'); sheet.classList.remove('is-open');
     removeEventListener('keydown', onKey, true);
     setTimeout(() => { scrim.remove(); sheet.remove(); onClose?.(); }, 320);
@@ -123,25 +125,10 @@ async function vaultOpen(sheet) {
   door.remove();
 }
 
-// The pay sheet opens by itself once a day, before anything else in the lobby; the push-permission
-// ask waits until dailyDue() is false. It counts as seen only once it has closed, so a reload while
-// it is up shows it again rather than losing today's pay behind another sheet.
-const dailySeenKey = () => `vegas:daily-seen:${playerId()}`;
-let dailyOpen = false;
-export function dailyDue(state) {
-  const daily = state?.engagement?.daily;
-  return Boolean(daily && !daily.claimed && (dailyOpen || storageGet(dailySeenKey()) !== daily.nextAt));
-}
+// The pay sheet opens from the home strip's pay card. The push-permission ask waits while it is up.
+export function dailyDue() { return dailyOpen; }
 
-export function maybeOpenDaily(state, onChanged) {
-  // Never two sheets at once: if the push ask is already up, the next state refresh tries again.
-  if (dailyOpen || !dailyDue(state) || document.querySelector('.push-ask')) return;
-  const today = state.engagement.daily.nextAt;
-  dailyOpen = openDailySheet(state, onChanged, { onClose: () => { dailyOpen = false; storageSet(dailySeenKey(), today); } });
-}
-
-// One tap: the lobby pill and the bank row pay out where they sit. The sheet with the week's
-// calendar still opens by itself once a day.
+// One tap: the bank row pays out where it sits.
 export async function claimDaily(from, onChanged) {
   from.disabled = true;
   try {
@@ -151,15 +138,6 @@ export async function claimDaily(from, onChanged) {
   } catch (e) { from.disabled = false; errorToast(e, () => claimDaily(from, onChanged)); }
 }
 
-export function dailyButton(state, onChanged, { solid = false } = {}) {
-  const daily = state?.engagement?.daily;
-  if (!daily || daily.claimed) return null;
-  const b = el('button', `pill-button ${solid ? 'pill-button--solid' : 'pill-button--star'}`, `${daily.pay.monthly ? '월급' : daily.pay.weekly ? '주급' : '일급'} +${formatCH(daily.reward)}`);
-  b.type = 'button';
-  b.addEventListener('click', () => claimDaily(b, onChanged));
-  return b;
-}
-
 // ---------- missions ----------
 function untilText(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());
@@ -167,7 +145,7 @@ function untilText(iso) {
   return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
 }
 
-function missionsBlock(state, onChanged) {
+export function missionsBlock(state, onChanged) {
   const ms = state.engagement.missions;
   const box = el('section', 'lounge-block');
   const claimedAll = ms.items.every(i => i.claimed);
@@ -258,7 +236,7 @@ export function feedText(f) {
   }
 }
 
-function feedBlock(state) {
+export function feedBlock(state) {
   const items = (state.engagement.feed || []).filter(f => f.type !== 'SYSTEM').slice(0, 8);
   const box = el('section', 'lounge-block');
   box.innerHTML = '<header class="lounge-head"><h2>라운지 소식</h2><small>모두의 큰 순간</small></header>';
@@ -273,45 +251,8 @@ function feedBlock(state) {
   return box;
 }
 
-// ---------- 핫 딜러 타임 ----------
-// One game pays more on every win for ten minutes each hour (lib/hot-table.mjs). While it runs the
-// block leads the lounge with a countdown and a way to the table; between windows it names the next.
-let hotTimer = null;
-function hotBlock(state) {
-  const box = el('section', 'lounge-block lounge-block--hot');
-  let phase = null;
-  const paint = () => {
-    if (!box.isConnected && phase !== null) { clearInterval(hotTimer); hotTimer = null; return; }
-    const { live, next, now } = hotStatus(state);
-    const w = live || next;
-    const key = w ? `${live ? 'live' : 'next'}:${w.game}:${w.startsAt}` : 'none';
-    if (key !== phase) {
-      phase = key;
-      box.hidden = !w;
-      box.classList.toggle('is-live', Boolean(live));
-      if (live) {
-        box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker"><span class="hot-pill">HOT</span>핫 딜러 타임</small>지금 ${live.label}</h2><small class="hot-count" data-hot-count></small></header>
-          <p class="lounge-note">${live.label}에서 이기는 판마다 순수익 ${pct(live)}를 더 드려요. 보너스는 한 판 베팅액까지예요.</p>`;
-        const go = el('button', 'pill-button pill-button--solid hot-go', `${live.label} 앉기`);
-        go.type = 'button';
-        go.addEventListener('click', () => dispatchEvent(new CustomEvent('vegas:choose-game', { detail: { game: live.game } })));
-        box.append(go);
-      } else if (next) {
-        box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 핫 딜러 타임</small>${startTime(next)} · ${next.label}</h2><small class="hot-count" data-hot-count></small></header>
-          <p class="lounge-note">매시 정각, 한 게임이 10분 동안 핫 테이블이 돼요. 이기면 순수익 ${pct(next)}.</p>`;
-      }
-    }
-    const count = box.querySelector('[data-hot-count]');
-    if (count && w) count.textContent = live ? `${clock(Date.parse(live.endsAt) - now)} 남음` : `${clock(Date.parse(next.startsAt) - now)} 뒤`;
-  };
-  clearInterval(hotTimer);
-  paint();
-  hotTimer = setInterval(paint, 1000);
-  return box;
-}
-
 // ---------- floor ladder ----------
-function floorBlock(state, onPass) {
+export function floorBlock(state, onPass) {
   const floors = state.floors || [];
   // The next floor still to enter: reached by net worth (unlocked) and holding its skin (passed).
   const next = floors.find(f => !f.entered && f.slug !== floors[0]?.slug);
@@ -336,17 +277,14 @@ function floorBlock(state, onPass) {
   return box;
 }
 
-export function renderLounge(root, state, onChanged, onPass) {
+// Home keeps only what needs an answer now: the lucky-card rescue and duel invites. Missions,
+// the season and the hot table sit in the home strip; the feed is in 이벤트, the next floor in 지갑.
+export function renderLounge(root, state, onChanged) {
   if (!state?.engagement) { root.replaceChildren(); return; }
   const blocks = [];
-  if (state.hotTable || state.hotNext) blocks.push(hotBlock(state));
   if (state.engagement.rescue?.eligible) blocks.push(rescueBlock(state, onChanged));
   const invites = duelInviteBlock(state, onChanged);
   if (invites) blocks.push(invites);
-  blocks.push(missionsBlock(state, onChanged));
-  const watch = watchBlock(state);
-  if (watch) blocks.push(watch);
-  blocks.push(feedBlock(state), floorBlock(state, onPass));
   root.replaceChildren(...blocks);
 }
 

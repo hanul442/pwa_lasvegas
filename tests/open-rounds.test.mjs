@@ -21,9 +21,9 @@ test('open rounds name the screen and table that resume them', () => {
   assert.deepEqual(open.map(r => [r.game, r.floor, r.locked]), [['blackjack', 'gold-room', 2_000_000], ['matgo', 'high-limit', 40_000_000], ['royale', 'sky-lounge', 9]]);
 });
 
-test('the lobby offers recent tables, a resume notice and a table switcher', async () => {
+test('home offers the last table, a resume notice and a table switcher', async () => {
   const [app, html, table, sw, nav] = await Promise.all(['app.js', 'index.html', 'js/table.js', 'sw.js', 'js/table-nav.js'].map(read));
-  assert.match(html, /data-recent/);
+  assert.match(app, /다시 앉기 · \$\{recent\.game\.name\}/);
   assert.match(html, /data-resume/);
   assert.match(app, /진행 중인 판이 있어요 · 이어하기/);
   assert.match(app, /quickTier\(game\)/, 'one open table skips the tier picker');

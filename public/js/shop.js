@@ -1,8 +1,8 @@
 // 상점: luxury assets (사치품) to show off and skins (꾸미기) for the tables. Prices, ownership
 // and what is worn all come from the server (lib/shop.mjs); this screen only draws them.
 import { api, errorMessage } from './api.js';
-import { errorToast, toast } from './notice.js';
-import { el, formatCH, sound } from './fx.js';
+import { errorToast } from './notice.js';
+import { el, formatCH, sound, haptic, ms, reducedMotion } from './fx.js';
 import { createCard, setCardBack } from './cards.js';
 import { createChip } from './chips.js';
 
@@ -34,6 +34,90 @@ export function applyCosmetics(state) {
   const chips = eq.chips ? eq.chips.replace(/^chips-/, '') : '';
   if (chips) document.documentElement.dataset.chipAccent = chips;
   else delete document.documentElement.dataset.chipAccent;
+}
+
+// ---------- what owning something does (looks only: odds never change) ----------
+// Luxury: sitting down at a table, the dearest piece walks in with you. The dearer the piece,
+// the bigger the entrance: a plate, then a beam of light, then a shower of stars.
+export const luxuryLevel = (state, id) => {
+  const at = (state?.shop?.luxury || []).findIndex(x => x.id === id);
+  return at < 0 ? 1 : at >= 7 ? 3 : at >= 4 ? 2 : 1;
+};
+const LUX_FX = { 1: '테이블에 앉으면 오너 플레이트가 걸려요', 2: '테이블에 앉으면 오너 플레이트와 빛줄기가 함께 들어와요', 3: '테이블에 앉으면 오너 플레이트, 빛줄기, 쏟아지는 별로 입장해요' };
+export const luxuryEffect = (state, id) => LUX_FX[luxuryLevel(state, id)];
+// Skins: each bought one brings its own touch to the table.
+const SKIN_FX = { cardBack: '카드가 깔릴 때 뒷면에 빛이 스쳐요', felt: '테이블에 앉으면 펠트 위로 빛이 지나가요', chips: '칩을 걸 때마다 칩 둘레로 빛 고리가 퍼져요', frame: '랭킹과 프로필의 내 이름에 걸려요' };
+export const skinEffect = item => item.house ? null : SKIN_FX[item.slot];
+
+// The entrance: the dearest piece this player owns, on a plate across the top of the felt.
+export function ownerEntrance(state, felt) {
+  const mine = (state?.user?.luxury || []).map(x => luxuryItem(state, x.id)).filter(Boolean);
+  if (!felt || !mine.length) return;
+  const top = mine.reduce((a, b) => (b.price > a.price ? b : a));
+  const level = luxuryLevel(state, top.id);
+  const node = el('div', `owner-entrance owner-entrance--${level}`);
+  node.setAttribute('aria-hidden', 'true');
+  node.innerHTML = `${level >= 2 ? '<span class="owner-beam"></span>' : ''}<span class="owner-plate">${luxuryIcon(top.icon)}<span><small>${top.group} OWNER</small><b>${state.user.nickname}</b></span></span>`;
+  if (level >= 3 && !reducedMotion()) node.append(sparkles(14, 'owner-spark'));
+  felt.append(node);
+  setTimeout(() => node.remove(), ms(3000) + 200);
+}
+
+// A handful of little stars scattered at random, for the entrance and the purchase moment.
+function sparkles(n, cls) {
+  const box = el('span', `${cls}s`);
+  for (let i = 0; i < n; i++) {
+    const s = el('i', cls);
+    s.style.left = `${4 + Math.random() * 92}%`;
+    s.style.top = `${6 + Math.random() * 80}%`;
+    s.style.setProperty('--d', `${Math.round(Math.random() * 900)}ms`);
+    s.style.setProperty('--s', (0.5 + Math.random() * 0.9).toFixed(2));
+    box.append(s);
+  }
+  return box;
+}
+
+// ---------- the purchase moment ----------
+// Buying something stops the screen for a beat: the piece draws itself in light (a skin shows on
+// the table it will dress), and the dearer the piece, the more the room lights up.
+export function acquireMoment({ eyebrow, title, line = '', note = '', art, level = 1, stamp = '' }) {
+  return new Promise(resolve => {
+    const node = el('div', `acquire acquire--${level}`);
+    node.setAttribute('role', 'dialog');
+    node.setAttribute('aria-label', `${title} ${eyebrow}`);
+    node.innerHTML = `<div class="acquire-glow" aria-hidden="true"></div>${level >= 2 ? '<div class="acquire-beam" aria-hidden="true"></div>' : ''}
+      <div class="acquire-inner">
+        <div class="acquire-art"></div>
+        <p class="acquire-eyebrow">${eyebrow}</p>
+        <h2 class="acquire-title">${title}</h2>
+        ${line ? `<p class="acquire-line">${line}</p>` : ''}
+        ${note ? `<p class="acquire-note">${note}</p>` : ''}
+        ${stamp ? `<p class="acquire-stamp"><span aria-hidden="true"></span>${stamp}</p>` : ''}
+        <button type="button" class="pill-button pill-button--solid acquire-close">좋아요</button>
+      </div>`;
+    node.querySelector('.acquire-art').append(art);
+    if (!reducedMotion()) node.prepend(sparkles(level === 3 ? 34 : level === 2 ? 18 : 9, 'acquire-spark'));
+    // The line drawing traces itself: every stroke starts hidden and is drawn in.
+    node.querySelectorAll('.acquire-art .lux-icon :is(path,rect,circle)').forEach(p => p.setAttribute('pathLength', '1'));
+    document.body.append(node);
+    requestAnimationFrame(() => node.classList.add('is-open'));
+    sound.win();
+    setTimeout(() => sound.chips(level * 3), ms(380));
+    if (level >= 3) setTimeout(() => sound.win(), ms(900));
+    haptic(level >= 3 ? [30, 40, 30, 40, 140] : level === 2 ? [30, 40, 80] : 40);
+    let done = false;
+    const close = () => {
+      if (done) return;
+      done = true;
+      removeEventListener('keydown', onKey, true);
+      node.classList.remove('is-open');
+      setTimeout(() => { node.remove(); resolve(); }, ms(300));
+    };
+    const onKey = e => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); close(); } };
+    addEventListener('keydown', onKey, true);
+    node.addEventListener('click', e => { if (e.target === node || e.target.closest('.acquire-close')) close(); });
+    node.querySelector('.acquire-close').focus({ preventScroll: true });
+  });
 }
 
 // ---------- bottom sheet ----------
@@ -86,12 +170,21 @@ export function openSheet({ eyebrow, title, body = '', confirm = null, confirmTe
 // ---------- the screen ----------
 const TABS = [['luxury', '사치품'], ['cosmetics', '꾸미기']];
 const TAB_KEY = 'vegas:shop-tab';
-let tab = (() => { try { return localStorage.getItem(TAB_KEY) === 'cosmetics' ? 'cosmetics' : 'luxury'; } catch { return 'luxury'; } })();
-// A floor whose skins the 꾸미기 tab scrolls to once, when a locked table sent the player here.
+const VIEW_KEY = 'vegas:shop-skin-view';
+const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+const recall = key => { try { return localStorage.getItem(key); } catch { return null; } };
+let tab = recall(TAB_KEY) === 'cosmetics' ? 'cosmetics' : 'luxury';
+// The 꾸미기 tab shows either the floors (each floor's skins are its pass) or one slot at a time.
+const VIEWS = [['floors', '층 입장권'], ['cardBack', '카드 뒷면'], ['felt', '펠트'], ['chips', '칩'], ['frame', '명패']];
+let view = VIEWS.some(([k]) => k === recall(VIEW_KEY)) ? recall(VIEW_KEY) : 'floors';
+// A floor whose skins the 꾸미기 tab opens and scrolls to once, when a locked table sent the player here.
 let focusFloor = null;
+// Floors the player opened or closed by hand this visit, so a re-render (after a purchase) keeps them.
+const floorOpenByHand = new Map();
 export function showShopTab(key, floor = null) {
   tab = key === 'cosmetics' ? 'cosmetics' : 'luxury';
   focusFloor = floor;
+  if (floor) { view = 'floors'; floorOpenByHand.delete(floor); }
 }
 
 export function renderShop(root, state, onChanged) {
@@ -103,51 +196,97 @@ export function renderShop(root, state, onChanged) {
     b.type = 'button';
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(key === tab));
-    b.addEventListener('click', () => { tab = key; try { localStorage.setItem(TAB_KEY, key); } catch {} renderShop(root, state, onChanged); });
+    b.addEventListener('click', () => { tab = key; remember(TAB_KEY, key); renderShop(root, state, onChanged); });
     tabs.append(b);
   }
-  const body = tab === 'luxury' ? luxuryTab(state, onChanged) : cosmeticsTab(state, onChanged);
+  const rerender = () => renderShop(root, state, onChanged);
+  const body = tab === 'luxury' ? luxuryTab(state, onChanged) : cosmeticsTab(state, onChanged, rerender);
   root.replaceChildren(tabs, body);
 }
 
+const pct = rate => Math.round(rate * 100);
+
+function sellSheet(shop, item, onChanged) {
+  openSheet({
+    eyebrow: '되팔기', title: item.name,
+    body: `<div class="shop-sheet-hero">${luxuryIcon(item.icon)}<div><b>${won(item.resale)}</b><small>산 값 ${won(item.paid)}의 ${pct(shop.sellRate)}%</small></div></div><p class="lounge-note">칩으로 바로 돌려받고, 프로필과 랭킹에서 빠져요.</p>`,
+    confirmText: `${won(item.resale)}에 되팔기`,
+    confirm: async () => { const out = await api.shopSell(item.id); sound.chips(4); onChanged(out.state); }
+  });
+}
+
+function buySheet(shop, item, available, onChanged) {
+  const short = available < item.price;
+  openSheet({
+    eyebrow: `사치품 · ${item.group}`, title: item.name,
+    body: `<div class="shop-sheet-hero">${luxuryIcon(item.icon)}<div><b>${won(item.price)}</b><small>${short ? `${won(item.price - available)} 더 있어야 해요` : `사고 나면 ${won(available - item.price)} 남아요`}</small></div></div><p class="lounge-note">${item.blurb}. 프로필과 랭킹에 걸리고, 되팔면 ${won(item.resale)}(${pct(shop.sellRate)}%)가 돌아와요. 층 입장에는 들어가지 않아요.${item.headline ? ' 사면 라운지 소식으로 모두에게 알려져요.' : ''}</p><p class="shop-fx"><span aria-hidden="true"></span>${luxuryEffect({ shop }, item.id)}</p>`,
+    confirmText: short ? '' : `${won(item.price)}에 사기`,
+    confirm: short ? null : async () => {
+      const out = await api.shopBuy(item.id);
+      onChanged(out.state);
+      const level = luxuryLevel({ shop }, item.id);
+      const art = el('div', 'acquire-lux', luxuryIcon(item.icon));
+      acquireMoment({ eyebrow: item.id === 'casino' ? 'THE HOUSE IS YOURS' : 'NEW ACQUISITION', title: item.name, line: `${won(item.price)} · ${item.group}`, note: `효과: ${luxuryEffect({ shop }, item.id)}`, art, level });
+    }
+  });
+}
+
+// 사치품: what I own sits on a shelf at the top, the next thing worth saving for under it, then
+// the whole ladder as cards. A card is the button: the sheet it opens says what buying costs.
 function luxuryTab(state, onChanged) {
   const shop = state.shop, available = state.user.account.available;
   const box = el('div', 'shop-pane');
   const summary = el('dl', 'shop-summary');
   summary.innerHTML = `<div><dt>보유 칩</dt><dd>${won(available)}</dd></div><div><dt>자산</dt><dd>${won(shop.assets)}</dd></div><div><dt>되팔면</dt><dd>${won(shop.resale)}</dd></div>`;
-  const note = el('p', 'shop-note', `산 물건은 프로필과 랭킹에 걸려요. 언제든 산 값의 ${Math.round(shop.sellRate * 100)}%에 되팔 수 있어요. 자산은 층 입장에 들어가지 않아요.`);
-  const list = el('ul', 'shop-list');
-  for (const item of shop.luxury) {
-    const li = el('li', `shop-row${item.owned ? ' is-owned' : ''}`);
-    li.innerHTML = `${luxuryIcon(item.icon)}<div class="shop-row-text"><span class="shop-row-name">${item.name}${item.owned ? ' <small class="shop-tag">보유</small>' : ''}</span><small>${item.group} · ${item.blurb}</small><b class="shop-price">${won(item.owned ? item.paid : item.price)}</b></div>`;
-    const b = el('button', `pill-button shop-buy${item.owned ? '' : ' pill-button--solid'}`);
-    b.type = 'button';
-    if (item.owned) {
-      b.textContent = '되팔기';
-      b.setAttribute('aria-label', `${item.name} 되팔기, ${won(item.resale)} 받기`);
-      b.addEventListener('click', () => openSheet({
-        eyebrow: '되팔기', title: item.name,
-        body: `<p class="lounge-note">산 값 ${won(item.paid)}의 ${Math.round(shop.sellRate * 100)}%인 <b>${won(item.resale)}</b>을 칩으로 돌려받아요. 프로필과 랭킹에서도 빠져요.</p>`,
-        confirmText: `${won(item.resale)}에 되팔기`,
-        confirm: async () => { const out = await api.shopSell(item.id); sound.chips(4); onChanged(out.state); }
-      }));
-    } else {
-      const short = available < item.price;
-      b.textContent = '구매';
-      b.disabled = short;
-      b.setAttribute('aria-label', short ? `${item.name}, 칩이 부족해요` : `${item.name} ${won(item.price)}에 사기`);
-      if (short) li.classList.add('is-short');
-      b.addEventListener('click', () => openSheet({
-        eyebrow: '사치품 구매', title: item.name,
-        body: `<div class="shop-sheet-hero">${luxuryIcon(item.icon)}<div><b>${won(item.price)}</b><small>사고 나면 ${won(available - item.price)} 남아요</small></div></div><p class="lounge-note">되팔 때는 ${won(item.resale)}(${Math.round(shop.sellRate * 100)}%)만 돌아와요. 자산은 층 입장에 들어가지 않아요.${item.headline ? ' 라운지 소식에 모두에게 알려져요.' : ''}</p>`,
-        confirmText: `${won(item.price)}에 사기`,
-        confirm: async () => { const out = await api.shopBuy(item.id); sound.chips(6); onChanged(out.state); }
-      }));
+  box.append(summary);
+
+  const mine = shop.luxury.filter(x => x.owned).sort((a, b) => b.paid - a.paid);
+  box.append(el('h2', 'sub-head shop-head', `내 컬렉션 <small>${mine.length ? `${mine.length}점` : '비어 있음'}</small>`));
+  if (mine.length) {
+    const shelf = el('ul', 'lux-shelf');
+    shelf.setAttribute('aria-label', '내 컬렉션');
+    for (const item of mine) {
+      const li = el('li');
+      const b = el('button', 'lux-piece');
+      b.type = 'button';
+      b.setAttribute('aria-label', `${item.name}, 되팔면 ${won(item.resale)}`);
+      b.innerHTML = `${luxuryIcon(item.icon)}<span class="lux-piece-name">${item.name}</span><small>${won(item.paid)}</small>`;
+      b.addEventListener('click', () => sellSheet(shop, item, onChanged));
+      li.append(b);
+      shelf.append(li);
     }
-    li.append(b);
-    list.append(li);
+    box.append(shelf);
+  } else {
+    box.append(el('p', 'shop-empty', `아직 산 물건이 없어요. 산 물건은 프로필과 랭킹에서 이름 옆에 걸려요.`));
   }
-  box.append(summary, note, list);
+
+  // The next goal: the cheapest piece the chips can't reach yet (or, when they reach all, the cheapest left).
+  const unowned = shop.luxury.filter(x => !x.owned).sort((a, b) => a.price - b.price);
+  const next = unowned.find(x => x.price > available) || unowned[0];
+  if (next) {
+    const ready = available >= next.price;
+    const goal = el('button', `lux-goal${ready ? ' is-ready' : ''}`);
+    goal.type = 'button';
+    goal.innerHTML = `<span class="lux-goal-label">다음 목표</span>${luxuryIcon(next.icon)}<span class="lux-goal-text"><b>${next.name}</b><small>${ready ? `${won(next.price)} · 지금 살 수 있어요` : `${won(next.price - available)} 더 모으면 살 수 있어요`}</small></span><span class="lux-goal-bar" aria-hidden="true"><i style="width:${Math.min(100, Math.round(available / next.price * 100))}%"></i></span>`;
+    goal.addEventListener('click', () => buySheet(shop, next, available, onChanged));
+    box.append(goal);
+  }
+
+  box.append(el('h2', 'sub-head shop-head', `전체 <small>${shop.luxury.length}점 · 되팔면 산 값의 ${pct(shop.sellRate)}%</small>`));
+  const grid = el('ul', 'lux-grid');
+  for (const item of shop.luxury) {
+    const short = !item.owned && available < item.price;
+    const li = el('li');
+    const b = el('button', `lux-card${item.owned ? ' is-owned' : ''}${short ? ' is-short' : ''}`);
+    b.type = 'button';
+    const foot = item.owned ? '<span class="lux-card-own"><i aria-hidden="true"></i>보유 중</span>' : short ? `<span class="lux-card-need">${won(item.price - available)} 부족</span>` : '<span class="lux-card-buy">살 수 있어요</span>';
+    b.innerHTML = `${luxuryIcon(item.icon)}<span class="lux-card-group">${item.group}</span><span class="lux-card-name">${item.name}</span><b class="lux-card-price">${won(item.owned ? item.paid : item.price)}</b>${foot}`;
+    b.setAttribute('aria-label', item.owned ? `${item.name}, 보유 중, 되팔면 ${won(item.resale)}` : `${item.name}, ${won(item.price)}${short ? ', 칩이 부족해요' : ''}`);
+    b.addEventListener('click', () => item.owned ? sellSheet(shop, item, onChanged) : buySheet(shop, item, available, onChanged));
+    li.append(b);
+    grid.append(li);
+  }
+  box.append(grid, el('p', 'shop-note', '자산은 자랑용이에요. 층 입장은 칩에서 빚을 뺀 순자산으로만 정해져요.'));
   return box;
 }
 
@@ -160,92 +299,222 @@ export function nameFrame(state, userId, nickname) {
   return frame ? `<span class="name-frame name-frame--${String(frame).replace(/^frame-/, '')}">${nickname}</span>` : nickname;
 }
 
+const skinName = (id, prefix) => String(id).replace(prefix, '');
+const plate = (item, nickname) => item.house ? `<span class="name-frame-plain">${nickname}</span>` : `<span class="name-frame name-frame--${skinName(item.id, /^frame-/)}">${nickname}</span>`;
+function backCard(item) {
+  const card = createCard(null, { faceUp: false });
+  card.querySelector('.card-back').className = item.house ? 'card-back' : `card-back back--${skinName(item.id, /^back-/)}`;
+  return card;
+}
+const feltClass = item => item.house ? 'felt-swatch--house' : `felt--skin-${skinName(item.id, /^felt-/)}`;
+const chipClass = item => `chip-accent--${skinName(item.id, /^chips-/)}`;
+
 function preview(item, nickname) {
   const box = el('div', `skin-preview skin-preview--${item.slot}`);
   box.setAttribute('aria-hidden', 'true');
-  if (item.slot === 'cardBack') {
-    const card = createCard(null, { faceUp: false });
-    card.querySelector('.card-back').className = item.house ? 'card-back' : `card-back back--${item.id.replace(/^back-/, '')}`;
-    box.append(card);
-  } else if (item.slot === 'felt') {
-    box.classList.add(item.house ? 'felt-swatch--house' : `felt--skin-${item.id.replace(/^felt-/, '')}`);
-  } else if (item.slot === 'frame') {
-    box.innerHTML = item.house ? `<span class="name-frame-plain">${nickname}</span>` : `<span class="name-frame name-frame--${item.id.replace(/^frame-/, '')}">${nickname}</span>`;
-  } else {
-    box.classList.add(`chip-accent--${item.id.replace(/^chips-/, '')}`);
-    box.append(createChip(10_000_000), createChip(1_000_000_000));
-  }
+  if (item.slot === 'cardBack') box.append(backCard(item));
+  else if (item.slot === 'felt') box.classList.add(feltClass(item));
+  else if (item.slot === 'frame') box.innerHTML = plate(item, nickname);
+  else { box.classList.add(chipClass(item)); box.append(createChip(10_000_000), createChip(1_000_000_000)); }
   return box;
 }
 
-function skinTile(state, item, onChanged, pass) {
+// The look as a whole: a corner of felt with a card, two chips and the nameplate, as the player
+// wears it now. `tryOn` swaps one slot for a skin they are looking at.
+const wornItem = (all, slot, equipped) => all.find(x => x.slot === slot && (equipped[slot] ? x.id === equipped[slot] : x.house));
+function stage(state, tryOn = null) {
+  const all = state.shop.cosmetics, equipped = state.shop.equipped || {};
+  const pick = slot => tryOn && tryOn.slot === slot ? tryOn : wornItem(all, slot, equipped);
+  const box = el('div', `skin-stage ${feltClass(pick('felt'))}`);
+  box.setAttribute('aria-hidden', 'true');
+  const cards = el('div', 'skin-stage-cards');
+  const a = backCard(pick('cardBack')), b = backCard(pick('cardBack'));
+  cards.append(a, b);
+  const chips = el('div', `skin-stage-chips ${chipClass(pick('chips'))}`);
+  chips.append(createChip(10_000_000), createChip(100_000_000), createChip(1_000_000_000));
+  const name = el('div', 'skin-stage-name', plate(pick('frame'), state.user.nickname));
+  box.append(cards, chips, name);
+  return box;
+}
+
+function buySkinSheet(state, item, onChanged, pass) {
+  const available = state.user.account.available;
+  const short = available < item.price;
+  const opens = pass && !pass.passed;
+  const body = el('div');
+  body.append(stage(state, item));
+  body.append(el('p', 'lounge-note', `<b>${won(item.price)}</b> · ${item.blurb}. 사면 바로 장착하고, 꾸미기는 되팔 수 없어요.${skinEffect(item) ? ` 효과: ${skinEffect(item)}.` : ''}${opens ? ` <b>${pass.name} 입장권이 같이 생겨요${pass.unlocked ? '. 바로 앉을 수 있어요' : `. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요`}.</b>` : ''}${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
+  openSheet({
+    eyebrow: `${SLOT_NAME[item.slot]}${item.floor && pass ? ` · ${pass.name}` : ''}`, title: item.name, body,
+    confirmText: short ? '' : `${won(item.price)}에 사고 장착`,
+    confirm: short ? null : async () => {
+      const bought = await api.shopBuy(item.id);
+      const out = await api.shopEquip(item.slot, item.id);
+      onChanged(out.state);
+      const newPass = bought.purchase?.pass && pass;
+      const art = stage(out.state, null);
+      art.classList.add('acquire-stage');
+      acquireMoment({
+        eyebrow: 'NEW LOOK', title: item.name, art,
+        level: newPass ? 2 : 1,
+        line: `${SLOT_NAME[item.slot]} · ${won(item.price)}`,
+        note: skinEffect(item) ? `효과: ${skinEffect(item)}` : '',
+        stamp: newPass ? (pass.unlocked ? `${pass.name} 입장권 · 지금 앉을 수 있어요` : `${pass.name} 입장권 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : ''
+      });
+    }
+  });
+}
+
+// A skin bought in an earlier month: buying it again is this month's pass to its floor.
+function renewSheet(state, item, onChanged, pass) {
+  const available = state.user.account.available;
+  const short = available < item.price;
+  const body = el('div');
+  body.append(stage(state, item));
+  body.append(el('p', 'lounge-note', `입장권은 한 달 동안만 유지돼요. 이미 가진 꾸미기를 다시 사면 <b>${pass ? pass.name : '이 층'} 입장권</b>이 이번 시즌 동안 생겨요.${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
+  openSheet({
+    eyebrow: `입장권 갱신${pass ? ` · ${pass.name}` : ''}`, title: item.name, body,
+    confirmText: short ? '' : `${won(item.price)}에 갱신`,
+    confirm: short ? null : async () => {
+      const out = await api.shopBuy(item.id);
+      onChanged(out.state);
+      const art = stage(out.state, null);
+      art.classList.add('acquire-stage');
+      acquireMoment({
+        eyebrow: 'PASS', title: pass ? `${pass.name} 입장권` : item.name, art, level: 2,
+        line: `${item.name} · ${won(item.price)}`,
+        stamp: pass ? (pass.unlocked ? '이번 시즌 · 지금 앉을 수 있어요' : `이번 시즌 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : ''
+      });
+    }
+  });
+}
+
+async function equip(item, onChanged, button) {
+  if (button) button.disabled = true;
+  try { const out = await api.shopEquip(item.slot, item.house ? null : item.id); sound.chip(); onChanged(out.state); }
+  catch (e) { if (button) button.disabled = false; errorToast(e); }
+}
+
+function skinTile(state, item, onChanged, pass, { showFloor = false } = {}) {
   const available = state.user.account.available;
   const li = el('li', `skin-tile${item.equipped ? ' is-equipped' : ''}${item.owned ? '' : ' is-locked'}`);
   li.append(preview(item, state.user.nickname));
-  const status = item.owned ? (item.house ? '기본' : item.achievement ? `업적 「${item.achievementLabel}」` : '보유') : item.achievement ? `업적 「${item.achievementLabel}」 달성 시` : won(item.price);
-  li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}</span><small>${SLOT_NAME[item.slot]} · ${status}</small>`));
-  if (item.equipped) {
-    const tag = el('span', 'skin-on', '장착 중');
-    tag.setAttribute('aria-hidden', 'true');
-    li.append(tag);
+  const where = showFloor && pass ? pass.name : SLOT_NAME[item.slot];
+  const status = item.owned ? (item.house ? '기본' : item.achievement ? '업적 보상' : '보유') : item.achievement ? `업적 「${item.achievementLabel}」` : null;
+  li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}</span><small>${where}${status ? ` · ${status}` : ''}</small>`));
+  if (item.renewable && pass && !pass.passed) {
+    const short = available < item.price;
+    const b = el('button', `pill-button skin-act skin-price${short ? ' is-short' : ''}`, `갱신 ${won(item.price)}`);
+    b.type = 'button';
+    b.setAttribute('aria-label', `${item.name}로 ${pass.name} 입장권 갱신, ${won(item.price)}`);
+    b.addEventListener('click', () => renewSheet(state, item, onChanged, pass));
+    li.append(b);
+  } else if (item.equipped) {
+    li.append(el('span', 'skin-on', '장착 중'));
   } else if (item.owned) {
     const b = el('button', 'pill-button skin-act', '장착');
     b.type = 'button';
     b.setAttribute('aria-label', `${item.name} 장착`);
-    b.addEventListener('click', async () => {
-      b.disabled = true;
-      try { const out = await api.shopEquip(item.slot, item.house ? null : item.id); sound.chip(); onChanged(out.state); }
-      catch (e) { b.disabled = false; errorToast(e); }
-    });
+    b.addEventListener('click', () => equip(item, onChanged, b));
     li.append(b);
   } else if (!item.achievement) {
-    const b = el('button', 'pill-button pill-button--solid skin-act', '구매');
+    const short = available < item.price;
+    const b = el('button', `pill-button skin-act skin-price${short ? ' is-short' : ''}`, won(item.price));
     b.type = 'button';
-    b.disabled = available < item.price;
-    b.setAttribute('aria-label', `${item.name} ${won(item.price)}에 사기`);
-    const opens = pass && !pass.passed;
-    b.addEventListener('click', () => openSheet({
-      eyebrow: `${SLOT_NAME[item.slot]} 구매`, title: item.name,
-      body: `<p class="lounge-note">${item.blurb}. ${won(item.price)}에 사서 바로 장착해요. 꾸미기는 되팔 수 없어요.${opens ? ` <b>사면 ${pass.name} 입장권이 생겨요${pass.unlocked ? '. 바로 앉을 수 있어요' : `. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요`}.</b>` : ''}</p>`,
-      confirmText: `${won(item.price)}에 사기`,
-      confirm: async () => {
-        const bought = await api.shopBuy(item.id);
-        const out = await api.shopEquip(item.slot, item.id);
-        sound.chips(4);
-        onChanged(out.state);
-        if (bought.purchase?.pass && pass) toast(pass.unlocked ? `${pass.name} 입장권이 생겼어요. 이제 ${pass.name} 테이블에 앉을 수 있어요.` : `${pass.name} 입장권이 생겼어요. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요.`);
-      }
-    }));
+    b.setAttribute('aria-label', `${item.name} ${won(item.price)}${short ? ', 칩이 부족해요' : '에 사기'}`);
+    b.addEventListener('click', () => buySkinSheet(state, item, onChanged, pass));
     li.append(b);
+  } else {
+    li.append(el('span', 'skin-lock', '업적을 달성하면 열려요'));
   }
   return li;
 }
 
-// Skins by floor: owning any one of a floor's skins is its pass (lib/cosmetics.mjs), then the
-// free house and achievement ones.
-function cosmeticsTab(state, onChanged) {
+// Which floor opens by itself: the one a locked table sent the player to, else the one a single
+// purchase would let them into, else the next floor still without a pass.
+function floorToOpen(passes) {
+  return focusFloor
+    || passes.find(p => p.unlocked && !p.passed)?.slug
+    || passes.find(p => !p.passed)?.slug
+    || null;
+}
+
+// 꾸미기: what I wear now on top (one picture of the whole look), then the floors or one slot.
+function cosmeticsTab(state, onChanged, rerender) {
   const box = el('div', 'shop-pane');
-  const all = state.shop.cosmetics;
-  box.append(el('p', 'shop-note', '층마다 그 층의 꾸미기가 있어요. 하나라도 가지고 있어야 그 층 테이블에 앉을 수 있어요. 순자산 조건도 함께 채워야 해요.'));
-  let focus = null;
-  for (const pass of state.shop.passes || []) {
-    const section = el('section', `pass-floor${pass.passed ? ' is-passed' : ''}${pass.unlocked && !pass.passed ? ' is-due' : ''}`);
-    section.dataset.passFloor = pass.slug;
-    const state_ = pass.passed ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : pass.unlocked ? '순자산 충족 · 하나만 사면 입장' : `순자산 ${formatCH(pass.threshold)}원 + 꾸미기 하나`;
-    section.append(el('h2', 'sub-head pass-head', `<span class="pass-mark" aria-hidden="true"></span>${pass.name} <small>${state_}</small>`));
-    const grid = el('ul', 'skin-grid');
-    for (const item of all.filter(x => x.floor === pass.slug)) grid.append(skinTile(state, item, onChanged, pass));
-    section.append(grid);
-    box.append(section);
-    if (pass.slug === focusFloor) focus = section;
+  const all = state.shop.cosmetics, equipped = state.shop.equipped || {};
+  const passes = state.shop.passes || [];
+
+  const worn = el('section', 'skin-worn');
+  worn.append(stage(state));
+  const slots = el('ul', 'skin-slots');
+  for (const slot of ['cardBack', 'felt', 'chips', 'frame']) {
+    const item = wornItem(all, slot, equipped);
+    const li = el('li');
+    const b = el('button', `skin-slot${view === slot ? ' is-active' : ''}`, `<small>${SLOT_NAME[slot]}</small><span>${item?.name ?? '기본'}</span>`);
+    b.type = 'button';
+    b.setAttribute('aria-label', `${SLOT_NAME[slot]}: ${item?.name ?? '기본'}. 바꾸기`);
+    b.addEventListener('click', () => { view = slot; remember(VIEW_KEY, slot); rerender(); });
+    li.append(b);
+    slots.append(li);
   }
-  box.append(el('h2', 'sub-head', '기본 · 업적 <small>무료</small>'));
-  const grid = el('ul', 'skin-grid');
-  for (const item of all.filter(x => !x.floor)) grid.append(skinTile(state, item, onChanged, null));
-  box.append(grid);
-  if (focus) {
-    focusFloor = null;
-    requestAnimationFrame(() => { focus.scrollIntoView({ block: 'start', behavior: 'smooth' }); focus.classList.add('is-focus'); });
+  worn.append(slots);
+  const passCount = passes.filter(p => p.passed).length;
+  box.append(el('h2', 'sub-head shop-head', `착용 중 <small>입장권 ${passCount}/${passes.length}층</small>`), worn);
+
+  const filter = el('div', 'shop-filter');
+  filter.setAttribute('role', 'tablist');
+  filter.setAttribute('aria-label', '꾸미기 보기');
+  for (const [key, label] of VIEWS) {
+    const b = el('button', `shop-filter-chip${key === view ? ' is-active' : ''}`, label);
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(key === view));
+    b.addEventListener('click', () => { view = key; remember(VIEW_KEY, key); rerender(); });
+    filter.append(b);
+  }
+  box.append(filter);
+
+  if (view === 'floors') {
+    box.append(el('p', 'shop-note', '층마다 그 층의 꾸미기가 넷 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
+    const auto = floorToOpen(passes);
+    let focus = null;
+    for (const pass of passes) {
+      const items = all.filter(x => x.floor === pass.slug);
+      const owned = items.filter(x => x.owned).length;
+      const section = el('details', `pass-floor${pass.passed ? ' is-passed' : ''}${pass.unlocked && !pass.passed ? ' is-due' : ''}`);
+      section.dataset.passFloor = pass.slug;
+      section.open = floorOpenByHand.has(pass.slug) ? floorOpenByHand.get(pass.slug) : pass.slug === auto;
+      section.addEventListener('toggle', () => floorOpenByHand.set(pass.slug, section.open));
+      const state_ = pass.passed
+        ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`)
+        : pass.unlocked ? '순자산 충족 · 하나만 사거나 갱신하면 입장' : `순자산 ${formatCH(pass.threshold)}원 + 이번 달 입장권`;
+      const head = el('summary', 'pass-head', `<span class="pass-mark" aria-hidden="true"></span><span class="pass-name">${pass.name}</span><span class="pass-count">${owned}/${items.length}</span><small class="pass-state">${state_}</small>`);
+      section.append(head);
+      const grid = el('ul', 'skin-grid');
+      for (const item of items) grid.append(skinTile(state, item, onChanged, pass));
+      section.append(grid);
+      box.append(section);
+      if (pass.slug === focusFloor) focus = section;
+    }
+    if (focus) {
+      focusFloor = null;
+      requestAnimationFrame(() => { focus.scrollIntoView({ block: 'start', behavior: 'smooth' }); focus.classList.add('is-focus'); });
+    }
+    const free = all.filter(x => !x.floor);
+    box.append(el('h2', 'sub-head', `기본 · 업적 <small>무료 ${free.filter(x => x.owned).length}/${free.length}</small>`));
+    const grid = el('ul', 'skin-grid');
+    for (const item of free) grid.append(skinTile(state, item, onChanged, null));
+    box.append(grid);
+  } else {
+    // One slot: what I own first (cheapest to swap to), then what is for sale, then achievements.
+    const passOf = slug => passes.find(p => p.slug === slug) || null;
+    const rank = x => x.equipped ? 0 : x.owned ? 1 : x.achievement ? 3 : 2;
+    const items = all.filter(x => x.slot === view).sort((a, b) => rank(a) - rank(b) || a.price - b.price);
+    box.append(el('p', 'shop-note', `${SLOT_NAME[view]} ${items.length}가지. 층 꾸미기는 그 층 입장권도 돼요.`));
+    const grid = el('ul', 'skin-grid');
+    for (const item of items) grid.append(skinTile(state, item, onChanged, item.floor ? passOf(item.floor) : null, { showFloor: true }));
+    box.append(grid);
   }
   return box;
 }

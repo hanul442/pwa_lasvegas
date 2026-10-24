@@ -98,7 +98,9 @@ test('the original HANSEO profile can be taken over once, keeping its chips and 
   assert.equal((await call(store, 'POST', '/api/auth/signup', { username: 'bot', password: 'secret12', claimId: 'zero' })).data.error, 'PROFILE_NOT_CLAIMABLE');
 });
 
-test('two accounts play with separate wallets, and the ledger stays consistent', async () => {
+test('two accounts play with separate wallets, and the ledger stays consistent', async t => {
+  // Mid-month: no new loans in a month's last three days (lib/bank.mjs LOAN_FREEZE_DAYS).
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-14T03:00:00Z') });
   const store = memoryStore();
   const a = (await call(store, 'POST', '/api/auth/signup', { username: 'alpha', password: 'secret12' })).data;
   const b = (await call(store, 'POST', '/api/auth/signup', { username: 'bravo', password: 'secret12' })).data;

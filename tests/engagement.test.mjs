@@ -55,10 +55,10 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   // Mid-way through High Limit (1억–10억 net worth), so a payout doesn't graduate the floor.
   u.account.available = 300_000_000;
   const grant = claimSupport(state, u, 'grant', WED);
-  assert.equal(grant.amount, 50 * tableBase(u));
+  assert.equal(grant.amount, 5 * tableBase(u));
   assert.throws(() => claimSupport(state, u, 'grant', WED + DAY), /SUPPORT_ALREADY_CLAIMED/);
   const base = tableBase(u);
-  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 50 * base, 'next week pays again');
+  assert.equal(claimSupport(state, u, 'grant', WED + 7 * DAY).amount, 5 * base, 'next week pays again');
   assert.throws(() => claimSupport(state, u, 'welfare', WED), /WELFARE_NOT_QUALIFIED/);
   u.account.available = 200_000;
   assert.equal(supportStatus(u, WED).welfare.qualified, true);
@@ -73,7 +73,7 @@ test('정부 지원금 once a week for anyone; 구제금융 once a day for someo
   u.account.available = 0;
   assert.equal(supportStatus(u, WED).welfare.claimed, true);
   assert.throws(() => claimSupport(state, u, 'welfare', WED + 2000), /SUPPORT_ALREADY_CLAIMED/);
-  // A new day starts back at 100억, and a save from before (only the day) counts as one taken.
+  // A new day starts back at 10억, and a save from before (only the day) counts as one taken.
   assert.equal(claimSupport(state, u, 'welfare', WED + DAY).amount, 10_000_000_000);
   u.support.welfare = dayKey(WED + 2 * DAY); u.account.available = 0;
   assert.equal(supportStatus(u, WED + 2 * DAY).welfare.taken, 1);
@@ -150,21 +150,16 @@ test('a finished season pays its podium once and leaves a badge', () => {
   assert.equal(state.users.ann.account.available, before.ann + prizes.ann);
 });
 
-test('lucky card rescue only opens on an empty wallet while the recharge cools down', () => {
+test('the lucky card rescue is retired: an empty wallet gets the 구제금융 instead', () => {
   const state = defaultState(); const u = state.users.hanseo;
-  assert.equal(rescueStatus(u, WED).eligible, false);
   u.account.available = 0;
   u.recharge.lastAt = new Date(WED - 60_000).toISOString();
   u.recharge.dailyDate = new Date(WED).toISOString().slice(0, 10);
   const status = rescueStatus(u, WED);
   assert.equal(status.broke, true);
-  assert.equal(status.eligible, true);
-  const out = playRescue(state, u, 1, () => 0, WED);
-  assert.equal(out.cards.length, 3);
-  assert.equal(new Set(out.cards).size, 3);
-  assert.equal(totalBalance(u), out.amount);
-  assert.equal(out.amount, out.cards[1]);
-  assert.throws(() => playRescue(state, u, 0, Math.random, WED + 1000), /RESCUE_NOT_AVAILABLE/);
+  assert.equal(status.eligible, false);
+  assert.throws(() => playRescue(state, u, 0, Math.random, WED), /RESCUE_NOT_AVAILABLE/);
+  assert.equal(totalBalance(u), 0);
 });
 
 test('API exposes engagement and the claim routes', async () => {

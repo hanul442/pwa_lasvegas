@@ -1,6 +1,7 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
+import { ownerEntrance } from './shop.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
 import { errorMessage, newKey } from './api.js';
 import { maybeBust } from './bust.js';
@@ -9,7 +10,7 @@ import { maybeBust } from './bust.js';
 const STACK_CAP = 10;
 
 // Narrow phones show the balance as 12억 5천만 so the top bar keeps room for its buttons.
-const balanceText = value => (innerWidth < 520 ? formatCH : formatFull)(value);
+const balanceText = value => formatCH(value);
 
 // Per-device memory of the chip last picked and the last bet placed, per game and table.
 const memoryKey = (game, tier, what) => `vegas:${what}:${game}:${tier}`;
@@ -65,10 +66,10 @@ export class Table {
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="${backLabel}" title="${backLabel}"><span aria-hidden="true">←</span></button>
         <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatCH(this.tier.max)}원</i></span></div>
-        <div class="table-balance"><span>보유 칩</span><strong data-balance>${balanceText(this.available)}</strong></div>
         <div class="table-tools">
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
         </div>
+        <div class="table-balance table-wallet"><span class="sr-only">보유 칩</span><strong data-balance>${balanceText(this.available)}</strong><small>원</small><button class="wallet-plus" type="button" data-wallet-go aria-label="지갑 열기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button></div>
       </header>
       <div class="felt ${feltClass}${feltSkin(state, skin)}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
@@ -96,6 +97,8 @@ export class Table {
     this.tray = root.querySelector('[data-tray]');
     this.actions = root.querySelector('[data-actions]');
     this.balanceEl = root.querySelector('[data-balance]');
+    // The wallet pill's + goes to 지갑, the same as on the home screen.
+    root.querySelector('[data-wallet-go]').addEventListener('click', () => dispatchEvent(new CustomEvent('vegas:open-wallet')));
     this.betEl = root.querySelector('[data-bet]');
     this.hintEl = root.querySelector('[data-hint]');
     root.querySelector('.table-back').addEventListener('click', () => onLeave?.());
@@ -118,6 +121,8 @@ export class Table {
     this.renderTray();
     this.renderRack();
     this.hotEl = root.querySelector('[data-hot]');
+    // Luxury owners walk in with their dearest piece (looks only; lib/shop.mjs never touches odds).
+    if (skin) ownerEntrance(state, this.felt);
     this.hotOn = hot;
     this.hotWindows = [];
     this.watchHot(state, { announce: true });
@@ -608,6 +613,32 @@ export class Table {
     this.root.classList.remove('is-playing');
     this.refreshBet();
     maybeBust(this.serverState);
+    this.idleDue = true;
+    setTimeout(() => this.maybeIdle(), 0);
+  }
+
+  // Once a round is over and nothing is moving, the app may move the player to another table
+  // (app.js tableAfterRound). A round that starts straight after its reset keeps it waiting.
+  maybeIdle() {
+    if (!this.idleDue || this.busy || this.locked || !this.root.isConnected) return;
+    this.idleDue = false;
+    this.onIdle?.(this.serverState);
+  }
+
+  // "테이블을 바꿨어요": a card at the top of the felt saying where the player was moved and why.
+  moved(title, reason) {
+    this.felt.querySelector('.table-moved')?.remove();
+    const node = el('div', 'table-moved');
+    node.setAttribute('role', 'status');
+    node.innerHTML = `<span class="table-moved-eyebrow">테이블을 바꿨어요</span><strong></strong><small></small>`;
+    node.querySelector('strong').textContent = title;
+    node.querySelector('small').textContent = reason;
+    const hide = () => { node.classList.remove('is-shown'); setTimeout(() => node.remove(), 400); };
+    node.addEventListener('click', hide);
+    this.felt.append(node);
+    requestAnimationFrame(() => node.classList.add('is-shown'));
+    sound.tick();
+    setTimeout(hide, 5200);
   }
 
   setServerState(state) {
@@ -750,7 +781,7 @@ export class Table {
     if (this.busy || !fn) return;
     this.busy = true;
     this.actions.querySelectorAll('button:not([data-anytime])').forEach(b => { b.disabled = true; });
-    try { await fn(); } finally { this.busy = false; this.refreshActions?.(); }
+    try { await fn(); } finally { this.busy = false; this.refreshActions?.(); this.maybeIdle(); }
   }
 
   onKey(handler) {

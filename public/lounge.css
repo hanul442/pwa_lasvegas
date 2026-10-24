@@ -123,8 +123,8 @@
 
 /* ---------- higher floors dress their tables ---------- */
 .table-screen[data-tier="high"] .felt-print{border-color:#fff6dc38}
-.table-screen:is([data-tier="vip"],[data-tier="royal"],[data-tier="vault"]) .felt-print{border-color:#fff6dc70;box-shadow:inset 0 0 0 5px transparent,inset 0 0 0 6px #fff6dc26}
-.table-screen:is([data-tier="vip"],[data-tier="royal"],[data-tier="vault"]) .felt{box-shadow:0 0 0 1px #fff6dc40,inset 0 0 0 1px #000a,inset 0 0 90px #000b,0 24px 60px #000c}
+.table-screen:is([data-tier="vip"],[data-tier="royal"],[data-tier="vault"],[data-tier="crown"],[data-tier="olympus"]) .felt-print{border-color:#fff6dc70;box-shadow:inset 0 0 0 5px transparent,inset 0 0 0 6px #fff6dc26}
+.table-screen:is([data-tier="vip"],[data-tier="royal"],[data-tier="vault"],[data-tier="crown"],[data-tier="olympus"]) .felt{box-shadow:0 0 0 1px #fff6dc40,inset 0 0 0 1px #000a,inset 0 0 90px #000b,0 24px 60px #000c}
 
 /* ---------- big-win moment ---------- */
 .bigwin{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:24px;overflow:hidden;background:radial-gradient(55% 45% at 50% 46%,#262b33f0,#050607f5);opacity:0;transition:opacity .3s}
@@ -334,6 +334,11 @@
 .bank-sums dt{color:var(--smoke);font-size:13px}
 .bank-sums dd{margin:0;font:600 18px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em;overflow-wrap:anywhere}
 .bank-sums dd.neg{color:var(--signal)}
+.bank-held{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 12px;margin:14px 0 0;padding:12px 14px;border:1px solid var(--hair);border-radius:12px}
+.bank-held-text{display:grid;gap:2px;flex:1 1 170px;min-width:0;font-size:14px}
+.bank-held-text b{font-weight:600;font-variant-numeric:tabular-nums}
+.bank-held-text small{color:var(--smoke);font-size:12px}
+.bank-held .pill-button{flex:none}
 .bank-flag{margin:0;padding:10px 14px;border:1px solid #ff4f4f66;border-radius:12px;color:#ffb3b3;font-size:14px}
 .bank-block{padding:22px 0 20px;border-bottom:1px solid var(--hair)}
 .loan-list,.lender-list,.pay-list{list-style:none;margin:0;padding:0}
@@ -433,15 +438,6 @@
 .resume-text strong{font:650 16px/1.25 var(--sans)}
 .resume-text small{font-size:13px;color:#3d4249;overflow-wrap:anywhere}
 .resume-go{flex:none;font-size:18px}
-.recent-tables{margin:6px 0 10px}
-.recent-head{margin:0 0 8px;font:600 13px/1.2 var(--sans);letter-spacing:.06em;color:var(--smoke)}
-.recent-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.recent-table{width:100%;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:center;padding:10px 12px;border:1px solid var(--hair-strong);border-radius:14px;background:var(--ink-2);color:var(--white);text-align:left}
-.recent-table .game-row-icon{grid-row:1 / 3;width:40px;height:40px;padding:8px}
-.recent-name{font:560 16px/1.15 var(--display);font-stretch:112%}
-.recent-tier{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13px;color:var(--dim)}
-.recent-table:disabled{opacity:.5}
-.recent-table:active{opacity:.7}
 .event-cta.is-locked{background:none;color:var(--smoke);border:1px solid var(--hair-strong);font-weight:600}
 .table-switcher{max-height:min(86vh,720px);overflow-y:auto;overscroll-behavior:contain}
 .switcher-label{margin:18px 0 8px;font:600 13px/1.2 var(--sans);letter-spacing:.06em;color:var(--smoke)}
@@ -575,3 +571,51 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .bank-history>summary h2::after{content:"";display:inline-block;width:7px;height:7px;margin:0 0 4px 10px;border-right:1.5px solid var(--dim);border-bottom:1.5px solid var(--dim);rotate:45deg;transition:rotate .2s}
 .bank-history[open]>summary h2::after{rotate:-135deg;margin-bottom:0}
 .bank-history[open]>summary{margin-bottom:10px}
+
+/* ---------- 월간 랭크 시즌 (public/js/rank.js) ---------- */
+.segmented--three{grid-template-columns:repeat(3,1fr);max-width:420px;margin:4px 0 16px}
+.tier-emblem{flex:none;display:inline-block;vertical-align:middle;--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
+.tier-emblem .tier-face{fill:var(--t-b);stroke:var(--t-a);stroke-width:2}
+.tier-emblem .tier-cut{fill:none;stroke:var(--t-line);stroke-opacity:.55;stroke-width:1.2}
+.tier-emblem .tier-shine{fill:var(--t-a);opacity:.55}
+.tier-emblem .tier-star{fill:var(--t-line)}
+.tier-emblem--iron{--t-a:#8a8f96;--t-b:#2e3135;--t-line:#c9cdd2}
+.tier-emblem--emerald{--t-a:#5fd39a;--t-b:#16452f;--t-line:#dcffec}
+.tier-emblem--grandmaster{--t-a:#ff6f91;--t-b:#4d1226;--t-line:#ffe1ea}
+.tier-emblem--silver{--t-a:#d7dce3;--t-b:#5d636c;--t-line:#ffffff}
+.tier-emblem--gold{--t-a:#e2c27a;--t-b:#6b5426;--t-line:#fff3d1}
+.tier-emblem--platinum{--t-a:#9fe0d8;--t-b:#24524f;--t-line:#e9fffb}
+.tier-emblem--diamond{--t-a:#9cc4ff;--t-b:#20386b;--t-line:#ffffff}
+.tier-emblem--master{--t-a:#c9a0ff;--t-b:#3c2266;--t-line:#f4eaff}
+.tier-emblem--legend{--t-a:#ff8a72;--t-b:#5e1a12;--t-line:#ffe6dc}
+.rank-card{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:16px;border:1px solid var(--hair-strong);background:linear-gradient(180deg,#ffffff0d,#ffffff03);color:var(--white);text-align:left;font:inherit}
+.rank-card-text{flex:1;min-width:0;display:grid;gap:4px}
+.rank-card-text b{font:650 20px/1.15 var(--display);font-stretch:112%;letter-spacing:-.01em}
+.rank-card-text small{color:var(--smoke);font-size:13px;line-height:1.4}
+.rank-card-go{flex:none;color:var(--smoke);font-size:18px}
+.rank-bar{display:block;height:4px;border-radius:2px;background:#ffffff1a;overflow:hidden;margin-top:4px}
+.rank-bar i{display:block;height:100%;background:var(--white);border-radius:2px}
+.rank-note{margin:10px 0 0;font-size:12px}
+.season-mytier{display:flex;align-items:center;gap:8px;font:650 15px var(--sans)}
+.tier-ladder{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+@media (max-width:719px){.tier-ladder{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.tier-ladder li{display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:10px;border:1px solid transparent;text-align:center}
+.tier-ladder li span{font:600 11px var(--sans);white-space:nowrap}
+.tier-ladder li small{color:var(--dim);font-size:10px;white-space:nowrap}
+.tier-ladder li.is-me{border-color:var(--hair-strong);background:#ffffff0a}
+@media (max-width:400px){.tier-ladder li span{font-size:10px;letter-spacing:-.04em}.tier-ladder li small{font-size:9px}}
+.rank-name .tier-emblem,.podium-name .tier-emblem{margin-right:6px;vertical-align:-5px}
+.rank-history{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:8px}
+.rank-history li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--hair)}
+.rank-history span{display:grid;gap:2px;min-width:0}
+.rank-history small{color:var(--smoke);font-size:12px}
+.rank-moment .tier-emblem{margin:0 auto 6px}
+
+/* a friends' tournament's final places under the result */
+.event-result-rows{display:grid;gap:2px;width:min(340px,84vw);margin:18px 0 0;padding:0;list-style:none;text-align:left}
+.event-result-rows li{display:grid;grid-template-columns:40px 1fr auto;align-items:baseline;gap:10px;padding:8px 12px;border-radius:10px;font:500 14px var(--sans);color:#d9dde2;font-variant-numeric:tabular-nums}
+.event-result-rows li.is-me{background:#ffffff0f;box-shadow:inset 0 0 0 1px var(--hair-strong);color:var(--white)}
+.event-result-rows b{font:700 14px var(--display);font-stretch:112%;color:var(--white)}
+.event-result-rows span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-result-rows small{font-size:13px;color:var(--smoke)}
+.event-result-rows li:first-child small{color:var(--star)}

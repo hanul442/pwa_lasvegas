@@ -12,12 +12,14 @@ const WORDS = {
   montecarlo: { win: 'GALA NIGHT', winLine: '몬테카를로의 밤이 당신 편이었어요.' },
   casablanca: { win: 'PLAY IT AGAIN', winLine: '릭이 잔을 들어요. 이 밤은 당신 거예요.' },
   godofgamblers: { win: '도신', winLine: '주사위 컵 아래 숫자를 다 읽었어요.' },
+  friends: { win: 'CHAMPION', lose: 'ELIMINATED', winLine: '친구들 사이에서 마지막까지 살아남았어요.', loseLine: '다음 토너먼트에서 설욕해요.' },
   tazza: { win: '타짜', winLine: '아귀도 고광렬도 손을 털었어요.' }
 };
 
 // win: true for a victory card, false for the defeat; title: the event's name; place: 1st, 2nd…;
 // amount: chips won (a victory) or lost (a defeat); detail: one line under the headline.
-export function eventResult({ event, win, title, place = null, amount = 0, detail = '', nickname = '' }) {
+// rows: an optional final table, [{ place, name, note, me }], e.g. a friends' tournament's places.
+export function eventResult({ event, win, title, place = null, amount = 0, detail = '', nickname = '', rows = [] }) {
   const words = WORDS[event] || {};
   const mark = win ? (place === 2 ? 'RUNNER-UP' : words.win || 'WINNER') : words.lose || 'GAME OVER';
   const line = win ? words.winLine || '' : words.loseLine || '';
@@ -35,11 +37,21 @@ export function eventResult({ event, win, title, place = null, amount = 0, detai
         ${amount ? `<strong class="event-result-amount"><span data-amount>${win ? '+' : '−'}0원</span></strong>` : ''}
         ${detail ? `<p class="event-result-detail">${detail}</p>` : ''}
         ${line ? `<p class="event-result-line">${line}</p>` : ''}
+        ${rows.length ? '<ol class="event-result-rows" aria-label="최종 순위"></ol>' : ''}
         <div class="event-result-actions">
           ${win && amount ? '<button type="button" class="pill-button pill-button--solid" data-share>자랑하기</button>' : ''}
           <button type="button" class="pill-button${win && amount ? '' : ' pill-button--solid'}" data-close>테이블로 돌아가기</button>
         </div>
       </div>`;
+    const list = node.querySelector('.event-result-rows');
+    for (const r of rows) {
+      const li = el('li', r.me ? 'is-me' : '');
+      li.innerHTML = '<b></b><span></span><small></small>';
+      li.querySelector('b').textContent = r.place ? `${r.place}위` : '–';
+      li.querySelector('span').textContent = r.name;
+      li.querySelector('small').textContent = r.note || '';
+      list.append(li);
+    }
     document.body.append(node);
     requestAnimationFrame(() => node.classList.add('is-open'));
     if (win) { sound.win(); setTimeout(() => sound.chips(8), 300); haptic([40, 60, 40, 60, 160]); }

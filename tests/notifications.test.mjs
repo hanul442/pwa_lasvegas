@@ -207,7 +207,7 @@ test('a jackpot pushes to subscribed players right away, at most every two hours
     const { pushFeed } = await import('../lib/engagement.mjs');
     state.users.min.account.available = 0;
     await store.mutate(s => pushFeed(s, { type: 'JACKPOT', actorId: 'min', game: 'Slots', amount: 300_000_000, createdAt: new Date(kst(14) + 1000).toISOString() }));
-    await handleApi(req, new URL('http://x/api/recharge/auto'), store, { pushFetch });
+    await handleApi({ ...req, body: async () => ({ kind: 'welfare' }) }, new URL('http://x/api/support/claim'), store, { pushFetch });
     assert.equal(seen.length, 1);
     assert.ok(u.push.sent.newsAt);
     clock = kst(15);

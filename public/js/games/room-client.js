@@ -8,6 +8,8 @@ import { api, errorMessage } from '../api.js';
 import { el, formatCH, sound } from '../fx.js';
 import { TIERS } from '../chips.js';
 import { seatedElsewhere } from './seat-elsewhere.js';
+import { shareInvite, takePendingJoin } from '../invite.js';
+import { createRoomChat } from '../room-chat.js';
 
 const POLL_MS = 1500;
 const LIST_MS = 4000;
@@ -116,11 +118,9 @@ export function createRoomClient(t, game, hooks) {
   bar.innerHTML = '<button type="button" class="pk-roomchip rm-chip"></button><span class="rm-status" aria-live="polite"></span><span class="rm-clock" aria-live="off"></span>';
   t.felt.append(bar);
   const chipEl = bar.querySelector('.rm-chip'), statusEl = bar.querySelector('.rm-status'), clockEl = bar.querySelector('.rm-clock');
-  chipEl.addEventListener('click', async () => {
-    const line = `VEGAS ${label} 방 코드 ${code} · ${label}에서 "친구와 함께"를 누르고 코드로 입장해 주세요.`;
-    try { await navigator.clipboard.writeText(line); t.toast('초대 문구를 복사했어요'); }
-    catch { t.toast(`방 코드 ${code}`); }
-  });
+  chipEl.addEventListener('click', () => shareInvite({ game, label, code, tier: room?.tier, toast: m => t.toast(m) }));
+  const chat = createRoomChat(t, { send: line => api.roomChat(code, line), onView: v => chat.sync(v.chat) });
+  bar.insertBefore(chat.button, statusEl);
   const tableName = t.root.querySelector('.table-name span');
   const tableNameText = tableName.textContent;
 
@@ -156,7 +156,11 @@ export function createRoomClient(t, game, hooks) {
 
   // Back to a room this person is still sitting in (reload, came back later).
   async function resume() {
+    // Opened from a friend's invite link: sit at that room.
+    // (Already sitting in it, e.g. the host opening their own link: just go back to it.)
+    const invited = takePendingJoin(game);
     const res = await api.rooms(game);
+    if (invited && invited.toUpperCase() !== res.mine?.code) { await join(invited); return true; }
     if (res.mine?.game !== game) return false;
     const view = await api.room(res.mine.code);
     await enter(view.room);
@@ -172,9 +176,10 @@ export function createRoomClient(t, game, hooks) {
     t.locked = true;
     t.root.classList.add('is-room');
     tableName.textContent = `${tierName(view.tier)} · 친구 방 · ${word} ${formatCH(view.stake)}`;
-    chipEl.innerHTML = `<span>방 코드</span><b>${view.code}</b>`;
-    chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 초대 문구 복사`);
+    chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
+    chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
     bar.hidden = false;
+    chat.show(true);
     await hooks.clear();
     await applyView(view, null);
     schedule(POLL_MS);
@@ -187,6 +192,7 @@ export function createRoomClient(t, game, hooks) {
     code = null;
     cursor = null;
     bar.hidden = true;
+    chat.show(false);
     t.root.classList.remove('is-room', 'is-playing');
     tableName.textContent = tableNameText;
     t.locked = false;
@@ -268,6 +274,7 @@ export function createRoomClient(t, game, hooks) {
     if (!view.seated) { await exit('테이블에서 일어났어요'); return; }
     if (cursor && older(view.cursor, cursor)) return; // a reply older than what is on the felt
     room = view;
+    chat.sync(view.chat);
     let events = view.events;
     // Another reply already played part of this (a poll and a move crossing on the wire).
     if (events && sent && cursor && (sent.hand !== cursor.hand || sent.from !== cursor.from)) {
@@ -291,7 +298,7 @@ export function createRoomClient(t, game, hooks) {
     if (!v) return;
     const people = v.players.length;
     let line = '';
-    if (!v.started) line = v.isHost ? `코드 ${v.code}를 친구에게 알려 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
+    if (!v.started) line = v.isHost ? `초대를 눌러 친구에게 링크를 보내 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
     else if (v.waiting) line = '다음 판부터 AI 자리에 앉아요';
     else if (v.round?.status === 'SETTLED') line = '다음 판을 곧 돌려요';
     statusEl.textContent = line;
@@ -346,6 +353,6 @@ export function createRoomClient(t, game, hooks) {
     get view() { return room; },
     open, resume, act, idleActions, leaveAction,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },
-    stop: () => { stop(); active = false; document.removeEventListener('visibilitychange', onVisible); }
+    stop: () => { stop(); active = false; chat.destroy(); document.removeEventListener('visibilitychange', onVisible); }
   };
 }

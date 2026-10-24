@@ -408,7 +408,7 @@ async function bookCard(hb, nickname = '') {
     ctx.fillStyle = p.count === p.total ? '#fff6dc' : '#c4c9cf';
     ctx.font = '600 34px "Noto Sans KR", sans-serif';
     ctx.fillText(p.name, 120, y + 30);
-    const size = 30, gap = 8, x0 = 380;
+    const size = 28, gap = 7, x0 = 360;
     list.forEach((e, i) => {
       const col = i % 17, row = Math.floor(i / 17);
       const x = x0 + col * (size + gap), yy = y + row * (size + gap);

@@ -22,17 +22,17 @@
 .jk-summary-reward b{color:var(--smoke);font-weight:600}
 
 /* ---------- art ---------- */
-.jk-art{position:relative;display:flex;align-items:center;justify-content:center;min-height:86px;padding:12px 8px;border-radius:12px;background:radial-gradient(90% 90% at 50% 30%,#1d2126,#0f1114);overflow:hidden}
-.jk-art .card{--card-w:34px;--tilt:0deg;box-shadow:none}
-.jk-art .hw{--hw-w:30px;--tilt:0deg}
+.jk-art{position:relative;display:flex;align-items:center;justify-content:center;min-height:96px;padding:12px 8px;border-radius:12px;background:radial-gradient(90% 90% at 50% 30%,#1d2126,#0f1114);overflow:hidden}
+.jk-art .card{--card-w:40px;--tilt:0deg;box-shadow:none}
+.jk-art .hw{--hw-w:34px;--tilt:0deg}
 .jk-art--cards .card+.card{margin-left:calc(var(--card-w) * -.42)}
 .jk-art--hw .hw+.hw{margin-left:calc(var(--hw-w) * -.3)}
 .jk-art.jk-n5 .card+.card,.jk-art.jk-n4 .card+.card{margin-left:calc(var(--card-w) * -.56)}
 .jk-art--hw.jk-n5 .hw+.hw,.jk-art--hw.jk-n4 .hw+.hw{margin-left:calc(var(--hw-w) * -.5)}
 .jk-art--hw.jk-n7 .hw+.hw{margin-left:calc(var(--hw-w) * -.66)}
-.jk-art--hw.jk-n2 .hw{--hw-w:36px}
+.jk-art--hw.jk-n2 .hw{--hw-w:42px}
 .jk-art--hw.jk-n2 .hw+.hw{margin-left:6px}
-.jk-art--cards.jk-n2 .card{--card-w:40px}
+.jk-art--cards.jk-n2 .card{--card-w:46px}
 .jk-art--cards.jk-n2 .card+.card{margin-left:calc(var(--card-w) * -.3)}
 .jk-art .card:nth-child(odd),.jk-art .hw:nth-child(odd){translate:0 -2px}
 .jk-token{font:700 30px/1 var(--display);font-stretch:118%;letter-spacing:-.01em;color:var(--white)}
@@ -47,13 +47,14 @@
 .jk-die circle{fill:#0a0b0d}
 /* Not yet found: the same hand face down, in shadow. */
 .jk-art.is-missing{background:#0c0d0f}
-.jk-art.is-missing>*{opacity:.42;filter:saturate(0)}
+.jk-art.is-missing>*{filter:brightness(.5) saturate(0)}
 .jk-art.is-missing .jk-token{color:var(--dim)}
-.jk-art--big{min-height:150px;margin:10px 0 4px}
-.jk-art--big .card{--card-w:52px}
-.jk-art--big .hw{--hw-w:44px}
-.jk-art--big.jk-art--hw.jk-n2 .hw{--hw-w:62px}
-.jk-art--big.jk-art--cards.jk-n2 .card{--card-w:64px}
+.jk-art--big{min-height:170px;margin:10px 0 4px}
+.jk-art--big .card{--card-w:60px}
+.jk-art--big .hw{--hw-w:56px}
+.jk-art--big.jk-n7 .hw{--hw-w:46px}
+.jk-art--big.jk-art--hw.jk-n2 .hw{--hw-w:74px}
+.jk-art--big.jk-art--cards.jk-n2 .card{--card-w:78px}
 .jk-art--big .jk-die{width:48px;height:48px}
 .jk-art--big .jk-token{font-size:46px}
 

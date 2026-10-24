@@ -149,3 +149,62 @@ test('half the book unlocks the 족보 명패, the whole book the master plate, 
   assert.equal(ownsCosmetic(u, { ...master, kind: 'cosmetic' }), true);
   for (const p of HAND_BOOK_PAGES) assert.equal(achievementsView(u).find(a => a.id === `jokbo-page-${p.id}`).done, true, p.id);
 });
+
+// ---------- through the API ----------
+import { handleApi } from '../lib/api.mjs';
+import { seotdaEntry as entryOf } from '../lib/hand-book.mjs';
+function memoryStore() {
+  let state = defaultState();
+  let queue = Promise.resolve();
+  return {
+    peek: () => state,
+    load: async () => structuredClone(state),
+    mutate(fn) {
+      const task = queue.then(async () => { const next = structuredClone(state); const out = await fn(next); state = next; return out; });
+      queue = task.catch(() => {});
+      return task;
+    }
+  };
+}
+let n = 0;
+const call = (store, method, path, body) =>
+  handleApi({ method, header: h => (h === 'x-idempotency-key' ? `k-book-${++n}` : undefined), body: async () => body ?? {} }, new URL(`http://x${path}`), store, { NODE_ENV: 'production' });
+
+test('섯다 and Hold\'em hands played through the API fill the book, and the state says so', async () => {
+  const store = memoryStore();
+  const book = () => store.peek().users.hanseo.handBook || {};
+  for (let g = 0; g < 8; g++) {
+    let res = await call(store, 'POST', '/api/seotda/start', { stake: 10_000_000, floor: 'high-limit' });
+    if (res.status !== 200) break; // won its way off the floor
+    for (let i = 0; i < 40 && res.data.round.status === 'PLAYING'; i++) {
+      const opts = res.data.round.options.map(o => o.action);
+      res = await call(store, 'POST', '/api/seotda/action', { roundId: res.data.round.id, action: opts.includes('CALL') ? 'CALL' : 'CHECK' });
+    }
+    assert.equal(res.data.round.status, 'SETTLED');
+    const id = res.data.round.hand.length === 2 ? entryOf(res.data.round.hand) : null;
+    const hb = res.data.state.handBook;
+    if (id) assert.ok(hb.entries.find(e => e.id === id).got, `${id} filled`);
+    assert.equal(hb.count, Object.keys(book()).length);
+  }
+  // Hold'em: check or call every hand down; each hand that reaches the river with us in it is read once.
+  const poker = memoryStore();
+  const sit = await call(poker, 'POST', '/api/holdem/sit', { buyIn: 50_000_000, floor: 'high-limit', opponents: 1 });
+  assert.equal(sit.status, 200, JSON.stringify(sit.data));
+  let session = sit.data.session;
+  for (let hand = 0; hand < 6 && session.status === 'SEATED'; hand++) {
+    for (let i = 0; i < 30 && session.status === 'SEATED' && !session.table.handOver; i++) {
+      const t = session.table;
+      const res = await call(poker, 'POST', '/api/holdem/action', { sessionId: session.id, handNo: t.handNo, seq: t.seq, action: t.legal?.canCheck ? 'CHECK' : 'CALL' });
+      if (res.status !== 200) break;
+      session = res.data.session;
+    }
+        if (session.status !== 'SEATED') break;
+    const next = await call(poker, 'POST', '/api/holdem/next', { sessionId: session.id, handNo: session.table.handNo });
+    if (next.status !== 200) break;
+    session = next.data.session;
+  }
+  const pbook = poker.peek().users.hanseo.handBook || {};
+  const pokerIds = Object.keys(pbook).filter(id => id.startsWith('pk-'));
+  for (const id of pokerIds) assert.ok(pbook[id].count >= 1);
+  assert.ok(Object.keys(pbook).every(id => id.startsWith('pk-')), 'only poker hands from a poker table');
+});

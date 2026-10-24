@@ -40,6 +40,26 @@ function next() {
   banner.innerHTML = '<i class="news-star" aria-hidden="true"></i><div class="news-text"><b></b><span></span></div>';
   banner.querySelector('b').textContent = n.title;
   banner.querySelector('span').textContent = n.body;
+  // Someone else's moment: cheer or tease it right from the banner (동네방네, lib/brag.mjs).
+  if (n.reactable) {
+    const row = el('div', 'news-react');
+    for (const [kind, emoji, label] of [['clap', '👏', '축하해요'], ['fire', '🔥', '대단해요'], ['lol', '😂', '웃겨요']]) {
+      const b = el('button', 'news-react-btn', emoji);
+      b.type = 'button';
+      b.setAttribute('aria-label', label);
+      b.addEventListener('pointerdown', e => e.stopPropagation());
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        haptic(8);
+        row.querySelectorAll('button').forEach(x => { x.disabled = true; });
+        b.classList.add('is-on');
+        api.feedReact(n.id, kind).catch(() => {});
+        setTimeout(close, 450);
+      });
+      row.append(b);
+    }
+    banner.querySelector('.news-text').append(row);
+  }
   document.body.append(banner);
   requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('is-open')));
   if (n.push) haptic(25);
@@ -55,7 +75,7 @@ function next() {
   let startY = null;
   banner.addEventListener('pointerdown', e => { startY = e.clientY; });
   banner.addEventListener('pointermove', e => { if (startY !== null && e.clientY - startY < -16) close(); });
-  setTimeout(close, document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW);
+  setTimeout(close, (document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW) + (n.reactable ? 1800 : 0));
 }
 
 export function startNews() {

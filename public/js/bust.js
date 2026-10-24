@@ -4,7 +4,7 @@
 import { el, sound, haptic, rollNumber, formatCH, formatFull, ms } from './fx.js';
 import { playerId } from './api.js';
 import { gameName } from './lounge.js';
-import { loadLogo } from './bigwin.js';
+import { loadLogo, shareImage } from './share.js';
 
 const ROASTS = [
   '카지노는 이겼고, 나는 졌다',
@@ -157,17 +157,5 @@ export async function bustCard(bust, nickname = '') {
 
 export async function shareBust(bust, nickname = '') {
   const blob = await bustCard(bust, nickname);
-  if (!blob) return;
-  const file = new File([blob], 'vegas-bankrupt.png', { type: 'image/png' });
-  const text = `VEGAS에서 파산했어요. -${formatCH(bust.sessionLoss)}원. ${roastFor(bust.id)}`;
-  if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'VEGAS 파산', text }); return; } catch (e) { if (e?.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'vegas-bankrupt.png';
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return shareImage({ blob, filename: 'vegas-bankrupt.png', title: 'VEGAS 파산', text: `VEGAS에서 파산했어요. -${formatCH(bust.sessionLoss)}원. ${roastFor(bust.id)} 💸`, nickname });
 }

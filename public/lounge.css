@@ -651,6 +651,24 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .floor-moment .rank-moment-reset{max-width:340px;margin:0 0 16px;font-size:13px;line-height:1.55}
 .rank-moment-champ{margin:-2px 0 4px;padding:4px 12px;border:1px solid var(--hair-strong);border-radius:99px;font-size:14px;font-weight:600;letter-spacing:.02em}
 
+/* 동네방네 자랑하기: brag buttons on every moment, reactions under lounge news */
+.moment-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:10px}
+.acquire .moment-actions{margin-top:18px}
+.feed-item{flex-direction:column;align-items:stretch;gap:6px}
+.feed-main{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.feed-react{display:flex;flex-wrap:wrap;gap:6px}
+.feed-react:empty{display:none}
+.feed-react-btn,.news-react-btn{display:inline-flex;align-items:center;gap:5px;min-height:36px;min-width:44px;padding:0 12px;border:1px solid var(--hair-strong);border-radius:999px;background:transparent;color:var(--white);font:inherit;font-size:15px;line-height:1;cursor:pointer;transition:background .15s,border-color .15s}
+.feed-react-btn small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
+.feed-react-btn.is-on,.news-react-btn.is-on{background:#ffffff1f;border-color:var(--white)}
+.feed-react-btn.is-on small{color:var(--white)}
+.feed-react-btn:disabled{cursor:default;opacity:1;min-height:28px;padding:0 9px;font-size:13px}
+.news-react{display:flex;gap:8px;margin-top:10px}
+.news-react-btn:disabled:not(.is-on){opacity:.4}
+.rank-me:has(.rank-me-brag){grid-template-columns:auto minmax(0,1fr) auto auto}
+.rank-me-brag{min-height:36px;padding:0 14px;font-size:13px}
+@media (max-width:380px){.rank-me:has(.rank-me-brag){gap:10px}.rank-me-brag{padding:0 11px}}
+.acquire .moment-actions{margin-top:24px}.acquire .moment-actions .acquire-close{margin-top:0}
 /* ---------- VEGAS 랩드 (js/wrapped.js): a month in story cards ---------- */
 .wrapped{position:fixed;inset:0;z-index:130;display:grid;grid-template-rows:auto 1fr;background:#050607;color:var(--white);opacity:0;transition:opacity .3s;padding:max(12px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .wrapped.is-open{opacity:1}

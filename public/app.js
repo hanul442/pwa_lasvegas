@@ -39,7 +39,9 @@ import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
-import { tierEmblem, tierName, rankBadges, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
+import { setBragName, bragButton } from './js/share.js';
+import { bragRank } from './js/brags.js';
+import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
 
 watchErrors();
 startShine();
@@ -103,7 +105,7 @@ function showSurface(name, { focus = false } = {}) {
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
   if (name === 'events') renderEventTab();
-  if (name === 'lobby' && state) { celebrateFloors(state); setTimeout(() => maybeAsk(), 1200); }
+  if (name === 'lobby' && state) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'bank') { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (name === 'shop') renderShop(document.querySelector('[data-shop]'), state, applyState);
@@ -314,6 +316,7 @@ function paintNavDots(st) {
 // Every fresh server state lands here: wallet, lobby lounge, ranking and profile.
 function applyState(next) {
   state = next;
+  setBragName(state.user?.nickname);
   const available = state.user.account.available;
   // Show the balance as is on first load; only later changes roll.
   if (shownWallet === null || shownWallet === available) walletEl.textContent = formatCH(available);
@@ -336,7 +339,7 @@ function applyState(next) {
   if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); }
+  if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -721,7 +724,7 @@ function renderEventTab() {
     li.innerHTML = `<span>${dayLabel(ev.from)}</span><b>${ev.title}</b><small>${ev.kicker}</small>`;
     return li;
   }));
-  document.querySelector('[data-event-feed]').replaceChildren(...(state?.engagement ? [feedBlock(state)] : []));
+  document.querySelector('[data-event-feed]').replaceChildren(...(state?.engagement ? [feedBlock(state, applyState)] : []));
 }
 // 지갑's 은행 page ends with the next floor and what it takes to get there.
 function renderBankFloor() {
@@ -918,6 +921,13 @@ function renderRanking() {
       ? (below ? `1위 지키는 중 · 2위 ${below.nickname}보다 ${gap(mine, below)} 앞서요` : '1위예요')
       : above ? `${above.nickname}(${above.rank}위)까지 ${gap(above, mine)} 남았어요` : '';
     meBox.innerHTML = `<span class="rank-me-no">${mine.rank}<small>위</small></span><span class="rank-me-text"><b>나 ${moveTag(mine)}</b><small>${line}</small></span><span class="rank-me-value">${value(mine)}</span>`;
+    // 동네방네: my place on this board as a card.
+    const tabLabel = RANK_TABS[rankPeriod].find(([k]) => k === rankTab)?.[1] || '';
+    const boardName = rankPeriod === 'tier' ? '월간 티어' : `${rankPeriod === 'season' ? '이번 주' : '전체'} ${tabLabel}`.trim();
+    const brag = bragButton(() => bragRank({ rank: mine.rank, board: boardName, value: value(mine), tier: rankPeriod === 'tier' ? mine.tier : null }), '자랑');
+    brag.classList.remove('pill-button--solid');
+    brag.classList.add('rank-me-brag');
+    meBox.append(brag);
   }
   const rest = rows.filter(r => r.rank > 3);
   document.querySelector('[data-rank-list]').replaceChildren(...rest.map(r => {

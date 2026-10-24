@@ -58,15 +58,15 @@
 .hr-info{min-width:0;display:flex;flex-direction:column;gap:2px}
 .hr-name{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
 .hr-name b{font:700 15px/1.2 var(--sans);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hr-tag i{display:inline-block;margin-right:6px;font:600 11px/1 var(--sans);font-style:normal;padding:2px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px #efe7d955;color:#efe7d9d9;vertical-align:1px}
+.hr-tag i{display:inline-block;margin-right:6px;font:600 12px/1 var(--sans);font-style:normal;padding:2px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px #efe7d955;color:#efe7d9d9;vertical-align:1px}
 .hr-form{flex:none;display:flex;gap:2px}
-.hr-form span{display:grid;place-items:center;width:14px;height:16px;border-radius:3px;background:#0a0b0d66;font:700 11px/1 var(--sans);font-variant-numeric:tabular-nums;color:#efe7d9b3}
+.hr-form span{display:grid;place-items:center;width:16px;height:18px;border-radius:3px;background:#0a0b0d66;font:700 12px/1 var(--sans);font-variant-numeric:tabular-nums;color:#efe7d9b3}
 .hr-form span.is-place{color:var(--white);background:#0a0b0d99}
 .hr-form span.is-win{background:var(--white);color:var(--ink)}
 .hr-tag{font-size:12px;line-height:1.3;color:#efe7d9a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .zone.hr-odds{--size:20px;min-height:42px;padding:4px 2px;border-radius:9px}
 .zone.hr-odds strong{transition:transform .2s}
-.zone.hr-odds small{font-size:10px;line-height:1;color:#efe7d9b3}
+.zone.hr-odds small{font-size:12px;line-height:1;color:#efe7d9b3}
 .zone.hr-odds.has-bet strong{transform:translateX(-6px)}
 .zone.hr-odds strong{font:700 16px var(--display);font-stretch:105%;font-variant-numeric:tabular-nums}
 .zone.hr-odds>.bet-stack{right:-7px;top:-8px;bottom:auto}

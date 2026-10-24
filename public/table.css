@@ -480,9 +480,10 @@
   .shoe{width:40px;height:40px;top:8px}.discard{width:30px;height:42px;top:8px}
 }
 /* Short screens: drop the printed arc so all three boxes stay on the felt. */
-@media (max-height:820px){.bj .felt-arc{display:none}}
-/* Short portrait phones: AI seats lie flat (cards beside the name plate) and the felt tightens up. */
-@media (max-height:820px) and (orientation:portrait){
+@media (max-height:900px){.bj .felt-arc{display:none}}
+/* Short portrait phones: AI seats lie flat (cards beside the name plate) and the felt tightens up.
+   Up to 900px tall, so the Fold cover screen (412×860) keeps the bet boxes on the felt mid-round. */
+@media (max-height:900px) and (orientation:portrait){
   .bj{gap:4px;--card-w:clamp(40px,7dvh,56px)}
   .bj-ai{padding-top:0}
   .bj-seat{--card-w:26px;flex-direction:row;align-items:center;gap:6px}
@@ -804,7 +805,7 @@
   .side-circle{width:28px;height:28px;top:-12px;left:-2px}
   .side-circle--t3{left:auto;right:-2px}
 }
-@media (max-width:599px) and (max-height:820px) and (orientation:portrait){
+@media (max-width:599px) and (max-height:900px) and (orientation:portrait){
   .bj{--card-w:clamp(44px,min(13.5vw,7.4dvh),80px);gap:4px}
   .table-screen--blackjack .felt-body{padding-top:40px}
   .bj-hands,.bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 26px)}

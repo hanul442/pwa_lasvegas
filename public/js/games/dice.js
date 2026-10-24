@@ -10,7 +10,7 @@ import { eventInfo, createStreakMeter } from '../event-table.js';
 const FACE_ROT = { 1: '', 2: 'rotateX(90deg)', 3: 'rotateY(-90deg)', 4: 'rotateY(90deg)', 5: 'rotateX(-90deg)', 6: 'rotateY(180deg)' };
 const PIPS = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
 const FACES = [['front', 1], ['back', 6], ['right', 3], ['left', 4], ['top', 5], ['bottom', 2]];
-const TOTAL_PAY = { 4: 50, 5: 18, 6: 14, 7: 12, 8: 8, 9: 6, 10: 6, 11: 6, 12: 6, 13: 8, 14: 12, 15: 14, 16: 18, 17: 50 };
+const TOTAL_PAY = { 4: 60, 5: 30, 6: 17, 7: 12, 8: 8, 9: 6, 10: 6, 11: 6, 12: 6, 13: 8, 14: 12, 15: 17, 16: 30, 17: 60 }; // lib/games.mjs SICBO_TOTAL_PAY
 
 function cube() {
   return `<div class="die"><div class="die-cube">${FACES.map(([side, n]) => `<span class="die-face die-face--${side}">${Array.from({ length: 9 }, (_, i) => `<i${PIPS[n].includes(i + 1) ? ' class="on"' : ''}></i>`).join('')}</span>`).join('')}</div></div>`;
@@ -21,7 +21,7 @@ const pose = n => `rotateX(-22deg) rotateY(28deg) ${FACE_ROT[n]}`;
 function betNet(zone, stake, dice) {
   const total = dice[0] + dice[1] + dice[2], triple = dice[0] === dice[1] && dice[1] === dice[2];
   if (zone.startsWith('T')) return Number(zone.slice(1)) === total ? stake * TOTAL_PAY[total] : -stake;
-  if (zone === 'ANY_TRIPLE') return triple ? stake * 24 : -stake;
+  if (zone === 'ANY_TRIPLE') return triple ? stake * 30 : -stake;
   const won = !triple && (zone === 'SMALL' ? total <= 10 : zone === 'BIG' ? total >= 11 : zone === 'ODD' ? total % 2 === 1 : total % 2 === 0);
   return won ? stake : -stake;
 }
@@ -55,7 +55,7 @@ export async function mountDice(ctx, { event = null } = {}) {
       <div class="sb-main">
         <button type="button" class="zone zone--big-small" data-zone="SMALL"><strong>Small</strong><small>4–10 · 1:1</small></button>
         <button type="button" class="zone" data-zone="ODD"><strong>Odd</strong><small>1:1</small></button>
-        <button type="button" class="zone zone--triple" data-zone="ANY_TRIPLE"><strong>Any triple</strong><small>24:1</small></button>
+        <button type="button" class="zone zone--triple" data-zone="ANY_TRIPLE"><strong>Any triple</strong><small>30:1</small></button>
         <button type="button" class="zone" data-zone="EVEN"><strong>Even</strong><small>1:1</small></button>
         <button type="button" class="zone zone--big-small" data-zone="BIG"><strong>Big</strong><small>11–17 · 1:1</small></button>
       </div>

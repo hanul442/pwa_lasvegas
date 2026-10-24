@@ -143,7 +143,8 @@ export async function mountSlots(ctx) {
     // Under reduced motion there are no bolts: the tags appear at once with a single crack.
     if (calm) { sound.strike(); haptic(12); }
   }
-  let pool = ctx.state?.jackpot?.pool ?? 0;
+  const floorPool = st => st?.jackpot?.floors?.[t.tier.floor] ?? st?.jackpot?.pool ?? 0;
+  let pool = floorPool(ctx.state);
   poolEl.textContent = formatCH(pool);
 
   // Each reel shows three symbols: above, on and below the payline.
@@ -159,7 +160,7 @@ export async function mountSlots(ctx) {
   // The pot creeps up while you watch: other spins across the floor are feeding it.
   const drift = setInterval(() => {
     if (document.hidden || t.locked) return;
-    api.state().then(s => { if (s?.jackpot) setPool(s.jackpot.pool); }).catch(() => {});
+    api.state().then(s => { if (s?.jackpot) setPool(floorPool(s)); }).catch(() => {});
   }, 15000);
   const destroy = t.destroy.bind(t);
   t.destroy = () => { stopAuto(); clearInterval(drift); destroy(); };
@@ -352,7 +353,7 @@ export async function mountSlots(ctx) {
     t.setServerState(res.state);
     const { line, netPnl: net, jackpot, boost, freeSpins } = res.round;
     const label = await play(res.round);
-    setPool(res.state.jackpot.pool);
+    setPool(floorPool(res.state));
     await wait(200);
     if (freeSpins) await playFree(freeSpins, stake);
     const big = jackpot > 0 ? { title: 'JACKPOT', subtitle: `잭팟 +${formatCH(jackpot)}` }

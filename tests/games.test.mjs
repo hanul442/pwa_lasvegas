@@ -89,9 +89,11 @@ test('baccarat tie pushes non-tie bets and banker win applies commission',()=>{
   ];
   const banker=resolveBaccarat(20_000_000,'BANKER',bankerDeck);
   assert.equal(banker.winner,'BANKER');assert.equal(banker.netPnl,19_000_000);
-  // In 100만s the 5% commission rounds to the nearest 100만: 100만 on the banker wins 100만, 1천만 wins 900만.
-  assert.equal(resolveBaccarat(1_000_000,'BANKER',bankerDeck).netPnl,1_000_000);
-  assert.equal(resolveBaccarat(10_000_000,'BANKER',bankerDeck).netPnl,9_000_000);assert.equal(banker.trace.payoutRule,'BANKER_0_95_TO_1');
+  // Between 100만s the 5% goes up or down a unit at random (fair on average): 100만 wins 100만 95% of the time.
+  assert.equal(resolveBaccarat(1_000_000,'BANKER',bankerDeck,null,()=>0.94).netPnl,1_000_000);
+  assert.equal(resolveBaccarat(1_000_000,'BANKER',bankerDeck,null,()=>0.96).netPnl,0);
+  assert.equal(resolveBaccarat(10_000_000,'BANKER',bankerDeck,null,()=>0.4).netPnl,10_000_000);
+  assert.equal(resolveBaccarat(10_000_000,'BANKER',bankerDeck,null,()=>0.6).netPnl,9_000_000);assert.equal(banker.trace.payoutRule,'BANKER_0_95_TO_1');
 });
 
 test('roulette result always 0..36',()=>{

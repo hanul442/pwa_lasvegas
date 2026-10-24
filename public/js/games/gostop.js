@@ -133,7 +133,9 @@ export async function mountGostop(ctx, { event = null } = {}) {
         const box = root.querySelector(`[data-group="${g}"]`);
         const cards = box.querySelector('.mg-cap-cards');
         ids.forEach(id => { const n = place(id, cards); n.tabIndex = -1; n.removeAttribute('role'); n.classList.remove('is-match', 'is-selected'); });
-        box.querySelector('[data-count]').textContent = g === 'pi' ? piValue(ids) : ids.length;
+        // 국진 read as 쌍피 sits with the 열끗 but counts as two 피 (the score line already says so).
+        const gukjin = view?.scores?.[seat]?.gukjinAsPi && m.captured[seat].some(id => hwatu(id).gukjin) ? 2 : 0;
+        box.querySelector('[data-count]').textContent = g === 'pi' ? piValue(ids) + gukjin : ids.length;
       }
     }
     for (const [id, n] of nodes) if (!keep.has(id)) { n.remove(); nodes.delete(id); }
@@ -480,7 +482,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
   paintNames();
   // Resume a game left mid-way.
   try {
-    const open = await api.gostopOpen();
+    const open = await api.gostopOpen(ev?.id);
     carry = open.double || 1;
     if (open.round && (!open.floor || open.floor === t.tier.floor)) {
       if ((open.round.event === 'tazza') !== Boolean(ev)) { setMode(open.round.event === 'tazza'); names = [...baseNames]; paintNames(); }

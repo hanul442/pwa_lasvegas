@@ -600,8 +600,8 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .tier-ladder{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
 @media (max-width:719px){.tier-ladder{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .tier-ladder li{display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:10px;border:1px solid transparent;text-align:center}
-.tier-ladder li span{font:600 11px var(--sans);white-space:nowrap}
-.tier-ladder li small{color:var(--dim);font-size:10px;white-space:nowrap}
+.tier-ladder li span{font:600 13px var(--sans);white-space:nowrap}
+.tier-ladder li small{color:var(--smoke);font-size:12px;white-space:nowrap}
 .tier-ladder li.is-me{border-color:var(--hair-strong);background:#ffffff0a}
 @media (max-width:400px){.tier-ladder li span{font-size:10px;letter-spacing:-.04em}.tier-ladder li small{font-size:9px}}
 .rank-name .tier-emblem,.podium-name .tier-emblem{margin-right:6px;vertical-align:-5px}

@@ -279,7 +279,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     const hand = r.hands[r.activeHand];
     if (!hand) return null;
     const afford = t.available >= hand.stake;
-    return basicStrategy(hand.cards, r.dealer[0], { canDouble: hand.canDouble && afford, canSplit: hand.canSplit && afford });
+    return basicStrategy(hand.cards, r.dealer[0], { canDouble: hand.canDouble && afford, canSplit: hand.canSplit && afford, h17: Boolean(r.h17) });
   }
   function paintStat() {
     const on = Boolean(settings.get('bjHint'));

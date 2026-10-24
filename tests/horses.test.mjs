@@ -97,10 +97,12 @@ test('pace keyframes end on each horse’s finishing time in the drawn order', (
   }
 });
 
-test('payouts: winnings are cut to whole 100만s, losses take the stake', () => {
+test('payouts: winnings in whole 100만s, a remainder rounds at random (fair on average)', () => {
   assert.equal(horsePayout(10_000_000, 420), 32_000_000);
-  assert.equal(horsePayout(1_000_000, 420), 3_000_000, '320만 is cut to 300만');
-  assert.equal(horsePayout(1_000_000, 135), 0);
+  assert.equal(horsePayout(1_000_000, 420, () => 0.3), 3_000_000, '320만 is 300만 80% of the time');
+  assert.equal(horsePayout(1_000_000, 420, () => 0.1), 4_000_000, '... and 400만 20% of the time');
+  assert.equal(horsePayout(1_000_000, 135, () => 0.5), 0);
+  assert.equal(horsePayout(1_000_000, 135, () => 0.2), 1_000_000);
   assert.equal(horsePayout(100, 135), 35, 'bare engine stakes keep whole won');
   assert.ok(betWins('PLACE', 4, [2, 4, 1, 3, 5, 6]));
   assert.ok(!betWins('WIN', 4, [2, 4, 1, 3, 5, 6]));

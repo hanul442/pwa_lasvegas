@@ -1084,3 +1084,51 @@
 .table-moved strong{font:800 17px var(--sans);color:var(--white);letter-spacing:-.01em}
 .table-moved small{font-size:13px;color:#ffffffb3;line-height:1.35}
 @media (prefers-reduced-motion:reduce){.table-moved{transition:opacity .01ms}}
+
+/* ---------- court cards: line-art figures on the card stock ----------
+   J·Q·K draw a double-ended figure in fine line (js/cards.js COURT_HALF). The ink is the suit
+   colour; `.p` areas are paper so lines behind a face stay hidden. */
+.card-face{--paper:#fbf8f1}
+.card-court{inset:17% 19%;display:block;border-radius:4%;
+  background:linear-gradient(180deg,#00000006,transparent 30% 70%,#00000006),var(--paper)}
+.court-art{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
+.court-art *{vector-effect:non-scaling-stroke}
+.court-art .s{fill:none;stroke:currentColor;stroke-width:max(.9px,calc(var(--card-w) * .0125));stroke-linecap:round;stroke-linejoin:round}
+.court-art .s.t{stroke-width:max(.75px,calc(var(--card-w) * .01))}
+.court-art .p{fill:var(--paper)}
+.court-art .f{fill:currentColor}
+.court-art .st{stroke:var(--paper);stroke-width:max(.6px,calc(var(--card-w) * .007))}
+.court-art .ps{fill:none;stroke:var(--paper);stroke-width:max(.6px,calc(var(--card-w) * .008))}
+.court-art .pe{fill:none;stroke:var(--paper);stroke-width:max(1.2px,calc(var(--card-w) * .022));stroke-linecap:round}
+.court-art .pe.d{stroke:currentColor;stroke-width:max(1px,calc(var(--card-w) * .018))}
+.court-art .tone{fill:currentColor;opacity:.07}
+.court-art .hatch{stroke-width:max(.5px,calc(var(--card-w) * .006));opacity:.55}
+.court-art .rule{stroke-width:max(.6px,calc(var(--card-w) * .006));opacity:.45}
+/* Paper grain: a fine fibre noise over the whole face, so the stock reads as card, not plastic. */
+.card-face{background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(0deg,#00000005 0 1px,transparent 1px 3px),
+    repeating-linear-gradient(90deg,#00000004 0 1px,transparent 1px 3px),
+    linear-gradient(165deg,#fffdf8,#f3eee3);
+  background-size:96px 96px,auto,auto,auto}
+
+/* ---------- tilt-to-shine (js/shine.js) ----------
+   Tilting the phone moves a light across cards, chips and plaques. js/shine.js writes
+   --shine-x/--shine-y (where the light sits, %) and --shine-o (0 when still or off). */
+:root{--shine-x:30%;--shine-y:18%;--shine-o:0;--shine-band:0%}
+.card-face::after{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;opacity:var(--shine-o);
+  background:
+    linear-gradient(115deg,transparent calc(33% + var(--shine-band)),#ffffff2e calc(42% + var(--shine-band)),#ffffff80 calc(45% + var(--shine-band)),#ffffff2e calc(48% + var(--shine-band)),transparent calc(57% + var(--shine-band))),
+    radial-gradient(80% 60% at var(--shine-x) var(--shine-y),#ffffff47,transparent 70%),
+    linear-gradient(165deg,transparent 45%,#00000014)}
+.chip-shine{position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none;opacity:var(--shine-o);
+  background:
+    radial-gradient(circle at var(--shine-x) var(--shine-y),#ffffff8c 0,#ffffff2b 20%,transparent 44%),
+    radial-gradient(circle at calc(100% - var(--shine-x)) calc(100% - var(--shine-y)),#00000033,transparent 55%)}
+.chip--plaque .chip-shine{
+  background:
+    linear-gradient(112deg,transparent calc(24% + var(--shine-band)),#ffffff52 calc(35% + var(--shine-band)),#ffffffc7 calc(39% + var(--shine-band)),#ffffff52 calc(43% + var(--shine-band)),transparent calc(54% + var(--shine-band))),
+    conic-gradient(from calc(var(--shine-band) * 3.6deg) at var(--shine-x) var(--shine-y),#ffe3ea26,#d6fff526,#e2deff26,#fff3d826,#ffe3ea26),
+    radial-gradient(80% 90% at var(--shine-x) var(--shine-y),#ffffff3d,transparent 70%)}
+.rack-col .chip-shine,.npc-stack .chip-shine,.bj-seat-chips .chip-shine,.pk-stack .chip-shine{display:none}
+@media (prefers-reduced-motion:reduce){.card-face::after,.chip-shine{display:none}}

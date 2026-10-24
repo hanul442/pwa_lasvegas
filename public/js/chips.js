@@ -50,8 +50,8 @@ export function createChip(value, tag = 'span') {
   // Discs carry a printed dash ring around the inlay; plaques carry the house mark and a serial
   // number, like the numbered plaques of a real high-limit room. Both are decoration only.
   chip.innerHTML = isPlaque(value)
-    ? `<i class="chip-mark" aria-hidden="true">VEGAS</i>${face}<i class="chip-serial" aria-hidden="true">№ ${String(Math.round(value / PLAQUE_MIN)).padStart(5, '0')}</i>`
-    : `<i class="chip-ring" aria-hidden="true"></i>${face}`;
+    ? `<i class="chip-mark" aria-hidden="true">VEGAS</i>${face}<i class="chip-serial" aria-hidden="true">№ ${String(Math.round(value / PLAQUE_MIN)).padStart(5, '0')}</i><i class="chip-shine" aria-hidden="true"></i>`
+    : `<i class="chip-ring" aria-hidden="true"></i>${face}<i class="chip-shine" aria-hidden="true"></i>`;
   return chip;
 }
 

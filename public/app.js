@@ -37,9 +37,11 @@ import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
 import { watchErrors } from './js/error-report.js';
+import { startShine } from './js/shine.js';
 import { tierEmblem, tierName, rankBadges, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
 
 watchErrors();
+startShine();
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 

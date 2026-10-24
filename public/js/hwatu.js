@@ -144,6 +144,6 @@ export async function flipHwatu(node, id, { duration = 340, squeeze = false } = 
 
 // The slap: a played card lands with a little bounce, the way a hwatu card hits the blanket.
 export function slap(node) {
-  sound.card();
+  sound.slap();
   return animate(node, [{ transform: 'scale(1.18)' }, { transform: 'scale(.94)', offset: 0.6 }, { transform: 'scale(1)' }], { duration: ms(220), fill: 'none' });
 }

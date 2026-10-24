@@ -71,6 +71,7 @@ export async function mountDice(ctx, { event = null } = {}) {
 
   async function roll(values) {
     totalEl.classList.remove('is-shown');
+    sound.shake();
     await animate(dome, [
       { transform: 'translateY(0) rotate(0)' }, { transform: 'translateY(-14px) rotate(-6deg)' }, { transform: 'translateY(-10px) rotate(7deg)' },
       { transform: 'translateY(-16px) rotate(-5deg)' }, { transform: 'translateY(-8px) rotate(4deg)' }, { transform: 'translateY(0) rotate(0)' }

@@ -127,22 +127,135 @@ function tone(ac, { at = 0, freq = 880, length = 0.12, gain = 0.12, type = 'sine
   osc.stop(t + length + 0.02);
 }
 
-export const sound = {
-  card() { const ac = audio(); if (ac) noiseBurst(ac, { length: 0.06, freq: 2400 + Math.random() * 800, gain: 0.35 }); },
-  flip() { const ac = audio(); if (ac) noiseBurst(ac, { length: 0.04, freq: 4200, q: 1.4, gain: 0.22 }); },
-  chip() {
-    const ac = audio(); if (!ac) return;
+// ---------- recorded table sounds ----------
+// Real cards, chips and dice from Kenney's Casino Audio (CC0, see public/sfx/CREDITS.md), cut short
+// and stored as small .m4a files. They load once the first sound plays; until a recording is ready
+// (or on a device that cannot decode it) the synthesized version above stands in.
+export const SFX_FILES = [
+  'card-deal-1', 'card-deal-2', 'card-deal-3', 'card-deal-4', 'card-flip-1', 'card-flip-2',
+  'card-place-1', 'card-place-2', 'card-place-3', 'card-gather-1', 'card-gather-2', 'card-shuffle', 'card-fan',
+  'chip-lay-1', 'chip-lay-2', 'chip-lay-3', 'chips-stack-1', 'chips-stack-2', 'chips-stack-3', 'chips-stack-4',
+  'chips-stack-5', 'chips-stack-6', 'chips-collide-1', 'chips-collide-2', 'chips-collide-3', 'chips-collide-4',
+  'chips-handle-1', 'chips-handle-5', 'chips-handle-6', 'dice-shake-1', 'dice-shake-2',
+  'die-throw-1', 'die-throw-2', 'die-throw-3', 'die-throw-4'
+];
+// Each table sound picks one of its takes at random, so a run of deals never sounds looped.
+export const SFX_SETS = {
+  deal: ['card-deal-1', 'card-deal-2', 'card-deal-3', 'card-deal-4'],
+  flip: ['card-flip-1', 'card-flip-2'],
+  place: ['card-place-1', 'card-place-2', 'card-place-3'],
+  gather: ['card-gather-1', 'card-gather-2'],
+  shuffle: ['card-shuffle'],
+  fan: ['card-fan'],
+  chip: ['chip-lay-1', 'chip-lay-2', 'chip-lay-3', 'chips-stack-1', 'chips-stack-2', 'chips-stack-5'],
+  stack: ['chips-stack-1', 'chips-stack-2', 'chips-stack-4', 'chips-stack-5', 'chips-stack-6'],
+  collide: ['chips-collide-1', 'chips-collide-2', 'chips-collide-3', 'chips-collide-4'],
+  rake: ['chips-handle-5', 'chips-handle-1', 'chips-handle-6'],
+  shake: ['dice-shake-1', 'dice-shake-2'],
+  throw: ['die-throw-1', 'die-throw-2', 'die-throw-3', 'die-throw-4']
+};
+const buffers = new Map();
+const levels = new Map();
+// The takes were matched by peak, so a hot one (a sharp slide) can sound twice as loud as its
+// neighbours. Even them out by average loudness.
+function levelOf(buffer) {
+  const data = buffer.getChannelData(0);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+  const rms = Math.sqrt(sum / Math.max(1, data.length));
+  return rms > 0 ? Math.min(1.3, Math.max(0.5, 0.06 / rms)) : 1;
+}
+let loading = null;
+function loadSamples(ac) {
+  if (loading) return loading;
+  loading = Promise.all(SFX_FILES.map(name => fetch(`sfx/${name}.m4a`)
+    .then(res => (res.ok ? res.arrayBuffer() : null))
+    .then(buf => (buf ? new Promise((resolve, reject) => ac.decodeAudioData(buf, resolve, reject)) : null))
+    .then(decoded => { if (decoded) { buffers.set(name, decoded); levels.set(name, levelOf(decoded)); } })
+    .catch(() => {})));
+  return loading;
+}
+const lastTake = {};
+// Play one take from a set. Returns false when nothing is loaded yet, so the caller can fall back.
+function sample(ac, set, { at = 0, gain = 0.7, rate = 1, jitter = 0.04 } = {}) {
+  loadSamples(ac);
+  const takes = SFX_SETS[set].filter(n => buffers.has(n));
+  if (!takes.length) return false;
+  let pick = takes[Math.floor(Math.random() * takes.length)];
+  if (takes.length > 1 && pick === lastTake[set]) pick = takes[(takes.indexOf(pick) + 1) % takes.length];
+  lastTake[set] = pick;
+  const src = ac.createBufferSource();
+  src.buffer = buffers.get(pick);
+  src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * jitter);
+  const g = ac.createGain();
+  g.gain.value = gain * (levels.get(pick) || 1) * (0.88 + Math.random() * 0.12);
+  src.connect(g).connect(sfxBus);
+  src.start(ac.currentTime + at);
+  return true;
+}
+// Start fetching the recordings early (on the first tap) so the first card dealt is already real.
+export function preloadSounds() { const ac = audio(); if (ac) loadSamples(ac); }
+
+const synth = {
+  card(ac) { noiseBurst(ac, { length: 0.06, freq: 2400 + Math.random() * 800, gain: 0.35 }); },
+  flip(ac) { noiseBurst(ac, { length: 0.04, freq: 4200, q: 1.4, gain: 0.22 }); },
+  chip(ac) {
     const base = 2200 + Math.random() * 500;
     tone(ac, { freq: base, length: 0.07, gain: 0.08, type: 'triangle' });
     tone(ac, { at: 0.03, freq: base * 1.32, length: 0.06, gain: 0.05, type: 'triangle' });
     noiseBurst(ac, { length: 0.025, freq: 5000, q: 2, gain: 0.12 });
   },
-  chips(count = 4) { for (let i = 0; i < count; i++) setTimeout(() => sound.chip(), i * 55); },
+  dice(ac) { for (let i = 0; i < 6; i++) noiseBurst(ac, { at: i * 0.07 + Math.random() * 0.03, length: 0.035, freq: 1400 + Math.random() * 900, q: 2, gain: 0.3 }); },
+  win(ac) { [523, 659, 784, 1047].forEach((f, i) => tone(ac, { at: i * 0.09, freq: f, length: 0.32, gain: 0.09 })); },
+  lose(ac) { tone(ac, { freq: 220, length: 0.28, gain: 0.06, type: 'triangle' }); tone(ac, { at: 0.12, freq: 174, length: 0.36, gain: 0.05, type: 'triangle' }); },
+  push(ac) { tone(ac, { freq: 440, length: 0.2, gain: 0.06 }); }
+};
+
+export const sound = {
+  // A card slid out of the shoe onto the felt.
+  card() { const ac = audio(); if (ac && !sample(ac, 'deal', { gain: 0.6 })) synth.card(ac); },
+  // A card turned over.
+  flip() { const ac = audio(); if (ac && !sample(ac, 'flip', { gain: 0.75 })) synth.flip(ac); },
+  // A card played down hard, the way a hwatu card is slapped onto the blanket.
+  slap() { const ac = audio(); if (ac && !sample(ac, 'place', { gain: 0.8 })) synth.card(ac); },
+  // The deck riffled before a new hand.
+  shuffle() { const ac = audio(); if (ac && !sample(ac, 'shuffle', { gain: 0.8, jitter: 0.02 })) synth.card(ac); },
+  // The dealer sweeping the cards in.
+  gather() { const ac = audio(); if (ac) sample(ac, 'gather', { gain: 0.6 }); },
+  chip() { const ac = audio(); if (ac && !sample(ac, 'chip', { gain: 0.55, jitter: 0.06 })) synth.chip(ac); },
+  // A short run of chips dropping onto a stack.
+  chips(count = 4) {
+    const ac = audio(); if (!ac) return;
+    const n = Math.max(1, Math.min(count, 8));
+    for (let i = 0; i < n; i++) {
+      const at = i * 0.055 + Math.random() * 0.015;
+      if (!sample(ac, 'stack', { at, gain: 0.5 - i * 0.03, jitter: 0.06 })) { setTimeout(() => sound.chip(), at * 1000); }
+    }
+  },
   tick() { const ac = audio(); if (ac) noiseBurst(ac, { length: 0.012, freq: 6000, q: 3, gain: 0.18 }); },
-  dice() { const ac = audio(); if (!ac) return; for (let i = 0; i < 6; i++) noiseBurst(ac, { at: i * 0.07 + Math.random() * 0.03, length: 0.035, freq: 1400 + Math.random() * 900, q: 2, gain: 0.3 }); },
-  win() { const ac = audio(); if (!ac) return; [523, 659, 784, 1047].forEach((f, i) => tone(ac, { at: i * 0.09, freq: f, length: 0.32, gain: 0.09 })); },
-  lose() { const ac = audio(); if (!ac) return; tone(ac, { freq: 220, length: 0.28, gain: 0.06, type: 'triangle' }); tone(ac, { at: 0.12, freq: 174, length: 0.36, gain: 0.05, type: 'triangle' }); },
-  push() { const ac = audio(); if (ac) tone(ac, { freq: 440, length: 0.2, gain: 0.06 }); },
+  // Dice rattled in a hand or under the dome.
+  shake() { const ac = audio(); if (ac) sample(ac, 'shake', { gain: 0.75 }); },
+  // Three dice landing, a beat apart.
+  dice() {
+    const ac = audio(); if (!ac) return;
+    let ok = true;
+    for (let i = 0; i < 3; i++) ok = sample(ac, 'throw', { at: i * 0.07 + Math.random() * 0.05, gain: 0.7 - i * 0.08 }) && ok;
+    if (!ok) synth.dice(ac);
+  },
+  // A win: the payout pushed over and stacked, chips clattering together.
+  win() {
+    const ac = audio(); if (!ac) return;
+    if (!sample(ac, 'rake', { gain: 0.6 })) return synth.win(ac);
+    [0.16, 0.24, 0.31, 0.37].forEach((at, i) => sample(ac, 'stack', { at, gain: 0.5 - i * 0.06, jitter: 0.07 }));
+  },
+  // A loss: no fanfare, just the dealer taking the cards and chips away.
+  lose() {
+    const ac = audio(); if (!ac) return;
+    if (!sample(ac, 'gather', { gain: 0.55 })) return synth.lose(ac);
+    sample(ac, 'rake', { at: 0.18, gain: 0.3, rate: 0.92 });
+  },
+  // A push: two chips knocked together, the bet stays.
+  push() { const ac = audio(); if (ac && !sample(ac, 'collide', { gain: 0.6 })) synth.push(ac); },
   // A lightning strike: a dry crack, then a low roll under it.
   strike() {
     const ac = audio(); if (!ac) return;

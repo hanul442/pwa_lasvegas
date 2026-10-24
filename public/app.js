@@ -3,7 +3,7 @@ import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { renderAccountTools, forgetShownCode } from './js/account.js';
-import { formatCH, rollNumber, isMuted, setMuted, sound, el } from './js/fx.js';
+import { formatCH, rollNumber, isMuted, setMuted, sound, preloadSounds, el } from './js/fx.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { TIERS, FIRST_TIER, createChip } from './js/chips.js';
@@ -1098,7 +1098,7 @@ document.addEventListener('click', e => {
 });
 // Browsers only let audio start after a tap or key press, so the music begins with the first one.
 for (const type of ['pointerdown', 'keydown']) {
-  addEventListener(type, () => { audioUnlocked = true; syncMusic(); }, { once: true, capture: true });
+  addEventListener(type, () => { audioUnlocked = true; syncMusic(); preloadSounds(); }, { once: true, capture: true });
 }
 document.addEventListener('visibilitychange', syncMusic);
 new MutationObserver(paintSound).observe(document.querySelector('[data-surface="table"]') || document.body, { childList: true, subtree: true });

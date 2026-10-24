@@ -118,6 +118,7 @@ export async function mountSevenPoker(ctx) {
   // ---------- events ----------
   async function dealThree(ev, tb) {
     const mine = tb?.seats?.[pk.me]?.cards || [];
+    sound.shuffle(); await wait(420);
     for (let pass = 0; pass < 3; pass++) for (const i of ev.order) {
       const card = createCard('HIDDEN', { faceUp: false });
       seatEls[i].cards.append(card);

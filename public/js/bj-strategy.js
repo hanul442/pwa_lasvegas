@@ -1,4 +1,4 @@
-// Blackjack basic strategy for this table's rules: six decks, dealer stands on soft 17, double on
+// Blackjack basic strategy for this table's rules: six decks, dealer stands on soft 17 (or hits it, h17), double on
 // any two cards (also after a split), split up to six hands, no surrender. Pure, no DOM: the table
 // uses it for the hint button and the server plays the AI seats with it.
 
@@ -30,19 +30,21 @@ const SPLIT_VS = {
 };
 
 // 'D' doubles when allowed and hits otherwise; 'Ds' doubles when allowed and stands otherwise.
-function softPlay(total, d) {
-  if (total >= 19) return 'S';
-  if (total === 18) return d >= 3 && d <= 6 ? 'Ds' : d <= 8 ? 'S' : 'H';
+// h17: the dealer hits soft 17 (Penthouse and up), which adds three doubles to the chart.
+function softPlay(total, d, h17) {
+  if (total >= 20) return 'S';
+  if (total === 19) return h17 && d === 6 ? 'Ds' : 'S';
+  if (total === 18) return (h17 ? d >= 2 : d >= 3) && d <= 6 ? 'Ds' : d <= 8 ? 'S' : 'H';
   if (total === 17) return d >= 3 && d <= 6 ? 'D' : 'H';
   if (total >= 15) return d >= 4 && d <= 6 ? 'D' : 'H';
   if (total >= 13) return d === 5 || d === 6 ? 'D' : 'H';
   return 'H';
 }
-function hardPlay(total, d) {
+function hardPlay(total, d, h17) {
   if (total >= 17) return 'S';
   if (total >= 13) return d <= 6 ? 'S' : 'H';
   if (total === 12) return d >= 4 && d <= 6 ? 'S' : 'H';
-  if (total === 11) return d <= 10 ? 'D' : 'H';
+  if (total === 11) return d <= 10 || h17 ? 'D' : 'H';
   if (total === 10) return d <= 9 ? 'D' : 'H';
   if (total === 9) return d >= 3 && d <= 6 ? 'D' : 'H';
   return 'H';
@@ -50,14 +52,14 @@ function hardPlay(total, d) {
 
 // cards: the hand ('A♠' strings or {r, s}); up: the dealer's up card.
 // Returns 'HIT' | 'STAND' | 'DOUBLE' | 'SPLIT'.
-export function basicStrategy(cards, up, { canDouble = true, canSplit = true } = {}) {
+export function basicStrategy(cards, up, { canDouble = true, canSplit = true, h17 = false } = {}) {
   const d = upValue(up);
   if (canSplit && cards.length === 2) {
     const [a, b] = cards.map(c => pip(rankOf(c)));
     if (a === b && SPLIT_VS[a]?.(d)) return 'SPLIT';
   }
   const { total, soft } = handTotal(cards);
-  const play = soft ? softPlay(total, d) : hardPlay(total, d);
+  const play = soft ? softPlay(total, d, h17) : hardPlay(total, d, h17);
   const double = canDouble && cards.length === 2;
   if (play === 'D') return double ? 'DOUBLE' : 'HIT';
   if (play === 'Ds') return double ? 'DOUBLE' : 'STAND';

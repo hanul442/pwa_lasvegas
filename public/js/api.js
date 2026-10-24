@@ -130,7 +130,7 @@ export const api = {
   matgoOpen: () => request('/api/matgo/open'),
   matgoStart: (stake, floor, double = false) => request('/api/matgo/start', { method: 'POST', body: { stake, floor, double } }),
   matgoAction: (roundId, move) => request('/api/matgo/action', { method: 'POST', body: { roundId, ...move } }),
-  gostopOpen: () => request('/api/gostop/open'),
+  gostopOpen: (event = null) => request(`/api/gostop/open${event ? `?event=${event}` : ''}`),
   gostopStart: (stake, floor, double = false, event = null) => request('/api/gostop/start', { method: 'POST', body: { stake, floor, double, ...(event ? { event } : {}) } }),
   gostopAction: (roundId, move) => request('/api/gostop/action', { method: 'POST', body: { roundId, ...move } }),
   seotdaOpen: () => request('/api/seotda/open'),

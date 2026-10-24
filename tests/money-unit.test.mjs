@@ -25,10 +25,14 @@ test('a bet between 100만s is refused at every table', () => {
   assert.throws(() => validateStakeAgainstFloor(u, gold, 1_500_000), /BET_NOT_IN_UNITS/);
 });
 
-test('payouts between 100만s round to the nearest 100만, halves to the player', () => {
-  assert.equal(payout(1_000_000, 1_500_000), 2_000_000, 'blackjack 3:2 on 100만');
-  assert.equal(payout(3_000_000, 4_500_000), 5_000_000);
-  assert.equal(payout(10_000_000, 15_000_000), 15_000_000);
+test('payouts between 100만s go up or down a unit at random, fair on average', () => {
+  assert.equal(payout(1_000_000, 1_500_000, () => 0.49), 2_000_000, 'blackjack 3:2 on 100만, up half the time');
+  assert.equal(payout(1_000_000, 1_500_000, () => 0.5), 1_000_000, '... and down the other half');
+  assert.equal(payout(3_000_000, 4_500_000, () => 0.1), 5_000_000);
+  assert.equal(payout(10_000_000, 15_000_000, () => 0), 15_000_000, 'whole amounts never move');
+  const rand = seededRand(7); let sum = 0; const N = 40000;
+  for (let i = 0; i < N; i++) sum += payout(1_000_000, 950_000, rand);
+  assert.ok(Math.abs(sum / N - 950_000) < 10_000, `banker 0.95 on 100만 averages ${sum / N}`);
   // A settlement that still lands between units is rounded, and a loss never passes the stake.
   const state = defaultState();
   const u = newUser(state, 'unit', 'UNIT');

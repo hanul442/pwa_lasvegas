@@ -51,14 +51,19 @@ test('paylines: stars are wild, three stars are the jackpot', () => {
 test('the jackpot grows with every spin and pays in proportion to the bet', () => {
   const state = defaultState();
   const lose = spinSlots(state, { stake: 1_000_000, maxBet: 10_000_000, stopsOverride: [STRIP.indexOf('C'), STRIP.indexOf('C'), STRIP.indexOf('H')] });
-  assert.equal(state.jackpot.pool, JACKPOT_SEED + 1_000_000 * JACKPOT_RATE);
+  const pot = () => state.jackpot.floors[10_000_000].pool;
+  assert.equal(pot(), JACKPOT_SEED + 1_000_000 * JACKPOT_RATE);
   assert.equal(lose.netPnl, -1_000_000);
-  const pool = state.jackpot.pool + 5_000_000 * JACKPOT_RATE;
+  const pool = pot() + 5_000_000 * JACKPOT_RATE;
   const win = spinSlots(state, { stake: 5_000_000, maxBet: 10_000_000, stopsOverride: [STRIP.indexOf('STAR'), STRIP.indexOf('STAR'), STRIP.lastIndexOf('STAR')] });
   assert.equal(win.line, 'JACKPOT');
   assert.equal(win.jackpot, Math.floor(pool / 2 / 1_000_000) * 1_000_000, 'the jackpot pays whole 100만s');
   assert.equal(win.netPnl, 5_000_000 * 500 + win.jackpot - 5_000_000);
-  assert.equal(state.jackpot.pool, Math.max(JACKPOT_SEED, pool - win.jackpot));
+  assert.equal(pot(), Math.max(JACKPOT_SEED, pool - win.jackpot));
+  // Another floor's spins feed only that floor's pot.
+  spinSlots(state, { stake: 100_000_000_000, maxBet: 1_000_000_000_000, stopsOverride: [STRIP.indexOf('C'), STRIP.indexOf('C'), STRIP.indexOf('H')] });
+  assert.equal(pot(), Math.max(JACKPOT_SEED, pool - win.jackpot));
+  assert.equal(state.jackpot.floors[1_000_000_000_000].pool, 500 * 1_000_000_000_000 + 100_000_000_000 * JACKPOT_RATE);
 });
 
 test('slots spin settles through the API and posts a jackpot to the lounge', async () => {
@@ -72,7 +77,7 @@ test('slots spin settles through the API and posts a jackpot to the lounge', asy
   assert.equal(res.status, 200);
   assert.equal(res.data.state.user.account.available, before + res.data.round.netPnl);
   assert.equal(res.data.round.reels.length, 3);
-  assert.ok(res.data.state.jackpot.pool > JACKPOT_SEED);
+  assert.ok(res.data.state.jackpot.floors['high-limit'] > 500 * 100_000_000);
   const again = await call('/api/slots/spin', { stake: 10_000_000, floor: 'high-limit' }, 'slot-key-0001');
   assert.equal(again.data.replayed, true);
   assert.equal(again.data.state.user.account.available, res.data.state.user.account.available);
@@ -188,7 +193,7 @@ test('lightning RTP: exact and simulated, within 2 points of the plain table and
 test('lightning never multiplies the jackpot: the 500× line and the pot pay as on the plain table', () => {
   const state = defaultState();
   const maxBet = 10_000_000, stake = 5_000_000;
-  const pool = state.jackpot?.pool ?? JACKPOT_SEED;
+  const pool = JACKPOT_SEED;
   const strikes = [{ reel: 0, row: 1, multiplier: 50 }, { reel: 1, row: 1, multiplier: 50 }, { reel: 2, row: 1, multiplier: 50 }];
   const r = spinSlots(state, { stake, maxBet, stopsOverride: stopsFor('STAR', 'STAR', 'STAR'), lightning: strikes });
   assert.equal(r.line, 'JACKPOT');
@@ -198,9 +203,9 @@ test('lightning never multiplies the jackpot: the 500× line and the pot pay as 
   assert.equal(r.jackpot, expected);
   assert.equal(r.netPnl, stake * STAR_LINE + expected - stake);
   // A lightning spin feeds the pot like any other.
-  const before = state.jackpot.pool;
+  const before = state.jackpot.floors[maxBet].pool;
   spinSlots(state, { stake, maxBet, stopsOverride: [at('C'), at('C'), at('H')], lightning: true });
-  assert.equal(state.jackpot.pool, before + stake * JACKPOT_RATE);
+  assert.equal(state.jackpot.floors[maxBet].pool, before + stake * JACKPOT_RATE);
 });
 
 test('lightning fingerprint: plain spins keep the old one, the mode is part of a lit one', () => {
@@ -314,7 +319,7 @@ test('three coins in view play ten free spins at double pay inside the same roun
   // r.jackpot is every pot win in the round, the base spin's and the free spins'.
   assert.equal(r.netPnl, stake * r.mult + r.jackpot + stake * r.freeSpins.spins.reduce((x, s) => x + s.mult, 0) - stake);
   // Free spins don't feed the pot: only the base spin's stake did.
-  assert.equal(state.jackpot.pool, JACKPOT_SEED + stake * JACKPOT_RATE);
+  assert.equal(state.jackpot.floors[10_000_000].pool, JACKPOT_SEED + stake * JACKPOT_RATE);
   // A lightning round's free spins each roll their own strikes.
   const lit = spinSlots(defaultState(), { stake, maxBet: 10_000_000, rand, stopsOverride: stops, lightning: true });
   for (const spin of lit.freeSpins.spins) {

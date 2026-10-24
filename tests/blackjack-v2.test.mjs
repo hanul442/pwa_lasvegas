@@ -138,8 +138,10 @@ test('blackjack v2 asks for insurance first when the dealer shows an ace', () =>
   assert.equal(blackjackV2Public(round).dealer[1], 'HIDDEN');
   assert.throws(() => blackjackV2ActionCost(round, 'HIT', 0), { message: 'INSURANCE_DECISION_REQUIRED' });
   assert.equal(blackjackV2ActionCost(round, 'INSURANCE'), 5_000_000);
-  // Every amount moves in 100만s: half of 300만 rounds up to 200만.
-  assert.equal(blackjackV2ActionCost(aceUpRound([3_000_000], { r: 'K', s: '♦' }), 'INSURANCE'), 2_000_000);
+  // Every amount moves in 100만s: insurance is at most half, so 300만 insures for 100만,
+  // and a lone 100만 bet is too small to insure (the dealer just peeks).
+  assert.equal(blackjackV2ActionCost(aceUpRound([3_000_000], { r: 'K', s: '♦' }), 'INSURANCE'), 1_000_000);
+  assert.throws(() => aceUpRound([1_000_000], { r: 'K', s: '♦' }), /no ace-up round/);
 });
 
 test('blackjack v2 insurance pays 2:1 against a dealer blackjack and conserves the bankroll', () => {
@@ -174,12 +176,12 @@ test('blackjack v2 insurance is lost when the dealer has no blackjack, and play 
 });
 
 test('blackjack v2 declining insurance costs nothing and still peeks', () => {
-  const round = aceUpRound([1_000_000], { r: 'Q', s: '♦' });
+  const round = aceUpRound([2_000_000], { r: 'Q', s: '♦' });
   assert.equal(blackjackV2ActionCost(round, 'NO_INSURANCE'), 0);
   blackjackV2Action(round, 'NO_INSURANCE');
   assert.equal(round.status, 'READY_TO_SETTLE');
   const out = settleBlackjackV2(round);
-  assert.equal(out.netPnl, -1_000_000);
+  assert.equal(out.netPnl, -2_000_000);
   assert.ok(!out.outcomes.some(o => o.result.startsWith('INSURANCE')));
   assert.throws(() => blackjackV2ActionCost(round, 'INSURANCE'), { message: 'INSURANCE_NOT_OFFERED' });
 });

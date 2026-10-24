@@ -106,7 +106,9 @@ export async function mountMatgo(ctx) {
         const box = root.querySelector(`[data-group="${g}"]`);
         const cards = box.querySelector('.mg-cap-cards');
         ids.forEach(id => { const n = place(id, cards); n.tabIndex = -1; n.removeAttribute('role'); n.classList.remove('is-match', 'is-selected'); });
-        box.querySelector('[data-count]').textContent = g === 'pi' ? piValue(ids) : ids.length;
+        // 국진 read as 쌍피 sits with the 열끗 but counts as two 피 (the score line already says so).
+        const gukjin = view?.scores?.[seat]?.gukjinAsPi && m.captured[seat].some(id => hwatu(id).gukjin) ? 2 : 0;
+        box.querySelector('[data-count]').textContent = g === 'pi' ? piValue(ids) + gukjin : ids.length;
       }
     }
     for (const [id, n] of nodes) if (!keep.has(id)) { n.remove(); nodes.delete(id); }

@@ -3,9 +3,10 @@
 import { DurableObject } from 'cloudflare:workers';
 import { handleApi, prepareState } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
-import { runPushRound } from '../lib/notifications.mjs';
+import { runPushRound, runNightlyRound } from '../lib/notifications.mjs';
 import { compactHistory } from '../lib/history.mjs';
 
+const HOURLY = '0 * * * *'; // wrangler.toml [triggers]; the other cron is the evening's minute clock
 const CHUNK = 256 * 1024; // stay well under the per-value storage limit as the ledger grows
 
 // put() takes at most 128 keys at a time; a write bigger than that goes in batches.
@@ -93,6 +94,12 @@ export class VegasFloor extends DurableObject {
     return runPushRound(store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
   }
 
+  // Minute cron in the evening: the 밤 9시 토너먼트 clock (lib/nightly-tourney.mjs).
+  async nightlyRound() {
+    const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
+    return runNightlyRound(store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     const req = {
@@ -138,6 +145,7 @@ export default {
 
   async scheduled(event, env, ctx) {
     const floor = env.FLOOR.get(env.FLOOR.idFromName('main'));
-    ctx.waitUntil(floor.pushRound().then(r => console.log('push round', JSON.stringify(r))));
+    if (event.cron === HOURLY) ctx.waitUntil(floor.pushRound().then(r => console.log('push round', JSON.stringify(r))));
+    else ctx.waitUntil(floor.nightlyRound().then(r => { if (r.players) console.log('nightly round', JSON.stringify(r)); }));
   }
 };

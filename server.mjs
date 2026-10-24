@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadState, mutate } from './lib/store.mjs';
 import { handleApi, prepareState } from './lib/api.mjs';
-import { runPushRound } from './lib/notifications.mjs';
+import { runPushRound, runNightlyRound } from './lib/notifications.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR=path.join(__dirname,'public');
@@ -38,3 +38,5 @@ server.listen(PORT,'0.0.0.0',()=>console.log(`SOCIAL VEGAS listening on http://0
 const pushRound=()=>runPushRound(store,{prepare:prepareState}).catch(e=>console.error('push round',e));
 const HOUR=60*60*1000;
 setTimeout(()=>{pushRound();setInterval(pushRound,HOUR).unref();},HOUR-Date.now()%HOUR+2000).unref();
+// The Worker's evening minute cron (밤 9시 토너먼트); cheap enough to run all day here.
+setInterval(()=>runNightlyRound(store,{prepare:prepareState}).catch(e=>console.error('nightly round',e)),60*1000).unref();

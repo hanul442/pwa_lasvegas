@@ -15,8 +15,10 @@ ALLOW_ORIGINS = "http://localhost:3000,http://localhost:3100"
 
 # Every hour on the hour: daily-bonus, free-chip, come-back and 핫 테이블 push notifications
 # (lib/notifications.mjs). The hot table windows (lib/hot-table.mjs) open on the hour to match.
+# Every minute 20:00–23:59 KST (11–14 UTC): the 밤 9시 홀덤 토너먼트 clock (lib/nightly-tourney.mjs),
+# so it opens at 21:00, sends its 20:50 reminder and keeps moving with nobody watching.
 [triggers]
-crons = ["0 * * * *"]
+crons = ["0 * * * *", "* 11-14 * * *"]
 
 [[durable_objects.bindings]]
 name = "FLOOR"

@@ -29,7 +29,8 @@ import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
 import { renderBank, claimSupport } from './js/bank.js';
 import { renderLedger } from './js/ledger.js';
-import { errorToast, watchConnection } from './js/notice.js';
+import { errorToast, watchConnection, toast } from './js/notice.js';
+import { mountNightly } from './js/nightly.js';
 import { hotStatus, clock, pct, startTime } from './js/hot.js';
 import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
@@ -333,6 +334,7 @@ function applyState(next) {
   paintNavDots(state);
   document.querySelector('[data-avatar]').textContent = [...(state.user.nickname || '나')].slice(0, 2).join('');
   renderResume();
+  for (const card of nightlyCards) card.update(state);
   renderGameLists();
   maybeBust(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop, openRankBoard);
@@ -343,6 +345,24 @@ function applyState(next) {
   if (isActive('tiers')) renderTiers();
   if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
+}
+
+// 매일 밤 9시 홀덤 토너먼트: the card on 홈 and in 이벤트. Its button takes a registered player to
+// their seat: the Hold'em screen picks up the tournament table they sit at (friends.resume).
+const NIGHTLY_TIER = 'salon-prive';
+function openNightlyTable() {
+  dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game: 'poker', tier: NIGHTLY_TIER } }));
+}
+const nightlyCards = [document.querySelector('[data-home-nightly]'), document.querySelector('[data-event-nightly]')]
+  .map(slot => mountNightly(slot, { getState: () => state, applyState: next => next && applyState(next), openTable: openNightlyTable, toast }));
+// The push's link (./?nightly=1): straight to the seat while it runs, otherwise the card on 홈.
+function openNightlyFromLink() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has('nightly')) return;
+  params.delete('nightly');
+  history.replaceState(history.state, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+  if (state?.nightly?.me?.seated) openNightlyTable();
+  else document.querySelector('[data-home-nightly]')?.scrollIntoView({ block: 'center' });
 }
 
 // The lobby's way back in: a round still holding chips, then the last three tables played.
@@ -1077,6 +1097,7 @@ function signedIn(next) {
   showSurface('lobby');
   ensureTerms();
   openInvite();
+  openNightlyFromLink();
 }
 function signedOut(notice) {
   stopNews();

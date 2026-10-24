@@ -4,7 +4,7 @@
 import { el, sound, haptic, ms, reducedMotion } from './fx.js';
 import { createCard } from './cards.js';
 import { createHwatu, hwatuSvg } from './hwatu.js';
-import { loadLogo } from './bigwin.js';
+import { loadLogo, shareImage, bragName } from './share.js';
 
 // What each square shows: playing cards, hwatu, or a token for the casino tables.
 const ART = {
@@ -427,28 +427,13 @@ async function bookCard(hb, nickname = '') {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
-async function shareBlob(blob, name, title, text) {
-  if (!blob) return;
-  const file = new File([blob], name, { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title, text }); return; } catch (e) { if (e?.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-}
-
 export async function shareEntry(entry, opts = {}) {
   const blob = await entryCard(entry, opts);
   const tally = opts.count != null ? ` 족보 도감 ${opts.count}/${opts.total}칸째!` : '';
-  await shareBlob(blob, 'vegas-jokbo.png', `VEGAS 족보 · ${entry.name}`, `VEGAS ${PAGE_GAME[entry.page]}에서 ${withObject(entry.name)} 잡았어요!${tally}`);
+  await shareImage({ blob, filename: 'vegas-jokbo.png', title: `VEGAS 족보 · ${entry.name}`, text: `VEGAS ${PAGE_GAME[entry.page]}에서 ${withObject(entry.name)} 잡았어요!${tally}`, nickname: opts.nickname || bragName() });
 }
 
 export async function shareBook(hb, nickname = '') {
   const blob = await bookCard(hb, nickname);
-  await shareBlob(blob, 'vegas-jokbo-book.png', 'VEGAS 족보 도감', `VEGAS 족보 도감 ${hb.count}/${hb.total}칸 채웠어요. 따라올 수 있으면 와 봐요!`);
+  await shareImage({ blob, filename: 'vegas-jokbo-book.png', title: 'VEGAS 족보 도감', text: `VEGAS 족보 도감 ${hb.count}/${hb.total}칸 채웠어요. 따라올 수 있으면 와 봐요!`, nickname: nickname || bragName() });
 }

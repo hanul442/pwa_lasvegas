@@ -1,0 +1,27 @@
+/* The dealer's hands (js/dealer.js) and the player's table gestures (js/gestures.js). */
+
+/* The paddle: black lacquer with a pale working edge, the one dealers rake and push chips with. */
+.dealer-paddle{position:fixed;z-index:199;height:7px;margin-top:-3px;border-radius:4px;pointer-events:none;
+  background:linear-gradient(#2a2e34,#0c0d10);box-shadow:inset 0 1px 0 #ffffff40,0 0 0 1px #f4f5f733,0 6px 10px #000a}
+.dealer-paddle::after{content:"";position:absolute;left:50%;top:100%;width:5px;height:26px;margin-left:-2.5px;border-radius:0 0 3px 3px;background:linear-gradient(90deg,#16181c,#2a2e34)}
+
+/* The discard tray fills with the used cards until the shuffle. */
+.discard{--depth:0}
+.discard-pile{position:absolute;left:8%;right:8%;bottom:6%;height:calc(var(--depth) * 82%);border-radius:3px;transition:height .4s cubic-bezier(.2,.8,.2,1);
+  background:repeating-linear-gradient(0deg,#efe7d9 0 1px,#bdb3a2 1px 2px);box-shadow:inset 0 0 0 1px #0c0d1066,0 2px 4px #0007}
+
+/* Riffle shuffle: two half decks of card backs. */
+.riffle{position:fixed;z-index:150;width:0;height:0;transform:translate(-50%,-50%);pointer-events:none;--card-w:40px;perspective:600px}
+.riffle-card{position:absolute;left:calc(var(--card-w) / -2);top:calc(var(--card-w) * -.7);width:var(--card-w);height:calc(var(--card-w) * 1.4);font-size:calc(var(--card-w) * .2)}
+.riffle-card.card-back{box-shadow:inset 0 0 0 calc(var(--card-w) * .045) #f4f5f7,inset 0 0 0 calc(var(--card-w) * .052) #0a0b0d,0 1px 1px #0005}
+.riffle-label{position:absolute;left:50%;top:calc(var(--card-w) * .95);transform:translateX(-50%);font:600 10px/1 var(--display);font-stretch:125%;letter-spacing:.24em;color:#f4f5f7b3;white-space:nowrap;animation:riffle-label 1.4s ease both}
+@keyframes riffle-label{0%{opacity:0}20%,80%{opacity:1}100%{opacity:0}}
+
+/* Gestures: where a finger touched the felt. A tap leaves a ring; a wave leaves a short trail. */
+.gesture-mark{position:fixed;z-index:120;pointer-events:none;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:2px solid #f4f5f7cc;opacity:0}
+.gesture-trail{position:fixed;z-index:120;pointer-events:none;height:3px;margin-top:-1.5px;border-radius:2px;background:linear-gradient(90deg,transparent,#f4f5f7cc,transparent);opacity:0;transform-origin:left center}
+
+/* During my turn bare felt keeps sideways swipes for the stand signal. */
+.felt.is-gesture-live{touch-action:pan-y}
+
+html[data-pace="minimal"] .riffle,html[data-pace="minimal"] .dealer-paddle{display:none}

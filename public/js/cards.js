@@ -1,5 +1,6 @@
 // Playing cards: real pip layouts, 3D flip, and dealing from the shoe.
-import { animate, flyFrom, sound, haptic, el, ms } from './fx.js';
+import { animate, flyFrom, sound, el, ms } from './fx.js';
+import { buzz } from './haptics.js';
 
 const RED_SUITS = new Set(['♥', '♦']);
 const PIPS = {
@@ -139,7 +140,7 @@ export async function dealCard(hand, text, shoe, { faceUp = true, delay = 0, rot
   const from = (shoe || hand).getBoundingClientRect();
   if (delay) await new Promise(r => setTimeout(r, ms(delay)));
   sound.card();
-  haptic(6);
+  buzz('card');
   await flyFrom(node, from, { duration: 460, spin: -24, scale: 0.72, lift: 30 });
   if (faceUp && parseCard(text)) await flipCard(node, text);
   return node;

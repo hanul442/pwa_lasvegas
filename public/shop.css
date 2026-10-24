@@ -339,3 +339,9 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
   .acquire-lux .lux-icon :is(path,rect,circle){animation:none;stroke-dashoffset:0}
   .owner-entrance{animation:none}
 }
+/* 족보 도감 nameplates (lib/cosmetics.mjs): half the book, then the whole of it. A small hwatu
+   card sits in the plate; the master plate adds the warm star and a second line of light. */
+.name-frame--jokbo{position:relative;border:1px solid #f7f2e8b8;background:linear-gradient(180deg,#f7f2e814,#f7f2e803);padding-left:21px}
+.name-frame--jokbo::before,.name-frame--jokbo-master::before{content:"";position:absolute;left:6px;top:50%;width:8px;height:12px;margin-top:-6px;border-radius:1.5px;background:linear-gradient(180deg,#c8352b 0 34%,#f7f2e8 34%);box-shadow:0 0 0 1px #0a0b0d}
+.name-frame--jokbo-master{position:relative;border:1px solid #f7f2e8;background:linear-gradient(180deg,#fff6dc22,#f7f2e805);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #fff6dc90,0 0 14px #fff6dc38;padding-left:21px;padding-right:20px}
+.name-frame--jokbo-master::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;margin-top:-4.5px;background:var(--star);clip-path:var(--star-shape)}

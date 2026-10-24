@@ -226,6 +226,7 @@ export function feedText(f) {
     case 'DAILY_STREAK': return `${who}님이 7일 연속 출근해서 주급을 받았어요`;
     case 'MONTHLY_PAY': return `${who}님이 28일 개근으로 월급 ${formatMoney(f.amount)}을 받았어요`;
     case 'PERSONAL_BANKRUPTCY': return `${who}님이 빚 ${formatMoney(f.amount)}을 안고 파산 신청했어요`;
+    case 'HAND_BOOK': return `${who}님이 족보 도감에 「${f.text}」 칸을 채웠어요`;
     case 'ACHIEVEMENT': return `${who}님이 업적 「${f.text}」을 달성했어요`;
     case 'SEASON_WINNER': return `${who}님이 ${f.season} 1위를 차지했어요`;
     case 'FLOOR_UNLOCK': return f.text?.replace(/^(.+) unlocked (.+)\.$/, '$1님이 $2 층에 올라섰어요') || '';

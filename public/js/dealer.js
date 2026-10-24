@@ -116,6 +116,7 @@ export async function gatherCards(containers, discard, { at = null } = {}) {
   const end = center(tray);
   const pick = 45, slide = 340;
   const total = cards.length * pick + 260 + slide;
+  sound.gather?.();
   await Promise.all(cards.map((card, i) => {
     const c = center(card.getBoundingClientRect());
     const gx = spot.x - c.x, gy = spot.y - c.y - i * 0.6;
@@ -132,6 +133,7 @@ export async function gatherCards(containers, discard, { at = null } = {}) {
   }).concat(
     new Promise(r => setTimeout(() => { sound.card(); r(); }, ms(total - slide)))
   ));
+  containers.forEach(c => c.replaceChildren());
   addToDiscard(discard, cards.length);
 }
 
@@ -194,9 +196,8 @@ export async function riffle(felt, { shoe, discard, at = null } = {}) {
       { transform: `translate(0px,${finalY}px) rotate(0deg)` }
     ], { duration: totalT, easing: 'linear', fill: 'both' });
   });
-  const riffleTicks = setInterval(() => sound.tick(), ms(fall * 2));
+  setTimeout(() => sound.shuffle?.(), ms(split));
   await Promise.all(anims);
-  clearInterval(riffleTicks);
   sound.card();
   await animate(layer, [{ transform: 'translate(-50%,-50%) scale(1)' }, { transform: 'translate(-50%,-50%) scale(.97) translateY(2px)' }, { transform: 'translate(-50%,-50%) scale(1)' }], { duration: 140, fill: 'none' });
   // Into the shoe.

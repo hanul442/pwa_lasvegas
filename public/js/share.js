@@ -10,8 +10,10 @@ let myName = '';
 export function setBragName(name) { myName = String(name || ''); }
 export const bragName = () => myName;
 
-export function appLink(nickname = myName) {
+// params: extra query to open a screen on arrival, e.g. { daily: '1' } for 오늘의 한 판.
+export function appLink(nickname = myName, params = null) {
   const url = new URL('/', location.origin);
+  for (const [k, v] of Object.entries(params || {})) url.searchParams.set(k, v);
   if (nickname) url.searchParams.set('from', nickname);
   return url.href;
 }
@@ -27,8 +29,8 @@ function download(blob, filename) {
 }
 
 // blob: the card PNG (or null for a text-only brag). Resolves to 'shared', 'saved' or 'cancelled'.
-export async function shareImage({ blob, filename = 'vegas.png', title = 'VEGAS', text = '', nickname = myName }) {
-  const url = appLink(nickname);
+export async function shareImage({ blob, filename = 'vegas.png', title = 'VEGAS', text = '', nickname = myName, params = null }) {
+  const url = appLink(nickname, params);
   const line = `${text}\n같이 해요 → ${url}`;
   const file = blob ? new File([blob], filename, { type: 'image/png' }) : null;
   if (file && navigator.canShare?.({ files: [file] })) {

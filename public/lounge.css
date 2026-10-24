@@ -759,7 +759,7 @@ body.daily-open{overflow:hidden}
 .daily-go{align-self:stretch;margin-top:6px}
 .daily-share::after{content:none}
 .daily-big{margin:0;font:600 clamp(40px,12vw,56px)/1.05 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums}
-.daily-marks{margin:0;font-size:clamp(20px,6.6vw,28px);letter-spacing:.06em;line-height:1.3}
+.daily-marks{margin:0;font-size:clamp(16px,5.2vw,26px);letter-spacing:0;white-space:nowrap;line-height:1.3}
 .daily-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 0}
 .daily-stats div{padding:10px;border-radius:12px;background:var(--ink-3)}
 .daily-stats dt{font-size:13px;color:var(--smoke)}

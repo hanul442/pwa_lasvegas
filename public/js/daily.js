@@ -4,27 +4,42 @@ import { api, errorMessage } from './api.js';
 import { dealCard, flipCard, placeCards } from './cards.js';
 import { el, sound, haptic, wait, rollNumber } from './fx.js';
 import { toast } from './notice.js';
+import { brandCard, drawStar, shareImage, bragButton } from './share.js';
 
 const MOVES = [['hit', '히트'], ['stand', '스탠드'], ['double', '더블'], ['split', '스플릿']];
 const RESULT = { win: '승', blackjack: '블랙잭', push: '무승부', lose: '패', bust: '버스트' };
 const pts = n => `${Math.round(n).toLocaleString('ko-KR')}점`;
 const signed = n => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '±0');
 
-export function dailyLink() {
-  const url = new URL(location.pathname, location.origin);
-  url.searchParams.set('daily', '1');
-  return url.href;
+// The result card: the VEGAS look from js/share.js with the day's ten hands as a row of tiles.
+const TILE = { '⭐': ['#fff6dc', '#0a0b0d'], '💰': ['#f4f5f7', '#0a0b0d'], '🟩': ['#2f9e6e', null], '🟨': ['#5d636b', null], '🟥': ['#e2474b', null], '💥': ['#e2474b', null] };
+function drawMarks(marks) {
+  return (ctx, cx, cy) => {
+    const size = 74, gap = 12, x0 = cx - (marks.length * size + (marks.length - 1) * gap) / 2;
+    marks.forEach((m, i) => {
+      const [fill, ink] = TILE[m] || TILE['🟨'];
+      const x = x0 + i * (size + gap), y = cy - size / 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, size, size, 14);
+      if (m === '💥') { ctx.lineWidth = 6; ctx.strokeStyle = fill; ctx.stroke(); }
+      else { ctx.fillStyle = fill; ctx.fill(); }
+      if (m === '⭐') drawStar(ctx, x + size / 2, cy, size * 0.32, ink);
+      if (m === '💰') { ctx.fillStyle = ink; ctx.font = '700 34px Archivo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('×2', x + size / 2, cy + 2); ctx.textBaseline = 'alphabetic'; }
+    });
+  };
 }
-
-// The share sheet on phones (카카오톡), or the clipboard elsewhere.
-async function shareResult(text) {
-  const url = dailyLink();
-  if (navigator.share) {
-    try { await navigator.share({ title: '오늘의 한 판', text: `${text}\n`, url }); return; }
-    catch (e) { if (e?.name === 'AbortError') return; }
-  }
-  try { await navigator.clipboard.writeText(`${text}\n${url}`); toast('결과를 복사했어요. 단톡방에 붙여 넣어 자랑해 보세요'); }
-  catch { toast('복사하지 못했어요. 결과 화면을 캡처해 주세요'); }
+async function shareResult(view) {
+  const marks = [...view.marks.matchAll(/\p{Extended_Pictographic}\uFE0F?/gu)].map(m => m[0]);
+  const me = view.board.me;
+  const diff = view.score - view.book;
+  const blob = await brandCard({
+    kicker: `오늘의 한 판 #${view.no} · 모두 같은 카드로 10판`,
+    title: pts(view.score),
+    big: me && view.board.players > 1 ? `${view.board.players}명 중 ${me.rank}등` : signed(view.score - view.start),
+    quote: view.streak > 1 ? `${view.streak}일 연속 참가` : diff > 0 ? `교과서 플레이보다 ${diff}점 위` : '',
+    draw: drawMarks(marks)
+  });
+  return shareImage({ blob, filename: `vegas-daily-${view.no}.png`, title: '오늘의 한 판', text: view.share, params: { daily: '1' } });
 }
 
 // Opening ?daily=1 (a friend's shared result) goes straight to today's game after sign-in.
@@ -220,9 +235,8 @@ export function openDaily({ onClose = () => {} } = {}) {
         <div><dt>교과서 플레이</dt><dd>${pts(view.book)} <small>${diff === 0 ? '똑같아요' : diff > 0 ? `보다 ${diff}점 위` : `보다 ${-diff}점 아래`}</small></dd></div>
         <div><dt>연속 참가</dt><dd>${view.streak}일 <small>최고 ${view.bestStreak}일</small></dd></div>
       </dl>`;
-    const share = el('button', 'home-cta daily-go daily-share', '단톡방에 자랑하기');
-    share.type = 'button';
-    share.addEventListener('click', () => shareResult(view.share));
+    const share = bragButton(() => shareResult(view));
+    share.classList.add('daily-go');
     const pre = el('pre', 'daily-preview', esc(view.share || ''));
     box.append(share, pre);
     const board = el('section', 'daily-board');
@@ -230,7 +244,7 @@ export function openDaily({ onClose = () => {} } = {}) {
     const ol = el('ol', 'daily-rows');
     for (const r of b.top) {
       const li = el('li', `daily-row${r.me ? ' is-me' : ''}`);
-      li.innerHTML = `<span class="daily-rank">${r.rank}</span><span class="daily-name">${esc(r.nickname)}</span><span class="daily-rowmarks" aria-hidden="true">${r.marks}</span><b>${pts(r.score)}</b>`;
+      li.innerHTML = `<span class="daily-rank">${r.rank}</span><span class="daily-name">${esc(r.nickname)}</span><span class="daily-rowmarks" aria-hidden="true">${r.marks || ""}</span><b>${pts(r.score)}</b>`;
       ol.append(li);
     }
     board.append(ol);

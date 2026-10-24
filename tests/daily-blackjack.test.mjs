@@ -78,6 +78,9 @@ test('a full day: ten hands, one score on the board, then no second go', () => {
   const b = dailyCommand(state, 'b', { move: 'start' }, NOW);
   assert.deepEqual(b.hands[0].hands[0].cards.slice(0, 2), v.hands[0].hands[0].cards.slice(0, 2));
   assert.equal(b.hands[0].dealer[0], v.hands[0].dealer[0]);
+  // b hasn't finished: a's marks stay hidden, the score shows
+  assert.equal(b.board.top[0].marks, null);
+  assert.equal(b.board.top[0].score, v.score);
 });
 
 test('a retried command is not applied twice', () => {

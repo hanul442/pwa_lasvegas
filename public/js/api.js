@@ -111,6 +111,9 @@ export const api = {
   shopSell: itemId => request('/api/shop/sell', { method: 'POST', body: { itemId } }),
   shopEquip: (slot, itemId) => request('/api/shop/equip', { method: 'POST', body: { slot, itemId } }),
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
+  // 오늘의 한 판 (lib/daily-blackjack.mjs): step is how many commands this page has seen.
+  daily: () => request('/api/dailybj'),
+  dailyPlay: (move, step) => request('/api/dailybj/play', { method: 'POST', body: { move, step } }),
   blackjackOpen: () => request('/api/blackjack/v2/open'),
   // stakes: one amount per betting box in play, left to right.
   // sides: optional { pairs, trips }, the Perfect Pairs and 21+3 stake per box.
@@ -264,6 +267,9 @@ const MESSAGES = {
   ITEM_NOT_FOR_SALE: '업적을 달성하면 무료로 열리는 스킨이에요.',
   ITEM_NOT_SELLABLE: '꾸미기는 되팔 수 없어요.',
   INVALID_SLOT: '장착할 수 없는 자리예요.',
+  DAILY_ALREADY_PLAYED: '오늘의 한 판은 이미 쳤어요. 내일 자정에 새 판이 열려요.',
+  DAILY_NOT_STARTED: '오늘의 한 판을 먼저 시작해 주세요.',
+  DAILY_BAD_MOVE: '지금은 할 수 없는 선택이에요.',
   IDEMPOTENCY_CONFLICT: '같은 요청이 이미 처리 중이에요. 잠시 후 다시 시도해 주세요.'
 };
 

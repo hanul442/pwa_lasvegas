@@ -716,3 +716,65 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 .wr-row small{font-size:13px;color:var(--smoke);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wr-row-go{color:var(--smoke)}
 .rank-moment-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+/* ---------- 오늘의 한 판 (js/daily.js) ---------- */
+.daily{--card-w:clamp(56px,min(16vw,10dvh),86px);position:fixed;inset:0;z-index:110;display:flex;flex-direction:column;gap:10px;overflow-y:auto;overscroll-behavior:contain;padding:calc(10px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));background:radial-gradient(90% 50% at 50% 0,#1c2026 0,var(--ink) 70%);opacity:0;transform:translateY(16px);transition:opacity .25s,transform .25s var(--ease-out)}
+.daily.is-open{opacity:1;transform:none}
+body.daily-open{overflow:hidden}
+.daily>*{width:100%;max-width:560px;margin-inline:auto}
+.daily-top{display:grid;grid-template-columns:72px 1fr 72px;align-items:center}
+.daily-title{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.daily-kicker{font-size:13px;color:var(--smoke);letter-spacing:.02em}
+.daily-score{font:600 22px/1.2 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums}
+.daily-streak{justify-self:end;font-size:14px;color:var(--star)}
+.daily-track{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin:0 auto;padding:0;list-style:none}
+.daily-slot{display:grid;place-items:center;aspect-ratio:1;border-radius:8px;border:1px solid var(--hair);font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
+.daily-slot.is-done{border-color:transparent;background:var(--ink-3);font-size:clamp(14px,4.4vw,20px)}
+.daily-slot.is-now{border-color:var(--white);color:var(--white)}
+.daily-stage{flex:1 0 auto;display:flex;flex-direction:column;gap:10px}
+.daily-stage.is-centered{justify-content:center;padding-bottom:12dvh}
+.daily-felt{flex:1 0 auto;margin:0;min-height:min(420px,58dvh);display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:18px 10px 16px;border-width:8px;border-radius:28px}
+.daily-dealer,.daily-hand{display:flex;flex-direction:column;align-items:center;gap:6px}
+.daily-hand .daily-label{order:2}
+.daily-label{font-size:13px;color:#efe7d9b3;letter-spacing:.02em}
+.daily-label b{color:#fff;font:600 15px/1 var(--display);font-variant-numeric:tabular-nums}
+.daily-hands{display:flex;justify-content:center;gap:calc(var(--card-w) * .35);min-height:calc(var(--card-w) * 1.4 + 52px)}
+.daily-hand{position:relative;transition:opacity .2s}
+.daily-hand.is-waiting{opacity:.55}
+.daily-hand.is-active .hand{filter:drop-shadow(0 0 10px #fff4)}
+.daily-res{order:3;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;background:#000a;color:#fff}
+.daily-res.is-win{background:var(--white);color:var(--ink)}
+.daily-res.is-lose{color:#ffb3b3}
+.daily-msg{margin:0;min-height:1.6em;font:600 15px/1.6 var(--display);color:#efe7d9b3;text-align:center}
+.daily-msg.is-win{color:#fff;font-size:20px}
+.daily-msg.is-lose{color:#ffb3b3;font-size:18px}
+.daily-shoe{position:absolute;top:8px;right:12px;width:calc(var(--card-w) * .6);height:calc(var(--card-w) * .6);border-radius:6px;background:linear-gradient(160deg,#2a2e34,#0c0d10);box-shadow:inset 0 0 0 1px #ffffff22;transform:rotate(-8deg);opacity:.8}
+.daily-actions{display:flex;gap:8px}
+.daily-actions .action{min-height:54px}
+.daily-actions [hidden]{display:none}
+.daily-card{display:flex;flex-direction:column;gap:10px;padding:22px 20px;border:1px solid var(--hair);border-radius:20px;background:var(--ink-2)}
+.daily-card h2{margin:0;font:600 24px/1.25 var(--display);font-stretch:112%}
+.daily-eyebrow{margin:0;font-size:13px;color:var(--smoke)}
+.daily-rules{margin:0;padding-left:18px;color:var(--smoke);font-size:15px;display:grid;gap:4px}
+.daily-note{margin:0;font-size:14px;color:var(--smoke);text-align:center}
+.daily-go{align-self:stretch;margin-top:6px}
+.daily-share::after{content:none}
+.daily-big{margin:0;font:600 clamp(40px,12vw,56px)/1.05 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums}
+.daily-marks{margin:0;font-size:clamp(20px,6.6vw,28px);letter-spacing:.06em;line-height:1.3}
+.daily-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 0}
+.daily-stats div{padding:10px;border-radius:12px;background:var(--ink-3)}
+.daily-stats dt{font-size:13px;color:var(--smoke)}
+.daily-stats dd{margin:2px 0 0;font:600 17px/1.3 var(--display);font-variant-numeric:tabular-nums}
+.daily-stats small{display:block;font:400 13px/1.4 var(--sans);color:var(--smoke)}
+.daily-preview{margin:0;padding:12px;border-radius:12px;border:1px dashed var(--hair-strong);font:14px/1.5 var(--sans);white-space:pre-wrap;color:var(--smoke)}
+.daily-board{padding:16px 18px;border:1px solid var(--hair);border-radius:20px}
+.daily-board h3{margin:0 0 8px;font:600 17px/1.3 var(--display);display:flex;justify-content:space-between;align-items:baseline}
+.daily-board h3 small{font:400 13px var(--sans);color:var(--smoke)}
+.daily-rows{margin:0;padding:0;list-style:none}
+.daily-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--hair);font-size:15px}
+.daily-row.is-me{color:var(--star)}
+.daily-rank{font:600 15px var(--display);font-variant-numeric:tabular-nums;color:var(--smoke)}
+.daily-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.daily-rowmarks{font-size:11px;letter-spacing:-.05em}
+.daily-row b{font:600 15px var(--display);font-variant-numeric:tabular-nums}
+@media (max-width:380px){.daily-stats{grid-template-columns:1fr}.daily-stats div{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.daily-stats small{display:inline}.daily-rowmarks{display:none}}
+@media (orientation:landscape) and (max-height:560px){.daily{--card-w:clamp(44px,9dvh,64px)}.daily-felt{min-height:0}.daily-hands{min-height:calc(var(--card-w) * 1.4 + 40px)}}

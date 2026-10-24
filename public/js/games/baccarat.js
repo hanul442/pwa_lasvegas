@@ -1,7 +1,8 @@
 // Baccarat: back a side, then watch the cards turn and the third-card rule play out.
 import { api } from '../api.js';
 import { gameName } from '../names.js';
-import { dealCard, flipCard, sweepCards, parseCard } from '../cards.js';
+import { dealCard, flipCard, parseCard } from '../cards.js';
+import { gatherCards, riffle, needsShuffle } from '../dealer.js';
 import { wait, formatCH, animate } from '../fx.js';
 import { Table } from '../table.js';
 import { createDoubleOrNothing } from '../double-or-nothing.js';
@@ -81,11 +82,11 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
 
   // Picking another side moves the main bet there, as before; the pair spots stack independently.
   const addChip = t.addChip.bind(t);
-  t.addChip = async (zoneId, value, fromRect) => {
+  t.addChip = async (zoneId, value, fromRect, opts) => {
     if (t.locked || t.busy) return;
     const held = MAIN.includes(zoneId) && MAIN.find(z => z !== zoneId && t.chipsOf(z).length);
     if (held) await t.moveBet(held, zoneId);
-    return addChip(zoneId, value, fromRect);
+    return addChip(zoneId, value, fromRect, opts);
   };
   const mainZone = () => MAIN.find(z => t.chipsOf(z).length) || null;
   // Ready when the main bet meets the table minimum; pair bets ride along at any size.
@@ -130,9 +131,14 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     // The bet goes to the server while the last hand is swept away, not after.
     const request = api.baccarat(t.zoneTotal(betType), t.tier.floor, betType, Object.keys(sideBets).length ? sideBets : undefined, ev?.id, key);
     request.catch(() => {});
+    // The used cards go to the discard tray; at the cut card (or the first hand here) the
+    // dealer riffles a fresh deck into the shoe.
     await Promise.all([
       crowd.close(),
-      hand('PLAYER').children.length ? sweepCards([hand('PLAYER'), hand('BANKER')], discard) : null
+      (async () => {
+        if (hand('PLAYER').children.length) await gatherCards([hand('PLAYER'), hand('BANKER')], discard, { at: t.body.querySelector('.bac-sides').getBoundingClientRect() });
+        if (needsShuffle(discard, 48)) await riffle(t.felt, { shoe, discard, at: t.body.querySelector('.bac-sides').getBoundingClientRect() });
+      })()
     ]);
     ['PLAYER', 'BANKER'].forEach(s => { score(s).textContent = '–'; side(s).classList.remove('is-winner'); });
     let res;

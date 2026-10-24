@@ -1,10 +1,12 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, haptic, formatCH, formatFull, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatFull, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { ownerEntrance } from './shop.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
 import { errorMessage, newKey } from './api.js';
 import { maybeBust } from './bust.js';
+import { buzz } from './haptics.js';
+import { rake, pushPay } from './dealer.js';
 
 // The tallest stack drawn under a tray chip; past it a count says how many there are.
 const STACK_CAP = 10;
@@ -21,6 +23,15 @@ function remember(key, value) { try { localStorage.setItem(key, JSON.stringify(v
 function feltSkin(state, on) {
   const felt = on && state?.user?.cosmetics?.equipped?.felt;
   return felt ? ` felt--skin felt--skin-${String(felt).replace(/^felt-/, '')}` : '';
+}
+
+// How fast the finger was moving as it let go (px per ms), over the last few moves.
+function flingVelocity(trail) {
+  if (trail.length < 2) return { x: 0, y: 0 };
+  const a = trail[0], b = trail[trail.length - 1];
+  const dt = Math.max(1, b.t - a.t);
+  if (dt > 160) { const recent = trail.filter(p => b.t - p.t <= 120); if (recent.length >= 2) return flingVelocity(recent); }
+  return { x: (b.x - a.x) / dt, y: (b.y - a.y) / dt };
 }
 
 export class Table {
@@ -186,11 +197,16 @@ export class Table {
     });
   }
 
+  // Tap a chip to bet it on the spot in play; drag it onto a spot; or flick it up toward a spot
+  // and let go, and it is tossed there the way players toss chips to the dealer.
   bindChip(chip, value) {
-    let start = null, ghost = null;
+    let start = null, ghost = null, trail = [];
     chip.addEventListener('pointerdown', e => {
       if (this.locked || this.busy) return;
       start = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      trail = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
+      // Keep the finger (or mouse) on this chip even when a quick flick leaves it at once.
+      try { chip.setPointerCapture(e.pointerId); } catch {}
     });
     chip.addEventListener('pointermove', e => {
       if (!start || e.pointerId !== start.id) return;
@@ -202,9 +218,11 @@ export class Table {
         this.select(value);
       }
       if (ghost) {
+        trail.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+        if (trail.length > 6) trail.shift();
         ghost.style.left = `${e.clientX}px`;
         ghost.style.top = `${e.clientY}px`;
-        const zone = this.zoneAt(e.clientX, e.clientY);
+        const zone = this.zoneAt(e.clientX, e.clientY) || this.flingTarget(e.clientX, e.clientY, flingVelocity(trail));
         this.zones.forEach(z => z.classList.toggle('is-hover', z === zone));
       }
     });
@@ -212,18 +230,41 @@ export class Table {
       if (!start) return;
       const dragged = Boolean(ghost);
       if (ghost) {
-        const zone = this.zoneAt(e.clientX, e.clientY);
+        const dropped = this.zoneAt(e.clientX, e.clientY);
+        const v = flingVelocity(trail);
+        const zone = dropped || this.flingTarget(e.clientX, e.clientY, v, { release: true });
         const rect = ghost.getBoundingClientRect();
         ghost.remove(); ghost = null;
         this.zones.forEach(z => z.classList.remove('is-hover'));
-        if (zone && e.type === 'pointerup') this.addChip(zone.dataset.zone, value, rect);
+        if (zone && e.type === 'pointerup') this.addChip(zone.dataset.zone, value, rect, dropped ? undefined : { thrown: Math.hypot(v.x, v.y) });
       }
-      start = null;
+      start = null; trail = [];
       if (!dragged && e.type === 'pointerup') this.tapChip(value, chip);
     };
     chip.addEventListener('pointerup', end);
     chip.addEventListener('pointercancel', end);
     chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.tapChip(value, chip); } });
+  }
+
+  // Where a flicked chip goes: the open spot closest to the line it was thrown along, ahead of
+  // the finger. A slow drag that ends off any spot (`release`) is not a throw.
+  flingTarget(x, y, v, { release = false } = {}) {
+    const speed = Math.hypot(v.x, v.y);
+    if (speed < (release ? 0.55 : 0.8) || v.y > -0.25) return null;
+    const ux = v.x / speed, uy = v.y / speed;
+    let best = null, score = Infinity;
+    this.zones.forEach((node, id) => {
+      if (this.passive.has(id) || node.disabled || !node.offsetParent) return;
+      const r = node.getBoundingClientRect();
+      const cx = r.left + r.width / 2 - x, cy = r.top + r.height / 2 - y;
+      const ahead = cx * ux + cy * uy;
+      if (ahead <= 0) return;
+      const off = Math.abs(cx * uy - cy * ux);
+      if (off > Math.max(70, ahead * 0.45)) return;
+      const s = off + ahead * 0.15;
+      if (s < score) { score = s; best = node; }
+    });
+    return best;
   }
 
   zoneAt(x, y) {
@@ -276,7 +317,7 @@ export class Table {
     if (this.multi) this.zones.forEach((z, id) => z.classList.toggle('is-focus', id === zoneId));
   }
 
-  async addChip(zoneId, value, fromRect) {
+  async addChip(zoneId, value, fromRect, { thrown = 0 } = {}) {
     if (this.locked || this.busy) return;
     if (!this.multi) { const held = this.bet.zone; if (held && held !== zoneId) await this.moveBet(held, zoneId); }
     this.setFocus(zoneId);
@@ -284,8 +325,17 @@ export class Table {
     if (this.total + value > this.available) return this.reject('칩이 부족해요');
     this.record(zoneId, value);
     const chip = this.pushChip(zoneId, value);
-    sound.chip(); haptic(10);
     this.refreshBet();
+    if (thrown) {
+      // A toss: higher arc and a spin that grows with how hard it was flicked, then it lands.
+      buzz('chipThrow');
+      const spin = Math.min(720, 240 + thrown * 260) * (Math.random() < 0.5 ? -1 : 1);
+      await flyFrom(chip, fromRect, { duration: 480, lift: 90, scale: 1.25, spin, easing: 'cubic-bezier(.3,.6,.35,1)' });
+      sound.chip();
+      animate(chip, [{ transform: 'translateY(-3px)' }, { transform: 'translateY(0)' }], { duration: 120, fill: 'none' });
+      return;
+    }
+    sound.chip(); buzz('chip');
     if (fromRect) await flyFrom(chip, fromRect, { duration: 380, lift: 60, scale: 1.1, spin: 40 });
   }
 
@@ -383,7 +433,7 @@ export class Table {
     if (dir < 0) {
       if (!now) return false;
       const target = now - unit < floor ? 0 : Math.floor((now - unit) / unit) * unit;
-      sound.chip(); haptic(8);
+      sound.chip(); buzz('step');
       if (target) this.restack(zoneId, target);
       else {
         const stack = this.stackOf(zoneId);
@@ -399,7 +449,7 @@ export class Table {
     if (this.total - now + target > this.available) { this.reject('칩이 부족해요'); return false; }
     this.setFocus(zoneId);
     this.restack(zoneId, target);
-    sound.chip(); haptic(8);
+    sound.chip(); buzz('step');
     const top = this.stackOf(zoneId).lastElementChild;
     if (top) flyFrom(top, this.tray.getBoundingClientRect(), { duration: 260, lift: 30 });
     this.refreshBet();
@@ -437,7 +487,7 @@ export class Table {
     if (target === this.zoneTotal(zoneId)) return;
     this.setFocus(zoneId);
     this.restack(zoneId, target);
-    sound.chips(3); haptic(12);
+    sound.chips(3); buzz('chip');
     const tray = this.tray.getBoundingClientRect();
     [...this.stackOf(zoneId).children].forEach((c, i) => flyFrom(c, tray, { duration: 340, delay: i * 30, lift: 40 }));
     this.refreshBet();
@@ -488,8 +538,7 @@ export class Table {
   async rakeZone(zoneId) {
     const stack = this.stackOf(zoneId);
     if (!stack?.children.length) return;
-    sound.chips(2);
-    await Promise.all([...stack.children].map((c, i) => flyTo(c, this.rack.getBoundingClientRect(), { duration: 420, delay: i * 30, fade: true })));
+    await rake([...stack.children], this.rack.getBoundingClientRect());
     this.emptyZone(zoneId);
     this.refreshBet();
   }
@@ -542,7 +591,7 @@ export class Table {
   enterAction() { return this.actionList?.find(a => a.key === '↵' && !a.disabled) || null; }
 
   reject(message) {
-    sound.tick(); haptic([10, 40, 10]);
+    sound.tick(); buzz('reject');
     animate(this.betEl.parentElement, [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(0)' }], { duration: 260, fill: 'none' });
     this.toast(message);
   }
@@ -579,27 +628,30 @@ export class Table {
       const small = this.tier.chips.filter(v => v <= n / 4);
       breakdown(n, small.length ? small : this.tier.chips, 12).forEach((v, i) => {
         const c = createChip(v); c.style.setProperty('--i', i); payStack.append(c);
-        pays.push(flyFrom(c, rack, { duration: 460, delay: i * 70, lift: 40 }));
       });
+      // The dealer cuts the stack at the rack and slides it over, one box after another.
+      pays.push(pushPay(payStack, rack, { delay: pays.length * 260 }));
     });
-    if (pays.length) { sound.chips(Math.min(pays.length, 6)); await Promise.all(pays); }
+    if (pays.length) await Promise.all(pays);
     if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'), net, hot?.bonus > 0 ? `핫 테이블 +${Math.round(hot.rate * 100)}% · +${formatMoney(hot.bonus)}` : '');
-    if (net > 0) { sound.win(); haptic([20, 60, 30]); this.glow(); }
-    else if (net < 0) { sound.lose(); haptic(30); }
-    else sound.push();
+    if (net > 0) { sound.win(); buzz('win'); this.glow(); }
+    else if (net < 0) { sound.lose(); buzz('lose'); }
+    else { sound.push(); buzz('push'); }
     if (big !== false && net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: staked > 0 && net >= staked * BIG_WIN_MULTIPLE ? `${Math.floor(net / staked)}×` : '대박' });
     await wait(net > 0 ? 900 : 650);
-    const moves = [];
+    const moves = [], raked = [];
     const balance = this.balanceEl.getBoundingClientRect();
     new Set([...held, ...nets.keys()]).forEach(zoneId => {
       const node = this.zones.get(zoneId);
       if (!node) return;
       const lost = (nets.get(zoneId) ?? 0) < 0;
-      node.querySelectorAll('.bet-stack .chip').forEach(c => moves.push(lost
-        ? flyTo(c, rack, { duration: 420, delay: moves.length * 30, fade: true })
-        : flyOut(c, balance, { duration: 520, delay: moves.length * 40, lift: 60, onLand: () => this.catchChips() })));
+      node.querySelectorAll('.bet-stack .chip').forEach(c => lost
+        ? raked.push(c)
+        : moves.push(flyOut(c, balance, { duration: 520, delay: moves.length * 40, lift: 60, onLand: () => this.catchChips() })));
     });
+    // Lost chips are raked in one sweep; what I won comes home to the wallet.
     if (moves.length) sound.chips(3);
+    if (raked.length) moves.push(rake(raked, rack));
     await Promise.all(moves);
     this.resetRound();
   }

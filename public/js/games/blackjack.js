@@ -3,9 +3,12 @@
 // "친구와 함께" seats friends in the AI chairs against the same dealer (room-client.js); in a room
 // I play one box at the room's stake and every seat's moves play out as they happen.
 import { api, errorMessage } from '../api.js';
-import { dealCard, flipCard, placeCards, sweepCards, parseCard } from '../cards.js';
+import { dealCard, flipCard, placeCards, parseCard } from '../cards.js';
+import { gatherCards, riffle, needsShuffle, rake } from '../dealer.js';
+import { buzz } from '../haptics.js';
+import { feltGestures } from '../gestures.js';
 import { createChip, breakdown } from '../chips.js';
-import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../fx.js';
+import { el, wait, formatCH, flyFrom, animate, sound } from '../fx.js';
 import { settings, onSettings } from '../settings.js';
 import { basicStrategy } from '../bj-strategy.js';
 import { Table } from '../table.js';
@@ -219,7 +222,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       const tag = seatWrap(s).querySelector('.hand-result');
       tag.textContent = label; tag.className = `hand-result is-${kind} is-shown`;
       const box = s.querySelector('.bj-seat-chips');
-      if (ai.result.netPnl < 0) moves.push(...[...box.children].map((c, k) => flyTo(c, rack, { duration: 420, delay: k * 30, fade: true }).then(() => c.remove())));
+      if (ai.result.netPnl < 0) moves.push(rake([...box.children], rack).then(() => box.replaceChildren()));
       else if (ai.result.netPnl > 0) breakdown(ai.result.netPnl, t.tier.chips, 5).forEach((v, k) => {
         const c = createChip(v); c.style.setProperty('--i', box.children.length); box.append(c);
         moves.push(flyFrom(c, rack, { duration: 420, delay: k * 60, lift: 30 }));
@@ -257,7 +260,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     if (winners.length) {
       const best = winners[0];
       t.banner(`${best.kind === 'PP' ? '' : '21+3 '}${SIDE_NAMES[best.result]} ${best.pays}:1`, 'win');
-      sound.win(); haptic([20, 60, 30]); t.glow();
+      sound.win(); buzz('win'); t.glow();
       const pays = winners.flatMap(b => paySide(sideZone(b), b.netPnl));
       sound.chips(Math.min(pays.length, 6));
       await Promise.all(pays);
@@ -323,16 +326,31 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       b?.setAttribute('aria-description', '기본 전략 추천');
     }
   }
-  t.refreshActions = refreshActions;
-  t.onBetChange = () => { refreshActions(); room.onBetChange(); };
-  const offSettings = onSettings(key => { if (key === 'bjHint' || key === null) { paintStat(); refreshActions(); } });
+  // Hand signals ride on whatever the action row offers: tap = 히트, wave = 스탠드.
+  const myTurn = () => !t.busy && (room.active ? rv?.status === 'PLAYING' && rv.turn === 0 && Boolean(rv.options) : round?.status === 'PLAYER');
+  const signal = key => { const a = t.actionList?.find(x => x.key === key); if (a && !a.disabled) t.run(a.onClick); };
+  const hands = feltGestures(t.felt, { live: myTurn, onTap: () => signal('H'), onWave: () => signal('S'), tip: text => t.toast(text) });
+  let wasTurn = false;
+  const refreshAll = () => {
+    refreshActions();
+    hands.sync();
+    const turn = myTurn();
+    if (turn && !wasTurn) hands.showTip();
+    wasTurn = turn;
+  };
+  t.refreshActions = refreshAll;
+  t.onBetChange = () => { refreshAll(); room.onBetChange(); };
+  const offSettings = onSettings(key => { if (key === 'bjHint' || key === 'gestures' || key === null) { paintStat(); refreshAll(); } });
   const destroy = t.destroy.bind(t);
-  t.destroy = () => { offSettings(); destroy(); };
+  t.destroy = () => { offSettings(); hands.destroy(); destroy(); };
   paintStat();
 
-  async function clearFelt() {
+  // The dealer picks the cards up into the discard tray; at the cut card, or the first hand at
+  // this table, the deck is riffled and loaded into the shoe before the next deal.
+  async function clearFelt({ shuffle = true } = {}) {
     const containers = [dealerHand, ...[...wraps.values()].map(cardsOf), ...[...seats.values()].map(s => cardsOf(seatWrap(s)))];
-    if (containers.some(c => c.children.length)) await sweepCards(containers, discard);
+    if (containers.some(c => c.children.length)) await gatherCards(containers, discard);
+    if (shuffle && needsShuffle(discard, 60)) await riffle(t.felt, { shoe, discard, at: dealerHand.getBoundingClientRect() });
     allHands().forEach(h => h.replaceChildren()); wraps.clear();
     [...seats.values()].forEach(s => { clearSeat(s); updateHandTotal(seatWrap(s), false); });
     dealerTotal.hidden = true;
@@ -389,6 +407,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     const prev = round;
     const hand = prev.hands[prev.activeHand];
     const rec = recommend(prev);
+    buzz({ HIT: 'hit', STAND: 'stand', DOUBLE: 'double', SPLIT: 'split' }[action] || 'chip');
     let res;
     try { res = await api.blackjackAction(prev.id, action, prev.activeHand); }
     catch (e) { t.toast(errorMessage(e)); return; }
@@ -477,7 +496,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     for (const b of round.sideBets || []) if (b.netPnl > 0) zones.set(sideZone(b), 0);
     await t.settle(net, { label: `${headline}`, zones, hot, big: headline === 'Blackjack' ? { title: 'BLACKJACK', subtitle: '3 대 2' } : null });
     await t.syncBalance();
-    refreshActions();
+    refreshAll();
     if (res.eventStreak) await meter?.update(res.eventStreak);
     if (base > 0 && round.id && !room.active) don.offer(round.id, base); // 묻고 더블 rides the table win, not the hot bonus
   }
@@ -658,7 +677,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   }
   async function roomClear() {
     rv = null; model = null;
-    await clearFelt();
+    await clearFelt({ shuffle: false });
     t.resetRound();
     seatAll([]);
   }
@@ -671,7 +690,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       return;
     }
     const o = rv.options, short = t.available < o.stake;
-    const send = action => room.act({ action });
+    const send = action => { buzz({ HIT: 'hit', STAND: 'stand', DOUBLE: 'double', SPLIT: 'split' }[action]); return room.act({ action }); };
     t.setActions([
       { label: '히트', key: 'H', primary: true, onClick: () => send('HIT') },
       { label: '스탠드', key: 'S', onClick: () => send('STAND') },
@@ -683,7 +702,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   const room = createRoomClient(t, 'blackjack', {
     label: '블랙잭', word: '베팅', sizes: [2, 3, 4], size: 4,
     soloBusy: () => Boolean(round && round.status !== 'SETTLED'),
-    begin: roomBegin, apply: roomApply, snapshot: roomSnapshot, refreshActions,
+    begin: roomBegin, apply: roomApply, snapshot: roomSnapshot, refreshActions: refreshAll,
     clear: async () => { await roomClear(); }
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
@@ -692,9 +711,9 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   const destroyRoom = t.destroy.bind(t);
   t.destroy = () => { room.stop(); return destroyRoom(); };
 
-  refreshActions();
+  refreshAll();
   await resume();
   if (!round) await room.resume().catch(() => false);
-  refreshActions();
+  refreshAll();
   return t;
 }

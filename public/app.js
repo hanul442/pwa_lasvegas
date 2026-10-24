@@ -37,6 +37,7 @@ import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/t
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
+import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -333,7 +334,8 @@ function applyState(next) {
   walletHeld.textContent = held > 0 ? `테이블 ${formatCH(held)}` : '';
   applyCosmetics(state);
   paintNavDots(state);
-  document.querySelector('[data-avatar]').textContent = [...(state.user.nickname || '나')].slice(0, 2).join('');
+  document.querySelector('[data-avatar]').textContent = state.user.guest ? '나' : [...(state.user.nickname || '나')].slice(0, 2).join('');
+  onGuestState(state, applyState);
   renderResume();
   for (const card of nightlyCards) card.update(state);
   renderGameLists();
@@ -992,6 +994,7 @@ function renderProfile() {
     <div class="profile-card">
       <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(a.available)}원${assets ? ` · 자산 ${formatCH(assets)}원` : ''}${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
     </div>
+    ${u.guest ? guestCard(state) : ''}
     <dl class="stat-grid">
       <div><dt>총 손익</dt><dd class="${a.qualifiedPnl >= 0 ? 'pos' : 'neg'}">${a.qualifiedPnl >= 0 ? '+' : ''}${formatCH(a.qualifiedPnl)}</dd></div>
       <div><dt>총 베팅</dt><dd>${formatCH(a.totalWagered)}</dd></div>
@@ -1000,6 +1003,7 @@ function renderProfile() {
       <div><dt>최대 승리</dt><dd>${formatCH(totals.best)}</dd></div>
       <div><dt>최장 연승</dt><dd>${eng.streak?.best || 0}연승${eng.streak?.current > 1 ? ` <small>지금 ${eng.streak.current}</small>` : ''}</dd></div>
     </dl>
+    <div data-invite-card></div>
     <h2 class="sub-head">자산 <small>${formatCH(assets)}원 · 사치품 ${owned.length}점</small></h2>
     ${showcase}
     <button type="button" class="pill-button profile-shop" data-go-shop>상점 가기</button>
@@ -1012,18 +1016,20 @@ function renderProfile() {
     ${games ? `<div class="game-stats-wrap"><table class="game-stats"><thead><tr><th scope="col">게임</th><th scope="col">판</th><th scope="col">승률</th><th scope="col">최대 승리</th><th scope="col">손익</th></tr></thead><tbody>${games}</tbody></table></div>` : '<p class="lounge-note">아직 플레이한 게임이 없어요.</p>'}
     <h2 class="sub-head">층</h2><ul class="floor-rows">${floors}</ul>
     <div data-ledger></div>
-    <h2 class="sub-head">계정</h2>
-    <div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>
+    ${u.guest ? "" : `<h2 class="sub-head">계정</h2>`}
+    ${u.guest ? '' : `<div class="account-row"><span>${state.username ? `<b>${state.username}</b> 계정으로 로그인 중` : '로그인 중'}</span><button type="button" class="pill-button" data-sign-out>로그아웃</button></div>`}
     <div data-account-tools></div>`;
   const wl = wrappedBlock(state);
   if (wl) root.querySelector('[data-wrapped-list]').replaceWith(wl);
+  renderInviteCard(root.querySelector('[data-invite-card]'), state);
+  root.querySelector('[data-name-guest]')?.addEventListener('click', () => openNameSheet(applyState));
   renderAchievements(root.querySelector('[data-achievements]'));
   root.querySelector('[data-hand-book]').replaceWith(handBookBlock(state));
   root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
   renderLedger(root.querySelector('[data-ledger]'), state);
   renderAccountTools(root.querySelector('[data-account-tools]'), state, applyState);
   renderAdmin(root, state, applyState);
-  root.querySelector('[data-sign-out]').addEventListener('click', async () => {
+  root.querySelector('[data-sign-out]')?.addEventListener('click', async () => {
     forgetShownCode();
     await forgetDevice();
     await api.logout().catch(() => {});
@@ -1181,7 +1187,8 @@ renderGameLists();
 showSurface('lobby');
 dailyWanted = takeDailyLink();
 capturePendingJoin();
-history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
+// An invite link (/j?...) leaves the address bar once read, so a reload is the plain app.
+history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname === '/j' || location.pathname === '/j/' ? '/' : location.pathname);
 if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); } });
 else openSignIn(signedIn);
 startPlaytime({ isInTable: () => document.body.classList.contains('game-mode') });

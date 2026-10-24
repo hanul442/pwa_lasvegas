@@ -223,6 +223,7 @@ export function feedText(f) {
   switch (f.type) {
     case 'HOT_WIN': return f.multiple >= 5 ? `${who}님 대박! ${gameName(f.game)}에서 ${f.multiple}배 적중, ${formatMoney(f.amount)} 벌었어요` : `${who}님 대박! ${gameName(f.game)}에서 ${formatMoney(f.amount)} 벌었어요`;
     case 'JACKPOT': return `${who}님이 잭팟을 터뜨려 ${formatMoney(f.amount)} 벌었어요`;
+    case 'INVITE': return `${who}님이 친구 ${f.friend}님을 데려와 둘 다 ${formatMoney(f.amount)} 받았어요`;
     case 'DAILY_STREAK': return `${who}님이 7일 연속 출근해서 주급을 받았어요`;
     case 'MONTHLY_PAY': return `${who}님이 28일 개근으로 월급 ${formatMoney(f.amount)}을 받았어요`;
     case 'PERSONAL_BANKRUPTCY': return `${who}님이 빚 ${formatMoney(f.amount)}을 안고 파산 신청했어요`;

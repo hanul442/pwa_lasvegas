@@ -5,6 +5,7 @@ import { handleApi, prepareState } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
 import { runPushRound, runNightlyRound } from '../lib/notifications.mjs';
 import { compactHistory } from '../lib/history.mjs';
+import { previewFor, injectPreview, isInvitePath } from '../lib/link-preview.mjs';
 
 const HOURLY = '0 * * * *'; // wrangler.toml [triggers]; the other cron is the evening's minute clock
 const CHUNK = 256 * 1024; // stay well under the per-value storage limit as the ledger grows
@@ -124,10 +125,31 @@ function cors(request, env) {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
-    'access-control-allow-headers': 'content-type, authorization, x-idempotency-key',
+    'access-control-allow-headers': 'content-type, authorization, x-idempotency-key, x-device',
     'access-control-max-age': '86400',
     vary: 'origin'
   };
+}
+
+// An invite link (/j?...): the app page with a link preview naming the inviter and the game.
+// There is no /j file, so the static assets pass it here. Any trouble falls back to the plain page.
+async function invitePage(url, env, floor) {
+  const page = await env.ASSETS.fetch(new Request(new URL('/', url)));
+  let html = await page.text();
+  try {
+    let inviter = null;
+    const ref = url.searchParams.get('r');
+    if (ref) {
+      const res = await floor.fetch(new Request(new URL(`/api/invite/info?r=${encodeURIComponent(ref)}`, url)));
+      if (res.ok) inviter = (await res.json()).inviter || null;
+    }
+    const p = url.searchParams;
+    html = injectPreview(html, previewFor({ inviter, game: p.get('g'), tier: p.get('t'), code: String(p.get('join') || '').toUpperCase() }, url.origin), url.href);
+  } catch (e) {
+    console.log('invite preview', e?.message);
+    html = html.replace('<head>', '<head>\n  <base href="/">');
+  }
+  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
 }
 
 export default {
@@ -135,8 +157,9 @@ export default {
     const url = new URL(request.url);
     const headers = cors(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-    if (!url.pathname.startsWith('/api/')) return Response.json({ error: 'NOT_FOUND' }, { status: 404, headers });
     const floor = env.FLOOR.get(env.FLOOR.idFromName('main'));
+    if (isInvitePath(url.pathname) && request.method === 'GET') return invitePage(url, env, floor);
+    if (!url.pathname.startsWith('/api/')) return Response.json({ error: 'NOT_FOUND' }, { status: 404, headers });
     const res = await floor.fetch(request);
     const out = new Response(res.body, res);
     for (const [k, v] of Object.entries(headers)) out.headers.set(k, v);

@@ -51,7 +51,8 @@ test('구제금융 says why a player with chips on a table does not qualify yet'
 
 test('every state change sweeps the friends tables first', async () => {
   const api = await readFile(new URL('../lib/api.mjs', import.meta.url), 'utf8');
-  assert.match(api, /sweepTables\(state\);const r=await fn\(state\)/);
+  assert.match(api, /export function prepareState\(state\)\{[^}]*sweepTables\(state\);\}/);
+  assert.match(api, /prepareState\(state\);const r=await fn\(state\)/);
 });
 
 test('the bank and the top bar show chips on a table apart from the wallet', async () => {

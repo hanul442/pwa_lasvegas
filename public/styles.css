@@ -537,3 +537,19 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
   .home-hero-card{min-height:170px}
   .home-cat{aspect-ratio:auto;min-height:96px}
 }
+/* 이용 현황 (js/admin.js usageBox) */
+.usage-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 10px}
+.usage-tiles>div{padding:12px;border:1px solid var(--hair);border-radius:14px;background:var(--ink-2)}
+.usage-tiles dt{color:var(--smoke);font-size:13px}
+.usage-tiles dd{margin:4px 0 0;font:600 26px/1 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums}
+.usage-tiles dd small{margin-left:2px;color:var(--smoke);font:400 13px var(--sans)}
+.usage-chart{display:grid;grid-template-columns:repeat(14,1fr);gap:2px;align-items:end;height:150px;margin:0 0 6px;padding:0;list-style:none}
+.usage-chart li{display:grid;grid-template-rows:16px 1fr 16px 14px;height:100%;text-align:center;font-size:11px;color:var(--smoke)}
+.usage-chart li:hover .usage-bar{background:var(--white)}
+.usage-bar{align-self:end;width:min(70%,18px);margin:0 auto;border-radius:4px 4px 0 0;background:#e9ebee;opacity:.85}
+.usage-bar-val{align-self:end;color:var(--white);font-variant-numeric:tabular-nums}
+.usage-bar-day{align-self:center;font-variant-numeric:tabular-nums}
+.usage-bar-new{color:var(--star,#fff6dc)}
+@media (max-width:420px){.usage-tiles{grid-template-columns:repeat(2,1fr)}}
+.usage-bar-day{white-space:nowrap}
+.admin-usage .admin-log span small{display:block;margin-top:2px;color:var(--smoke);font-size:13px}

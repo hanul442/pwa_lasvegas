@@ -533,6 +533,6 @@ export function openPlayerSheet(state, row) {
   openSheet({
     eyebrow: row.id === state.user.id ? '내 컬렉션' : '플레이어',
     title: row.nickname,
-    body: `<dl class="shop-summary shop-summary--two"><div><dt>순자산</dt><dd>${won(row.wealth)}</dd></div><div><dt>자산</dt><dd>${won(user?.assets ?? row.assets ?? 0)}</dd></div></dl>${list}`
+    body: `<dl class="shop-summary shop-summary--two"><div><dt>순자산</dt><dd>${won(row.wealth)}</dd></div><div><dt>자산</dt><dd>${won(user?.assets ?? row.assets ?? 0)}</dd></div></dl>${user && state.handBook ? `<p class="lounge-note">족보 도감 ${user.jokbo ?? 0} / ${state.handBook.total}칸</p>` : ''}${list}`
   });
 }

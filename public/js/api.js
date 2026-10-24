@@ -69,6 +69,9 @@ async function request(path, { method = 'GET', body, key = null } = {}) {
     if (data.error === 'AUTH_REQUIRED') { clearSession(); dispatchEvent(new CustomEvent('vegas:signed-out')); }
     throw new ApiError(data.error || 'BAD_REQUEST', res.status, data.where || null, data.detail || null);
   }
+  // Anyone who keeps an eye on the player's state between screens (the 족보 도감, js/hand-book.js).
+  const st = data.state?.user ? data.state : data.user && data.handBook ? data : null;
+  if (st) dispatchEvent(new CustomEvent('vegas:state', { detail: st }));
   return data;
 }
 

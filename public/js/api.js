@@ -18,6 +18,19 @@ export function clearSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
 }
 
+// One random id per phone or browser, made once. The server only uses it to refuse an invite
+// reward when the friend played on the inviter's own device (lib/referral.mjs).
+const DEVICE_KEY = 'vegas:device';
+let deviceCache = '';
+export function deviceId() {
+  if (deviceCache) return deviceCache;
+  try {
+    deviceCache = localStorage.getItem(DEVICE_KEY) || '';
+    if (!deviceCache) { deviceCache = (crypto.randomUUID?.() || `d${Date.now()}${Math.random().toString(16).slice(2)}`).replace(/[^A-Za-z0-9-]/g, ''); localStorage.setItem(DEVICE_KEY, deviceCache); }
+  } catch { deviceCache ||= `d${Date.now()}${Math.random().toString(16).slice(2)}`; }
+  return deviceCache;
+}
+
 // A fresh idempotency key. Instant rounds keep theirs across a retry (Table.roundKey), so a round
 // whose answer was lost on the way back is replayed by the server, not played twice.
 export function newKey() {
@@ -53,6 +66,7 @@ async function request(path, { method = 'GET', body, key = null } = {}) {
   const headers = {};
   const token = sessionToken();
   if (token) headers.authorization = `Bearer ${token}`;
+  headers['x-device'] = deviceId();
   if (method !== 'GET') { headers['content-type'] = 'application/json'; headers['x-idempotency-key'] = key || newKey(); }
   let res;
   try {
@@ -77,7 +91,11 @@ async function request(path, { method = 'GET', body, key = null } = {}) {
 
 export const api = {
   authOptions: () => request('/api/auth/options'),
-  signup: (username, password, claimId) => request('/api/auth/signup', { method: 'POST', body: { username, password, claimId } }),
+  signup: (username, password, claimId, ref) => request('/api/auth/signup', { method: 'POST', body: { username, password, claimId, ref } }),
+  // 가입 없이 바로 플레이, and later the guest's name and password (the chips stay).
+  guest: ref => request('/api/auth/guest', { method: 'POST', body: { terms: true, ref } }),
+  nameGuest: (username, password, ref) => request('/api/auth/name', { method: 'POST', body: { username, password, ref } }),
+  inviteInfo: ref => request(`/api/invite/info?r=${encodeURIComponent(ref)}`),
   login: (username, password) => request('/api/auth/login', { method: 'POST', body: { username, password } }),
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   changePassword: (current, password) => request('/api/auth/password', { method: 'POST', body: { current, password } }),
@@ -185,6 +203,10 @@ const MESSAGES = {
   BAD_RECOVERY: '이름이나 복구 코드가 맞지 않아요. 복구 코드가 없으면 운영자에게 임시 비밀번호를 받아 주세요.',
   NO_ACCOUNT: '이 플레이어는 로그인 계정이 없어요.',
   USERNAME_TAKEN: '이미 쓰고 있는 이름이에요. 다른 이름을 골라 주세요.',
+  GUESTS_FULL: '지금은 게스트 자리가 꽉 찼어요. 이름과 비밀번호로 계정을 만들어 주세요.',
+  GUEST_LIMIT: '이 기기에서 게스트를 너무 많이 만들었어요. 이름과 비밀번호로 계정을 만들어 주세요.',
+  NOT_A_GUEST: '이미 이름이 있는 계정이에요.',
+  TERMS_REQUIRED: '만 19세 이상인지, 이용약관에 동의하는지 확인해 주세요.',
   INVALID_USERNAME: '이름은 한글·영문·숫자 2~12자로 정해 주세요.',
   INVALID_PASSWORD: '비밀번호는 6자 이상으로 정해 주세요.',
   PROFILE_NOT_CLAIMABLE: '이미 다른 계정이 이어받은 기록이에요.',

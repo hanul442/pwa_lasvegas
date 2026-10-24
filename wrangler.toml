@@ -8,6 +8,8 @@ workers_dev = true
 
 [assets]
 directory = "./public"
+# Invite links (/j) are not files, so they reach the Worker, which reads the page through this.
+binding = "ASSETS"
 
 [vars]
 # Only needed when a page on another origin calls the API, e.g. the local Node dev server.

@@ -44,6 +44,7 @@ import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
 import { bragRank } from './js/brags.js';
 import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
+import { openDaily, takeDailyLink } from './js/daily.js';
 
 watchErrors();
 startShine();
@@ -651,6 +652,7 @@ const MARK = {
   mission: '<svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"/></svg>',
   hot: '<svg viewBox="0 0 24 24"><path d="M12 4c.5 3.4 4.5 5.2 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.2-3.6 2-4.5.3 1.6 1.2 2.4 2 2.6C11 9.4 11.2 6.6 12 4z"/></svg>',
   watch: '<svg viewBox="0 0 24 24"><path d="M3 12s3.3-5.5 9-5.5S21 12 21 12s-3.3 5.5-9 5.5S3 12 3 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
+  daily: '<svg viewBox="0 0 24 24"><path d="M6.5 5.5h8v13h-8zM14.5 8l3 .8-2.6 9.8-3.6-1"/><path d="M10.5 10l1.2 2-1.2 2-1.2-2z"/></svg>',
   bank: '<svg viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9M5 9.5v8M9.7 9.5v8M14.3 9.5v8M19 9.5v8M3.5 20h17"/></svg>'
 };
 function renderToday() {
@@ -674,6 +676,9 @@ function renderToday() {
   }
   if (r?.eligible) chips.push(todayChip({ mark: MARK.pay, title: `칩 충전 +${formatCH(r.amount)}`, sub: '무료', hot: broke, onClick: rechargeClaim }));
   if (broke && !chips.length) chips.push(todayChip({ mark: MARK.bank, title: '은행에서 빌리기', sub: '칩이 모자라요', hot: true, onClick: () => showSurface('bank', { focus: true }) }));
+  // 오늘의 한 판: the same ten blackjack deals for everyone today.
+  const db = state.dailyBj;
+  if (db) chips.push(todayChip({ mark: MARK.daily, title: db.played ? `오늘의 한 판 ${db.score.toLocaleString('ko-KR')}점` : `오늘의 한 판 #${db.no}`, sub: db.played ? '순위 보고 자랑하기' : db.playing ? '이어서 치기' : `${db.players ? `${db.players}명 참가 · ` : ''}모두 같은 10판`, hot: !db.played, onClick: showDaily }));
   // The last table played, if it is still there for this player.
   const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier));
   if (recent) {
@@ -1078,6 +1083,11 @@ const inMenus = () => !document.body.classList.contains('game-mode') && !documen
 // new player's first screen is the free chips, not a permission prompt.
 const askReady = () => Boolean(state) && !dailyDue(state) && Object.values(state.user?.stats || {}).some(s => s.rounds > 0);
 
+// 오늘의 한 판 (js/daily.js), from the home chip or a friend's shared result link.
+let dailyWanted = false;
+function showDaily() { openDaily({ onClose: () => { if (state) refresh(); } }); }
+function openDailyLink() { if (dailyWanted && state) { dailyWanted = false; showDaily(); } }
+
 // ---------- account ----------
 // A friend's invite link: once signed in, open that game; its room screen then takes the seat.
 function openInvite() {
@@ -1098,6 +1108,7 @@ function signedIn(next) {
   ensureTerms();
   openInvite();
   openNightlyFromLink();
+  openDailyLink();
 }
 function signedOut(notice) {
   stopNews();
@@ -1168,8 +1179,9 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.ser
 
 renderGameLists();
 showSurface('lobby');
+dailyWanted = takeDailyLink();
 capturePendingJoin();
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); } });
 else openSignIn(signedIn);
 startPlaytime({ isInTable: () => document.body.classList.contains('game-mode') });

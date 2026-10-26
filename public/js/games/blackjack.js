@@ -157,7 +157,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     let s = seats.get(ai.name);
     if (!s) {
       s = el('div', 'bj-seat');
-      s.innerHTML = `<div class="hand-wrap bj-seat-hand"><div class="hand"></div><span class="hand-total"></span><span class="hand-result"></span><span class="bj-say" aria-live="polite"></span></div>
+      s.innerHTML = `<div class="hand-wrap bj-seat-hand"><div class="hand"></div><span class="hand-total"></span><span class="hand-result"></span><span class="bj-say" aria-live="polite"></span><span class="bj-seat-ins" aria-label="인슈어런스"></span></div>
         <div class="bj-seat-plate"><span class="bj-seat-chips"></span><b></b><small></small></div>`;
       s.querySelector('b').textContent = ai.name;
       seats.set(ai.name, s);
@@ -182,6 +182,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   }
   function clearSeat(s) {
     const w = seatWrap(s);
+    s.querySelector('.bj-seat-ins').replaceChildren();
     w.classList.remove('is-active', 'is-bust');
     w.querySelector('.hand-result').className = 'hand-result';
     w.querySelector('.bj-say').classList.remove('is-shown');
@@ -211,8 +212,35 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       s.querySelector('.bj-say').classList.remove('is-shown');
     }
   }
+  // With the dealer's ace up, the seats that insure put half their bet on the insurance line.
+  const insChips = s => s.querySelector('.bj-seat-ins');
+  async function seatsInsure(r) {
+    const nodes = [...aiRow.children];
+    let any = false;
+    for (const [i, ai] of (r.ai || []).entries()) {
+      const s = nodes[i]; if (!s || !ai.insurance || insChips(s).children.length) continue;
+      const box = insChips(s);
+      box.replaceChildren(...breakdown(ai.insurance.stake, t.tier.chips, 3).map((v, k) => { const c = createChip(v); c.style.setProperty('--i', k); return c; }));
+      sound.chip();
+      await say(s, '인슈어런스');
+      any = true;
+    }
+    if (any) { await wait(300); nodes.forEach(s => s.querySelector('.bj-say').classList.remove('is-shown')); }
+  }
+  // No dealer blackjack: the seats' insurance goes to the house with the player's.
+  async function seatsInsuranceLost(r) {
+    const nodes = [...aiRow.children];
+    const rack = t.rack.getBoundingClientRect();
+    await Promise.all((r.ai || []).map((ai, i) => {
+      const box = nodes[i] && insChips(nodes[i]);
+      if (!box?.children.length || ai.insurance?.result !== 'LOSS') return null;
+      return rake([...box.children], rack).then(() => box.replaceChildren());
+    }));
+  }
+
   // The AI seats' own chips: paid from the rack or raked, for show only.
   async function settleSeats(r) {
+    await seatsInsuranceLost(r);
     const nodes = [...aiRow.children];
     const rack = t.rack.getBoundingClientRect();
     const moves = [];
@@ -225,6 +253,12 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       if (ai.result.netPnl < 0) moves.push(rake([...box.children], rack).then(() => box.replaceChildren()));
       else if (ai.result.netPnl > 0) breakdown(ai.result.netPnl, t.tier.chips, 5).forEach((v, k) => {
         const c = createChip(v); c.style.setProperty('--i', box.children.length); box.append(c);
+        moves.push(flyFrom(c, rack, { duration: 420, delay: k * 60, lift: 30 }));
+      });
+      // Insurance pays 2 to 1 beside the seat's hand.
+      const ins = insChips(s);
+      if (ai.insurance?.result === 'WIN' && ins.children.length) breakdown(ai.insurance.netPnl, t.tier.chips, 3).forEach((v, k) => {
+        const c = createChip(v); c.style.setProperty('--i', ins.children.length); ins.append(c);
         moves.push(flyFrom(c, rack, { duration: 420, delay: k * 60, lift: 30 }));
       });
     });
@@ -399,8 +433,10 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     for (const [i, a] of round.ai.entries()) { await dealCard(cardsOf(sw[i]), a.cards[1], shoe); updateHandTotal(sw[i], false); }
     await dealCard(dealerHand, 'HIDDEN', shoe, { faceUp: false });
     await sideMoment(round);
+    if (round.status === 'INSURANCE') { t.banner('Insurance?', 'push'); sound.tick(); voice.say('insurance'); }
+    await seatsInsure(round);
     if (round.status === 'SETTLED') await finish(res);
-    else { markActive(round); if (round.status === 'INSURANCE') { t.banner('Insurance?', 'push'); sound.tick(); voice.say('insurance'); } }
+    else { if (round.status !== 'INSURANCE') await seatsInsuranceLost(round); markActive(round); }
   }
 
   async function act(action) {
@@ -420,7 +456,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
       if (next.status === 'SETTLED') return finish(res);
       // No dealer blackjack: an insurance bet is lost on the spot and play goes on.
       t.toast(action === 'INSURANCE' ? '딜러 블랙잭이 아니에요. 인슈어런스 칩은 하우스로 가요' : '딜러 블랙잭이 아니에요');
-      if (action === 'INSURANCE') await t.rakeZone('ins');
+      await Promise.all([action === 'INSURANCE' ? t.rakeZone('ins') : null, seatsInsuranceLost(next)]);
       markActive(round);
       return;
     }
@@ -517,7 +553,11 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     t.lock();
     crowd(round);
     for (const h of round.hands) { const w = handWrap(h); handsIn(h).append(w); placeCards(cardsOf(w), h.cards); updateHandTotal(w); }
-    seatAll(round.ai).forEach((s, i) => { const w = seatWrap(s); placeCards(cardsOf(w), round.ai[i].cards); updateHandTotal(w, false); });
+    seatAll(round.ai).forEach((s, i) => {
+      const a = round.ai[i], w = seatWrap(s);
+      placeCards(cardsOf(w), a.cards); updateHandTotal(w, false);
+      if (a.insurance && a.insurance.result !== 'LOSS') insChips(s).replaceChildren(...breakdown(a.insurance.stake, t.tier.chips, 3).map((v, k) => { const c = createChip(v); c.style.setProperty('--i', k); return c; }));
+    });
     placeCards(dealerHand, round.dealer); updateDealerTotal(false);
     markActive(round);
     t.toast('진행 중이던 판을 이어서 해요');

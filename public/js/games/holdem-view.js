@@ -99,7 +99,9 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       node.innerHTML = `
         <div class="hand pk-cards" data-cards></div>
         <div class="pk-plate"><b data-name></b><span data-stack></span><small data-style></small><i class="pk-myhand" data-myhand></i><em class="pk-tag" data-tag></em><span class="pk-stack" data-chips aria-hidden="true"></span></div>`;
-      const bet = el('div', `pk-bet${side ? ' pk-bet--side' : ''}`);
+      const bet = el('div', `pk-bet${side ? ` pk-bet--side${p.y > 50 ? ' pk-bet--low' : ''}` : i !== pk.me && p.y < 50 ? ' pk-bet--top' : ''}`);
+      bet.style.setProperty('--sx', p.x.toFixed(2)); // the seat's own spot, for layouts that place bets their own way
+      bet.style.setProperty('--sy', p.y.toFixed(2));
       bet.style.setProperty('--x', (50 + (p.x - 50) * (side ? (p.y > 50 ? 0.1 : 0.25) : 0.55)).toFixed(2));
       bet.style.setProperty('--y', (k === 0 && pk.me >= 0 ? 88 : 50 + (p.y - 50) * (side ? (p.y > 50 ? 1.3 : 0.56) : 0.45)).toFixed(2));
       bet.innerHTML = '<span class="pk-bet-stack"></span><b></b>';

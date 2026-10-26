@@ -284,7 +284,11 @@
 .bj-seat-plate small{font-size:13px;color:var(--taupe)}
 .bj-seat-chips{position:relative;width:20px;height:20px;flex:none}
 .bj-seat-chips .chip{--size:20px;position:absolute;left:0;bottom:0;translate:0 calc(var(--i) * -2.5px)}
-.bj-seat-chips .chip-label{display:none}
+.bj-seat-chips .chip-label,.bj-seat-ins .chip-label{display:none}
+/* a seat's insurance chips sit on the card corner, off the layout so nothing shifts */
+.bj-seat-ins{position:absolute;left:-9px;top:-9px;z-index:5;width:18px;height:18px;pointer-events:none}
+.bj-seat-ins:empty{display:none}
+.bj-seat-ins .chip{--size:18px;position:absolute;left:0;bottom:0;translate:0 calc(var(--i) * -2.5px);box-shadow:0 0 0 1.5px var(--star)}
 .bj-say{position:absolute;left:50%;top:0;z-index:6;transform:translate(-50%,-100%) scale(.6);opacity:0;padding:3px 10px;border-radius:999px;background:var(--white);color:var(--ink);font:650 13px var(--sans);white-space:nowrap;pointer-events:none;transition:transform .3s cubic-bezier(.2,1.6,.4,1),opacity .2s}
 .bj-say.is-shown{opacity:1;transform:translate(-50%,-100%) scale(1)}
 .bj-say.is-lose{background:#0a0b0de6;color:#d8cfc2;box-shadow:0 0 0 1px #efe7d933}
@@ -763,10 +767,25 @@
   .pk-seat--hero .pk-cards{--card-w:44px;margin-bottom:0}
   .pk-seat:not(.pk-seat--hero){flex-direction:row;gap:4px;top:calc((50 + (var(--y) - 50) * 1.3) * 1%)}
   .pk-seat:not(.pk-seat--hero) .pk-cards{--card-w:28px;margin-bottom:0}
-  /* the seat across the table drops a little so its cards don't run off the felt's top edge */
-  .pk-seat:not(.pk-seat--side):not(.pk-seat--hero){transform:translate(-50%,-8%)}
   .pk-plate{padding:4px 9px}
   .pk-plate small{display:none}
+  /* Six at the table leaves the oval barely 120px tall and the board right across it, so every
+     piece gets its own lane: the seat across the table goes to one line on the oval's top edge,
+     the side seats step out toward the rail, their bets sit beside them (upper seats under the
+     top seat's row, lower seats down by my cards) and the pot moves beside the board. A friend's
+     long nickname is cut short instead of widening the plate into the next seat. */
+  .pk-seat:not(.pk-seat--hero) .pk-plate b{max-width:84px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13px;font-stretch:100%;letter-spacing:0}
+  .pk-seat:not(.pk-seat--side):not(.pk-seat--hero) .pk-plate{grid-auto-flow:column;align-items:center;column-gap:7px;padding-block:4px}
+  .pk-seat:not(.pk-seat--side):not(.pk-seat--hero) .pk-stack{bottom:50%;translate:0 50%}
+  .pk-seat:not(.pk-seat--side):not(.pk-seat--hero){top:0;transform:translate(-50%,-50%)}
+  .pk-seat--l{translate:-36px 0}
+  .pk-seat--r{translate:36px 0}
+  .pk-bet--side{left:calc((50 + (var(--sx) - 50) * .5) * 1%);top:24%}
+  .pk-bet--low{top:90%}
+  .pk-bet--top{top:24%}
+  .is-seated .pk-center{top:60%;flex-direction:row;gap:14px;width:auto}
+  /* the room code moves to the felt's empty bottom-left corner, off the upper-left seat's cards */
+  .pk-roomchip{top:auto;bottom:6px}
   .pk-center{--card-w:38px}
   .pk-buyin{width:90px;height:90px}
   .table-screen--holdem.is-seated .table-controls{grid-template-columns:auto 1fr auto;grid-template-areas:"bet sizer act"}
@@ -1133,5 +1152,5 @@
     linear-gradient(112deg,transparent calc(24% + var(--shine-band)),#ffffff52 calc(35% + var(--shine-band)),#ffffffc7 calc(39% + var(--shine-band)),#ffffff52 calc(43% + var(--shine-band)),transparent calc(54% + var(--shine-band))),
     conic-gradient(from calc(var(--shine-band) * 3.6deg) at var(--shine-x) var(--shine-y),#ffe3ea26,#d6fff526,#e2deff26,#fff3d826,#ffe3ea26),
     radial-gradient(80% 90% at var(--shine-x) var(--shine-y),#ffffff3d,transparent 70%)}
-.rack-col .chip-shine,.npc-stack .chip-shine,.bj-seat-chips .chip-shine,.pk-stack .chip-shine{display:none}
+.rack-col .chip-shine,.npc-stack .chip-shine,.bj-seat-chips .chip-shine,.bj-seat-ins .chip-shine,.pk-stack .chip-shine{display:none}
 @media (prefers-reduced-motion:reduce){.card-face::after,.chip-shine{display:none}}

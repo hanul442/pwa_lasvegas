@@ -471,6 +471,10 @@ export function createFriends(t, pk, bar, hooks) {
     return null;
   }
 
+  const leaveButton = () => {
+    const tn = room?.tourney;
+    return { label: tn && room.started && !tn.done ? (room.nightly ? '자리 비우기' : '기권') : '나가기', ghost: true, anytime: true, onClick: leave };
+  };
   function refreshActions() {
     const { sizer } = bar;
     const me = room?.table.seats[room.me];
@@ -479,7 +483,8 @@ export function createFriends(t, pk, bar, hooks) {
     if (l && !pk.animating) {
       const turn = `${room.table.handNo}:${room.table.seq}`;
       const queued = preMove(l);
-      t.setActions(bar.actions(l, act));
+      // A way out on my own turn too: getting up folds this hand and cashes the stack out.
+      t.setActions([leaveButton(), ...bar.actions(l, act)]);
       clearTimeout(preTimer);
       if (queued) {
         t.hint(queued === 'FOLD' ? '미리 고른 대로 폴드해요' : queued === 'CALL' ? '미리 고른 대로 콜해요' : '미리 고른 대로 체크해요');
@@ -530,7 +535,7 @@ export function createFriends(t, pk, bar, hooks) {
       return;
     }
     t.setActions([
-      { label: tn && room.started && !tn.done ? (room.nightly ? '자리 비우기' : '기권') : '나가기', ghost: true, anytime: true, onClick: leave },
+      leaveButton(),
       ...show,
       ...queue,
       ...(room && room.isHost && !room.started ? [{ label: tn ? '토너먼트 시작' : '딜 시작', key: '↵', primary: true, disabled: pk.animating || Boolean(tn && room.players.length < 2), onClick: deal }] : [])

@@ -5,7 +5,8 @@ import {
   blackjackV2Action,
   blackjackV2ActionCost,
   blackjackV2Public,
-  settleBlackjackV2
+  settleBlackjackV2,
+  aiInsures
 } from '../lib/blackjack-v2.mjs';
 import { defaultState } from '../lib/store.mjs';
 import { lockBet, increaseBetLock, settleLockedHouseGame } from '../lib/economy.mjs';
@@ -184,4 +185,43 @@ test('blackjack v2 declining insurance costs nothing and still peeks', () => {
   assert.equal(out.netPnl, -2_000_000);
   assert.ok(!out.outcomes.some(o => o.result.startsWith('INSURANCE')));
   assert.throws(() => blackjackV2ActionCost(round, 'INSURANCE'), { message: 'INSURANCE_NOT_OFFERED' });
+});
+
+// Three gamblers at the table, dealer ace up, until at least one of them insures.
+function insuredAiRound(hole) {
+  const crew = [{ name: '대니', temper: 'reckless', unit: 2 }, { name: '러스티', temper: 'reckless', unit: 3 }, { name: '라이너스', temper: 'reckless', unit: 5 }];
+  for (let i = 0; i < 5000; i++) {
+    const round = startBlackjackV2([20_000_000], 1, { ai: crew, floor: 'high-limit' });
+    if (round.status !== 'INSURANCE' || !round.ai.some(a => a.insurance)) continue;
+    round.dealer[1] = hole;
+    round.hands.forEach(h => { h.cards = [{ r: '10', s: '♠' }, { r: '7', s: '♣' }]; h.status = 'PLAYING'; });
+    return round;
+  }
+  throw new Error('no insured round');
+}
+
+test('AI seats take insurance by temperament: the gambler often, the careful one on a blackjack', () => {
+  const seat = (temper, cards) => ({ temper, cards, doubled: false });
+  const hard = [{ r: '10', s: '♠' }, { r: '7', s: '♣' }], bj = [{ r: 'A', s: '♠' }, { r: 'K', s: '♣' }];
+  assert.equal(aiInsures(seat('reckless', hard), () => 0.4), true);
+  assert.equal(aiInsures(seat('steady', hard), () => 0.4), false);
+  assert.equal(aiInsures(seat('cautious', hard), () => 0.4), false);
+  assert.equal(aiInsures(seat('cautious', bj), () => 0.8), true, 'even money on a blackjack');
+});
+
+test('AI insurance: half the seat bet, hidden result until the peek, 2:1 on a dealer blackjack, never in my net', () => {
+  const lost = insuredAiRound({ r: '6', s: '♦' });
+  const seat = lost.ai.find(a => a.insurance);
+  assert.equal(seat.insurance.stake, seat.stake / 2);
+  assert.equal(blackjackV2Public(lost).ai.find(a => a.name === seat.name).insurance.result, null, 'no peek yet');
+  blackjackV2Action(lost, 'NO_INSURANCE');
+  assert.equal(lost.status, 'PLAYER');
+  assert.deepEqual(blackjackV2Public(lost).ai.find(a => a.name === seat.name).insurance, { stake: seat.insurance.stake, result: 'LOSS', netPnl: -seat.insurance.stake });
+
+  const won = insuredAiRound({ r: 'K', s: '♦' });
+  const winner = won.ai.find(a => a.insurance);
+  blackjackV2Action(won, 'NO_INSURANCE');
+  const out = settleBlackjackV2(won);
+  assert.equal(out.netPnl, -20_000_000, 'the AI seats\' insurance stays out of my result');
+  assert.deepEqual(out.public.ai.find(a => a.name === winner.name).insurance, { stake: winner.insurance.stake, result: 'WIN', netPnl: winner.insurance.stake * 2 });
 });

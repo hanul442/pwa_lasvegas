@@ -369,12 +369,13 @@ export async function mountMatgo(ctx) {
     if (view.phase === 'GO_STOP' && view.actor === ME) {
       t.hint(`${view.pending.score}점! 고 하면 +1점, 스톱 하면 지금 점수로 이겨요`);
       t.setActions([
+        ...(room.active ? [room.leaveAction()] : []),
         { label: '스톱', onClick: () => send({ type: 'STOP' }) },
         { label: `${(view.scores[ME].go || 0) + 1}고`, primary: true, onClick: () => send({ type: 'GO' }) }
       ]);
       return;
     }
-    if (prompt) { t.setActions(prompt); return; }
+    if (prompt) { t.setActions([...(room.active ? [room.leaveAction()] : []), ...prompt]); return; }
     const mine = view.actor === ME;
     t.setActions([
       ...(room.active ? [room.leaveAction()] : []),

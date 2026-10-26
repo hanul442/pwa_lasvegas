@@ -1,4 +1,4 @@
-// Friends' rooms for 섯다, 고스톱 and 맞고 on the solo felt: make a room and share its four-letter
+// Friends' rooms for 섯다, 고스톱, 맞고, blackjack and baccarat on the solo felt: make a room and share its four-letter
 // code, or sit at a friend's. The server owns the table and turns every view so I sit in seat 0,
 // so each game draws a room hand with the same code as a solo one. This screen polls every 1.5 s
 // while it is visible and hands the game only the events it hasn't played yet.
@@ -19,6 +19,7 @@ const tierName = slug => TIERS[slug]?.name || slug;
 export function createRoomClient(t, game, hooks) {
   const { label, word, sizes = null } = hooks; // word: what the stake is called (판돈, 점당)
   let size = hooks.size ?? sizes?.at(-1) ?? null;
+  const stakeNow = () => hooks.stake?.() ?? t.total; // baccarat: the main bet, not the pair spots
   let room = null, code = null, cursor = null;
   let active = false;
   let pollTimer = null, listTimer = null, clockTimer = null;
@@ -70,7 +71,7 @@ export function createRoomClient(t, game, hooks) {
   function paintCreate() {
     const ready = t.betReady;
     createBtn.disabled = !ready;
-    createBtn.textContent = ready ? `방 만들기 · ${word} ${formatCH(t.total)}` : '방 만들기';
+    createBtn.textContent = ready ? `방 만들기 · ${word} ${formatCH(stakeNow())}` : '방 만들기';
     createNote.textContent = ready
       ? `방을 만들면 4자리 코드가 나와요. 친구들은 같은 ${word}로 앉고, 빈자리는 AI가 채워요.`
       : `아래 칩으로 ${word}을 먼저 올려 주세요 (${formatCH(t.tier.min)} 이상).`;
@@ -128,7 +129,7 @@ export function createRoomClient(t, game, hooks) {
   async function create() {
     if (!t.betReady) return;
     let res;
-    try { res = await api.roomCreate(game, t.total, t.tier.floor, size); }
+    try { res = await api.roomCreate(game, stakeNow(), t.tier.floor, size); }
     catch (e) { if (!blocked(e, create)) t.toast(errorMessage(e)); return; }
     await t.clearBet();
     t.setServerState(res.state);

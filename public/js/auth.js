@@ -28,7 +28,7 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
   if (ref) api.inviteInfo(ref).then(out => { invite = out; if (gate && mode !== 'reset') render(); }).catch(() => {});
   // A phone that never signed in here gets 가입 없이 바로 플레이 first; a returning player the login.
   const fresh = !playerId() || Boolean(ref || join);
-  const GAME_NAMES = { holdem: '홀덤', seotda: '섯다', gostop: '고스톱', matgo: '맞고', blackjack: '블랙잭' };
+  const GAME_NAMES = { holdem: '홀덤', seotda: '섯다', gostop: '고스톱', matgo: '맞고', blackjack: '블랙잭', baccarat: '바카라' };
   const inviteLine = () => {
     const who = invite?.inviter ? `<span><b>${invite.inviter}</b>님이 초대했어요</span>` : join || ref ? '<span>친구가 초대했어요</span>' : '';
     if (!who) return '';

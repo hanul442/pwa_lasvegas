@@ -165,6 +165,14 @@ export function createFriends(t, pk, bar, hooks) {
   oval.append(chat.button);
   const tableName = t.root.querySelector('.table-name span');
   const tableNameText = tableName.textContent;
+  // The line under the title: the floor normally; the blinds while I'm in a room or tournament,
+  // so the title itself stays short enough for a folded phone.
+  const tableSub = t.root.querySelector('.table-name > span');
+  const tableSubHtml = tableSub?.innerHTML;
+  const setRoomName = (title, blinds) => {
+    tableName.textContent = title;
+    if (tableSub) tableSub.innerHTML = `<i>블라인드 ${blinds}</i>`;
+  };
 
   async function create() {
     if (!t.betReady) return;
@@ -224,7 +232,8 @@ export function createFriends(t, pk, bar, hooks) {
     hooks.showSeated(true);
     t.locked = true;
     t.root.classList.add('is-room');
-    tableName.textContent = view.tourney ? tourneyName(view.table, view) : `친구 방 · 블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`;
+    if (view.tourney) setRoomName(...tourneyName(view.table, view));
+    else setRoomName('친구 방', `${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`);
     chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
     chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
     chipEl.hidden = Boolean(view.nightly); // the nightly tournament seats whoever registered, nobody by invite
@@ -268,6 +277,7 @@ export function createFriends(t, pk, bar, hooks) {
     hud.hidden = true;
     t.root.classList.remove('is-room', 'is-tourney');
     tableName.textContent = tableNameText;
+    if (tableSub) tableSub.innerHTML = tableSubHtml;
     if (message) t.toast(message);
   }
 
@@ -552,7 +562,7 @@ export function createFriends(t, pk, bar, hooks) {
   let hudTimer = 0, skew = 0;
   let news = null; // { level, out, left }: what this screen has already announced
   let resultShown = false;
-  const tourneyName = (tb, v = room) => `${v?.nightly ? '밤 9시 토너먼트' : '친구 토너먼트'} · 블라인드 ${formatCH(tb.smallBlind)}/${formatCH(tb.bigBlind)}`;
+  const tourneyName = (tb, v = room) => [v?.nightly ? '밤 9시 토너먼트' : '친구 토너먼트', `${formatCH(tb.smallBlind)}/${formatCH(tb.bigBlind)}`];
   async function moveTable(to) {
     stop();
     let res;
@@ -594,7 +604,7 @@ export function createFriends(t, pk, bar, hooks) {
   async function tourneyNews(view, at) {
     const tn = view.tourney;
     paintTourney(view, at);
-    tableName.textContent = tourneyName(view.table, view);
+    setRoomName(...tourneyName(view.table, view));
     const first = !news;
     // Eliminations by who and when, not by count: a nightly table's list drops chairs others moved into.
     const outKey = o => `${o.seat}:${o.hand}:${o.name}`;

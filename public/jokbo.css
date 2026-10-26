@@ -13,7 +13,7 @@
 .jk-bar{position:relative;height:4px;border-radius:4px;background:#ffffff14;overflow:hidden}
 .jk-bar i{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:linear-gradient(90deg,#c9ced6,#fff6dc)}
 .jk-summary-pages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.jk-summary-pages span{display:grid;gap:1px;padding:7px 8px;border-radius:10px;background:#ffffff08;font-size:12.5px;color:var(--smoke);line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jk-summary-pages span{display:grid;gap:1px;padding:7px 8px;border-radius:10px;background:#ffffff08;font-size:12.5px;color:var(--smoke);line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;word-break:keep-all;overflow-wrap:anywhere}
 .jk-summary-pages b{font:600 14px var(--display);color:var(--white)}
 .jk-summary-pages .is-full{background:#fff6dc14;box-shadow:inset 0 0 0 1px #fff6dc55}
 .jk-summary-pages .is-full b{color:var(--star)}

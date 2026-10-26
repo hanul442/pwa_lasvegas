@@ -477,7 +477,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .home-cat--event{--tint:#5a2aa0}
 .home-cat-text{display:grid;gap:1px;min-width:0;max-width:100%}
 .home-cat-text b{font:800 17px/1.15 var(--display);font-stretch:115%}
-.home-cat-text small{font-size:12.5px;color:#ffffffc4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-cat-text small{font-size:12.5px;color:#ffffffc4;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;word-break:keep-all}
 .home-cat-go{padding:7px 13px;border-radius:9px;background:#000000a3;font:700 13px/1 var(--sans)}
 .home-cat:active,.pop-card:active,.today-chip:active{transform:scale(.98)}
 .home-nightly:empty{display:none}

@@ -308,13 +308,13 @@ export async function mountSeotda(ctx) {
     if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
     const opts = view.options;
     t.hint(view.street === 1 ? '첫 장을 보고 베팅해요' : '마지막 베팅이에요');
-    t.setActions(opts.map(o => ({
+    t.setActions([...(room.active ? [room.leaveAction()] : []), ...opts.map(o => ({
       label: `${LABEL[o.action]}${o.cost ? ` ${formatCH(o.cost)}` : ''}`,
       ghost: o.action === 'DIE',
       primary: o.action === 'CALL' || (o.action === 'CHECK' && !opts.some(x => x.action === 'CALL')),
       disabled: o.cost > t.available,
       onClick: () => act(o.action)
-    })));
+    }))]);
   }
   t.refreshActions = refreshActions;
 

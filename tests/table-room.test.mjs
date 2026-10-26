@@ -335,3 +335,25 @@ test('friends sit together whatever floors each has reached or outgrown; only th
   mid.account.available = 5_000_000; // short of the room's 10M stake
   assert.throws(() => joinRoom(state, mid, high.code, w.ctx()), /INSUFFICIENT_BANKROLL/);
 });
+
+test('섯다: getting up on my own betting turn dies that hand and the table plays on', () => {
+  const w = world(12);
+  const { state } = w;
+  const room = createRoom(state, state.users.hanseo, { game: 'seotda', stake: 10_000_000, floor: 'high-limit' }, w.ctx());
+  joinRoom(state, state.users.min, room.code, w.ctx());
+  startRoom(state, state.users.hanseo, room.code, w.ctx());
+  const r = room.round, handId = r.id;
+  const seat = r.seats[r.turn];
+  assert.equal(seat.kind, 'human');
+  const leaver = seat.userId;
+  const out = leaveRoom(state, state.users[leaver], room.code, w.ctx());
+  assert.equal(out.pending, true);
+  assert.ok(r.status === 'SETTLED' || r.seats[r.turn] !== seat, 'the turn left the empty seat');
+  const other = Object.keys(room.players)[0];
+  for (let g = 0; g < 200 && room.round?.id === handId && room.round.status === 'PLAYING'; g++) {
+    const s = room.round.turn;
+    roomAction(state, state.users[other], room.code, { handNo: room.handNo, seq: room.events.length, ...moveFor(room, s, w.rand) }, w.ctx());
+  }
+  assert.equal(state.users[leaver].account.locked, 0, 'settled when the hand ended');
+  assert.ok(state.ledger.some(tx => tx.userId === leaver && tx.referenceId === handId && tx.type.startsWith('GAME_')));
+});

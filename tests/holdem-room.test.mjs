@@ -326,3 +326,22 @@ test('a player who lost everything keeps the chair until the next deal, then get
   assert.equal(room.table.hand.no, handNo + 1, 'the others play on');
   assert.equal(state.users.min.account.locked, 0);
 });
+
+test('getting up on my own turn folds the hand, cashes out, and the turn moves on', () => {
+  const w = world(13);
+  const { state } = w;
+  const room = createRoom(state, state.users.hanseo, { buyIn: 50_000_000, floor: 'high-limit', size: 6 }, w.ctx());
+  joinRoom(state, state.users.min, room.code, w.ctx());
+  startRoom(state, state.users.hanseo, room.code, w.ctx());
+  const h = room.table.hand;
+  const who = room.table.seats[h.toAct].id;
+  const seat = room.players[who].seat;
+  const stack = room.table.seats[seat].stack;
+  const start = state.users[who].account.available;
+  const out = leaveRoom(state, state.users[who], room.code, w.ctx());
+  assert.equal(out.cashOut, stack);
+  assert.equal(state.users[who].account.available, start + stack);
+  assert.ok(h.events.some(e => e.t === 'act' && e.seat === seat && e.action === 'FOLD'));
+  assert.notEqual(h.over ? -1 : h.toAct, seat, 'the turn is not left on the empty chair');
+  assert.equal(room.table.seats[seat].kind, 'empty');
+});

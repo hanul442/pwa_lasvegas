@@ -1,7 +1,7 @@
 // Going bust is news too: the screen goes dark, the loss rolls up in red, and the player gets a
 // card to brag about it ("동네방네 자랑하기"). Everyone else already hears it through the lounge
 // feed, the top banner and a push notification (lib/news.mjs).
-import { el, sound, haptic, rollNumber, formatCH, formatFull, ms } from './fx.js';
+import { el, sound, haptic, rollNumber, formatCH, formatMoney, ms } from './fx.js';
 import { playerId } from './api.js';
 import { gameName } from './lounge.js';
 import { loadLogo, shareImage } from './share.js';
@@ -48,7 +48,7 @@ export function maybeBust(state) {
 export function bustMoment(bust, nickname, then = null) {
   const node = el('div', 'bigwin bust');
   node.setAttribute('role', 'dialog');
-  node.setAttribute('aria-label', `파산 -${formatFull(bust.sessionLoss)}원`);
+  node.setAttribute('aria-label', `파산 -${formatMoney(bust.sessionLoss)}`);
   const w = worth(bust);
   node.innerHTML = `
     <div class="bigwin-inner">
@@ -88,7 +88,7 @@ export function bustMoment(bust, nickname, then = null) {
 export function bailoutMoment(bail) {
   const node = el('div', 'bigwin bailout');
   node.setAttribute('role', 'dialog');
-  node.setAttribute('aria-label', `구제금융 +${formatFull(bail.amount)}원`);
+  node.setAttribute('aria-label', `구제금융 +${formatMoney(bail.amount)}`);
   const left = bail.perDay ? Math.max(0, bail.perDay - bail.nth) : null;
   node.innerHTML = `
     <div class="bigwin-inner">

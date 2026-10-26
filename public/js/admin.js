@@ -29,7 +29,7 @@ export function renderAdmin(root, state, onChanged) {
         </div>
         <div class="admin-field"><span id="admin-amount-label">금액</span>
           <div class="admin-presets">${PRESETS.map(v => `<button type="button" class="pill-button${v === amount ? ' is-active' : ''}" data-amount="${v}">${formatCH(v)}</button>`).join('')}</div>
-          <label class="admin-custom"><input name="custom" inputmode="numeric" aria-labelledby="admin-amount-label" placeholder="직접 입력" value="${PRESETS.includes(amount) ? '' : amount / 1e4}"><span>만 원</span></label></div>
+          <label class="admin-custom"><input name="custom" inputmode="numeric" aria-labelledby="admin-amount-label" placeholder="직접 입력" value="${PRESETS.includes(amount) ? '' : amount / 1e4}"><span>만원</span></label></div>
         <label class="admin-field"><span>메모 <small>선택</small></span><input name="note" maxlength="40"></label>
         <p class="admin-msg${ok ? ' is-ok' : ''}" role="status">${esc(message)}</p>
         <button type="submit" class="pill-button pill-button--solid">${formatCH(amount)} ${mode === 'grant' ? '지급하기' : '회수하기'}</button>

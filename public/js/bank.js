@@ -121,7 +121,7 @@ function borrowSheet(state, offer, onChanged) {
         owe = Math.max(UNIT, Math.floor(owe / UNIT) * UNIT);
         preview.innerHTML = `하루 <b>${pct(rate)}</b> 복리 · 자정마다 이자가 붙어요<br>${days}일 뒤 갚을 돈 약 <b>${won(owe)}</b>. 못 갚으면 들어오는 칩에서 자동으로 가져가고 신용이 떨어져요.`;
         const bad = !inUnits(amount) || amount > offer.limit;
-        setGo({ text: bad ? (amount > offer.limit ? '한도를 넘었어요' : amount > 0 ? '100만 원 단위로 넣어 주세요' : '금액을 넣어 주세요') : `${won(amount)} 빌리기`, disabled: bad });
+        setGo({ text: bad ? (amount > offer.limit ? '한도를 넘었어요' : amount > 0 ? '100만원 단위로 넣어 주세요' : '금액을 넣어 주세요') : `${won(amount)} 빌리기`, disabled: bad });
       }
       return draw;
     },
@@ -148,7 +148,7 @@ function repaySheet(state, loan, onChanged) {
       body.append(field.node, note);
       function draw() {
         const bad = !inUnits(amount, loan.balance) || amount > max;
-        setGo({ text: bad ? (max <= 0 ? '갚을 칩이 없어요' : amount > max ? `최대 ${won(max)}까지 갚을 수 있어요` : '100만 원 단위로 넣어 주세요') : amount === loan.balance ? `${won(amount)} 다 갚기` : `${won(amount)} 갚기`, disabled: bad });
+        setGo({ text: bad ? (max <= 0 ? '갚을 칩이 없어요' : amount > max ? `최대 ${won(max)}까지 갚을 수 있어요` : '100만원 단위로 넣어 주세요') : amount === loan.balance ? `${won(amount)} 다 갚기` : `${won(amount)} 갚기`, disabled: bad });
       }
       return draw;
     },

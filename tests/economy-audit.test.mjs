@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser, netWorth, tableBase, rewardBase, loanBase, hasFloorPass } from '../lib/state.mjs';
 import { FLOORS } from '../lib/constants.mjs';
-import { addLedger, lockBet, settleLockedHouseGame } from '../lib/economy.mjs';
+import { addLedger, lockBet, increaseBetLock, settleLockedHouseGame } from '../lib/economy.mjs';
 import { lenderOffer, LENDERS, borrow, loanFreezeAt } from '../lib/bank.mjs';
 import { settleFinishedRankSeason, rankView } from '../lib/rank-season.mjs';
 import { claimAchievement, achievementsView } from '../lib/achievements.mjs';
@@ -30,12 +30,39 @@ test('chips on a table when the season closes go to the house as they come off i
   assert.equal(u.account.seasonOwed, 8 * 억);
   assert.equal(netWorth(u), 0, 'the chips still on the table are owed back');
   assert.equal(rankView(state, u, NOV_1).peak, 0);
-  // The new month's pay is the player's own; only what comes back from the old table is taken.
+  // The new month's pay is the player's own; everything that comes back from the old table is
+  // taken, the win too, so an all-in just before midnight is no free roll into the new month.
   grant(state, u, 1 * 억);
   settleLockedHouseGame(state, u, { game: "Hold'em", stake: 8 * 억, netPnl: 4 * 억, roundId: 'sat-through-midnight' });
-  assert.equal(u.account.available, 1 * 억 + 4 * 억, 'the win made after midnight stays, the old stake goes');
+  assert.equal(u.account.available, 1 * 억, 'only the new month\'s pay is left');
   assert.equal(u.account.seasonOwed, 0);
-  assert.ok(state.ledger.some(x => x.userId === 'p' && x.type === 'SEASON_RESET' && x.amount === -8 * 억 && x.metadata.fromTable));
+  assert.ok(state.ledger.some(x => x.userId === 'p' && x.type === 'SEASON_RESET' && x.amount === -12 * 억 && x.metadata.fromTable));
+});
+
+test('a round half from before the reset gives back only its old share', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-31T14:00:00Z') });
+  const state = defaultState(); state.meta.rankSince = 'rank-2026-10';
+  const u = newUser(state, 'p', 'P');
+  grant(state, u, 10 * 억);
+  lockBet(state, u, { stake: 4 * 억, game: 'Blackjack', roundId: 'r' });
+  t.mock.timers.setTime(NOV_1);
+  settleFinishedRankSeason(state, NOV_1);
+  grant(state, u, 10 * 억);
+  increaseBetLock(state, u, { stake: 4 * 억, game: 'Blackjack', roundId: 'r' }); // doubled down after midnight
+  settleLockedHouseGame(state, u, { game: 'Blackjack', stake: 8 * 억, netPnl: 8 * 억, roundId: 'r' });
+  assert.equal(u.account.seasonOwed, 0);
+  assert.equal(u.account.available, 6 * 억 + 8 * 억, 'the November half and its win stay');
+});
+
+test('guests start the new month from nothing too', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-31T14:00:00Z') });
+  const state = defaultState(); state.meta.rankSince = 'rank-2026-10';
+  const g = newUser(state, 'g_1', '게스트#1234'); g.guest = true;
+  grant(state, g, 2000 * 억);
+  t.mock.timers.setTime(NOV_1);
+  settleFinishedRankSeason(state, NOV_1);
+  assert.equal(g.account.available, 0);
+  assert.deepEqual(g.account.unlockedFloors, ['gold-room']);
 });
 
 test('a stake that is lost after the reset settles what was owed', t => {

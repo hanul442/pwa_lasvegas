@@ -5,6 +5,7 @@ import { el, formatCH, sound, haptic, reducedMotion, rollNumber } from './fx.js'
 import { gameName } from './names.js';
 import { tierEmblem, tierName } from './rank.js';
 import { loadLogo } from './bigwin.js';
+import { shareImage } from './share.js';
 
 const CARD_MS = 6500;
 const TIER_COLOR = { iron: '#8a8f96', bronze: '#b07a4f', silver: '#d7dce3', gold: '#e2c27a', platinum: '#9fe0d8', emerald: '#5fd39a', diamond: '#9cc4ff', master: '#c9a0ff', grandmaster: '#ff6f91', legend: '#ff8a72' };
@@ -285,25 +286,15 @@ export async function wrappedCard(w, nickname = '') {
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
+// Out through the shared 자랑하기 path (js/share.js): the story image, a line, and the invite link
+// with ?from=me, so a friend who taps it lands in VEGAS with the invite reward counted.
 export async function shareWrapped(w, nickname = '') {
   const blob = await wrappedCard(w, nickname);
   if (!blob) return;
   const m = monthOf(w);
-  const name = `vegas-wrapped-${m}.png`;
-  const file = new File([blob], name, { type: 'image/png' });
   const p = persona(w);
   const text = `VEGAS ${m}월 결산: ${p.title} · ${tierName(w.tier)} · ${w.rounds.toLocaleString('ko-KR')}판`;
-  const url = location.origin + '/';
-  if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: `VEGAS 랩드 ${m}월`, text: `${text}\n${url}` }); return; } catch (e) { if (e?.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  await shareImage({ blob, filename: `vegas-wrapped-${m}.png`, title: `VEGAS 랩드 ${m}월`, text, ...(nickname ? { nickname } : {}) });
 }
 
 // The profile's row: this month so far, then the months gone by.

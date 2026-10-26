@@ -511,7 +511,7 @@
   .bac-score{font-size:26px}
   .bac-zones{grid-template-columns:1fr;gap:6px}
   .bac-zones .zone{min-height:46px;flex-direction:row;gap:10px;--size:30px}
-  .bac .road{grid-column:1 / -1}
+  .bac .bac-foot{grid-column:1 / -1}
   .sb{gap:6px}
   .sb-main{margin-top:0}
   .sb-main .zone{min-height:52px}

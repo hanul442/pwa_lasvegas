@@ -206,7 +206,7 @@ function creditBlock(state) {
 
 // Chips still on a table (a round not finished, a poker seat not left) are the player's but not in
 // the wallet: the top bar shows the wallet, so the bank says where the rest is and how it comes back.
-const GAME_NAMES = { blackjack: '블랙잭', matgo: '맞고', gostop: '고스톱', seotda: '섯다', poker: '홀덤', sevenpoker: '7포커' };
+const GAME_NAMES = { blackjack: '블랙잭', matgo: '맞고', gostop: '고스톱', seotda: '섯다', poker: '홀덤', sevenpoker: '7포커', baccarat: '바카라' };
 const resumable = state => (state.openRounds || []).find(r => !r.left) || null;
 function heldLine(state) {
   const locked = state.user.account.locked;

@@ -69,7 +69,7 @@
   .has-crowd .dome{width:min(26dvw,38dvh)}
   .has-crowd .bac-bets{gap:4px;grid-column:2;grid-row:1 / span 2}
   .has-crowd .bac-sides{grid-column:1;grid-row:1}
-  .has-crowd .bac .road{grid-column:1;grid-row:2}
+  .has-crowd .bac .bac-foot{grid-column:1;grid-row:2}
   .has-crowd .bac-zones .zone{min-height:36px}
   .has-crowd .zone--pair{min-height:30px}
 }
@@ -134,3 +134,33 @@
   .has-crowd .zone--total{min-height:34px;padding-block:1px;gap:0}
   .has-crowd .sb-totals{gap:3px}
 }
+
+/* Baccarat with friends: the road and the "친구와 함께" button share the last row; in a room the
+   friends' rail replaces the regulars, the pair spots step aside, and the three spots light up
+   while it's my pick. */
+.bac-foot{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.bac-foot .road{flex:1 1 auto}
+.bac-friends{flex:none}
+.crowd[hidden]{display:none}
+.crowd-seat{transition:opacity .3s}
+.bac-rail .crowd-meta b{max-width:9ch;overflow:hidden;text-overflow:ellipsis}
+.bac-rail .crowd-seat.is-friend .crowd-avatar{box-shadow:inset 0 0 0 1.5px var(--ivory),0 4px 10px #0008}
+.bac-rail .crowd-seat.is-active .crowd-avatar{box-shadow:0 0 0 2px var(--ivory),0 0 16px #efe7d977}
+.bac-rail:has(.is-active) .crowd-seat:not(.is-active){opacity:.55}
+.is-room .bac-pairs{display:none}
+.is-my-bet .bac-zones .zone{border-color:#efe7d9aa;box-shadow:inset 0 0 0 1px #efe7d955}
+/* In a room the invite bar takes the top edge, so the friends' rail and the shoe sit under it. */
+@media (max-width:599px) and (orientation:portrait){
+  .table-screen--baccarat.is-room .bac-rail{top:44px}
+  .table-screen--baccarat.is-room .felt-body{padding-top:84px}
+  .table-screen--baccarat.is-room .shoe,.table-screen--baccarat.is-room .discard{top:84px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .table-screen--baccarat.is-room .bac-rail{top:42px}
+  .table-screen--baccarat.is-room .felt-body{padding-top:76px}
+}
+@media (min-width:600px) and (min-height:521px){
+  .table-screen--baccarat.is-room .felt-body{padding-top:48px}
+}
+/* In a room the hint says what to do next, not what is wrong. */
+.table-screen--baccarat.is-room .bet-readout small{color:var(--ivory)}

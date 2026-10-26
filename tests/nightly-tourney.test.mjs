@@ -196,6 +196,8 @@ test('pushes: ten minutes before to everyone with a device, then the start call 
   assert.equal(plan.length, 2);
   assert.match(plan.find(p => p.userId === 'hanseo').message.title, /10분 뒤/);
   assert.match(plan.find(p => p.userId === 'min').message.title, /등록 마감/);
+  // Money in the push reads like the app (50억원), never as a raw 5000000000.
+  for (const p of plan) { assert.doesNotMatch(p.message.body, /\d{5,}|\d,\d{3},\d{3}/); assert.match(p.message.body, /[만억조]원/); }
   assert.equal(planNightlyPushes(state, START - 8 * 60_000).length, 0);
   sweepNightly(state, START, w.rand);
   const go = planNightlyPushes(state, START + 1000);

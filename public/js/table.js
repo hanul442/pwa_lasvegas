@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatFull, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { ownerEntrance } from './shop.js';
 import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
@@ -744,7 +744,7 @@ export class Table {
       await rollNumber(this.balanceEl, from, value, { format: balanceText });
       setTimeout(() => this.balanceEl.parentElement.classList.remove('is-up', 'is-down'), ms(600));
     } else this.balanceEl.textContent = balanceText(value);
-    this.balanceEl.parentElement.title = `${formatFull(value)}원`;
+    this.balanceEl.parentElement.title = formatMoney(value);
   }
 
   // The wallet answers each chip that lands in it: a small bounce, and the count starts rolling up.

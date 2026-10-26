@@ -304,6 +304,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .admin-presets{display:flex;flex-wrap:wrap;gap:8px}
 .admin-presets .pill-button{min-height:40px;padding:0 14px}
 .admin-custom{display:flex;align-items:center;gap:8px;color:var(--smoke)}
+.admin-custom span{white-space:nowrap;flex:none}
 .admin-msg{margin:0;color:var(--signal);font-size:14px}
 .admin-msg.is-ok{color:var(--white)}
 .admin-msg:empty{display:none}

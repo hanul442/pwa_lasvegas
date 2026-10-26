@@ -54,9 +54,9 @@ test('payload encryption follows RFC 8291 and VAPID tokens verify', async () => 
 });
 
 test('amounts read like the app', () => {
-  assert.equal(formatWon(5_000_000), '500만 원');
-  assert.equal(formatWon(120_000_000), '1억 2천만 원');
-  assert.equal(formatWon(50_000_000), '5천만 원');
+  assert.equal(formatWon(5_000_000), '500만원');
+  assert.equal(formatWon(120_000_000), '1억 2천만원');
+  assert.equal(formatWon(50_000_000), '5천만원');
 });
 
 test('subscribing over the API stores the device on the signed-in player only', async () => {
@@ -112,7 +112,7 @@ test('the daily bonus reminder comes once in the morning, never at night or mid-
   assert.equal(messageFor(state, u, kst(9)), null); // too early for the morning slot
   const first = planPushes(state, kst(10));
   assert.equal(first.length, 1);
-  assert.match(first[0].message.title, /오늘 일급 100억 원/);
+  assert.match(first[0].message.title, /오늘 일급 100억원/);
   assert.equal(planPushes(state, kst(11)).length, 0); // once a day
   // Someone playing right now is left alone.
   const fresh = subscribedPlayer(kst(9, 0));
@@ -132,7 +132,7 @@ test('the evening slot offers unclaimed missions, then free chips, then the stre
   planPushes(state, kst(10));
   const evening = planPushes(state, kst(19));
   assert.equal(evening[0].message.tag, 'missions');
-  assert.match(evening[0].message.body, /4천만 원/);
+  assert.match(evening[0].message.body, /4천만원/);
   assert.equal(planPushes(state, kst(20)).length, 0);
 
   const broke = subscribedPlayer(kst(8, -1));
@@ -179,7 +179,7 @@ test('big news reads per player: others see the jackpot, duels reach both sides'
   createChallenge(state, 'min', 'hanseo', 'WINS');
   const mine = newsFor(state, 'hanseo', since);
   assert.deepEqual(mine.map(n => n.type).sort(), ['DUEL_IN', 'HOT_WIN', 'JACKPOT']);
-  assert.match(mine.find(n => n.type === 'JACKPOT').body, /MIN님이 슬롯 잭팟 2억 5천만 원/);
+  assert.match(mine.find(n => n.type === 'JACKPOT').body, /MIN님이 슬롯 잭팟 2억 5천만원/);
   assert.equal(mine.find(n => n.type === 'HOT_WIN').push, true); // 35x: big enough for phones
   pushFeed(state, { type: 'HOT_WIN', actorId: 'june', game: 'Baccarat', amount: 20_000_000, multiple: 1 });
   pushFeed(state, { type: 'BANKRUPTCY', actorId: 'june' });

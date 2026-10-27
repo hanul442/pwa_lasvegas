@@ -6,6 +6,7 @@ import { playtime, duration } from './playtime.js';
 import { playerId } from './api.js';
 import { gameName } from './lounge.js';
 import { loadLogo, shareImage } from './share.js';
+import { dayChart, chartPoints } from './day-chart.js';
 
 const ROASTS = [
   '카지노는 이겼고, 나는 졌다',
@@ -46,6 +47,9 @@ export function bustLines(bust) {
     if (d.won > 0) rows.push(['오늘 딴 돈', `+${formatCH(d.won)}`]);
     if (d.peak > d.last) rows.push(['오늘 최고점', `${formatCH(d.peak)}`]);
   }
+  const m = bust?.month;
+  if (m?.lost > d.lost) rows.push([`이번 달 잃은 돈 · ${m.rounds}판`, `-${formatCH(m.lost)}`]);
+  if (bust?.busts > 1) rows.push(['파산', m?.busts > 1 ? `이번 달 ${m.busts}번째 · 통산 ${bust.busts}번째` : `통산 ${bust.busts}번째`]);
   return { rows, total: ['최고점에서 날린 돈', `-${formatCH(d.peak)}`] };
 }
 
@@ -99,18 +103,21 @@ export function bustMoment(bust, nickname, then = null) {
         <small>보유 칩</small>
         <strong class="bigwin-amount"><span data-amount>${formatCH(d.peak)}</span><small>원</small></strong>
       </div>
+      ${dayChart(bust.today?.curve, { end: '0원', className: 'bust-chart' })}
       <dl class="bust-receipt">
         ${rows.map(([k, v]) => `<div class="bust-row"><dt>${k}</dt><dd class="${v.startsWith('-') ? 'is-down' : v.startsWith('+') ? 'is-up' : ''}">${v}</dd></div>`).join('')}
         <div class="bust-row bust-row--total"><dt>${total[0]}</dt><dd>${total[1]}<small>원</small></dd></div>
       </dl>
       <p class="bust-roast">“${stingFor(bust)}”</p>
       <p class="bust-note">${gameName(bust.game) || '테이블'}에서 바닥났어요.${w ? ` ${w}이에요.` : ''}</p>
-      <div class="bigwin-actions">
-        <button type="button" class="pill-button pill-button--solid" data-share>동네방네 자랑하기</button>
-        <button type="button" class="pill-button" data-close>다시 일어서기</button>
+      <div class="bust-actions-dock">
+        <div class="bigwin-actions">
+          <button type="button" class="pill-button pill-button--solid" data-share>동네방네 자랑하기</button>
+          <button type="button" class="pill-button" data-close>다시 일어서기</button>
+        </div>
+        <button type="button" class="bust-quit" data-quit>오늘은 여기까지</button>
+        <p class="bust-time">${played ? `오늘 ${played} 플레이 · ` : ''}가상 칩 · 현금 가치 없음</p>
       </div>
-      <button type="button" class="bust-quit" data-quit>오늘은 여기까지</button>
-      <p class="bust-time">${played ? `오늘 ${played} 플레이 · ` : ''}가상 칩 · 현금 가치 없음</p>
     </div>`;
   document.body.append(node);
   requestAnimationFrame(() => node.classList.add('is-open'));
@@ -119,12 +126,13 @@ export function bustMoment(bust, nickname, then = null) {
   const receipt = [...node.querySelectorAll('.bust-row')];
   // Drain, then the thud, then the receipt prints line by line.
   const drained = d.peak > 0 && !reducedMotion()
-    ? (sound.chips?.(4), rollNumber(amount, d.peak, 0, { duration: 1500, format: formatCH }))
+    ? (sound.drain?.(1.6), rollNumber(amount, d.peak, 0, { duration: 1600, format: formatCH }))
     : Promise.resolve(amount.textContent = '0');
+  node.classList.add('is-draining');
   drained.then(() => {
     if (done) return;
     node.classList.add('is-empty');
-    sound.lose?.();
+    sound.thud?.();
     haptic([220, 70, 320]);
     receipt.forEach((row, i) => setTimeout(() => {
       if (done) return;
@@ -200,42 +208,62 @@ export async function bustCard(bust, nickname = '') {
   ctx.strokeStyle = 'rgba(255,79,79,.35)'; ctx.lineWidth = 2;
   ctx.strokeRect(48, 48, W - 96, H - 96);
   const logo = await loadLogo();
-  if (logo) ctx.drawImage(logo, W / 2 - 180, 120, 360, 76);
+  if (logo) ctx.drawImage(logo, W / 2 - 150, 100, 300, 63);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ff4f4f';
-  ctx.font = '600 40px Archivo, sans-serif';
-  ctx.fillText('B A N K R U P T', W / 2, 290);
+  ctx.font = '600 34px Archivo, sans-serif';
+  ctx.fillText('B A N K R U P T', W / 2, 238);
   ctx.fillStyle = '#f4f5f7';
-  ctx.font = '700 200px "Noto Sans KR", Archivo, sans-serif';
-  ctx.fillText('파산', W / 2, 500);
+  ctx.font = '700 150px "Noto Sans KR", Archivo, sans-serif';
+  ctx.fillText('파산', W / 2, 390);
   const d = bustDay(bust);
   const { rows, total } = bustLines(bust);
   ctx.fillStyle = '#ff4f4f';
-  ctx.font = '600 96px Archivo, "Noto Sans KR", sans-serif';
-  ctx.fillText(`${total[1]}원`, W / 2, 630);
+  ctx.font = '600 88px Archivo, "Noto Sans KR", sans-serif';
+  ctx.fillText(`${total[1]}원`, W / 2, 500);
   ctx.fillStyle = '#b3b8bf';
-  ctx.font = '500 36px "Noto Sans KR", sans-serif';
-  ctx.fillText(`${nickname ? `${nickname}님이 ` : ''}${gameName(bust.game) || '테이블'}에서 최고점 ${formatCH(d.peak)}원을 다 날렸어요`, W / 2, 706, W - 160);
+  ctx.font = '500 34px "Noto Sans KR", sans-serif';
+  ctx.fillText(`${nickname ? `${nickname}님이 ` : ''}${gameName(bust.game) || '테이블'}에서 최고점 ${formatCH(d.peak)}원을 다 날렸어요`, W / 2, 566, W - 160);
+  const left = 160, right = W - 160;
+  // The day's chips: white up to the high, red down to 0.
+  const c = chartPoints(bust.today?.curve);
+  let y = 610;
+  if (c) {
+    const top = 620, h = 170;
+    const xy = c.xy.map(([x, yy]) => [left + x / 300 * (right - left), top + yy / 100 * h]);
+    const fill = ctx.createLinearGradient(0, top, 0, top + h);
+    fill.addColorStop(0, 'rgba(255,255,255,.10)'); fill.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath(); xy.forEach(([x, yy], i) => (i ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy))); ctx.lineTo(right, top + h); ctx.lineTo(left, top + h); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const stroke = (from, to, color) => { ctx.beginPath(); xy.slice(from, to + 1).forEach(([x, yy], i) => (i ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy))); ctx.strokeStyle = color; ctx.stroke(); };
+    stroke(0, c.top, '#f4f5f7');
+    if (c.top < xy.length - 1) stroke(c.top, xy.length - 1, '#ff4f4f');
+    ctx.fillStyle = '#fff6dc'; ctx.beginPath(); ctx.arc(...xy[c.top], 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff4f4f'; ctx.beginPath(); ctx.arc(...xy[xy.length - 1], 10, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '600 28px Archivo, "Noto Sans KR", sans-serif'; ctx.fillStyle = '#fff6dc';
+    const [tx, ty] = xy[c.top];
+    ctx.textAlign = tx > W * 0.65 ? 'right' : tx < W * 0.3 ? 'left' : 'center';
+    ctx.fillText(`최고 ${formatCH(c.pts[c.top][1])}`, tx + (ctx.textAlign === 'left' ? -10 : ctx.textAlign === 'right' ? 10 : 0), Math.max(top - 6, ty - 22));
+    y = top + h + 20;
+  }
   // The receipt, two columns between thin rules.
-  const left = 190, right = W - 190;
-  let y = 770;
   ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
-  ctx.font = '500 34px "Noto Sans KR", Archivo, sans-serif';
-  for (const [k, v] of rows) {
-    y += 56;
+  ctx.font = '500 32px "Noto Sans KR", Archivo, sans-serif';
+  for (const [k, v] of rows.slice(0, c ? 5 : 6)) {
+    y += 52;
     ctx.textAlign = 'left'; ctx.fillStyle = '#9aa0a8'; ctx.fillText(k, left, y);
     ctx.textAlign = 'right'; ctx.fillStyle = v.startsWith('+') ? '#5fd39a' : v.startsWith('-') ? '#ff8a82' : '#f4f5f7'; ctx.fillText(v, right, y);
   }
   ctx.textAlign = 'center';
   ctx.fillStyle = '#f4f5f7';
-  ctx.font = '600 46px "Noto Sans KR", sans-serif';
-  ctx.fillText(`“${stingFor(bust)}”`, W / 2, Math.max(1060, y + 92), W - 140);
+  ctx.font = '600 42px "Noto Sans KR", sans-serif';
+  ctx.fillText(`“${stingFor(bust)}”`, W / 2, Math.min(1180, y + 84), W - 140);
   ctx.fillStyle = '#7d838b';
   ctx.font = '400 32px "Noto Sans KR", sans-serif';
   const date = new Date(bust.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-  ctx.fillText(date, W / 2, 1236);
-  ctx.fillText('가상 칩 · 현금 가치 없음', W / 2, 1286);
+  ctx.fillText(`${date} · 가상 칩 · 현금 가치 없음`, W / 2, 1262);
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 

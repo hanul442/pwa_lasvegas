@@ -808,3 +808,70 @@ body.daily-open{overflow:hidden}
 .daily-row b{font:600 15px var(--display);font-variant-numeric:tabular-nums}
 @media (max-width:380px){.daily-stats{grid-template-columns:1fr}.daily-stats div{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.daily-stats small{display:inline}.daily-rowmarks{display:none}}
 @media (orientation:landscape) and (max-height:560px){.daily{--card-w:clamp(44px,9dvh,64px)}.daily-felt{min-height:0}.daily-hands{min-height:calc(var(--card-w) * 1.4 + 40px)}}
+
+/* the day's chips as a line (js/day-chart.js): white up to the high, red down from it */
+.day-chart{position:relative;width:100%;height:96px;margin:16px 0 0}
+.day-chart svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.day-chart-area{fill:#ffffff0d}
+.day-chart-up,.day-chart-down{fill:none;stroke-width:2px;stroke-linejoin:round;stroke-linecap:round}
+.day-chart-up{stroke:var(--white)}
+.day-chart-down{stroke:#ff8a82}
+.day-chart-down.is-fall{stroke:#ff4f4f}
+.day-chart-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--star);box-shadow:0 0 0 4px #fff6dc26}
+.day-chart-dot--end{background:#ff4f4f;box-shadow:0 0 0 4px #ff4f4f33}
+.day-chart-label,.day-chart-end{position:absolute;transform:translate(-50%,calc(-100% - 10px));color:var(--star);font:600 11.5px/1 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.day-chart-label.is-left{transform:translate(calc(-100% + 6px),calc(-100% - 10px))}
+.day-chart-label.is-right{transform:translate(-6px,calc(-100% - 10px))}
+.day-chart-end{transform:translate(calc(-100% - 8px),-50%);color:#ff4f4f}
+.bust-chart .day-chart-up,.bust-chart .day-chart-down{stroke-dasharray:1;stroke-dashoffset:1}
+.bust-chart .day-chart-up{animation:chart-draw .5s ease-out .15s forwards}
+.bust.is-draining .bust-chart .day-chart-down{animation:chart-draw 1.6s cubic-bezier(.5,0,.9,.6) .1s forwards}
+.bust-chart .day-chart-dot--end,.bust-chart .day-chart-end{opacity:0;transition:opacity .2s}
+.bust.is-empty .bust-chart .day-chart-dot--end,.bust.is-empty .bust-chart .day-chart-end{opacity:1}
+@keyframes chart-draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.bust-chart .day-chart-up,.bust-chart .day-chart-down{stroke-dasharray:none;animation:none}}
+
+/* 오늘의 손익 sheet (js/day-sheet.js) */
+.day-sheet-net{display:block;margin-top:2px;font:600 clamp(34px,10vw,48px)/1.05 var(--display);font-stretch:112%;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.day-sheet-net small{margin-left:4px;font-size:.45em;color:var(--smoke)}
+.day-sheet .day-chart{height:110px;margin:22px 0 6px}
+.day-sheet .is-down{color:#ff8a82}
+.day-sheet .is-up{color:#5fd39a}
+.day-sheet-net.is-down{color:#ff4f4f}
+.day-sheet-rows{margin:14px 0 0;padding:4px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.day-sheet-rows div{display:flex;justify-content:space-between;gap:12px;padding:8px 0}
+.day-sheet-rows dt{color:var(--smoke);font-size:14px}
+.day-sheet-rows dd{margin:0;font:600 15px var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.day-sheet-sub{margin:20px 0 6px;font:600 15px var(--sans)}
+.day-sheet-games{margin:0;padding:0;list-style:none}
+.day-sheet-games li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--hair)}
+.day-sheet-games span{font-size:15px}
+.day-sheet-games small{margin-left:8px;color:var(--smoke);font-size:12px}
+.day-sheet-games b{font:600 15px var(--sans);font-variant-numeric:tabular-nums}
+.day-sheet-note{margin:16px 0 0;color:#7d838b;font-size:12px}
+.bigwin-sub b{display:inline-block;font-weight:inherit}
+.bigwin--l2 .bigwin-sub b{color:var(--star)}
+.bigwin--l3 .bigwin-sub b{color:var(--star);text-shadow:0 0 18px #fff6dc80}
+.bigwin--l3{background:radial-gradient(60% 50% at 50% 46%,#3a3324f2,#050607f5)}
+.bigwin-multiple{margin:6px 0 0;color:var(--white);font-size:15px}
+.bigwin-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:12px 0 0}
+.bigwin-badges span{padding:5px 12px;border-radius:999px;background:#fff6dc1f;box-shadow:inset 0 0 0 1px #fff6dc4d;color:var(--star);font:600 13px var(--sans)}
+/* the bust screen on a phone: everything above the fold, the buttons always in reach */
+.bust .bust-chart{height:78px;margin-top:10px}
+.day-chart-end{transform:translate(calc(-100% - 2px),calc(-100% - 8px))}
+.bust-row{padding:5px 2px}
+.bust-receipt{margin-top:12px}
+@media (max-height:900px){
+  .bust-mark{display:none}
+  .bust .bigwin-title{font-size:clamp(40px,12vw,72px)}
+  .bust-drain{margin-top:6px}
+  .bust-drain .bigwin-amount{font-size:clamp(30px,9vw,44px)}
+  .bust .bust-roast{margin-top:12px;font-size:16px}
+  .bust .bust-note{font-size:13px}
+  .bust .bigwin-actions{margin-top:14px}
+  .bust-quit{margin-top:4px;padding:8px 12px}
+}
+.bust .bust-actions-dock{position:sticky;bottom:0;display:grid;justify-items:center;width:calc(100% + 32px);margin:0 -16px;padding:8px 16px max(14px,env(safe-area-inset-bottom));background:linear-gradient(#0a0607 0 0) bottom/100% calc(100% - 18px) no-repeat,linear-gradient(#0a060700,#0a0607) top/100% 18px no-repeat}
+.bust{place-items:start center}
+.bust .bust-inner{margin:auto 0}
+.day-sheet-count{margin:6px 0 0;color:var(--smoke);font-size:14px}

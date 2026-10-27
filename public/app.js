@@ -29,6 +29,7 @@ import { startNews, stopNews } from './js/news.js';
 import { maybeBust } from './js/bust.js';
 import { renderBank, claimSupport } from './js/bank.js';
 import { renderLedger } from './js/ledger.js';
+import { dayBlock } from './js/day-sheet.js';
 import { errorToast, watchConnection, toast } from './js/notice.js';
 import { mountNightly } from './js/nightly.js';
 import { hotStatus, clock, pct, startTime } from './js/hot.js';
@@ -692,7 +693,7 @@ function renderToday() {
   const day = state.user.today;
   if (day?.rounds > 0) {
     const sign = day.net < 0 ? '-' : day.net > 0 ? '+' : '';
-    chips.unshift(todayChip({ mark: MARK.ledger, title: `오늘 ${sign}${formatCH(Math.abs(day.net))}`, sub: `${day.rounds}판 · 잃은 돈 ${formatCH(day.lost)}${day.busts ? ` · 파산 ${day.busts}번` : ''}`, label: `오늘 손익 ${sign}${formatCH(Math.abs(day.net))}원, ${day.rounds}판, 잃은 돈 ${formatCH(day.lost)}원`, tone: day.net < 0 ? 'down' : day.net > 0 ? 'up' : '', onClick: () => showSurface('profile', { focus: true }) }));
+    chips.unshift(todayChip({ mark: MARK.ledger, title: `오늘 ${sign}${formatCH(Math.abs(day.net))}`, sub: `${day.rounds}판 · 잃은 돈 ${formatCH(day.lost)}${day.busts ? ` · 파산 ${day.busts}번` : ''}`, label: `오늘 손익 ${sign}${formatCH(Math.abs(day.net))}원, ${day.rounds}판, 잃은 돈 ${formatCH(day.lost)}원`, tone: day.net < 0 ? 'down' : day.net > 0 ? 'up' : '', onClick: () => openBlockSheet(() => dayBlock(state)) }));
   }
   // 오늘의 한 판: the same ten blackjack deals for everyone today.
   const db = state.dailyBj;

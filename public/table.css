@@ -1180,3 +1180,7 @@
     radial-gradient(80% 90% at var(--shine-x) var(--shine-y),#ffffff3d,transparent 70%)}
 .rack-col .chip-shine,.npc-stack .chip-shine,.bj-seat-chips .chip-shine,.bj-seat-ins .chip-shine,.pk-stack .chip-shine{display:none}
 @media (prefers-reduced-motion:reduce){.card-face::after,.chip-shine{display:none}}
+.banner-day.is-streak{background:#ff4f4f33;color:#ffb1ab}
+.banner-day.is-burning{background:#ff4f4f;color:var(--white);animation:banner-burn .8s ease-in-out 2}
+@keyframes banner-burn{50%{box-shadow:0 0 0 6px #ff4f4f33}}
+@media (prefers-reduced-motion:reduce){.banner-day.is-burning{animation:none}}

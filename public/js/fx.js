@@ -269,6 +269,45 @@ export const sound = {
     [[392, 0, 0.16], [523, 0.17, 0.16], [659, 0.34, 0.16], [784, 0.51, 0.3], [659, 0.84, 0.14], [784, 1.0, 0.5]]
       .forEach(([freq, at, length]) => { tone(ac, { at, freq, length, gain: 0.07, type: 'triangle' }); tone(ac, { at, freq: freq * 2, length, gain: 0.018, type: 'square' }); });
   },
+  // The wallet draining on a bust: chips raked away again and again while a low tone sinks.
+  drain(seconds = 1.5) {
+    const ac = audio(); if (!ac) return;
+    for (let at = 0; at < seconds; at += 0.22) if (!sample(ac, 'rake', { at, gain: 0.28, rate: 1.05 - at * 0.15, jitter: 0.04 })) noiseBurst(ac, { at, length: 0.08, freq: 1800 - at * 600, gain: 0.12 });
+    const osc = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(420, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + seconds);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.045, t + 0.1);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + seconds + 0.1);
+    osc.connect(g).connect(sfxBus);
+    osc.start(t); osc.stop(t + seconds + 0.15);
+  },
+  // Hitting 0: a low thud, then a quiet two-note "womp womp" sinking under it.
+  thud() {
+    const ac = audio(); if (!ac) return;
+    noiseBurst(ac, { length: 0.35, freq: 110, q: 0.6, gain: 0.55 });
+    tone(ac, { freq: 55, length: 0.5, gain: 0.12 });
+    [[233, 0.45, 0.32], [220, 0.8, 0.7]].forEach(([freq, at, length]) => {
+      const osc = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + at;
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.84, t + length);
+      const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.05, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + length);
+      osc.connect(f).connect(g).connect(sfxBus);
+      osc.start(t); osc.stop(t + length + 0.05);
+    });
+  },
+  // A big win climbing a level (BIG → HUGE → MEGA): a bright rising chord.
+  levelUp(level = 2) {
+    const ac = audio(); if (!ac) return;
+    const base = level >= 3 ? 659 : 523;
+    [1, 1.25, 1.5, 2].forEach((k, i) => tone(ac, { at: i * 0.05, freq: base * k, length: 0.4, gain: 0.07, type: 'triangle' }));
+    noiseBurst(ac, { length: 0.25, freq: 7000, q: 0.5, gain: 0.08 });
+  },
   // A camera shutter for the photo finish.
   shutter() { const ac = audio(); if (!ac) return; noiseBurst(ac, { length: 0.03, freq: 3500, q: 1.2, gain: 0.3 }); noiseBurst(ac, { at: 0.07, length: 0.04, freq: 2200, q: 1.2, gain: 0.25 }); }
 };
@@ -284,14 +323,14 @@ export { formatCH, formatMoney, moneyResult } from './money.js';
 import { formatCH } from './money.js';
 
 // Animated number roll for balances and payouts.
-export function rollNumber(el, from, to, { duration = 700, format = formatCH } = {}) {
+export function rollNumber(el, from, to, { duration = 700, format = formatCH, ease = t => 1 - Math.pow(1 - t, 3) } = {}) {
   const d = ms(duration);
   if (d < 80 || from === to) { el.textContent = format(to); return Promise.resolve(); }
   return new Promise(resolve => {
     const start = performance.now();
     const step = now => {
       const t = Math.min(1, (now - start) / d);
-      const eased = 1 - Math.pow(1 - t, 3);
+      const eased = ease(t);
       el.textContent = format(Math.round(from + (to - from) * eased));
       if (t < 1) requestAnimationFrame(step); else resolve();
     };

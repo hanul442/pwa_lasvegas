@@ -781,7 +781,7 @@ export class Table {
     if (text) node.append(el('span', 'banner-head', text));
     if (net) node.append(el('span', 'banner-money', moneyResult(net)));
     if (extra) node.append(el('span', 'banner-hot', extra));
-    if (day) node.append(el('span', 'banner-day', day));
+    if (day) node.append(el('span', `banner-day${this.dayStreak >= 5 ? ' is-burning' : this.dayStreak >= 3 ? ' is-streak' : ''}`, day));
     clearTimeout(this.bannerTimer);
     this.bannerTimer = setTimeout(() => node.classList.remove('is-shown'), ms(day ? 2300 : 1800));
   }
@@ -798,7 +798,20 @@ export class Table {
     if (net > 0) return '';
     const parts = [d.net < 0 ? `오늘 -${formatCH(-d.net)}` : `오늘 잃은 돈 -${formatCH(d.lost)}`];
     if (d.losingRun >= 2) parts.push(`${d.losingRun}연패`);
+    this.dayStreak = d.losingRun || 0;
+    this.lossMilestone(d);
     return parts.join(' · ');
+  }
+
+  // The day's loss passing 50, 100, 200, 500 or 1000 table minimums gets said out loud, once.
+  lossMilestone(d) {
+    if (!(d.net < 0)) return;
+    const lost = -d.net, min = this.tier.min;
+    const mark = [1000, 500, 200, 100, 50].find(k => lost >= k * min);
+    const key = `${d.day}:${this.tier.slug}`;
+    if (!mark || (this.lossMark?.key === key && this.lossMark.mark >= mark)) return;
+    this.lossMark = { key, mark };
+    setTimeout(() => this.toast(`오늘 ${formatCH(lost)} 잃었어요 · 이 테이블 최대 베팅 ${Math.floor(lost / this.tier.max)}판어치`), ms(2400));
   }
 
   dayTag(net) {
@@ -857,7 +870,20 @@ export class Table {
   // win paid a max bet's worth at this table, unless `force` (a jackpot, or already checked).
   bigWin(amount, { title, subtitle, level = 0, multiple = 0, force = false } = {}) {
     if (!force && !namedWinCounts(amount, this.tier.min)) return Promise.resolve();
-    return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname, level: level || Math.max(1, bigWinLevel(amount, 0, this.tier.min)), multiple });
+    return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname, level: level || Math.max(1, bigWinLevel(amount, 0, this.tier.min)), multiple, min: this.tier.min, badges: this.winBadges(amount) });
+  }
+
+  // What else this win just did: the biggest single win this player has had at any game, or
+  // the day's chips at a new high (lib/loss-tally.mjs). The server state already counts it.
+  winBadges(amount) {
+    const u = this.serverState?.user;
+    if (!u) return [];
+    const badges = [];
+    const best = Math.max(0, ...Object.values(u.stats || {}).map(s => s?.biggestWin || 0));
+    if (amount > 0 && amount >= best) badges.push('개인 최고 기록');
+    const d = u.today, chips = (u.account?.available || 0) + (u.account?.locked || 0);
+    if (d?.rounds > 1 && chips >= d.peak && chips > d.start) badges.push(`오늘 최고점 ${formatCH(chips)}`);
+    return badges;
   }
 
   glow() {

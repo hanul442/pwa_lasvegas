@@ -38,20 +38,26 @@ function fanfare(level) {
 }
 
 // title: the moment ("BLACKJACK", "광땡", "35×"); amount: chips won; game: shown on the share card.
-export function bigWin({ title, amount, game = '', subtitle = '', nickname = '', level = 1, multiple = 0 }) {
-  const tier = levelOf(level);
+// min: the table's minimum bet. With it the label climbs while the amount rolls up — BIG WIN,
+// then HUGE, then MEGA as the count passes each bar — the way a slot machine's win meter does.
+// badges: short lines under the amount ("개인 최고 기록", "오늘 최고점").
+export function bigWin({ title, amount, game = '', subtitle = '', nickname = '', level = 1, multiple = 0, min = 0, badges = [] }) {
+  const final = levelOf(level);
+  const climbs = min > 0 && final.level > 1 && !reducedMotion();
+  let shown = climbs ? levelOf(1) : final;
   return new Promise(resolve => {
-    const node = el('div', `bigwin bigwin--l${tier.level}`);
+    const node = el('div', `bigwin bigwin--l${shown.level}`);
     node.setAttribute('role', 'dialog');
-    node.setAttribute('aria-label', `${tier.label} ${title} ${formatMoney(amount)} 벌었어요`);
+    node.setAttribute('aria-label', `${final.label} ${title} ${formatMoney(amount)} 벌었어요${badges.length ? `, ${badges.join(', ')}` : ''}`);
     node.innerHTML = `
       <div class="bigwin-rain" aria-hidden="true"></div>
       <div class="bigwin-inner">
         <span class="bigwin-star" aria-hidden="true"></span>
-        <p class="bigwin-sub">${tier.label}${subtitle ? ` · ${subtitle}` : ''}</p>
+        <p class="bigwin-sub"><b data-level>${shown.label}</b>${subtitle ? ` · ${subtitle}` : ''}</p>
         <h2 class="bigwin-title">${title}</h2>
         <strong class="bigwin-amount"><span data-amount>0원</span> <small>벌었어요</small></strong>
         ${multiple >= 2 ? `<p class="bigwin-multiple">판돈의 ${multiple}배</p>` : ''}
+        ${badges.length ? `<p class="bigwin-badges">${badges.map(b => `<span>${b}</span>`).join('')}</p>` : ''}
         <div class="bigwin-actions">
           <button type="button" class="pill-button pill-button--solid" data-share>동네방네 자랑하기</button>
           <button type="button" class="pill-button" data-close>계속</button>
@@ -59,21 +65,43 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '',
       </div>`;
     document.body.append(node);
     const rain = node.querySelector('.bigwin-rain');
-    if (!reducedMotion()) {
-      for (let i = 0; i < 18 + tier.level * 14; i++) {
-        const chip = createChip(RAIN[i % RAIN.length]);
+    const pour = (count, spread = 900) => {
+      if (reducedMotion()) return;
+      for (let i = 0; i < count; i++) {
+        const chip = createChip(RAIN[Math.floor(Math.random() * RAIN.length)]);
         chip.style.left = `${Math.random() * 100}%`;
         chip.style.setProperty('--fall', `${ms(1600 + Math.random() * 1400)}ms`);
-        chip.style.setProperty('--delay', `${ms(Math.random() * 900)}ms`);
+        chip.style.setProperty('--delay', `${ms(Math.random() * spread)}ms`);
         chip.style.setProperty('--spin', `${Math.random() > 0.5 ? '' : '-'}${360 + Math.floor(Math.random() * 540)}deg`);
+        chip.addEventListener('animationend', () => chip.remove(), { once: true });
         rain.append(chip);
       }
-    }
+    };
+    pour(18 + shown.level * 14);
     requestAnimationFrame(() => node.classList.add('is-open'));
-    fanfare(tier.level);
-    haptic(tier.level >= 3 ? [60, 40, 60, 40, 60, 40, 160, 80, 320] : tier.level === 2 ? [40, 50, 40, 50, 120, 80, 260] : [40, 50, 40, 50, 120, 80, 200]);
-    rollNumber(node.querySelector('[data-amount]'), 0, amount, { duration: 1000 + tier.level * 500, format: formatMoney });
+    fanfare(shown.level);
+    haptic([40, 50, 40, 50, 120, 80, 200]);
+    const levelEl = node.querySelector('[data-level]');
+    const climb = value => {
+      const next = BIG_WIN_LEVELS.find(l => value >= l.at * min && l.level > shown.level && l.level <= final.level);
+      if (!next) return;
+      shown = next;
+      node.className = `bigwin bigwin--l${next.level} is-open`;
+      levelEl.textContent = next.label;
+      animate(levelEl, [{ transform: 'scale(1.8)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.2,.8,.3,1.2)' });
+      animate(node.querySelector('.bigwin-inner'), [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 420 });
+      sound.levelUp?.(next.level);
+      haptic(next.level >= 3 ? [60, 40, 60, 40, 220] : [40, 40, 160]);
+      pour(next.level * 16, 400);
+    };
+    // Climbing takes longer, so each bar is felt as it goes by.
+    rollNumber(node.querySelector('[data-amount]'), 0, amount, {
+      duration: climbs ? 1400 + final.level * 900 : 1000 + final.level * 500,
+      format: v => { if (climbs) climb(v); return formatMoney(v); },
+      ...(climbs ? { ease: t => t * t * (3 - 2 * t) } : {})
+    }).then(() => { if (climbs) climb(amount); });
     animate(node.querySelector('.bigwin-title'), [{ transform: 'scale(.4)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 650 });
+    const tier = final;
 
     let done = false;
     const close = () => {
@@ -87,12 +115,12 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '',
     const onKey = e => { if (e.key === 'Escape' || (e.key === 'Enter' && !e.target.closest?.('[data-share]'))) { e.preventDefault(); e.stopPropagation(); close(); } };
     addEventListener('keydown', onKey, true);
     // It goes away on its own unless the player reaches for the share button.
-    let timer = setTimeout(close, ms(3600 + tier.level * 900) + 600);
+    let timer = setTimeout(close, ms(3600 + tier.level * 900 + (climbs ? tier.level * 900 : 0)) + 600);
     node.querySelector('[data-close]').addEventListener('click', close);
     node.querySelector('[data-share]').addEventListener('click', async e => {
       clearTimeout(timer);
       e.currentTarget.disabled = true;
-      await shareWin({ title, amount, game, nickname, label: tier.label }).catch(() => {});
+      await shareWin({ title, amount, game, nickname, label: tier.label, badges }).catch(() => {});
       e.currentTarget.disabled = false;
     });
     node.querySelector('[data-share]').focus({ preventScroll: true });
@@ -102,7 +130,7 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '',
 // ---------- share card ----------
 export { loadLogo };
 
-export async function winCard({ title, amount, game, nickname = '', label = 'BIG WIN' }) {
+export async function winCard({ title, amount, game, nickname = '', label = 'BIG WIN', badges = [] }) {
   const W = 1080, H = 1350;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
@@ -130,9 +158,14 @@ export async function winCard({ title, amount, game, nickname = '', label = 'BIG
   ctx.font = `700 ${size}px Archivo, "Noto Sans KR", sans-serif`;
   while (ctx.measureText(won).width > W - 140 && size > 48) { size -= 6; ctx.font = `700 ${size}px Archivo, "Noto Sans KR", sans-serif`; }
   ctx.fillText(won, W / 2, 940);
+  if (badges.length) {
+    ctx.fillStyle = '#fff6dc';
+    ctx.font = '600 36px "Noto Sans KR", sans-serif';
+    ctx.fillText(badges.join('  ·  '), W / 2, 1010, W - 160);
+  }
   ctx.fillStyle = '#f4f5f7';
   ctx.font = '600 50px "Noto Sans KR", sans-serif';
-  ctx.fillText(BRAGS[Math.floor(amount / 7) % BRAGS.length], W / 2, 1050);
+  ctx.fillText(BRAGS[Math.floor(amount / 7) % BRAGS.length], W / 2, badges.length ? 1085 : 1050);
   ctx.fillStyle = '#7d838b';
   ctx.font = '400 32px "Noto Sans KR", sans-serif';
   const date = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -141,7 +174,7 @@ export async function winCard({ title, amount, game, nickname = '', label = 'BIG
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 }
 
-export async function shareWin({ title, amount, game, nickname = '', label }) {
-  const blob = await winCard({ title, amount, game, nickname, label });
+export async function shareWin({ title, amount, game, nickname = '', label, badges = [] }) {
+  const blob = await winCard({ title, amount, game, nickname, label, badges });
   return shareImage({ blob, filename: 'vegas-big-win.png', title: 'VEGAS 대박', text: `VEGAS ${game ? `${game}에서 ` : ''}${title}! ${formatMoney(amount)} 벌었어요 🎰`, nickname });
 }

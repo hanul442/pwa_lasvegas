@@ -521,6 +521,9 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .today-chip{flex:none;display:flex;align-items:center;gap:10px;max-width:250px;padding:10px 14px 10px 10px;border:1px solid var(--hair);border-radius:14px;background:var(--ink-2);color:var(--white);text-align:left;scroll-snap-align:start}
 .today-chip.is-hot{border-color:var(--hair-strong)}
 .today-chip:disabled{opacity:.55}
+.today-chip.is-down b{color:#ff8a82}
+.today-chip.is-up b{color:#5fd39a}
+.today-chip.is-down .today-mark{color:#ff8a82}
 .today-mark{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ink-3);color:var(--white)}
 .today-mark>svg:not(.tier-emblem){width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .today-mark .tier-emblem{width:26px;height:26px}

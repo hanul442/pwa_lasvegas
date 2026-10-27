@@ -19,6 +19,7 @@ export const PATTERNS = {
   win: [20, 60, 30],
   bigWin: [30, 50, 30, 50, 60],
   lose: 30,
+  ouch: [120, 60, 220],          // a loss of two max bets or more in one hand
   push: [10, 80, 10],
   reject: [10, 40, 10]
 };

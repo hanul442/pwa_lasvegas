@@ -356,14 +356,14 @@ export async function mountSlots(ctx) {
     setPool(floorPool(res.state));
     await wait(200);
     if (freeSpins) await playFree(freeSpins, stake);
-    const big = jackpot > 0 ? { title: 'JACKPOT', subtitle: `잭팟 +${formatCH(jackpot)}` }
-      : freeSpins && isBigWin(net, stake) ? { title: 'FREE SPINS', subtitle: `프리 스핀 ${freeSpins.awarded}번 +${formatCH(freeSpins.win)}` }
-      : boost && isBigWin(net, stake) ? { title: `${boost}×`, subtitle: `라이트닝 ${LINE_LABEL[line] || line}` } : null;
+    const big = jackpot > 0 ? { title: 'JACKPOT', subtitle: `잭팟 +${formatCH(jackpot)}`, force: true }
+      : freeSpins && isBigWin(net, stake, t.tier.min) ? { title: 'FREE SPINS', subtitle: `프리 스핀 ${freeSpins.awarded}번 +${formatCH(freeSpins.win)}` }
+      : boost && isBigWin(net, stake, t.tier.min) ? { title: `${boost}×`, subtitle: `라이트닝 ${LINE_LABEL[line] || line}` } : null;
     const hot = res.round.hotTable;
     await t.settle(net + (hot?.bonus || 0), { label: freeSpins ? `프리 스핀 ${freeSpins.awarded}번` : line ? label : net ? '' : '본전', big, hot });
     await t.syncBalance();
     refreshActions();
-    return { big: jackpot > 0 || isBigWin(net, stake), jackpot: jackpot > 0 };
+    return { big: jackpot > 0 || isBigWin(net, stake, t.tier.min), jackpot: jackpot > 0 };
   }
 
   // Drag the handle down (or tap it) to spin.

@@ -284,6 +284,14 @@ addEventListener('vegas:open-wallet', () => {
   if (history.state?.vegasSurface === 'table') history.go(tableOverTiers ? -2 : -1);
   else showSurface('bank', { focus: true });
 });
+// The bust screen's "오늘은 여기까지": leave the table the same way and land on a menu.
+addEventListener('vegas:leave-to', event => {
+  const surface = event.detail?.surface || 'lobby';
+  if (!document.body.classList.contains('game-mode')) { showSurface(surface, { focus: true }); return; }
+  returnSurface = surface;
+  if (history.state?.vegasSurface === 'table') history.go(tableOverTiers ? -2 : -1);
+  else showSurface(surface, { focus: true });
+});
 // A room screen sends someone back to the table where they still hold a seat.
 addEventListener('vegas:open-table', event => {
   const game = GAMES.find(g => g.id === event.detail?.game);
@@ -639,8 +647,8 @@ function openBlockSheet(make) {
   requestAnimationFrame(() => { scrim.classList.add('is-open'); sheet.classList.add('is-open'); shut.focus({ preventScroll: true }); });
 }
 
-function todayChip({ mark, title, sub, hot = false, disabled = false, label, onClick }) {
-  const b = el('button', `today-chip${hot ? ' is-hot' : ''}`);
+function todayChip({ mark, title, sub, hot = false, disabled = false, label, tone = '', onClick }) {
+  const b = el('button', `today-chip${hot ? ' is-hot' : ''}${tone ? ` is-${tone}` : ''}`);
   b.type = 'button';
   b.disabled = disabled;
   b.innerHTML = `<span class="today-mark" aria-hidden="true">${mark}</span><span class="today-text"><b>${title}</b><small>${sub}</small></span>`;
@@ -655,7 +663,8 @@ const MARK = {
   hot: '<svg viewBox="0 0 24 24"><path d="M12 4c.5 3.4 4.5 5.2 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.2-3.6 2-4.5.3 1.6 1.2 2.4 2 2.6C11 9.4 11.2 6.6 12 4z"/></svg>',
   watch: '<svg viewBox="0 0 24 24"><path d="M3 12s3.3-5.5 9-5.5S21 12 21 12s-3.3 5.5-9 5.5S3 12 3 12z"/><circle cx="12" cy="12" r="2.6"/></svg>',
   daily: '<svg viewBox="0 0 24 24"><path d="M6.5 5.5h8v13h-8zM14.5 8l3 .8-2.6 9.8-3.6-1"/><path d="M10.5 10l1.2 2-1.2 2-1.2-2z"/></svg>',
-  bank: '<svg viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9M5 9.5v8M9.7 9.5v8M14.3 9.5v8M19 9.5v8M3.5 20h17"/></svg>'
+  bank: '<svg viewBox="0 0 24 24"><path d="M3.5 9 12 4.5 20.5 9M5 9.5v8M9.7 9.5v8M14.3 9.5v8M19 9.5v8M3.5 20h17"/></svg>',
+  ledger: '<svg viewBox="0 0 24 24"><path d="M4 6l5 5 4-3 7 8M15 16h5v-5"/></svg>'
 };
 function renderToday() {
   const slot = document.querySelector('[data-home-today]');
@@ -678,6 +687,13 @@ function renderToday() {
   }
   if (r?.eligible) chips.push(todayChip({ mark: MARK.pay, title: `칩 충전 +${formatCH(r.amount)}`, sub: '무료', hot: broke, onClick: rechargeClaim }));
   if (broke && !chips.length) chips.push(todayChip({ mark: MARK.bank, title: '은행에서 빌리기', sub: '칩이 모자라요', hot: true, onClick: () => showSurface('bank', { focus: true }) }));
+  // 오늘의 손익 (lib/loss-tally.mjs): won and lost at the tables since midnight, losses in red,
+  // first in the strip (한서 2026-10-27: "얼마 잃었는지 보여주는 게 많았으면").
+  const day = state.user.today;
+  if (day?.rounds > 0) {
+    const sign = day.net < 0 ? '-' : day.net > 0 ? '+' : '';
+    chips.unshift(todayChip({ mark: MARK.ledger, title: `오늘 ${sign}${formatCH(Math.abs(day.net))}`, sub: `${day.rounds}판 · 잃은 돈 ${formatCH(day.lost)}${day.busts ? ` · 파산 ${day.busts}번` : ''}`, label: `오늘 손익 ${sign}${formatCH(Math.abs(day.net))}원, ${day.rounds}판, 잃은 돈 ${formatCH(day.lost)}원`, tone: day.net < 0 ? 'down' : day.net > 0 ? 'up' : '', onClick: () => showSurface('profile', { focus: true }) }));
+  }
   // 오늘의 한 판: the same ten blackjack deals for everyone today.
   const db = state.dailyBj;
   if (db) chips.push(todayChip({ mark: MARK.daily, title: db.played ? `오늘의 한 판 ${db.score.toLocaleString('ko-KR')}점` : `오늘의 한 판 #${db.no}`, sub: db.played ? '순위 보고 자랑하기' : db.playing ? '이어서 치기' : `${db.players ? `${db.players}명 참가 · ` : ''}모두 같은 10판`, hot: !db.played, onClick: showDaily }));

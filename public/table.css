@@ -209,6 +209,20 @@
 .banner--win{background:var(--white);color:var(--ink)}
 .banner--lose{color:#c9ced6}
 .banner--push{color:var(--white)}
+.banner-day{padding:4px 12px;border-radius:999px;background:#ff4f4f1f;color:#ff8a82;font:600 clamp(12px,3.4vw,14px)/1.2 var(--sans);font-stretch:100%;letter-spacing:0;font-variant-numeric:tabular-nums}
+.banner--ouch{box-shadow:0 0 0 1px #ff4f4f66,0 20px 60px #ff2b2b40;animation:banner-ouch .45s cubic-bezier(.3,.7,.4,1)}
+.banner--ouch .banner-money{color:#ff4f4f;font-size:clamp(20px,5.6vw,28px)}
+@keyframes banner-ouch{0%{scale:1.25}55%{scale:.96}100%{scale:1}}
+.table-screen.is-ouch .felt{animation:felt-ouch .5s cubic-bezier(.3,.7,.4,1)}
+.table-screen.is-ouch .felt::after{content:"";position:absolute;inset:0;z-index:19;pointer-events:none;border-radius:inherit;box-shadow:inset 0 0 90px 20px #ff2b2b4d;animation:felt-ouch-glow .9s ease-out both}
+@keyframes felt-ouch{0%,100%{transform:none}20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+@keyframes felt-ouch-glow{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+.table-balance{position:relative}
+.day-tag{position:absolute;top:calc(100% + 6px);right:6px;z-index:30;padding:3px 9px;border-radius:999px;background:#0a0b0de6;box-shadow:0 0 0 1px #ffffff1f;color:var(--smoke);font:600 12px/1.3 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap;opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s;pointer-events:none}
+.day-tag.is-shown{opacity:1;transform:none}
+.day-tag.is-down{color:#ff8a82;box-shadow:0 0 0 1px #ff4f4f40}
+.day-tag.is-up{color:#5fd39a}
+@media (prefers-reduced-motion:reduce){.table-screen.is-ouch .felt,.banner--ouch{animation:none}.day-tag{transition:opacity .2s}}
 .toast{position:absolute;left:50%;bottom:14px;z-index:21;max-width:calc(100% - 28px);transform:translate(-50%,16px);opacity:0;padding:10px 16px;border-radius:999px;background:#0a0b0dee;border:1px solid var(--hair);font-size:13px;text-align:center;pointer-events:none;transition:transform .3s var(--ease-out),opacity .3s}
 .toast.is-shown{opacity:1;transform:translate(-50%,0)}
 .felt.is-glow{animation:felt-glow 1.6s ease-out}

@@ -2,10 +2,14 @@
 import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { ownerEntrance } from './shop.js';
-import { bigWin, isBigWin, BIG_WIN_MULTIPLE } from './bigwin.js';
+import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
+
+// A hand that loses this many table minimums (two max bets) gets the hard landing.
+const OUCH_MIN = 20;
 import { errorMessage, newKey } from './api.js';
 import { maybeBust } from './bust.js';
 import { buzz } from './haptics.js';
+import { toast as noticeToast } from './notice.js';
 import { rake, pushPay } from './dealer.js';
 
 // The tallest stack drawn under a tray chip; past it a count says how many there are.
@@ -49,6 +53,8 @@ export class Table {
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
     this.nickname = state?.user?.nickname ?? '';
+    // Where the day stood when I sat down, for the result on the way out (seatRecap).
+    this.seatDay = state?.user?.today ?? null;
     this.title = title;
     this.shownBalance = this.available;
     this.multi = multi;
@@ -608,8 +614,9 @@ export class Table {
 
   // Resolve the bets on the felt: winnings slide in from the rack, losses get raked away.
   // `zones` maps zone id to its own net; without it the whole net belongs to the one bet.
-  // `big` names a moment worth stopping the table for ({ title, subtitle }); any win of five
-  // times the stake or more gets one anyway.
+  // `big` names a moment worth stopping the table for ({ title, subtitle }), shown once it paid a
+  // max bet's worth; any win of 25 table minimums (and double the stake) gets one anyway
+  // (public/js/bigwin.js). `big: false` keeps the table going whatever was won.
   // `hot` is the round's 핫 테이블 bonus ({ bonus, rate }), already counted in `net`.
   async settle(net, { label, kind, zones, big, hot } = {}) {
     const staked = this.total;
@@ -633,11 +640,19 @@ export class Table {
       pays.push(pushPay(payStack, rack, { delay: pays.length * 260 }));
     });
     if (pays.length) await Promise.all(pays);
-    if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? 'lose' : 'push'), net, hot?.bonus > 0 ? `핫 테이블 +${Math.round(hot.rate * 100)}% · +${formatMoney(hot.bonus)}` : '');
+    // A loss of two max bets or more in one hand lands hard: the felt flashes red and shakes.
+    const ouch = net < 0 && -net >= OUCH_MIN * this.tier.min;
+    const day = this.dayNews(net);
+    if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? (ouch ? 'lose banner--ouch' : 'lose') : 'push'), net, hot?.bonus > 0 ? `핫 테이블 +${Math.round(hot.rate * 100)}% · +${formatMoney(hot.bonus)}` : '', net < 0 ? day : '');
     if (net > 0) { sound.win(); buzz('win'); this.glow(); }
-    else if (net < 0) { sound.lose(); buzz('lose'); }
+    else if (net < 0) { sound.lose(); buzz(ouch ? 'ouch' : 'lose'); if (ouch) this.ouch(); }
     else { sound.push(); buzz('push'); }
-    if (big !== false && net > 0 && (big || isBigWin(net, staked))) await this.bigWin(net, big || { title: staked > 0 && net >= staked * BIG_WIN_MULTIPLE ? `${Math.floor(net / staked)}×` : '대박' });
+    if (big !== false && net > 0) {
+      const level = bigWinLevel(net, staked, this.tier.min);
+      const multiple = staked > 0 ? Math.floor(net / staked) : 0;
+      if (big && (big.force || namedWinCounts(net, this.tier.min))) await this.bigWin(net, { ...big, level: Math.max(1, level), multiple, force: true });
+      else if (level) await this.bigWin(net, { title: multiple >= 2 ? `${multiple}×` : '대박', level, multiple, force: true });
+    }
     await wait(net > 0 ? 900 : 650);
     const moves = [], raked = [];
     const balance = this.balanceEl.getBoundingClientRect();
@@ -758,15 +773,50 @@ export class Table {
 
   // ---------- feedback ----------
   // The headline, and under it what the round was worth: "7억 2천만원 벌었어요".
-  banner(text, kind = 'win', net = 0, extra = '') {
+  // day: the day's running loss under a losing hand ("오늘 -12억 · 3연패").
+  banner(text, kind = 'win', net = 0, extra = '', day = '') {
     const node = this.root.querySelector('[data-banner]');
     node.className = `banner banner--${kind} is-shown`;
     node.replaceChildren();
     if (text) node.append(el('span', 'banner-head', text));
     if (net) node.append(el('span', 'banner-money', moneyResult(net)));
     if (extra) node.append(el('span', 'banner-hot', extra));
+    if (day) node.append(el('span', 'banner-day', day));
     clearTimeout(this.bannerTimer);
-    this.bannerTimer = setTimeout(() => node.classList.remove('is-shown'), ms(1800));
+    this.bannerTimer = setTimeout(() => node.classList.remove('is-shown'), ms(day ? 2300 : 1800));
+  }
+
+  // ---------- 오늘의 손익 ----------
+  // The day's won/lost from the server (lib/loss-tally.mjs), once it counts the round just
+  // played: a tag under the wallet after every round, and a line on every losing banner.
+  // 한서 (2026-10-27): "얼마 잃었는지 보여주는 게 좀 많았으면".
+  dayNews(net) {
+    const d = this.serverState?.user?.today;
+    if (!d || !net || d.rounds === this.dayRounds) return '';
+    this.dayRounds = d.rounds;
+    this.dayTag(d.net);
+    if (net > 0) return '';
+    const parts = [d.net < 0 ? `오늘 -${formatCH(-d.net)}` : `오늘 잃은 돈 -${formatCH(d.lost)}`];
+    if (d.losingRun >= 2) parts.push(`${d.losingRun}연패`);
+    return parts.join(' · ');
+  }
+
+  dayTag(net) {
+    const box = this.balanceEl.parentElement;
+    let tag = box.querySelector('.day-tag');
+    if (!tag) { tag = el('span', 'day-tag'); tag.setAttribute('aria-hidden', 'true'); box.append(tag); }
+    tag.textContent = `오늘 ${net < 0 ? '-' : net > 0 ? '+' : ''}${formatCH(Math.abs(net))}`;
+    tag.className = `day-tag ${net < 0 ? 'is-down' : net > 0 ? 'is-up' : ''} is-shown`;
+    clearTimeout(this.dayTimer);
+    this.dayTimer = setTimeout(() => tag.classList.remove('is-shown'), ms(3200));
+  }
+
+  ouch() {
+    this.root.classList.remove('is-ouch');
+    void this.root.offsetWidth;
+    this.root.classList.add('is-ouch');
+    clearTimeout(this.ouchTimer);
+    this.ouchTimer = setTimeout(() => this.root.classList.remove('is-ouch'), ms(900));
   }
 
   // action/onAction: one button in the toast (다시 시도); it then stays up a little longer.
@@ -803,8 +853,11 @@ export class Table {
     else { this.pendingRound = null; this.toast(errorMessage(err)); }
   }
 
-  bigWin(amount, { title, subtitle } = {}) {
-    return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname });
+  // Games that name their own moment (포카드, 광땡) call this directly; it shows only when the
+  // win paid a max bet's worth at this table, unless `force` (a jackpot, or already checked).
+  bigWin(amount, { title, subtitle, level = 0, multiple = 0, force = false } = {}) {
+    if (!force && !namedWinCounts(amount, this.tier.min)) return Promise.resolve();
+    return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname, level: level || Math.max(1, bigWinLevel(amount, 0, this.tier.min)), multiple });
   }
 
   glow() {
@@ -842,5 +895,21 @@ export class Table {
     this.listeners.push(['keydown', fn]);
   }
 
-  destroy() { this.listeners.forEach(([t, fn]) => (t === 'hot-timer' ? clearInterval(fn) : window.removeEventListener(t, fn))); this.listeners = []; this.hotTimer = null; }
+  destroy() {
+    this.listeners.forEach(([t, fn]) => (t === 'hot-timer' ? clearInterval(fn) : window.removeEventListener(t, fn))); this.listeners = []; this.hotTimer = null;
+    this.seatRecap();
+  }
+
+  // Leaving says what this seat came to: "블랙잭 12판 · 3억원 잃었어요 · 오늘 -12억".
+  seatRecap() {
+    const now = this.serverState?.user?.today, then = this.seatDay;
+    if (!now || this.recapped) return;
+    this.recapped = true;
+    const same = then?.day === now.day;
+    const rounds = now.rounds - (same ? then.rounds : 0);
+    if (!(rounds > 0)) return;
+    const net = now.net - (same ? (then.net ?? then.won - then.lost) : 0);
+    const day = now.net !== net ? ` · 오늘 ${now.net < 0 ? '-' : '+'}${formatCH(Math.abs(now.net))}` : '';
+    setTimeout(() => noticeToast(`${this.title} ${rounds}판 · ${net ? moneyResult(net) : '본전'}${day}`, { duration: 4200 }), 350);
+  }
 }

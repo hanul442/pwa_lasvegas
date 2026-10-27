@@ -77,3 +77,46 @@ test('the big-win bar rises with the table: 25 minimums and double the stake', (
   assert.equal(namedWinCounts(1.5 * min, min), false, 'a minimum-bet blackjack stays a banner');
   assert.equal(namedWinCounts(15 * min, min), true);
 });
+
+import { thinCurve, CURVE_MAX, monthView } from '../lib/loss-tally.mjs';
+import { chartPoints } from '../public/js/day-chart.js';
+
+test('the day keeps its chip curve, per-game net and the month', () => {
+  const s = defaultState(), u = s.users.hanseo;
+  settleHouseGame(s, u, { game: 'Blackjack', stake: 100_000_000, netPnl: 100_000_000, roundId: 'g1' });
+  settleHouseGame(s, u, { game: 'Roulette', stake: 100_000_000, netPnl: -100_000_000, roundId: 'g2' });
+  settleHouseGame(s, u, { game: 'Roulette', stake: 100_000_000, netPnl: -100_000_000, roundId: 'g3' });
+  const d = publicUser(u).today;
+  assert.deepEqual(d.curve.map(p => p[1]), [1_000_000_000, 1_100_000_000, 1_000_000_000, 900_000_000]);
+  assert.deepEqual(d.games, { Blackjack: { net: 100_000_000, rounds: 1 }, Roulette: { net: -200_000_000, rounds: 2 } });
+  assert.equal(d.winningRun, 0);
+  const m = publicUser(u).month;
+  assert.equal(m.lost, 200_000_000);
+  assert.equal(m.net, -100_000_000);
+  assert.equal(m.rounds, 3);
+  const c = chartPoints(d.curve);
+  assert.equal(c.top, 1);
+});
+
+test('a long day thins its curve but keeps the high and the latest point', () => {
+  let curve = [];
+  for (let i = 0; i < CURVE_MAX + 1; i++) curve = thinCurve([...curve, [i, i === 41 ? 999 : i]]);
+  assert.ok(curve.length <= CURVE_MAX);
+  assert.ok(curve.some(p => p[1] === 999));
+  assert.equal(curve.at(-1)[0], CURVE_MAX);
+});
+
+test('a bust carries the month and keeps only its own curve', () => {
+  const s = defaultState(), u = s.users.hanseo;
+  settleHouseGame(s, u, { game: 'Baccarat', stake: 1_000_000_000, netPnl: -1_000_000_000, roundId: 'b1' });
+  u.account.available = 500_000_000;
+  settleHouseGame(s, u, { game: 'Baccarat', stake: 500_000_000, netPnl: -500_000_000, roundId: 'b2' });
+  const [latest, first] = u.bankruptcies;
+  assert.equal(latest.month.busts, 2);
+  assert.equal(latest.busts, 2);
+  assert.ok(Array.isArray(latest.today.curve));
+  assert.equal(first.today.curve, undefined);
+  const rows = bustLines(latest).rows.map(r => r[0]);
+  assert.ok(rows.includes('파산'));
+  assert.ok(monthView(u).busts === 2);
+});

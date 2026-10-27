@@ -117,6 +117,32 @@ test('고스톱 and 맞고 rooms play to the end and settle each person', () => 
   }
 });
 
+test('맞고 room: the last hand\'s winner leads the next, a 나가리 keeps the same 선', () => {
+  const w = world(21);
+  const { state } = w;
+  const room = createRoom(state, state.users.hanseo, { game: 'matgo', stake: 10_000_000, floor: 'high-limit' }, w.ctx());
+  joinRoom(state, state.users.june, room.code, w.ctx());
+  startRoom(state, state.users.hanseo, room.code, w.ctx());
+  const seen = [];
+  for (let step = 0; step < 3000 && seen.length < 8; step++) {
+    const r = room.round;
+    if (r.status === 'SETTLED') {
+      w.advance(NEXT_HAND_MS);
+      tick(state, room, w.ctx());
+      if (room.round !== r) seen.push([r, room.round]);
+      continue;
+    }
+    const seat = r.seats[actorOf(r)];
+    roomAction(state, state.users[seat.userId], room.code, { handNo: room.handNo, seq: room.events.length, ...moveFor(room, r.seats.indexOf(seat), w.rand) }, w.ctx());
+  }
+  for (const [r, next] of seen) {
+    const lead = r.result.winner ?? r.first;
+    assert.equal(next.seats[next.first].userId, r.seats[lead].userId, r.result.winner === null ? '나가리 keeps 선' : 'winner leads');
+  }
+  const checked = seen.length;
+  assert.ok(checked >= 4);
+});
+
 test('blackjack room: friends and AI against one dealer, doubles and splits locked and settled', () => {
   const w = world(13);
   const { state } = w;

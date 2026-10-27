@@ -279,6 +279,32 @@ test('맞고 API locks a 10-point deposit and settles back to a clean ledger', a
   assert.equal(account.available, after + bailout);
 });
 
+test('맞고 API: the winner of the last hand leads the next one', async () => {
+  const store = memoryStore();
+  let prev = null;
+  const wallet = (await call(store, 'GET', '/api/state')).data.user.account.available;
+  for (let hand = 0; hand < 4; hand++) {
+    // Put the wallet back each hand, so a big win never outgrows High Limit mid-test.
+    await store.mutate(s => { for (const u of Object.values(s.users)) u.account.available = wallet; });
+    let res = await call(store, 'POST', '/api/matgo/start', { stake: 10_000_000, floor: 'high-limit' });
+    assert.equal(res.status, 200, JSON.stringify(res.data));
+    if (prev) assert.equal(res.data.round.first, prev.result.winner ?? prev.first, prev.result.winner === null ? '나가리 keeps 선' : 'winner leads');
+    for (let i = 0; i < 40 && res.data.round.status === 'PLAYING'; i++) {
+      const v = res.data.round;
+      let body;
+      if (v.phase === 'GO_STOP') body = { type: 'STOP' };
+      else if (v.phase === 'CHOOSE_FLIP') body = { type: 'CHOOSE', target: v.pending.options[0] };
+      else if (v.legal.cards.length) {
+        const c = v.legal.cards[0];
+        body = { type: 'PLAY', card: c, target: v.floor.filter(x => x.slice(0, 2) === c.slice(0, 2))[0] };
+      } else body = { type: 'FLIP_ONLY' };
+      res = await call(store, 'POST', '/api/matgo/action', { roundId: v.id, ...body });
+    }
+    assert.equal(res.data.round.status, 'SETTLED');
+    prev = res.data.round;
+  }
+});
+
 test('섯다 API charges each raise and pays the pot', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;

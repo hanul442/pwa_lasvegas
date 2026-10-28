@@ -13,7 +13,7 @@ import { createRoomClient } from './room-client.js';
 import { createBanter } from '../banter.js';
 
 const ME = 0;
-const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', HALF: '하프', CALL: '콜' };
+const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', DDADANG: '따당', HALF: '하프', CALL: '콜' };
 const LINE = { DIE: 'die', CHECK: 'check', HALF: 'half', CALL: 'call' };
 const NAMES = ['박사장', '김여사', '타짜 정', '막내']; // the server's roster, for the empty table
 const COUNT_KEY = 'vegas.seotda.players';
@@ -50,6 +50,10 @@ export async function mountSeotda(ctx) {
   const cardsOf = seat => $(`[data-cards="${seat}"]`);
   const potEl = $('[data-pot]'), callout = $('[data-callout]');
   let view = null, mine = 0; // what I have in the pot while events play out
+  // While the bets are still landing on the felt, the buttons wait: `view` already holds the end
+  // state, so they would otherwise offer my next move before the others have been seen to act.
+  let playing = false, liveTurn = -1;
+  const DEALING = -2;
   t.sd = { get view() { return view; } };
   // The AI round the table talk as they bet: a dig on a 하프, a sigh on a 다이, a brag on a 땡.
   const banter = createBanter({
@@ -117,7 +121,7 @@ export async function mountSeotda(ctx) {
     node.innerHTML = `<b>${LABEL[action]}</b>${cost ? ` ${formatCH(cost)}` : ''}`;
     voice.say(LINE[action]);
     node.classList.add('is-shown');
-    node.classList.toggle('is-raise', action === 'HALF' || action === 'BBING');
+    node.classList.toggle('is-raise', action === 'HALF' || action === 'BBING' || action === 'DDADANG');
     animate(node, [{ opacity: 0, transform: 'translateY(4px) scale(.85)' }, { opacity: 1, transform: 'none' }], { duration: 220, fill: 'none' });
   }
   const hush = () => t.body.querySelectorAll('[data-said]').forEach(n => { n.textContent = ''; n.classList.remove('is-shown', 'is-raise'); });
@@ -167,8 +171,15 @@ export async function mountSeotda(ctx) {
   }
 
   async function playEvents(events) {
+    if (!events.length) return;
+    playing = true;
+    refreshActions();
+    try { await playEach(events); } finally { playing = false; liveTurn = -1; }
+  }
+
+  async function playEach(events) {
     for (const e of events) {
-      if (e.type === 'turn') setTurn(e.seat);
+      if (e.type === 'turn') { setTurn(e.seat); liveTurn = e.seat; if (e.seat !== ME) refreshActions(); }
       else if (e.type === 'bet') {
         if (e.seat !== ME) await wait(520);
         say(e.seat, e.action, e.cost);
@@ -185,6 +196,7 @@ export async function mountSeotda(ctx) {
         potText(e.pot, mine);
         await wait(160);
       } else if (e.type === 'deal') {
+        if (liveTurn !== DEALING) { liveTurn = DEALING; refreshActions(); }
         if (e.street === 2 && !t.body.dataset.street2) { t.body.dataset.street2 = '1'; hush(); }
         await dealTo(e.seat, e.card, { squeeze: e.seat === ME && e.street === 2 });
       } else if (e.type === 'reveal') {
@@ -333,8 +345,9 @@ export async function mountSeotda(ctx) {
       t.setActions(room.active ? room.idleActions() : t.idleActions('시작', deal, { againLabel: '같은 베팅으로 한 판 더' }));
       return;
     }
-    if (view.turn !== ME) {
-      const waiting = { label: `${view.players[view.turn]?.name || '상대'} 차례`, ghost: true, disabled: true };
+    if (playing || view.turn !== ME) {
+      const who = playing ? liveTurn : view.turn;
+      const waiting = { label: who >= 0 && who !== ME ? `${view.players[who]?.name || '상대'} 차례` : who === DEALING ? '패 받는 중' : '베팅 중', ghost: true, disabled: true };
       t.setActions(room.active ? [room.leaveAction(), waiting] : [waiting]);
       return;
     }

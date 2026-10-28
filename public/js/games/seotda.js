@@ -3,7 +3,7 @@
 // Each AI bets from its own cards only; the pot slides to whoever holds the best 족보.
 // "친구와 함께" seats friends in the same chairs (room-client.js); the server turns the room so I sit in seat 0.
 import { api, errorMessage } from '../api.js';
-import { createHwatu, flipHwatu } from '../hwatu.js';
+import { createHwatu, flipHwatu, peekHwatu, slap } from '../hwatu.js';
 import { animate, flyFrom, flyTo, flyOut, wait, sound, haptic, formatCH, el } from '../fx.js';
 import { breakdown, createChip } from '../chips.js';
 import { Table } from '../table.js';
@@ -127,8 +127,16 @@ export async function mountSeotda(ctx) {
     const node = createHwatu(id && id !== 'HIDDEN' ? id : null, { faceUp: false });
     box.append(node);
     sound.card(); haptic(6);
-    await flyFrom(node, deck.getBoundingClientRect(), { duration: seat === ME ? 420 : 300, spin: -16, scale: 0.7, lift: 26 });
-    if (seat === ME && id && id !== 'HIDDEN') await flipHwatu(node, id, { squeeze });
+    await flyFrom(node, deck.getBoundingClientRect(), { duration: seat === ME ? 440 : 320, spin: -16, scale: 0.7, lift: 26, settle: true });
+    if (seat === ME && id && id !== 'HIDDEN') {
+      if (squeeze) {
+        // The second card waits face down for my thumb (패 들춰보기).
+        const was = t.hintEl.textContent;
+        t.hint('패를 밀어 올려 확인하세요 · 탭하면 바로 뒤집어요');
+        await peekHwatu(node, id);
+        t.hint(was);
+      } else await flipHwatu(node, id);
+    }
     return node;
   }
 
@@ -195,7 +203,8 @@ export async function mountSeotda(ctx) {
       if (!e.hands[s]) continue;
       if (s !== ME) {
         const nodes = [...cardsOf(s).querySelectorAll('.hw')];
-        for (let k = 0; k < nodes.length; k++) await flipHwatu(nodes[k], e.hands[s][k], { squeeze: false });
+        // Each hand is turned over and slapped down on the blanket.
+        for (let k = 0; k < nodes.length; k++) { await flipHwatu(nodes[k], e.hands[s][k], { squeeze: false }); slap(nodes[k]); }
       }
       const tag = $(`[data-name="${s}"]`);
       tag.textContent = e.names[s];
@@ -208,8 +217,19 @@ export async function mountSeotda(ctx) {
 
   async function clearCards() {
     const nodes = [...t.body.querySelectorAll('[data-cards] .hw')];
-    const to = deck.getBoundingClientRect();
-    await Promise.all(nodes.map((n, i) => flyTo(n, to, { duration: 360, delay: i * 20, fade: true })));
+    // The dealer draws every hand in to the pot in one pile, then puts it under the deck.
+    const to = deck.getBoundingClientRect(), mid = zone.getBoundingClientRect();
+    const cx = mid.left + mid.width / 2, cy = mid.top + mid.height / 2;
+    if (nodes.length) sound.gather?.();
+    await Promise.all(nodes.map((n, i) => {
+      const r = n.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      return animate(n, [
+        { transform: 'none', opacity: 1 },
+        { transform: `translate(${cx - x}px,${cy - y - i * 0.6}px) rotate(0deg)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${cx - x}px,${cy - y - i * 0.6}px) rotate(0deg)`, opacity: 1, offset: 0.62 },
+        { transform: `translate(${to.left + to.width / 2 - x}px,${to.top + to.height / 2 - y}px) rotate(8deg) scale(.8)`, opacity: 0 }
+      ], { duration: 620, delay: i * 24, easing: 'cubic-bezier(.45,0,.3,1)', fill: 'forwards' });
+    }));
     nodes.forEach(n => n.remove());
     t.body.querySelectorAll('[data-name]').forEach(n => { n.textContent = ''; });
   }
@@ -274,6 +294,8 @@ export async function mountSeotda(ctx) {
 
   // A fresh hand from the server: seats, everyone's ante, then the first cards.
   async function begin(res) {
+    // Last hand's cards are still on the blanket: draw them in before the new deal.
+    if (t.body.querySelector('[data-cards] .hw')) await clearCards();
     view = res.round;
     mine = view.stake;
     if (room.active) { t.resetRound(); t.locked = true; t.root.classList.add('is-playing'); t.placeLocked('ANTE', view.stake); t.refreshBet(); }

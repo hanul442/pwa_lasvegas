@@ -1,7 +1,8 @@
 // European roulette: the rotor and ball are animated to land on the server's number.
 import { api } from '../api.js';
 import { gameName } from '../names.js';
-import { sound, haptic, reducedMotion, wait } from '../fx.js';
+import { sound, haptic, reducedMotion, wait, el, animate } from '../fx.js';
+import { buzz } from '../haptics.js';
 import { Table } from '../table.js';
 import { seatCrowd } from '../npc.js';
 import { voice, rouletteLine } from '../voice.js';
@@ -311,6 +312,29 @@ export async function mountRoulette(ctx, { event = null } = {}) {
   t.refreshActions = refreshActions;
   t.onBetChange = refreshActions;
 
+  // ---------- the dolly: the acrylic marker the croupier puts on the winning number ----------
+  let dolly = null;
+  async function placeDolly(n) {
+    liftDolly();
+    const cell = t.body.querySelector(`[data-zone="N${n}"]`);
+    if (!cell) return;
+    dolly = el('i', 'rl-dolly');
+    dolly.setAttribute('aria-hidden', 'true');
+    cell.append(dolly);
+    await animate(dolly, [
+      { transform: 'translate(-50%,-50%) translateY(-34px) scale(1.5)', opacity: 0 },
+      { transform: 'translate(-50%,-50%) translateY(-6px) scale(1.08)', opacity: 1, offset: 0.62 },
+      { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }
+    ], { duration: 380, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'backwards' });
+    sound.chip(); buzz('chip');
+    await wait(180);
+  }
+  function liftDolly() {
+    const d = dolly; dolly = null;
+    if (!d) return;
+    animate(d, [{ transform: 'translate(-50%,-50%)', opacity: 1 }, { transform: 'translate(-50%,-50%) translateY(-24px) scale(1.3)', opacity: 0 }], { duration: 240, fill: 'forwards' }).then(() => d.remove());
+  }
+
   async function spin() {
     if (!t.betReady) return;
     const bets = t.betZones.map(zone => ({ zone, ...zoneBet(zone), stake: t.zoneTotal(zone) }));
@@ -318,6 +342,7 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     t.lock();
     lockMode(true);
     clearStrikes();
+    liftDolly();
     // The spin goes to the server while the AI players drop their last chips, not after.
     const request = api.rouletteSpin(bets.map(({ zone, ...b }) => b), t.tier.floor, mode === 'lightning', ev?.id, key);
     request.catch(() => {});
@@ -347,6 +372,9 @@ export async function mountRoulette(ctx, { event = null } = {}) {
     const big = lit ? { title: `${lit.multiplier}×`, subtitle: `라이트닝 ${n}` }
       : straight && net >= res.round.stake * 5 ? { title: `${n}`, subtitle: strikes ? '29 대 1' : '35 대 1' } : null;
     const label = `${n} ${res.round.color === 'RED' ? 'Red' : res.round.color === 'BLACK' ? 'Black' : 'Zero'}${lit ? ` · ${lit.multiplier}×` : ''}`;
+    // The dealer sets the dolly on the winning number before touching any chips, the way a
+    // real croupier marks the spin; it stays until the next spin.
+    await placeDolly(n);
     const settled = t.settle(net, { zones, hot, label, big });
     await Promise.all([settled, crowd.settle((zone, stake) => spotNet(zone, stake, n, strikes))]);
     await t.syncBalance();

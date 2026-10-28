@@ -13,6 +13,13 @@
 .hw-art{display:block;width:100%;height:100%;font-family:var(--sans)}
 .hw-back{background:radial-gradient(120% 90% at 50% 40%,#b8322a,#7a1915);box-shadow:inset 0 0 0 calc(var(--hw-w,40px) * .07) #0a0b0d,inset 0 0 0 calc(var(--hw-w,40px) * .085) #ffffff3a,0 1.5px 0 #2a2e34,0 2.5px 0 #0008,0 6px 12px #0006}
 .hw-back::after{content:"";position:absolute;inset:32% 26%;border-radius:50%;border:1px solid #ffffff40}
+.hw.is-peek .hw-inner>.hw-face{visibility:visible}
+.hw.is-peek .hw-inner>.hw-back{visibility:visible;clip-path:inset(0 0 var(--peel,0%) 0 round 0 0 9% 9%)}
+/* the lifted edge of the back as it peels: a pale rim with a soft shadow under it */
+.hw.is-peek .hw-inner::after{content:"";position:absolute;left:0;right:0;bottom:var(--peel,0%);height:5%;z-index:2;pointer-events:none;border-radius:40%/100%;background:linear-gradient(#ffffff70,#7a191500);box-shadow:0 -3px 6px #0006}
+.hw.is-peekable{cursor:grab;outline:1.5px dashed #f7f2e899;outline-offset:3px;animation:hw-peek-hint 1.6s ease-in-out infinite}
+@keyframes hw-peek-hint{0%,60%,100%{translate:0 0}75%{translate:0 -4px}}
+@property --peel{syntax:'<percentage>';inherits:true;initial-value:0%}
 .hw-impact{position:fixed;z-index:30;border-radius:50%;border:1.5px solid #f7f2e8;box-shadow:0 0 12px #f7f2e840;pointer-events:none;opacity:0}
 .hw-face--bomb{display:grid;place-items:center;background:linear-gradient(160deg,#2a2e34,#0a0b0d);color:var(--white);font:650 calc(var(--hw-w,40px) * .22) var(--sans);box-shadow:inset 0 0 0 1px #ffffff3a,0 6px 12px #0006}
 
@@ -82,7 +89,7 @@
 
 /* ---------- 섯다 ---------- */
 .sd{--hw-w:clamp(50px,15vw,96px);position:relative;display:grid;grid-template-rows:auto 1fr auto;gap:10px;min-height:100%}
-.sd-deck{position:absolute;right:2px;top:6px;--hw-w:clamp(30px,8vw,44px);rotate:8deg;margin:0}
+.sd-deck{position:absolute;right:14px;top:10px;--hw-w:clamp(30px,8vw,44px);rotate:6deg;margin:0}
 .sd-seat{display:flex;flex-direction:column;align-items:center;gap:8px;transition:opacity .3s}
 .sd-cards{display:flex;gap:10px;min-height:calc(var(--hw-w) * 1.6)}
 .sd-meta{display:flex;align-items:center;gap:8px;min-height:26px}

@@ -177,6 +177,7 @@ class FirstTips {
     this.bye = { target: '.table-help', text: '규칙과 따라 하기는 ? 버튼에 있어요' };
     markSeen(this.def.id);
     this.show(this.bye);
+    this.follow();
     this.byeTimer = setTimeout(() => this.stop(), 4200);
   }
 

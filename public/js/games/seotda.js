@@ -10,6 +10,7 @@ import { Table } from '../table.js';
 import { voice } from '../voice.js';
 import { doubleStamp } from '../double-down.js';
 import { createRoomClient } from './room-client.js';
+import { createBanter } from '../banter.js';
 
 const ME = 0;
 const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', HALF: '하프', CALL: '콜' };
@@ -50,6 +51,12 @@ export async function mountSeotda(ctx) {
   const potEl = $('[data-pot]'), callout = $('[data-callout]');
   let view = null, mine = 0; // what I have in the pot while events play out
   t.sd = { get view() { return view; } };
+  // The AI round the table talk as they bet: a dig on a 하프, a sigh on a 다이, a brag on a 땡.
+  const banter = createBanter({
+    anchor: s => (s === ME ? null : seatEl(s)),
+    who: s => { const p = view?.players?.[s]; return p?.kind === 'ai' ? p.name || 'AI' : null; }
+  });
+  const allSeats = () => (view?.players || []).map((_, s) => s);
 
   const room = createRoomClient(t, 'seotda', {
     label: '섯다', word: '판돈', sizes: [2, 3, 4, 5], size: 4,
@@ -165,6 +172,7 @@ export async function mountSeotda(ctx) {
       else if (e.type === 'bet') {
         if (e.seat !== ME) await wait(520);
         say(e.seat, e.action, e.cost);
+        banter.seotdaBet(e, allSeats());
         if (e.cost) { if (e.seat === ME) await t.addFromTray('ANTE', e.cost); else await seatChips(e.seat, e.cost); }
         else sound.tick();
         const put = $(`[data-put="${e.seat}"]`);
@@ -183,8 +191,10 @@ export async function mountSeotda(ctx) {
         setTurn(-1);
         hush();
         await reveal(e);
+        banter.seotdaReveal(e);
       } else if (e.type === 'redeal') {
         await shout(`${e.name} · 재경기`);
+        banter.seotdaRedeal(allSeats());
         await doubleStamp(t.body, '판돈 묻고 다시');
         t.toast('판돈은 그대로 묻어 두고, 남은 사람끼리 다시 받아요');
         await clearCards();
@@ -262,6 +272,7 @@ export async function mountSeotda(ctx) {
       : r.winners.length > 1 ? (won ? `무승부 · ${top} 나눠 가짐` : `${r.winners.map(s => nameOf(v, s)).join(' · ')} 나눠 가짐`)
       : won ? `승리 · ${r.hands[ME]}` : `${folded ? '다이' : '패배'} · ${nameOf(v, r.winners[0])} ${top || ''}`.trim();
     r.winners.forEach(s => seatEl(s)?.classList.add('is-winner'));
+    banter.seotdaResult(r, allSeats());
     if (net > 0) voice.say('you-win');
     t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
     if (net > 0) { sound.win(); haptic([20, 60, 30]); t.glow(); } else if (net < 0) { sound.lose(); haptic(30); } else sound.push();
@@ -304,6 +315,7 @@ export async function mountSeotda(ctx) {
     seatEl(ME).classList.remove('is-winner', 'is-folded');
     hush(); paintNames(null); delete t.body.dataset.street2;
     // Everyone's ante goes in together.
+    banter.hello(allSeats());
     await Promise.all(view.players.map((p, s) => (s === ME ? null : seatChips(s, view.stake))));
     paintPot(view);
     paintSeats({ ...view, players: view.players.map(p => ({ ...p, contrib: view.stake, folded: false })) });
@@ -372,6 +384,7 @@ export async function mountSeotda(ctx) {
 
   // Nothing on the felt: no cards, no pot, the empty chairs of the solo table.
   function clearFelt() {
+    banter.clear();
     view = null;
     t.resetRound();
     cardsOf(ME).replaceChildren();

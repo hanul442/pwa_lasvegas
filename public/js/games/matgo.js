@@ -8,6 +8,7 @@ import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
 import { createRoomClient } from './room-client.js';
 import { doubleStamp, doubleBadge, doubleActions } from '../double-down.js';
+import { createBanter } from '../banter.js';
 
 const ME = 0, OPP = 1;
 const GROUPS = [['gwang', '광'], ['yeol', '끗'], ['tti', '띠'], ['pi', '피']];
@@ -51,6 +52,11 @@ export async function mountMatgo(ctx) {
   t.mg = { get view() { return view; }, get selected() { return selected; }, plays: 0 };
   const oppName = $('[data-opp-name]');
   const paintOpp = v => { oppName.textContent = v?.seats?.[OPP]?.name || '하우스 AI'; };
+  // The AI across the blanket talks: a shout on 고, a sigh on 뻑. A friend in that chair doesn't.
+  const banter = createBanter({
+    anchor: s => (s === OPP ? t.body.querySelector('.mg-seat--opp') : null),
+    who: s => { const x = view?.seats?.[s]; return x?.kind === 'ai' ? x.name || '하우스 AI' : null; }
+  });
 
   const room = createRoomClient(t, 'matgo', {
     label: '맞고', word: '점당',
@@ -169,6 +175,7 @@ export async function mountMatgo(ctx) {
   async function playEvents(events) {
     let lastSeat = ME;
     for (const e of events) {
+      banter.hwatu(e, [ME, OPP]);
       if (e.seat === OPP && lastSeat !== OPP && ['play', 'call'].includes(e.type)) await wait(520);
       if (e.seat !== undefined) lastSeat = e.seat;
       if (e.type === 'play') {
@@ -306,6 +313,7 @@ export async function mountMatgo(ctx) {
       label = `${r.winner === ME ? '승리' : '패배'} ${r.points}점${extras ? ` (${extras})` : ''}`;
     }
     if (r.winner === ME) voice.say('you-win');
+    banter.hwatuResult(r, [ME, OPP]);
     t.toast(r.winner === null ? (room.active ? `나가리! 다음 판은 묻고 더블 ×${r.nextDouble}로 가요.` : `나가리! 묻고 더블로 가면 다음 판은 ×${r.nextDouble}이에요.`) : r.lines?.map(l => `${l.label} ${l.points}`).join(' · ') || '');
     // Three go's or a ten-point hand stop the table.
     const goes = r.multipliers?.find(x => /고$/.test(x.label) && x.label !== '고박');
@@ -355,6 +363,7 @@ export async function mountMatgo(ctx) {
     }
     model.pileCount = 20;
     view = round;
+    banter.hello([ME, OPP]);
     await playEvents(firstEvents);
     model = toModel(view);
     await layout(model, { duration: 200 });
@@ -415,6 +424,7 @@ export async function mountMatgo(ctx) {
 
   // An empty blanket: no cards anywhere, the bet zone back for the next game.
   async function clearFelt() {
+    banter.clear();
     view = null; selected = null; options = null; prompt = null;
     t.resetRound();
     zone.hidden = false;

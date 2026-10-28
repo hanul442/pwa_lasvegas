@@ -17,14 +17,18 @@ export function animate(el, keyframes, options) {
 }
 
 // Moves `el` visually from `fromRect` to where it currently sits in layout (FLIP).
-export function flyFrom(el, fromRect, { duration = 420, delay = 0, lift = 0, spin = 0, scale = 0.9, easing } = {}) {
+// `settle` lets a thrown card slide a hair past its spot and drift back, the way paper skids on felt.
+export function flyFrom(el, fromRect, { duration = 420, delay = 0, lift = 0, spin = 0, scale = 0.9, easing, settle = false } = {}) {
   const to = el.getBoundingClientRect();
   const dx = fromRect.left + fromRect.width / 2 - (to.left + to.width / 2);
   const dy = fromRect.top + fromRect.height / 2 - (to.top + to.height / 2);
+  const len = Math.hypot(dx, dy) || 1;
+  const skid = Math.min(6, len * 0.04);
   const frames = lift
     ? [
         { transform: `translate(${dx}px,${dy}px) rotate(${spin}deg) scale(${scale})` },
         { transform: `translate(${dx / 2}px,${dy / 2 - lift}px) rotate(${spin / 2}deg) scale(${(1 + scale) / 2 + 0.08})`, offset: 0.5 },
+        ...(settle ? [{ transform: `translate(${-dx / len * skid}px,${-dy / len * skid}px) rotate(${-spin * 0.04}deg) scale(1)`, offset: 0.84 }] : []),
         { transform: 'translate(0,0) rotate(0) scale(1)' }
       ]
     : [

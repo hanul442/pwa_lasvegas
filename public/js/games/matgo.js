@@ -39,7 +39,11 @@ export async function mountMatgo(ctx) {
   let carry = 1; // 묻고 더블로 가 on offer after a solo 나가리
   const callout = $('[data-callout]');
   const nodes = new Map();
-  let pileBack = null;
+  // The face-down stack is on the board from the start, so an idle table shows a real deck, not a number.
+  let pileBack = createHwatu(null, { faceUp: false });
+  pile.prepend(pileBack);
+  // 화투 tables stake a 점당, not a bet.
+  t.root.querySelector('.bet-readout span').textContent = '점당';
   let view = null;      // last authoritative view from the server
   let model = null;     // what the felt currently shows while events play out
   let selected = null;
@@ -114,7 +118,6 @@ export async function mountMatgo(ctx) {
     for (const [id, n] of nodes) if (!keep.has(id)) { n.remove(); nodes.delete(id); }
     while (oppHand.children.length > m.opp) oppHand.lastElementChild.remove();
     while (oppHand.children.length < m.opp) oppHand.append(createHwatu(null, { faceUp: false }));
-    if (!pileBack) { pileBack = createHwatu(null, { faceUp: false }); pile.prepend(pileBack); }
     pileBack.hidden = m.pileCount === 0;
     $('[data-pile-count]').textContent = m.pileCount;
     paintOptions();
@@ -125,7 +128,7 @@ export async function mountMatgo(ctx) {
       if (!start) continue;
       const end = n.getBoundingClientRect();
       if (Math.abs(start.left - end.left) < 1 && Math.abs(start.top - end.top) < 1) continue;
-      moves.push(flyFrom(n, start, { duration, scale: start.width / Math.max(1, end.width), lift: from.has(id) ? 24 : 12 }));
+      moves.push(flyFrom(n, start, { duration, scale: start.width / Math.max(1, end.width), lift: from.has(id) ? 24 : 12, settle: from.has(id) }));
     }
     await Promise.all(moves);
     await Promise.all(flipIn.map(id => nodes.get(id) && flipHwatu(nodes.get(id), id)));

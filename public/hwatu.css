@@ -13,6 +13,7 @@
 .hw-art{display:block;width:100%;height:100%;font-family:var(--sans)}
 .hw-back{background:radial-gradient(120% 90% at 50% 40%,#b8322a,#7a1915);box-shadow:inset 0 0 0 calc(var(--hw-w,40px) * .07) #0a0b0d,inset 0 0 0 calc(var(--hw-w,40px) * .085) #ffffff3a,0 1.5px 0 #2a2e34,0 2.5px 0 #0008,0 6px 12px #0006}
 .hw-back::after{content:"";position:absolute;inset:32% 26%;border-radius:50%;border:1px solid #ffffff40}
+.hw-impact{position:fixed;z-index:30;border-radius:50%;border:1.5px solid #f7f2e8;box-shadow:0 0 12px #f7f2e840;pointer-events:none;opacity:0}
 .hw-face--bomb{display:grid;place-items:center;background:linear-gradient(160deg,#2a2e34,#0a0b0d);color:var(--white);font:650 calc(var(--hw-w,40px) * .22) var(--sans);box-shadow:inset 0 0 0 1px #ffffff3a,0 6px 12px #0006}
 
 /* ================= CARD ROOM (맞고 · 섯다) ================= */
@@ -49,7 +50,15 @@
 .mg-board{--hw-w:clamp(32px,10.4vw,62px);position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:12px 8px;padding:10px 4px;min-height:calc(var(--hw-w) * 3.6)}
 .mg-pile{position:relative;width:var(--hw-w);height:calc(var(--hw-w) * 1.6);margin:0 6px}
 .mg-pile .hw{position:absolute;inset:0;rotate:0deg}
-.mg-pile-count{position:absolute;right:-8px;bottom:-8px;z-index:3;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--ink);border:1px solid var(--hair-strong);font:600 13px/20px var(--sans);text-align:center}
+/* The deck is a squared stack: tile edges step down under the top card, thinner as it runs out. */
+.mg-pile::before{content:"";position:absolute;inset:0;border-radius:9%/5.6%;background:#5e1411;
+  box-shadow:1px 2px 0 #f2ebdd,2px 4px 0 #5e1411,3px 6px 0 #e6dccb,4px 8px 0 #4a0f0d,5px 10px 0 #d8cdb9,6px 14px 16px #000a;translate:-3px -5px}
+.mg-pile:has(.hw[hidden])::before{display:none}
+.mg-pile .hw{translate:-3px -5px}
+.mg-pile-count{position:absolute;right:-12px;bottom:-12px;z-index:3;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:#0a0b0dcc;border:1px solid #ffffff24;color:var(--smoke);font:600 13px/18px var(--sans);font-variant-numeric:tabular-nums;text-align:center}
+/* Empty capture slots read as places on the cloth, not as a scoreboard. */
+.mg-cap-cards:empty{box-sizing:border-box;width:var(--cap-w);border:1px dashed #efe7d91f;border-radius:9%/5.6%}
+.mg-cap:has(.mg-cap-cards:empty)>span b{color:var(--smoke);font-weight:500}
 .mg-slot{display:flex;min-width:var(--hw-w)}
 .mg-slot .hw+.hw{margin-left:calc(var(--hw-w) * -.55)}
 .mg-slot.has-option .hw+.hw{margin-left:6px}

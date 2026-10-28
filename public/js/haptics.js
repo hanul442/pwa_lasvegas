@@ -6,6 +6,7 @@ import { haptic } from './fx.js';
 export const PATTERNS = {
   card: 6,                      // a card lands in front of you
   flip: 4,                      // a card turns over
+  slap: [18, 24, 6],            // a hwatu card slapped down on the blanket, then the bounce
   chip: 10,                     // a chip set down on a spot
   chipThrow: [6, 30, 14],       // a flicked chip: leaves the hand, then lands
   step: 8,                      // − / + nudges the bet

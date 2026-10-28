@@ -141,7 +141,7 @@ export async function dealCard(hand, text, shoe, { faceUp = true, delay = 0, rot
   if (delay) await new Promise(r => setTimeout(r, ms(delay)));
   sound.card();
   buzz('card');
-  await flyFrom(node, from, { duration: 460, spin: -24, scale: 0.72, lift: 30 });
+  await flyFrom(node, from, { duration: 500, spin: -24, scale: 0.72, lift: 30, settle: true });
   if (faceUp && parseCard(text)) await flipCard(node, text);
   return node;
 }

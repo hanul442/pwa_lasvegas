@@ -1,6 +1,7 @@
 // Hwatu cards: the 48-card deck (mirrors lib/hwatu.mjs), drawn as flat modern SVG so every
 // month is recognisable at phone size, with a month index for players still learning.
 import { animate, sound, el, ms } from './fx.js';
+import { buzz } from './haptics.js';
 
 const KINDS = {
   1: [['gwang'], ['tti', 'hong'], ['pi'], ['pi']],
@@ -143,7 +144,30 @@ export async function flipHwatu(node, id, { duration = 340, squeeze = false } = 
 }
 
 // The slap: a played card lands with a little bounce, the way a hwatu card hits the blanket.
+// The card drops from a hand's height, hits (sound + buzz on impact), and the cards already on
+// that month jump a little; a faint ring spreads on the cloth where it struck.
 export function slap(node) {
-  sound.slap();
-  return animate(node, [{ transform: 'scale(1.18)' }, { transform: 'scale(.94)', offset: 0.6 }, { transform: 'scale(1)' }], { duration: ms(220), fill: 'none' });
+  if (!node) return Promise.resolve();
+  const d = ms(280);
+  const hit = Math.round(d * 0.5);
+  setTimeout(() => { sound.slap(); buzz('slap'); impact(node); }, hit);
+  [...(node.parentElement?.children || [])].filter(n => n !== node && n.classList.contains('hw')).forEach((n, i) => {
+    const r = (i % 2 ? 1 : -1) * 2.5;
+    animate(n, [{ transform: 'none' }, { transform: `translateY(-4px) rotate(${r}deg)`, offset: 0.4 }, { transform: 'none' }], { duration: ms(200), delay: hit, fill: 'none' });
+  });
+  return animate(node, [
+    { transform: 'translateY(-16px) scale(1.2)' },
+    { transform: 'translateY(1px) scale(.95)', offset: 0.5 },
+    { transform: 'translateY(0) scale(1.025)', offset: 0.72 },
+    { transform: 'none' }
+  ], { duration: d, easing: 'cubic-bezier(.5,0,.75,1)', fill: 'none' });
+}
+
+function impact(node) {
+  if (!node.isConnected || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = node.getBoundingClientRect();
+  const ring = el('span', 'hw-impact');
+  ring.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;width:${r.width * 1.5}px;height:${r.width * 1.5}px`;
+  document.body.append(ring);
+  animate(ring, [{ transform: 'translate(-50%,-50%) scale(.5)', opacity: 0.55 }, { transform: 'translate(-50%,-50%) scale(1.7)', opacity: 0 }], { duration: ms(420), easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' }).then(() => ring.remove());
 }

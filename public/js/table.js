@@ -38,6 +38,13 @@ function flingVelocity(trail) {
   return { x: (b.x - a.x) / dt, y: (b.y - a.y) / dt };
 }
 
+// A chip settling onto its stack: a short bounce, and a nudge to the chip underneath.
+function landChip(chip) {
+  animate(chip, [{ transform: 'none' }, { transform: 'translateY(-3px)', offset: 0.35 }, { transform: 'none' }], { duration: 150, fill: 'none' });
+  const under = chip.previousElementSibling;
+  if (under) animate(under, [{ transform: 'none' }, { transform: 'translate(.8px,1px)', offset: 0.4 }, { transform: 'none' }], { duration: 140, delay: 30, fill: 'none' });
+}
+
 export class Table {
   // multi: separate bets per zone. zoneMin: every zone must meet the table minimum (blackjack
   // boxes) rather than the total (chips spread over a roulette layout).
@@ -338,11 +345,14 @@ export class Table {
       const spin = Math.min(720, 240 + thrown * 260) * (Math.random() < 0.5 ? -1 : 1);
       await flyFrom(chip, fromRect, { duration: 480, lift: 90, scale: 1.25, spin, easing: 'cubic-bezier(.3,.6,.35,1)' });
       sound.chip();
-      animate(chip, [{ transform: 'translateY(-3px)' }, { transform: 'translateY(0)' }], { duration: 120, fill: 'none' });
+      landChip(chip);
       return;
     }
+    // The clack belongs to the landing, not the tap: the chip hits the stack, bounces once,
+    // and the chip it lands on gives a little.
+    if (fromRect) await flyFrom(chip, fromRect, { duration: 340, lift: 60, scale: 1.1, spin: 40 });
     sound.chip(); buzz('chip');
-    if (fromRect) await flyFrom(chip, fromRect, { duration: 380, lift: 60, scale: 1.1, spin: 40 });
+    landChip(chip);
   }
 
   record(zoneId, value) {

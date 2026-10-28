@@ -229,6 +229,12 @@
 @keyframes felt-glow{0%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}30%{box-shadow:0 0 0 1px #0008,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffffaa,inset 0 0 120px #ffffff1a,0 24px 60px #000c,0 0 50px #ffffff22}100%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}}
 
 /* ================= BLACKJACK ================= */
+/* Printed felt (blackjack): the house wordmark sits faintly in the middle of the cloth, under everything,
+   and the dealer's two card spots are outlined until cards land on them — like a real layout. */
+.table-screen--blackjack .felt-print::after{content:"";position:absolute;left:50%;top:60%;width:min(40%,220px);aspect-ratio:1132/240;transform:translate(-50%,-50%);background:url(logo.svg) center/contain no-repeat;opacity:.07}
+.bj{position:relative}
+.bj-dealer .hand:empty{gap:calc(var(--card-w) * .18)}
+.bj-dealer .hand:empty::before,.bj-dealer .hand:empty::after{content:"";width:var(--card-w);height:calc(var(--card-w) * 1.4);border:1px solid #efe7d924;border-radius:calc(var(--card-w) * .09);box-shadow:inset 0 0 0 3px #00000010}
 .bj{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto 1fr;justify-items:center;gap:8px;min-height:100%}
 .bj.is-crowded{--card-w:clamp(36px,10vw,72px)}
 .bj.is-packed{--card-w:clamp(30px,8vw,60px)}
@@ -497,8 +503,11 @@
   .zone-amount{top:calc(100% + 4px);font-size:13px}
   .shoe{width:40px;height:40px;top:8px}.discard{width:30px;height:42px;top:8px}
 }
-/* Short screens: drop the printed arc so all three boxes stay on the felt. */
-@media (max-height:900px){.bj .felt-arc{display:none}}
+/* Short screens: the printed arc stays, but is lifted out of the layout and printed under the cards,
+   so all three boxes still fit on the felt. */
+@media (max-height:900px){.bj .felt-arc{position:absolute;z-index:0;grid-row:auto;left:50%;top:40%;width:min(94%,400px);margin:0;transform:translate(-50%,-50%)}
+  .bj-dealer,.bj-spots,.bj-ai,.bj-insurance{position:relative;z-index:1}}
+@media (max-height:900px) and (orientation:landscape){.bj .felt-arc{display:none}}
 /* Short portrait phones: AI seats lie flat (cards beside the name plate) and the felt tightens up.
    Up to 900px tall, so the Fold cover screen (412×860) keeps the bet boxes on the felt mid-round. */
 @media (max-height:900px) and (orientation:portrait){
@@ -1184,3 +1193,7 @@
 .banner-day.is-burning{background:#ff4f4f;color:var(--white);animation:banner-burn .8s ease-in-out 2}
 @keyframes banner-burn{50%{box-shadow:0 0 0 6px #ff4f4f33}}
 @media (prefers-reduced-motion:reduce){.banner-day.is-burning{animation:none}}
+
+/* Card stock has an edge: a thin cream side and a tight contact shadow under the soft drop,
+   so a card on the felt looks like it has thickness instead of being printed on it. */
+.card-face{box-shadow:inset 0 0 0 1px #00000024,inset 0 0 0 calc(var(--card-w) * .02) #fffdf8,0 1px 0 #d9d0c0,0 1.6px 0 #b9ae9b,0 2.4px 1px #0006,0 12px 22px #0006}

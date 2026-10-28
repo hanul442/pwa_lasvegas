@@ -470,15 +470,16 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .home-ghost{background:#16181cd9;color:var(--white);font-weight:700}
 .home-note{font-size:13px;color:var(--smoke)}
 .home-cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.home-cat{--tint:#0d6a3b;position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;aspect-ratio:1.4;padding:13px;border:0;border-radius:16px;overflow:hidden;isolation:isolate;color:var(--white);text-align:left;
-  background:linear-gradient(165deg,var(--tint) 30%,transparent 74%),var(--cat-art) 60% 72%/cover,#111}
-.home-cat--poker{--tint:#1b4f8c}
-.home-cat--hwatu{--tint:#8a2036}
-.home-cat--event{--tint:#5a2aa0}
-.home-cat-text{display:grid;gap:1px;min-width:0;max-width:100%}
-.home-cat-text b{font:800 17px/1.15 var(--display);font-stretch:115%}
-.home-cat-text small{font-size:12.5px;color:#ffffffc4;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;word-break:keep-all}
-.home-cat-go{padding:7px 13px;border-radius:9px;background:#000000a3;font:700 13px/1 var(--sans)}
+.home-cat{position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;aspect-ratio:1.4;padding:14px;border:0;border-radius:16px;overflow:hidden;isolation:isolate;color:var(--white);text-align:left;
+  background:linear-gradient(180deg,#0a0b0df2 0%,#0a0b0db8 34%,#0a0b0d38 70%,#0a0b0d8c 100%),var(--cat-art) 60% 72%/cover,#0a0b0d}
+/* Lacquer frame: a hairline rim plus a faint top light, so the card reads as one black object, not a coloured tile. */
+.home-cat::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffffff17,inset 0 1px 0 #ffffff1c}
+.home-cat>*{position:relative}
+.home-cat-text{display:grid;gap:3px;min-width:0;max-width:100%}
+.home-cat-text b{font:600 18px/1.1 var(--display);font-stretch:118%;letter-spacing:-.01em}
+.home-cat-text small{font-size:13px;color:var(--smoke,#b3b8bf);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;word-break:keep-all}
+.home-cat-go{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 11px;border-radius:999px;background:#0a0b0dcc;box-shadow:inset 0 0 0 1px #ffffff2e;font:650 13px/1 var(--sans);letter-spacing:.01em}
+.home-cat-go::after{content:"";width:5px;height:5px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:rotate(45deg);opacity:.8}
 .home-cat:active,.pop-card:active,.today-chip:active{transform:scale(.98)}
 .home-nightly:empty{display:none}
 /* 매일 밤 9시 홀덤 토너먼트 (js/nightly.js): black lacquer, one green felt glow, white numbers */

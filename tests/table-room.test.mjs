@@ -28,7 +28,9 @@ function world(seed = 7) {
   const ctx = () => ({ now: clock, rand, validateStake: validateRoomHost });
   return { state, ctx, rand, advance: ms => { clock += ms; }, get now() { return clock; } };
 }
-const wealth = (state, ids) => ids.reduce((a, uid) => a + state.users[uid].account.available + state.users[uid].account.locked, 0);
+// The bank's automatic 구제금융 tops up anyone who busts; it is not table money, so leave it out.
+const welfare = (state, ids) => state.ledger.filter(l => l.type === 'WELFARE' && ids.includes(l.userId)).reduce((a, l) => a + l.amount, 0);
+const wealth = (state, ids) => ids.reduce((a, uid) => a + state.users[uid].account.available + state.users[uid].account.locked, 0) - welfare(state, ids);
 const netOf = { seotda: seotdaNet, gostop: gostopNet, matgo: matgoNet, blackjack: blackjackRoomNet };
 const actorOf = r => (r.players || r.game === 'Seotda' ? r.turn : r.phase === 'PLAY' ? r.turn : r.pending.seat);
 

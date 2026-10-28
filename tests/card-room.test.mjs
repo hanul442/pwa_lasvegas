@@ -4,7 +4,7 @@ import { handleApi } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
 import { HWATU, SEOTDA_DECK } from '../lib/hwatu.mjs';
 import { startMatgo, matgoAct, matgoScore, matgoPublic, runMatgoAi, matgoActor, matgoAiDecision } from '../lib/matgo.mjs';
-import { startSeotda, seotdaAct, seotdaHand, seotdaCompare, seotdaShowdown, seotdaPublic, runSeotdaAi, seotdaNet, seotdaOptions, seotdaSeats } from '../lib/seotda.mjs';
+import { startSeotda, seotdaAct, seotdaHand, seotdaCompare, seotdaShowdown, seotdaPublic, runSeotdaAi, seotdaNet, seotdaOptions, seotdaSeats, seotdaNextLead } from '../lib/seotda.mjs';
 
 function memoryStore() {
   let state = defaultState();
@@ -110,6 +110,34 @@ test('섯다 betting moves the pot and keeps the opponent face down until showdo
   assert.equal(seotdaNet(r, 0), r.contrib[1]);
   assert.equal(seotdaNet(r, 1), -r.contrib[1]);
   assert.deepEqual(seotdaPublic(r, 1).players[0].cards, ['01-1', '01-3']);
+});
+
+test('섯다 따당 calls and doubles what was bet in front, and counts as a raise', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(3) }), [['01-1', '02-1'], ['03-1', '03-3'], ['05-1', '06-1']]);
+  assert.ok(!seotdaOptions(r, 0).some(o => o.action === 'DDADANG'), 'nothing to double before anyone bets');
+  seotdaAct(r, 0, 'BBING');
+  const dd = seotdaOptions(r, 1).find(o => o.action === 'DDADANG');
+  assert.equal(dd.cost, 200, '삥 100 → 따당 200');
+  seotdaAct(r, 1, 'DDADANG');
+  assert.equal(r.contrib[1], 300);
+  assert.equal(r.raises, 2);
+  assert.ok(!seotdaOptions(r, 2).some(o => o.action === 'DDADANG' || o.action === 'HALF'), 'two raises a round');
+  assert.equal(seotdaOptions(r, 2).find(o => o.action === 'CALL').cost, 200);
+  seotdaAct(r, 2, 'CALL');
+  assert.equal(r.turn, 0, 'the 삥 seat has to answer the 따당');
+  assert.equal(seotdaOptions(r, 0).find(o => o.action === 'CALL').cost, 100);
+});
+
+test('섯다 선: the last winner leads the next hand', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(3) }), [['01-1', '02-1'], ['03-1', '03-3'], ['05-1', '06-1']]);
+  for (const s of [0, 1, 2, 0, 1, 2]) seotdaAct(r, s, 'CHECK');
+  assert.deepEqual(r.result.winners, [1], '3땡');
+  assert.equal(seotdaNextLead(r), 1);
+  const next = startSeotda({ stake: 100, first: seotdaNextLead(r), seats: humans(3) });
+  assert.equal(next.first, 1);
+  assert.equal(next.turn, 1);
+  const out = startSeotda({ stake: 100, first: 7, seats: humans(3) });
+  assert.ok(out.first >= 0 && out.first < 3, 'a 선 from a bigger table is drawn again');
 });
 
 test('섯다 seats 2–5 players with named AI opponents', () => {
@@ -226,7 +254,7 @@ test('섯다 an old two-seat round with no folded field still loads and finishes
     status: 'PLAYING', phase: 'BET', history: [{ street: 1, seat: 1, action: 'BBING', cost: 100 }], result: null
   };
   const v = seotdaPublic(old, 0);
-  assert.deepEqual(v.options.map(o => o.action), ['DIE', 'CALL', 'HALF']);
+  assert.deepEqual(v.options.map(o => o.action), ['DIE', 'CALL', 'DDADANG', 'HALF']);
   assert.equal(v.players[1].cards[0], 'HIDDEN');
   seotdaAct(old, 0, 'CALL');
   assert.equal(old.street, 2);

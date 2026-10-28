@@ -1,0 +1,84 @@
+/* ================= FOLD INNER SCREEN =================
+   The Galaxy Fold's unfolded screen (about 720–780 × 800–860, either way up) is nearly square.
+   The tablet rules size cards by width (vw), so there they came out the same size as on the folded
+   cover screen and the felt looked like a stretched phone. On a near-square screen the table is
+   laid out like a tablet table instead: cards and 화투 are sized by the short side (vmin), so they
+   fill the felt, and the controls sit in one rail under it. Loaded last so it wins over the
+   per-game sheets; everything here is inside this one query, so phones and desktops don't change. */
+@media (min-width:600px) and (max-width:1023px) and (min-height:600px) and (min-aspect-ratio:4/5) and (max-aspect-ratio:5/4){
+  .table-screen{--card-w:clamp(64px,11vmin,96px)}
+
+  /* the felt takes the whole width; the rail is a little slimmer */
+  .felt{width:auto;margin:4px 12px 8px;border-width:9px;border-radius:30px}
+
+  /* controls: one rail. bet and −/+ on the left, the chips in the middle, the actions on the right */
+  .table-controls{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"bet tray act" "tools tray act";align-items:center;gap:6px 14px;max-width:none;padding-left:16px;padding-right:16px}
+  .bet-tools{justify-content:flex-start}
+  .chip-tray{justify-content:center;gap:10px}
+  .action-row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0;width:min(250px,32vw)}
+  .action-row .action{min-height:46px;padding:0 10px}
+  /* three or four choices (섯다, 홀덤): two by two, so the felt keeps its height */
+  .action-row:has(>:nth-child(3)){grid-template-columns:repeat(2,minmax(0,1fr));width:min(360px,46vw)}
+  .action-row:has(>:nth-child(3))>:last-child:nth-child(odd){grid-column:1 / -1}
+
+  /* ---------- blackjack ---------- */
+  .table-screen--blackjack .felt-body{padding-top:62px}
+  .bj{--card-w:clamp(60px,10.6vmin,90px)}
+  .bj .bet-circle{width:clamp(80px,13vmin,112px);height:clamp(80px,13vmin,112px)}
+  .bj.is-crowded{--card-w:clamp(56px,10vmin,84px)}
+  .bj.is-packed{--card-w:clamp(48px,8.4vmin,72px)}
+  .bj-seat{--card-w:clamp(36px,6vmin,52px)}
+  .bj .felt-arc{width:min(86%,520px)}
+
+  /* ---------- baccarat ---------- */
+  .bac-side{--card-w:clamp(64px,11.5vmin,96px)}
+
+  /* ---------- hold'em / 7포커 ---------- */
+  .pk-center{--card-w:clamp(52px,9vmin,76px);width:min(100%,520px)}
+  .pk-seat .pk-cards{--card-w:clamp(34px,5.6vmin,48px)}
+  .pk-seat--hero .pk-cards{--card-w:clamp(64px,11vmin,92px)}
+  .table-screen--sevenpoker .pk-seat .pk-cards{--card-w:clamp(32px,5.4vmin,46px)}
+  .table-screen--sevenpoker .pk-seat--hero .pk-cards{--card-w:clamp(52px,9vmin,76px)}
+
+  /* ---------- 식보 ---------- */
+  .die{--d:clamp(50px,8.4vmin,70px)}
+
+  /* ---------- 맞고 / 고스톱 ---------- */
+  .mg{--hw-w:clamp(44px,7vmin,60px)}
+  .mg-opp-hand{--hw-w:clamp(26px,4.2vmin,36px)}
+  .mg-caps{--cap-w:clamp(24px,3.8vmin,32px)}
+  .mg-board{--hw-w:clamp(48px,8vmin,68px);gap:14px 10px}
+  .mg-hand{--hw-w:clamp(52px,calc((100vw - 120px) / 10),72px)}
+  .gs-hand{--hw-w:clamp(60px,calc((100vw - 140px) / 7.4),84px)}
+  .gs-mini{--cap-w:clamp(18px,2.8vmin,24px)}
+  .gs-opp-hand{--hw-w:22px}
+  .gs-opp-hand .hw+.hw{margin-left:-12px}
+
+  /* ---------- 섯다 ---------- */
+  .sd{--hw-w:clamp(80px,14vmin,120px)}
+  .sd-ring{--opp-w:clamp(44px,7.4vmin,64px)}
+  .sd-deck{--hw-w:clamp(40px,6vmin,52px)}
+}
+/* Inner screen on its side (about 840 × 760): the felt keeps the full height and the controls
+   stand in a rail at its right edge, the way a tablet table puts the chip rack beside the felt. */
+@media (min-width:600px) and (max-width:1023px) and (min-height:600px) and (min-aspect-ratio:1/1) and (max-aspect-ratio:5/4){
+  .table-screen{grid-template-columns:minmax(0,1fr) 208px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"bar bar" "felt rail"}
+  .table-bar{grid-area:bar}
+  .felt{grid-area:felt;margin:2px 4px 12px 12px}
+  .table-controls{grid-area:rail;grid-template-columns:minmax(0,1fr);grid-template-areas:"bet" "tools" "tray" "act";align-content:end;gap:10px;padding:2px 14px calc(14px + env(safe-area-inset-bottom)) 8px}
+  .bet-readout{flex-wrap:wrap;row-gap:0}
+  .bet-tools{justify-content:space-between}
+  .chip-tray{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;align-items:end;gap:12px 18px;padding:4px 0}
+  .chip-tray .chip{--size:50px}
+  .action-row,.action-row:has(>:nth-child(3)){width:auto;grid-template-columns:minmax(0,1fr)}
+  .action-row:has(>:nth-child(3)) .action{min-height:42px}
+  /* the felt is the screen minus the rail, so hands that span it are sized from that */
+  .mg-hand{--hw-w:clamp(44px,calc((100vw - 330px) / 10),64px)}
+  .gs-hand{--hw-w:clamp(52px,calc((100vw - 350px) / 7.4),72px)}
+  .mg-board{--hw-w:clamp(44px,7vmin,60px)}
+  .rl{grid-template-columns:minmax(170px,210px) 1fr}
+  /* the felt is shorter on its side: blackjack's cards and boxes follow the height */
+  .table-screen--blackjack .felt-body{padding-top:54px}
+  .bj{--card-w:clamp(54px,9.6dvh,84px)}
+  .bj .bet-circle{width:clamp(70px,11dvh,100px);height:clamp(70px,11dvh,100px)}
+}

@@ -286,7 +286,7 @@ test('7포커 API refuses a stale move and a table on a floor that is not open',
 test('7포커 is in the lobby with its guide, music, art and offline files', async () => {
   const read = path => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
   const [app, guides, sw, names, music, api] = await Promise.all(['app.js', 'js/guides.js', 'sw.js', 'js/names.js', 'js/music.js', 'js/api.js'].map(read));
-  assert.match(app, /id: 'sevenpoker', name: '7포커'.*mount: mountSevenPoker/);
+  assert.match(app, /id: 'sevenpoker', name: '7포커'.*mount: lazyGame\('sevenpoker', 'mountSevenPoker'\)/);
   assert.match(guides, /\n  sevenpoker: \{\n    id: 'sevenpoker'/);
   assert.match(sw, /'js\/games\/sevenpoker\.js'/);
   assert.match(sw, /sevenpoker/);

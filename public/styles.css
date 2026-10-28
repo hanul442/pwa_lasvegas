@@ -625,3 +625,4 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .invite-friends small{color:var(--smoke)}
 .invite-share{width:100%;min-height:50px;font-size:16px}
 .invite-fine{color:var(--dim);font-size:12px;line-height:1.5}
+.table-loading{margin:30vh auto 0;text-align:center;color:var(--muted);font-size:14px;letter-spacing:.02em}

@@ -7,18 +7,6 @@ import { formatCH, rollNumber, isMuted, setMuted, sound, preloadSounds, el } fro
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { TIERS, FIRST_TIER, createChip } from './js/chips.js';
-import { mountBlackjack } from './js/games/blackjack.js';
-import { mountBaccarat } from './js/games/baccarat.js';
-import { mountRoulette } from './js/games/roulette.js';
-import { mountDice } from './js/games/dice.js';
-import { mountMatgo } from './js/games/matgo.js';
-import { mountGostop } from './js/games/gostop.js';
-import { mountSeotda } from './js/games/seotda.js';
-import { attachGuide } from './js/guide.js';
-import { mountHoldem } from './js/games/holdem.js';
-import { mountSevenPoker } from './js/games/sevenpoker.js';
-import { mountSlots } from './js/games/slots.js';
-import { mountHorses } from './js/games/horses.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels, watchBlock } from './js/social.js';
@@ -46,7 +34,6 @@ import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
 import { bragRank } from './js/brags.js';
 import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
-import { openDaily, takeDailyLink } from './js/daily.js';
 
 watchErrors();
 startShine();
@@ -54,27 +41,53 @@ watchHandBook();
 
 document.documentElement.dataset.vegasUi = 'live-tables';
 
+// Each game's code (and what only it needs: cards, hwatu, the table kit) loads the first time a table opens,
+// so the home screen downloads and parses only the lobby. warmGame() fetches one ahead of time when idle.
+const GAME_FILES = {
+  blackjack: () => import('./js/games/blackjack.js'),
+  baccarat: () => import('./js/games/baccarat.js'),
+  roulette: () => import('./js/games/roulette.js'),
+  dice: () => import('./js/games/dice.js'),
+  matgo: () => import('./js/games/matgo.js'),
+  gostop: () => import('./js/games/gostop.js'),
+  seotda: () => import('./js/games/seotda.js'),
+  holdem: () => import('./js/games/holdem.js'),
+  sevenpoker: () => import('./js/games/sevenpoker.js'),
+  slots: () => import('./js/games/slots.js'),
+  horses: () => import('./js/games/horses.js')
+};
+const loadGuide = () => import('./js/guide.js');
+function lazyGame(file, fn, opts) {
+  const mount = ctx => GAME_FILES[file]().then(mod => mod[fn](ctx, opts));
+  mount.load = () => Promise.all([GAME_FILES[file](), loadGuide()]);
+  return mount;
+}
+
+const warmGame = game => game?.mount?.load?.().catch(() => {});
+// A finger on a game card is a few hundred ms ahead of the table opening: start fetching then.
+addEventListener('pointerdown', event => warmGame(GAMES.find(g => g.id === event.target.closest?.('[data-game]')?.dataset.game)), { capture: true, passive: true });
+
 const GAMES = [
-  { id: 'blackjack', name: '블랙잭', tag: '21에 가깝게, 블랙잭은 3 대 2', blurb: '21에 가깝게. 블랙잭은 3 대 2로 받아요.', mount: mountBlackjack },
-  { id: 'roulette', name: '룰렛', tag: '싱글 제로 휠, 숫자 하나에 35배', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: mountRoulette },
-  { id: 'baccarat', name: '바카라', tag: '플레이어냐 뱅커냐', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: mountBaccarat },
-  { id: 'dice', name: '식보', tag: '주사위 세 개의 합', blurb: '주사위 세 개의 합을 맞혀요.', mount: mountDice },
-  { id: 'matgo', name: '맞고', tag: '둘이서 치는 고스톱', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: mountMatgo },
-  { id: 'gostop', name: '고스톱', tag: 'AI 둘과 셋이서 고·스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: mountGostop },
-  { id: 'seotda', name: '섯다', tag: '두 장으로 겨루는 족보 싸움', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: mountSeotda },
-  { id: 'poker', name: '홀덤', tag: 'AI들과 텍사스 홀덤', blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: mountHoldem },
-  { id: 'sevenpoker', name: '7포커', tag: '석 장 받고 한 장 오픈, 히든까지', blurb: 'AI들과 한국식 7포커. 석 장 중 한 장을 오픈하고 히든까지 일곱 장, 삥·따당·하프로 겨뤄요.', mount: mountSevenPoker },
-  { id: 'slots', name: '슬롯', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: mountSlots },
-  { id: 'horses', name: '경마', tag: '여섯 마리, 1200m 단거리', blurb: '여섯 마리 중 1등을 맞혀요. 단승은 1착, 연승은 2착 안에만 들면 돼요.', mount: mountHorses },
+  { id: 'blackjack', name: '블랙잭', tag: '21에 가깝게, 블랙잭은 3 대 2', blurb: '21에 가깝게. 블랙잭은 3 대 2로 받아요.', mount: lazyGame('blackjack', 'mountBlackjack') },
+  { id: 'roulette', name: '룰렛', tag: '싱글 제로 휠, 숫자 하나에 35배', blurb: '싱글 제로 유럽식 휠. 숫자 하나에 걸면 35배.', mount: lazyGame('roulette', 'mountRoulette') },
+  { id: 'baccarat', name: '바카라', tag: '플레이어냐 뱅커냐', blurb: '플레이어와 뱅커 중 한쪽에. 카드는 천천히 열려요.', mount: lazyGame('baccarat', 'mountBaccarat') },
+  { id: 'dice', name: '식보', tag: '주사위 세 개의 합', blurb: '주사위 세 개의 합을 맞혀요.', mount: lazyGame('dice', 'mountDice') },
+  { id: 'matgo', name: '맞고', tag: '둘이서 치는 고스톱', blurb: '둘이서 치는 고스톱. AI보다 먼저 7점을 내세요.', mount: lazyGame('matgo', 'mountMatgo') },
+  { id: 'gostop', name: '고스톱', tag: 'AI 둘과 셋이서 고·스톱', blurb: '셋이서 치는 고스톱. AI 둘과 3점부터 고·스톱.', mount: lazyGame('gostop', 'mountGostop') },
+  { id: 'seotda', name: '섯다', tag: '두 장으로 겨루는 족보 싸움', blurb: '화투 두 장의 족보 싸움. 땡잡이와 암행어사까지.', mount: lazyGame('seotda', 'mountSeotda') },
+  { id: 'poker', name: '홀덤', tag: 'AI들과 텍사스 홀덤', blurb: 'AI 플레이어들과 텍사스 홀덤. 칩으로 바이인하고 앉아요.', mount: lazyGame('holdem', 'mountHoldem') },
+  { id: 'sevenpoker', name: '7포커', tag: '석 장 받고 한 장 오픈, 히든까지', blurb: 'AI들과 한국식 7포커. 석 장 중 한 장을 오픈하고 히든까지 일곱 장, 삥·따당·하프로 겨뤄요.', mount: lazyGame('sevenpoker', 'mountSevenPoker') },
+  { id: 'slots', name: '슬롯', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: lazyGame('slots', 'mountSlots') },
+  { id: 'horses', name: '경마', tag: '여섯 마리, 1200m 단거리', blurb: '여섯 마리 중 1등을 맞혀요. 단승은 1착, 연승은 2착 안에만 들면 돼요.', mount: lazyGame('horses', 'mountHorses') },
   // Event tables (lib/events.mjs): one runs each week, reached from the 이벤트 tab.
-  { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: ctx => mountHoldem(ctx, { royale: true }) },
-  { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: ctx => mountGostop(ctx, { event: 'tazza' }) },
-  { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: ctx => mountBlackjack(ctx, { event: 'oceans' }) },
-  { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: ctx => mountHoldem(ctx, { tourney: 'rounders' }) },
-  { id: 'casablanca', event: 'casablanca', guide: 'roulette', name: 'Casablanca', blurb: '릭의 카페 뒷방 룰렛. 세 번 연속으로 이기면 릭의 보너스.', mount: ctx => mountRoulette(ctx, { event: 'casablanca' }) },
-  { id: 'godofgamblers', event: 'godofgamblers', guide: 'dice', name: 'God of Gamblers', blurb: '도신의 홍콩 식보. 네 번 연속으로 맞히면 도신 보너스.', mount: ctx => mountDice(ctx, { event: 'godofgamblers' }) },
-  { id: 'whale', event: 'whale', guide: 'poker', name: 'The Whale Room', blurb: '최상위 부자 전용 홀덤 토너먼트. 바이인 1천억, 우승하면 ×10.', mount: ctx => mountHoldem(ctx, { tourney: 'whale' }) },
-  { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: ctx => mountBaccarat(ctx, { event: 'montecarlo' }) }
+  { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: lazyGame('holdem', 'mountHoldem', { royale: true }) },
+  { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: lazyGame('gostop', 'mountGostop', { event: 'tazza' }) },
+  { id: 'oceans', event: 'oceans', guide: 'blackjack', name: "Ocean's Heist", blurb: '대니의 크루와 블랙잭. 다섯 판 연속으로 이기면 금고가 열려요.', mount: lazyGame('blackjack', 'mountBlackjack', { event: 'oceans' }) },
+  { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: lazyGame('holdem', 'mountHoldem', { tourney: 'rounders' }) },
+  { id: 'casablanca', event: 'casablanca', guide: 'roulette', name: 'Casablanca', blurb: '릭의 카페 뒷방 룰렛. 세 번 연속으로 이기면 릭의 보너스.', mount: lazyGame('roulette', 'mountRoulette', { event: 'casablanca' }) },
+  { id: 'godofgamblers', event: 'godofgamblers', guide: 'dice', name: 'God of Gamblers', blurb: '도신의 홍콩 식보. 네 번 연속으로 맞히면 도신 보너스.', mount: lazyGame('dice', 'mountDice', { event: 'godofgamblers' }) },
+  { id: 'whale', event: 'whale', guide: 'poker', name: 'The Whale Room', blurb: '최상위 부자 전용 홀덤 토너먼트. 바이인 1천억, 우승하면 ×10.', mount: lazyGame('holdem', 'mountHoldem', { tourney: 'whale' }) },
+  { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: lazyGame('baccarat', 'mountBaccarat', { event: 'montecarlo' }) }
 ];
 const eventOf = g => (g.event ? state?.events?.find(e => e.id === g.event) || null : null);
 const playable = g => !g.event || Boolean(eventOf(g));
@@ -95,6 +108,7 @@ const NAV_GROUP = { shop: 'bank', ranking: 'profile', settings: 'profile' };
 function showSurface(name, { focus = false } = {}) {
   const target = surfaces.find(s => s.dataset.surface === name);
   if (!target) return;
+  if (name !== 'table' && name !== 'tiers') setTimeout(offerUpdate, 800);
   surfaces.forEach(s => s.classList.toggle('is-active', s === target));
   // The bottom menu has five places; 지갑 holds 은행 and 상점, 내 정보 holds 프로필, 랭킹 and 설정,
   // each switched by the small tabs at the top of the page.
@@ -226,6 +240,7 @@ const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[s
 // Whether the table's history entry sits on the tier picker's (so ← lands there), and which table is open.
 let tableOverTiers = false;
 let activeTier = null;
+let tableSeq = 0;
 async function openTable(tier, { seated = false } = {}) {
   if (!selectedGame) return;
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
@@ -243,17 +258,35 @@ async function openTable(tier, { seated = false } = {}) {
   // Event tables play the tense 'noir' cue; every other game has its own band.
   music.theme(selectedGame.event ? 'noir' : selectedGame.id);
   const backLabel = tableOverTiers ? '테이블 고르기로 나가기' : `${BACK_TO[returnSurface]}${returnSurface === 'lobby' ? '로' : '으로'} 나가기`;
-  activeTable = await selectedGame.mount({ mount: tableMount, tier, state, backLabel, onSwitch: openSwitcher, onLeave: () => leaveTable() });
+  // The first visit to a game fetches its code. Say so if that takes a moment, and give up quietly if the
+  // player left (or picked another table) before it arrived.
+  const game = selectedGame;
+  const seq = ++tableSeq;
+  const slow = setTimeout(() => { if (seq === tableSeq) { const note = el('p', 'table-loading', '테이블 준비 중…'); note.setAttribute('role', 'status'); tableMount.replaceChildren(note); } }, 150);
+  let guide;
+  try { [, guide] = await game.mount.load(); } catch (err) {
+    clearTimeout(slow);
+    if (seq !== tableSeq) return;
+    tableMount.replaceChildren();
+    toast(navigator.onLine ? '테이블을 열지 못했어요. 다시 눌러 주세요.' : '연결이 끊겨 테이블을 열지 못했어요. 다시 눌러 주세요.');
+    leaveTable();
+    return;
+  }
+  clearTimeout(slow);
+  if (seq !== tableSeq || !document.body.classList.contains('game-mode')) return;
+  tableMount.replaceChildren();
+  activeTable = await game.mount({ mount: tableMount, tier, state, backLabel, onSwitch: openSwitcher, onLeave: () => leaveTable() });
   // Also on sitting down: a table picked from 최근 테이블 may no longer fit the player's chips.
   activeTable.onIdle = st => tableAfterRound(st || state);
   if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
-  attachGuide(activeTable, selectedGame.guide || selectedGame.id);
+  guide.attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
 
 function closeTable() {
+  tableSeq++;
   if (!activeTable) return;
   voice.hush();
   music.theme('lounge');
@@ -1108,7 +1141,16 @@ const askReady = () => Boolean(state) && !dailyDue(state) && Object.values(state
 
 // 오늘의 한 판 (js/daily.js), from the home chip or a friend's shared result link.
 let dailyWanted = false;
-function showDaily() { openDaily({ onClose: () => { if (state) refresh(); } }); }
+function showDaily() { import('./js/daily.js').then(m => m.openDaily({ onClose: () => { if (state) refresh(); } })).catch(() => toast('오늘의 한 판을 열지 못했어요. 다시 눌러 주세요.')); }
+// ./?daily=1 from a friend's shared result: drop it from the address and remember to open the sheet.
+function takeDailyLink() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('daily') !== '1') return false;
+  params.delete('daily');
+  const q = params.toString();
+  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
+  return true;
+}
 function openDailyLink() { if (dailyWanted && state) { dailyWanted = false; showDaily(); } }
 
 // ---------- account ----------
@@ -1198,7 +1240,29 @@ paintSound();
 mountInstallButton(document.querySelector('[data-install]'));
 watchConnection(refresh);
 watchSeasonEnd(() => state);
-if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol !== 'file:') watchUpdates();
+
+// A new build waits in the background (sw.js) until the player says so. Offered on the menus only, never mid-hand;
+// leaving a table or coming back to the app asks again.
+let waitingWorker = null;
+let updating = false;
+function offerUpdate() {
+  if (!waitingWorker || updating || !inMenus() || document.hidden) return;
+  toast('새 버전이 나왔어요', { action: '새로고침', duration: 12000, onAction: () => { updating = true; waitingWorker?.postMessage('skip-waiting'); } });
+}
+function watchUpdates() {
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (updating) location.reload(); });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    const found = worker => { if (!worker || !navigator.serviceWorker.controller) return; waitingWorker = worker; offerUpdate(); };
+    found(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const worker = reg.installing;
+      worker?.addEventListener('statechange', () => { if (worker.state === 'installed') found(worker); });
+    });
+    // An app left open for days still hears about new builds.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { reg.update().catch(() => {}); offerUpdate(); } });
+  }).catch(() => {});
+}
 
 renderGameLists();
 showSurface('lobby');
@@ -1208,4 +1272,6 @@ capturePendingJoin();
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname === '/j' || location.pathname === '/j/' ? '/' : location.pathname);
 if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); } });
 else openSignIn(signedIn);
+// Once home is up and quiet, fetch the game played last so its table opens without a wait.
+addEventListener('load', () => (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(() => warmGame(GAMES.find(g => g.id === recentTables()[0]?.game)), { timeout: 4000 }), { once: true });
 startPlaytime({ isInTable: () => document.body.classList.contains('game-mode') });

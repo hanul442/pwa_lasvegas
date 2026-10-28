@@ -148,7 +148,7 @@ test('맞고 still plays two seats with the shared engine', () => {
 test('고스톱 table is in the lobby, has a guide and plays through the server API', async () => {
   const read = path => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
   const [app, client, guides, sw, names] = await Promise.all(['app.js', 'js/games/gostop.js', 'js/guides.js', 'sw.js', 'js/names.js'].map(read));
-  assert.match(app, /id: 'gostop', name: '고스톱'.*mount: mountGostop/);
+  assert.match(app, /id: 'gostop', name: '고스톱'.*mount: lazyGame\('gostop', 'mountGostop'\)/);
   assert.ok(app.indexOf("id: 'gostop'") > app.indexOf("id: 'matgo'"));
   for (const call of ['gostopStart(', 'gostopAction(', 'gostopOpen()']) assert.ok(client.includes(`api.${call}`), call);
   assert.match(guides, /\n  gostop: \{\n    id: 'gostop'/);

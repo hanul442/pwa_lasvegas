@@ -32,8 +32,9 @@ import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
 import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
-import { bragRank } from './js/brags.js';
-import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd, TIERS as TIERS_RANK } from './js/rank.js';
+import { bragRank, bragTier } from './js/brags.js';
+import { tierHeroHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
+import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
 watchErrors();
 startShine();
@@ -104,13 +105,13 @@ let activeTable = null;
 let shownWallet = null;
 
 // ---------- navigation ----------
-const NAV_GROUP = { shop: 'bank', ranking: 'profile', settings: 'profile' };
+const NAV_GROUP = { shop: 'bank', settings: 'profile' };
 function showSurface(name, { focus = false } = {}) {
   const target = surfaces.find(s => s.dataset.surface === name);
   if (!target) return;
   if (name !== 'table' && name !== 'tiers') setTimeout(offerUpdate, 800);
   surfaces.forEach(s => s.classList.toggle('is-active', s === target));
-  // The bottom menu has five places; 지갑 holds 은행 and 상점, 내 정보 holds 프로필, 랭킹 and 설정,
+  // The bottom menu has six places; 지갑 holds 은행 and 상점, 내 정보 holds 프로필 and 설정,
   // each switched by the small tabs at the top of the page.
   const group = NAV_GROUP[name] || name;
   navItems.forEach(item => {
@@ -878,13 +879,18 @@ const RANK_TABS = {
 };
 let rankPeriod = 'tier';
 let rankTab = 'tier';
-// The lobby's season card opens the monthly tier board.
-function openRankBoard() { rankPeriod = 'tier'; rankTab = 'tier'; showSurface('ranking', { focus: true }); }
+// The ranking tab has three views: 티어 (my tier and the ladder), 순위 (the boards), 친구 (친구 전적).
+const RANK_VIEWS = [['tier', '티어'], ['board', '순위'], ['friends', '친구 전적']];
+const RANK_VIEW_KEY = 'vegas:rank-view';
+let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
+function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
+// The lobby's season card opens my tier; the season-end sheet opens the month's board.
+function openRankBoard({ board = false } = {}) { rankView = board ? 'board' : 'tier'; rankPeriod = 'tier'; rankTab = 'tier'; showSurface('ranking', { focus: true }); }
 // The season-end warning (js/rank.js): what resets at midnight and what stays.
 function openSeasonEnd() {
   openBlockSheet(() => state?.rankSeason && seasonEndBlock(state, {
     onShop: () => { sheetPaint?.close(); showSurface('shop', { focus: true }); },
-    onBoard: () => { sheetPaint?.close(); openRankBoard(); },
+    onBoard: () => { sheetPaint?.close(); openRankBoard({ board: true }); },
     onWrapped: w => { sheetPaint?.close(); showWrapped(w); }
   }));
 }
@@ -914,11 +920,51 @@ function rankMoves(board, rows) {
   return moves;
 }
 function renderRanking() {
+  const views = document.querySelector('[data-rank-view]');
+  views.replaceChildren(...RANK_VIEWS.map(([key, label]) => {
+    const b = el('button', 'segment', label);
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(key === rankView));
+    b.setAttribute('aria-checked', String(key === rankView));
+    b.addEventListener('click', () => { if (key !== rankView) setRankView(key); });
+    return b;
+  }));
+  document.querySelectorAll('[data-rank-pane]').forEach(p => { p.hidden = p.dataset.rankPane !== rankView; });
+  if (rankView === 'tier') renderTierPane();
+  else if (rankView === 'friends') renderFriendPane();
+  else renderBoards();
+}
+function renderTierPane() {
+  const hero = document.querySelector('[data-tier-hero]');
+  const rs = state?.rankSeason;
+  hero.className = `tier-hero${rs ? ` tier-hero--${rs.tier}` : ''}`;
+  hero.innerHTML = tierHeroHtml(state);
+  hero.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
+  if (rs && !state.user?.guest) {
+    const place = myMonthRank(state);
+    const brag = bragButton(() => bragTier({ tier: rs.tier, name: tierName(rs.tier), season: rs.season.name, rank: place?.rank || 0, of: place?.of || 0, peak: rs.peak }), '자랑');
+    brag.classList.remove('pill-button--solid');
+    brag.classList.add('tier-hero-brag');
+    hero.querySelector('.tier-hero-actions')?.prepend(brag);
+  }
+  document.querySelector('[data-tier-steps]').innerHTML = tierStepsHtml(state);
+  const past = document.querySelector('[data-tier-past]');
+  past.innerHTML = tierPastHtml(state);
+  past.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true, onWrapped: showWrapped }));
+}
+function renderFriendPane() {
+  const box = document.querySelector('[data-friend-record]');
+  box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
+  box.querySelector('[data-friend-play]')?.addEventListener('click', () => showSurface('games', { focus: true }));
+  renderDuels(document.querySelector('[data-duels]'), state, applyState);
+}
+function renderBoards() {
   const season = state?.rankings?.season;
   if (!season) rankPeriod = 'allTime';
   const period = document.querySelector('[data-rank-period]');
   period.classList.add('segmented--three');
-  period.replaceChildren(...[['tier', '월간 티어'], ['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
+  period.replaceChildren(...[['tier', '이번 달'], ['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';
     b.setAttribute('role', 'radio');
@@ -936,12 +982,9 @@ function renderRanking() {
   }
   const rs = state?.rankSeason;
   if (rankPeriod === 'tier' && rs) {
-    const ladder = Object.keys(TIERS_RANK);
-    const lastTier = rs.last?.podium?.length ? `<p class="season-last">${rs.last.name} 챌린저 ${rs.last.podium.map(p => `${p.rank}위 ${p.nickname}`).join(' · ')} <button type="button" class="link-button" data-last-season>결과 보기</button></p>` : '';
-    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · 1일 0시에 모두 초기화 <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>
-      <ol class="tier-ladder" aria-label="티어 기준">${ladder.map(id => `<li class="${id === rs.tier ? 'is-me' : ''}">${tierEmblem(id, { size: 26, label: false })}<span>${tierName(id)}</span><small>${TIERS_RANK[id].label}</small></li>`).join('')}</ol>${lastTier}`;
+    // The ladder and past months live on the 티어 view; here just the month and its clock.
+    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · 1일 0시에 모두 초기화 <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>`;
     head.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
-    head.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true, onWrapped: showWrapped }));
   }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
@@ -1017,7 +1060,6 @@ function renderRanking() {
     return li;
   }));
   if (!rows.length) document.querySelector('[data-rank-list]').innerHTML = '<li class="rank-empty">아직 이 순위에 오른 사람이 없어요. 한 판 하고 첫 이름을 올려 보세요.</li>';
-  renderDuels(document.querySelector('[data-duels]'), state, applyState);
 }
 
 // ---------- profile ----------

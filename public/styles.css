@@ -216,7 +216,7 @@ button:disabled{cursor:not-allowed}
 .set-danger.is-armed{border-color:#ff7b72;color:#ff9b94}
 
 /* ---------- bottom nav ---------- */
-.bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;min-height:calc(var(--nav-h) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:0 max(4px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px,env(safe-area-inset-left));background:#0a0b0d;border-top:1px solid var(--hair)}
+.bottom-nav{position:fixed;z-index:30;left:0;right:0;bottom:0;min-height:calc(var(--nav-h) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:0 max(2px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(2px,env(safe-area-inset-left));background:#0a0b0d;border-top:1px solid var(--hair)}
 .nav-item{position:relative;min-height:var(--nav-h);border:0;background:none;color:var(--taupe);font-size:clamp(12px,3.7vw,14px);font-weight:500;white-space:nowrap;display:grid;place-items:center}
 .nav-item span{display:none}
 .nav-item.is-active{color:var(--ivory)}
@@ -563,7 +563,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 }
 @media (min-width:980px){
   .app-shell{padding-left:208px}
-  .bottom-nav{width:208px;grid-template-rows:repeat(5,52px);gap:4px;padding:96px 14px 0}
+  .bottom-nav{width:208px;grid-template-rows:repeat(6,52px);gap:4px;padding:96px 14px 0}
   .nav-item{min-height:48px;border-radius:12px;padding-left:16px}
   .nav-item.is-active{background:var(--ink-3)}
   .nav-item.is-active::before{display:none}

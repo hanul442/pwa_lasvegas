@@ -9,6 +9,7 @@ import { Table } from '../table.js';
 import { voice, goLine } from '../voice.js';
 import { createRoomClient } from './room-client.js';
 import { doubleStamp, doubleBadge, doubleActions } from '../double-down.js';
+import { createBanter } from '../banter.js';
 
 const ME = 0, SEATS = [0, 1, 2], OPPS = [1, 2];
 const GOAL = 3, DEPOSIT_POINTS = 10;
@@ -63,6 +64,11 @@ export async function mountGostop(ctx, { event = null } = {}) {
   let selected = null;
   let options = null;   // floor cards the player may pick: { kind: 'pick' | 'choose', ids, card }
   t.gs = { get view() { return view; }, get selected() { return selected; }, plays: 0 };
+  // Both AI talk like the people they are: a shout on 고, a sigh on 뻑. Friends in those chairs don't.
+  const banter = createBanter({
+    anchor: s => (s === ME ? null : t.body.querySelector(`.gs-opp[data-seat="${s}"]`)),
+    who: s => { const x = view?.seats?.[s]; return x?.kind === 'ai' ? x.name || names[s] : null; }
+  });
 
   const room = createRoomClient(t, 'gostop', {
     label: '고스톱', word: '점당',
@@ -206,6 +212,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
   async function playEvents(events) {
     let lastSeat = ME;
     for (const e of events) {
+      banter.hwatu(e, SEATS);
       // A beat before each AI seat starts its turn, so two AI turns read as two players.
       if (e.seat !== undefined && e.seat !== ME && e.seat !== lastSeat && ['play', 'call'].includes(e.type)) { paintTurn(e.seat); await wait(520); }
       if (e.seat !== undefined && ['play', 'call', 'flip'].includes(e.type)) lastSeat = e.seat;
@@ -353,6 +360,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
     if (v.bonus) note = `타짜 보너스 +${formatCH(v.bonus)} · ${note}`;
     t.toast(note);
     if (r.winner === ME) voice.say('you-win');
+    banter.hwatuResult(r, SEATS);
     const big = net > 0 && (r.go >= 3 || r.points >= 10)
       ? { title: r.go >= 3 ? `${r.go}고 승리` : `${r.points}점 승리`, subtitle: r.multipliers.concat(...r.shares.map(s => s.multipliers)).map(x => x.label).filter((x, i, a) => a.indexOf(x) === i).join(' · ') || '고스톱' }
       : null;
@@ -410,6 +418,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
     }
     model.pileCount = 21;
     view = round;
+    banter.hello(SEATS);
     await playEvents(res.events || []);
     model = toModel(view);
     await layout(model, { duration: 200 });
@@ -470,6 +479,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
 
   // An empty blanket: no cards anywhere, the bet zone back for the next game.
   async function clearFelt() {
+    banter.clear();
     view = null; selected = null; options = null; prompt = null;
     t.resetRound();
     zone.hidden = false;

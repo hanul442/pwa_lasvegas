@@ -16,8 +16,11 @@ const SHELL = [
 // (a game opened later still matches the code already running). The app offers "새로고침", which posts
 // 'skip-waiting'; a closed and reopened app picks the new build up by itself. The first install takes over at once.
 self.addEventListener('install', event => {
-  const fresh = SHELL.map(url => new Request(url, { cache: 'reload' }));
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(fresh).then(() => cacheVoice(cache))).then(() => { if (!self.registration.active) self.skipWaiting(); }));
+  const code = SHELL.filter(url => !MEDIA.test(url)), media = SHELL.filter(url => MEDIA.test(url));
+  const fresh = code.map(url => new Request(url, { cache: 'reload' }));
+  event.waitUntil(caches.open(CACHE)
+    .then(cache => Promise.all([cache.addAll(fresh), ...media.map(url => carry(cache, url))]).then(() => cacheVoice(cache)))
+    .then(() => { if (!self.registration.active) self.skipWaiting(); }));
 });
 self.addEventListener('message', event => { if (event.data === 'skip-waiting') self.skipWaiting(); });
 
@@ -29,8 +32,17 @@ const DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 function cacheVoice(cache) {
   return fetch('voice/lines.json')
     .then(res => res.json())
-    .then(ids => cache.addAll(ids.map(id => `voice/${id}.mp3`)))
+    .then(ids => Promise.all(ids.map(id => carry(cache, `voice/${id}.mp3`))))
     .catch(() => {});
+}
+
+// Recordings and pictures never change under the same name, so a new build copies them from the
+// build it replaces instead of downloading them all again on every update.
+const MEDIA = /^(voice|sfx|art)\//;
+async function carry(cache, url) {
+  const hit = await caches.match(url);
+  if (hit) return cache.put(url, hit);
+  return cache.add(url);
 }
 
 self.addEventListener('activate', event => {

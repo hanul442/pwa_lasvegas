@@ -3,7 +3,7 @@
 // then the dealer turns the coup for everyone at once.
 import { api } from '../api.js';
 import { gameName } from '../names.js';
-import { dealCard, flipCard, parseCard, placeCards } from '../cards.js';
+import { dealCard, dealRun, flipCard, parseCard, placeCards } from '../cards.js';
 import { gatherCards, riffle, needsShuffle, rake } from '../dealer.js';
 import { wait, formatCH, animate, el, flyFrom, flyTo, sound } from '../fx.js';
 import { createChip } from '../chips.js';
@@ -88,6 +88,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
   let lastWinner = null;
   const crowd = seatCrowd(t, { plan: crowdPlan(() => lastWinner) });
   let room = null; // the friends' room client, set up below
+  let opening = null; // the opening shuffle, while bets go down
 
   // Picking another side moves the main bet there, as before; the pair spots stack independently.
   const addChip = t.addChip.bind(t);
@@ -160,6 +161,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
       crowd.close(),
       (async () => {
         if (hand('PLAYER').children.length) await gatherCards([hand('PLAYER'), hand('BANKER')], discard, { at: t.body.querySelector('.bac-sides').getBoundingClientRect() });
+        if (opening) await opening;
         if (needsShuffle(discard, 48)) await riffle(t.felt, { shoe, discard, at: t.body.querySelector('.bac-sides').getBoundingClientRect() });
       })()
     ]);
@@ -172,13 +174,13 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     const r = res.round;
     // Deal P, B, P, B face down, then turn them, the bettor's side last.
     const nodes = { PLAYER: [], BANKER: [] };
-    for (let i = 0; i < 2; i++) for (const s of ['PLAYER', 'BANKER']) nodes[s].push(await dealCard(hand(s), 'HIDDEN', shoe, { faceUp: false }));
+    const steps = [0, 1].flatMap(() => ['PLAYER', 'BANKER'].map(s => ({ hand: hand(s), text: 'HIDDEN', faceUp: false, after: node => nodes[s].push(node) })));
+    await dealRun(steps, shoe);
     // The side you backed turns last (a Tie or pairs-only bet counts as Player).
     const mine = betType === 'BANKER' ? 'BANKER' : 'PLAYER';
     const order = mine === 'BANKER' ? ['PLAYER', 'BANKER'] : ['BANKER', 'PLAYER'];
-    const reveal = async (s, cards, texts) => {
-      for (const [i, card] of cards.entries()) await flipCard(card, texts[i]);
-    };
+    // A side's cards turn one after the other, the second starting while the first is still over.
+    const reveal = (s, cards, texts) => Promise.all(cards.map((card, i) => wait(i * 170).then(() => flipCard(card, texts[i]))));
     for (const s of order) {
       const texts = s === 'PLAYER' ? r.player : r.banker;
       await wait(200);
@@ -189,7 +191,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     for (const s of ['PLAYER', 'BANKER']) {
       const texts = s === 'PLAYER' ? r.player : r.banker;
       if (texts.length > 2) {
-        await wait(450);
+        await wait(260);
         const third = await dealCard(hand(s), 'HIDDEN', shoe, { faceUp: false, rotate: true });
         await reveal(s, [third], [texts[2]]);
         setScore(s);
@@ -444,5 +446,10 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
   crowd.open();
   if (!ev) await room.resume().catch(() => false);
   refreshActions();
+  // The dealer shuffles the fresh deck while bets go down, so the first 딜 doesn't wait on it.
+  if (!rv) setTimeout(() => {
+    if (t.locked || rv || !t.felt.isConnected || !needsShuffle(discard, 48)) return;
+    opening = riffle(t.felt, { shoe, discard, at: t.body.querySelector('.bac-sides').getBoundingClientRect() }).finally(() => { opening = null; });
+  }, 350);
   return t;
 }

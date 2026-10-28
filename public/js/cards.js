@@ -1,5 +1,5 @@
 // Playing cards: real pip layouts, 3D flip, and dealing from the shoe.
-import { animate, flyFrom, sound, el, ms } from './fx.js';
+import { animate, flyFrom, sound, el, ms, wait } from './fx.js';
 import { buzz } from './haptics.js';
 
 const RED_SUITS = new Set(['♥', '♦']);
@@ -130,6 +130,33 @@ export async function flipCard(node, text, { duration = 360, squeeze = false } =
   await animate(inner, frames, { duration: squeeze ? duration * 2.4 : duration, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'none' });
   node.classList.add('is-faceup');
   node.classList.remove('is-turning');
+}
+
+// Deal a run of cards the way a dealer does: the next card leaves the shoe while the last one is
+// still in the air, instead of each card waiting for the one before it to land and turn over.
+// `steps` are { hand, text, faceUp, after } in dealing order; `after(node)` runs once that card is
+// face up (for totals). A card never goes into a hand whose previous card is still flying, so a
+// hand never re-lays out under a card in flight.
+export async function dealRun(steps, shoe, { gap = 230 } = {}) {
+  const flying = new Map();
+  const done = [];
+  for (const [i, s] of steps.entries()) {
+    await flying.get(s.hand);
+    // Drawn blank until it turns over, so a hand's total never counts a card still in the air.
+    const node = createCard(s.faceUp === false ? s.text : 'HIDDEN', { faceUp: false });
+    s.hand.append(node);
+    const from = (shoe || s.hand).getBoundingClientRect();
+    sound.card();
+    buzz('card');
+    const flight = flyFrom(node, from, { duration: 500, spin: -24, scale: 0.72, lift: 30, settle: true });
+    flying.set(s.hand, flight);
+    done.push(flight.then(async () => {
+      if (s.faceUp !== false && parseCard(s.text)) await flipCard(node, s.text);
+      s.after?.(node);
+    }));
+    if (i < steps.length - 1) await wait(gap);
+  }
+  await Promise.all(done);
 }
 
 // Deal one card from the shoe into `hand`. Face-down cards stay hidden until flipped.

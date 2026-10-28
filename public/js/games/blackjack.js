@@ -3,7 +3,7 @@
 // "친구와 함께" seats friends in the AI chairs against the same dealer (room-client.js); in a room
 // I play one box at the room's stake and every seat's moves play out as they happen.
 import { api, errorMessage } from '../api.js';
-import { dealCard, flipCard, placeCards, parseCard } from '../cards.js';
+import { dealCard, dealRun, flipCard, placeCards, parseCard } from '../cards.js';
 import { gatherCards, riffle, needsShuffle, rake } from '../dealer.js';
 import { buzz } from '../haptics.js';
 import { feltGestures } from '../gestures.js';
@@ -133,7 +133,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   }
   const cardsOf = w => w.querySelector('.hand');
   function updateHandTotal(w, refitRow = true) {
-    const texts = [...cardsOf(w).querySelectorAll('.card')].map(c => c.dataset.card);
+    const texts = [...cardsOf(w).querySelectorAll('.card')].map(c => c.dataset.card).filter(x => x !== 'HIDDEN');
     const tag = w.querySelector('.hand-total');
     tag.textContent = texts.length ? totalText(texts) : '';
     tag.classList.toggle('is-bust', value(texts).total > 21);
@@ -381,7 +381,9 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
 
   // The dealer picks the cards up into the discard tray; at the cut card, or the first hand at
   // this table, the deck is riffled and loaded into the shoe before the next deal.
+  let opening = null; // the shuffle that runs as the table opens
   async function clearFelt({ shuffle = true } = {}) {
+    if (opening) await opening;
     const containers = [dealerHand, ...[...wraps.values()].map(cardsOf), ...[...seats.values()].map(s => cardsOf(seatWrap(s)))];
     if (containers.some(c => c.children.length)) await gatherCards(containers, discard);
     if (shuffle && needsShuffle(discard, 60)) await riffle(t.felt, { shoe, discard, at: dealerHand.getBoundingClientRect() });
@@ -426,12 +428,16 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
     const ws = round.hands.map(h => { const w = handWrap(h); handsIn(h).append(w); return w; });
     const sw = seatAll(round.ai).map(seatWrap);
     // Real dealing order: one card to every box, then each AI seat, the dealer up card, a second card all round, then the hole card.
-    for (const [i, h] of round.hands.entries()) { await dealCard(cardsOf(ws[i]), h.cards[0], shoe); updateHandTotal(ws[i]); }
-    for (const [i, a] of round.ai.entries()) { await dealCard(cardsOf(sw[i]), a.cards[0], shoe); updateHandTotal(sw[i], false); }
-    await dealCard(dealerHand, round.dealer[0], shoe); updateDealerTotal(false);
-    for (const [i, h] of round.hands.entries()) { await dealCard(cardsOf(ws[i]), h.cards[1], shoe); updateHandTotal(ws[i]); }
-    for (const [i, a] of round.ai.entries()) { await dealCard(cardsOf(sw[i]), a.cards[1], shoe); updateHandTotal(sw[i], false); }
-    await dealCard(dealerHand, 'HIDDEN', shoe, { faceUp: false });
+    const pass = k => [
+      ...round.hands.map((h, i) => ({ hand: cardsOf(ws[i]), text: h.cards[k], after: () => updateHandTotal(ws[i]) })),
+      ...round.ai.map((a, i) => ({ hand: cardsOf(sw[i]), text: a.cards[k], after: () => updateHandTotal(sw[i], false) }))
+    ];
+    await dealRun([
+      ...pass(0),
+      { hand: dealerHand, text: round.dealer[0], after: () => updateDealerTotal(false) },
+      ...pass(1),
+      { hand: dealerHand, text: 'HIDDEN', faceUp: false }
+    ], shoe);
     await sideMoment(round);
     if (round.status === 'INSURANCE') { t.banner('Insurance?', 'push'); sound.tick(); voice.say('insurance'); }
     await seatsInsure(round);
@@ -755,5 +761,11 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   await resume();
   if (!round) await room.resume().catch(() => false);
   refreshAll();
+  // The dealer shuffles the fresh deck while the player is still placing chips, so the first 딜
+  // doesn't stand waiting on a two-second riffle.
+  if (!round && !rv) setTimeout(() => {
+    if (t.locked || round || rv || !t.felt.isConnected || !needsShuffle(discard, 60)) return;
+    opening = riffle(t.felt, { shoe, discard, at: dealerHand.getBoundingClientRect() }).finally(() => { opening = null; });
+  }, 350);
   return t;
 }

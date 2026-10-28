@@ -106,7 +106,15 @@ export const voice = {
     current = [];
   },
   // Fetch a table's lines when it opens so the first call-out is not late.
-  preload(game) { (TABLE_LINES[game] || []).forEach(fetchLine); }
+  // Warm a table's lines after it has opened, a few at a time, so dozens of downloads don't
+  // compete with the table's own first paint. A muted dealer fetches nothing.
+  preload(game) {
+    if (silent()) return;
+    const ids = [...(TABLE_LINES[game] || [])];
+    const next = () => { const id = ids.shift(); if (id) Promise.resolve(fetchLine(id)).finally(next); };
+    const start = () => { for (let i = 0; i < 4; i++) next(); };
+    if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 1500 }); else setTimeout(start, 600);
+  }
 };
 
 // ---------- line ids ----------

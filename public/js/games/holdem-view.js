@@ -7,6 +7,8 @@ import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../f
 import { createChip, breakdown, holding, TIERS } from '../chips.js';
 import { voice, handLine, betLine } from '../voice.js';
 import { handName } from '../poker-hand.js';
+import { riffle } from '../dealer.js';
+import { buzz } from '../haptics.js';
 
 export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '콜링', MANIAC: '루즈' };
 // 7포커 (sevenpoker.js) plays on this felt too, with its Korean bet sizes and the ante.
@@ -54,6 +56,13 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   const $ = s => t.body.querySelector(s);
   const seatsEl = $('[data-seats]'), boardEl = $('[data-board]'), deck = $('[data-deck]');
   const potEl = $('[data-pot]'), potStack = $('[data-pot-stack]'), potAmount = $('[data-pot-amount]');
+  // Burnt cards: one face down beside the deck before each street, swept with the rest.
+  const burn = el('div', 'pk-burn');
+  burn.setAttribute('aria-hidden', 'true');
+  deck.after(burn);
+  let handsDealt = 0;
+  // A card lands a little off square, the way a pitched card does.
+  const toss = card => card.style.setProperty('--tilt', `${(Math.random() * 7 - 3.5).toFixed(1)}deg`);
   const dealerBtn = $('[data-dealer-button]');
 
   const pk = {
@@ -306,13 +315,16 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       case 'deal': {
         const mine = tb?.seats?.[me]?.cards || [];
         const dealt = new Map(ev.order.map(i => [i, []]));
-        sound.shuffle(); await wait(420);
+        // A full riffle at the first hand and every fifth after; between, a quick square-up.
+        if (handsDealt++ % 5 === 0) await riffle(t.felt, { shoe: deck, at: boardEl.getBoundingClientRect() });
+        else { sound.shuffle(); await animate(deck, [{ transform: 'none' }, { transform: 'translateY(2px) scale(.96)' }, { transform: 'none' }], { duration: 260, fill: 'none' }); await wait(160); }
         for (let pass = 0; pass < 2; pass++) for (const i of ev.order) {
           const card = createCard('HIDDEN', { faceUp: false });
+          if (i !== me) toss(card);
           seatEls[i].cards.append(card);
           dealt.get(i).push(card);
-          sound.card();
-          flyFrom(card, rectOf(deck), { duration: 380, spin: -40, scale: 0.6, lift: 14 });
+          sound.card(); if (i === me) buzz('card');
+          flyFrom(card, rectOf(deck), { duration: 400, spin: -40, scale: 0.6, lift: 14, settle: true });
           await wait(110);
         }
         await wait(300);
@@ -336,7 +348,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         else if (SIZED.has(ev.action)) voice.say(betLine('RAISE', ev.bet), { next: true });
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
-          await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 360, delay: k * 50, fade: true })));
+          // Folded cards are slid face down into the muck in the middle, not back into the deck.
+          await Promise.all(cards.map((c, k) => flyTo(c, rectOf(burn), { duration: 380, delay: k * 50, fade: true })));
           seatEls[ev.seat].cards.replaceChildren();
           seatEls[ev.seat].node.classList.add('is-folded');
           inHand.delete(ev.seat);
@@ -366,12 +379,13 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
       }
       case 'street': {
         voice.say(ev.street.toLowerCase());
-        await wait(260);
+        // Burn one: the top card goes face down beside the deck before the street is dealt.
+        await burnOne();
         for (const text of ev.cards) {
           const card = createCard(text, { faceUp: false });
           boardEl.append(card);
           sound.card();
-          await flyFrom(card, rectOf(deck), { duration: 340, spin: -20, scale: 0.7 });
+          await flyFrom(card, rectOf(deck), { duration: 360, spin: -20, scale: 0.7, lift: 10, settle: true });
         }
         // Heads-up, the turn and the river are squeezed open slowly, with a heartbeat first.
         const slow = duel && ev.cards.length === 1;
@@ -410,7 +424,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
           document.body.append(c);
           const r = rectOf(target.plate);
           c.style.left = `${r.left + r.width / 2}px`; c.style.top = `${r.top + r.height / 2}px`;
-          return flyFrom(c, from, { duration: 520, delay: k * 50, lift: 40 }).then(() => c.remove());
+          // The pot is pushed across the cloth as one pile, not tossed chip by chip.
+          return flyFrom(c, { left: from.left + (k % 3 - 1) * 5, top: from.top - (k >> 1) * 2, width: from.width, height: from.height }, { duration: 620, delay: k * 18, easing: 'cubic-bezier(.3,.05,.2,1)' }).then(() => c.remove());
         });
         sound.chips(Math.min(pay.length, 6));
         if (ev.seat === me) { sound.win(); haptic([20, 60, 30]); t.glow(); }
@@ -456,10 +471,38 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     if (snap && tb) render(tb);
   }
 
+  // The burn: one card off the top, face down, onto the little pile beside the deck.
+  async function burnOne() {
+    const card = createCard('HIDDEN', { faceUp: false });
+    toss(card);
+    burn.append(card);
+    sound.card();
+    await flyFrom(card, rectOf(deck), { duration: 260, spin: -12, scale: 0.9 });
+    await wait(120);
+  }
+
+  // End of hand: every card is drawn in to the middle into one squared pile, then the pile goes
+  // under the deck.
   async function sweep() {
-    const cards = [...boardEl.children, ...seatEls.flatMap(s => [...s.cards.children])];
-    await Promise.all(cards.map((c, k) => flyTo(c, rectOf(deck), { duration: 340, delay: k * 18, fade: true })));
+    const cards = [...boardEl.children, ...burn.children, ...seatEls.flatMap(s => [...s.cards.children])];
+    if (cards.length) {
+      const mid = rectOf(boardEl), d = rectOf(deck);
+      const cx = mid.left + mid.width / 2, cy = mid.top + mid.height / 2;
+      sound.gather?.();
+      await Promise.all(cards.map((c, k) => {
+        const r = c.getBoundingClientRect();
+        const gx = cx - (r.left + r.width / 2), gy = cy - (r.top + r.height / 2) - k * 0.5;
+        const ex = d.left + d.width / 2 - (r.left + r.width / 2), ey = d.top + d.height / 2 - (r.top + r.height / 2);
+        return animate(c, [
+          { transform: 'none', opacity: 1 },
+          { transform: `translate(${gx}px,${gy}px) rotate(0deg)`, opacity: 1, offset: 0.5 },
+          { transform: `translate(${gx}px,${gy}px) rotate(0deg)`, opacity: 1, offset: 0.62 },
+          { transform: `translate(${ex}px,${ey}px) rotate(-10deg) scale(.6)`, opacity: 0 }
+        ], { duration: 640, delay: k * 22, easing: 'cubic-bezier(.45,0,.3,1)', fill: 'forwards' });
+      }));
+    }
     boardEl.replaceChildren();
+    burn.replaceChildren();
     seatEls.forEach(s => { s.cards.replaceChildren(); s.node.classList.remove('is-winner'); s.node.querySelector('[data-hand-name]')?.remove(); });
     clearTags();
     paintMyHand();
@@ -468,6 +511,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
   function clear() {
     seatsEl.replaceChildren(); seatEls.length = 0; pk.layout = null; current = null;
     boardEl.replaceChildren();
+    burn.replaceChildren();
     paintPot(0);
     dealerBtn.classList.remove('is-shown');
     clock(-1);

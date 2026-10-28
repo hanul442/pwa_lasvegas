@@ -1,6 +1,6 @@
 // Hwatu cards: the 48-card deck (mirrors lib/hwatu.mjs), drawn as flat modern SVG so every
 // month is recognisable at phone size, with a month index for players still learning.
-import { animate, sound, el, ms } from './fx.js';
+import { animate, sound, el, ms, reducedMotion } from './fx.js';
 import { buzz } from './haptics.js';
 
 const KINDS = {
@@ -141,6 +141,69 @@ export async function flipHwatu(node, id, { duration = 340, squeeze = false } = 
   await animate(inner, frames, { duration: squeeze ? duration * 3 : duration, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'none' });
   node.classList.add('is-faceup');
   node.classList.remove('is-turning');
+}
+
+// 패 들춰보기: my face-down card waits for my thumb. Pushing up from the bottom edge peels the
+// back away from the bottom, so the month number in the corner shows first; past halfway it
+// turns over. A tap turns it at once, and after `auto` ms it turns by itself so play never stalls.
+export function peekHwatu(node, id, { auto = 4000, onStart = null } = {}) {
+  if (!id || reducedMotion() || node.classList.contains('is-faceup')) return flipHwatu(node, id);
+  setHwatuFace(node, id);
+  node.classList.add('is-peek', 'is-peekable');
+  node.style.setProperty('--peel', '0%');
+  node.style.touchAction = 'none';
+  return new Promise(resolve => {
+    let start = null, peel = 0, done = false, moved = false;
+    const h = () => node.getBoundingClientRect().height || 1;
+    const set = v => { peel = Math.max(0, Math.min(100, v)); node.style.setProperty('--peel', `${peel}%`); };
+    const finish = async (flip) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      node.removeEventListener('pointerdown', down);
+      node.classList.remove('is-peekable');
+      if (flip) {
+        node.classList.remove('is-peek');
+        node.style.removeProperty('--peel');
+        await flipHwatu(node, id, { squeeze: true });
+      } else {
+        await animate(node, [{ '--peel': `${peel}%` }, { '--peel': '100%' }], { duration: ms(160), fill: 'none' }).catch(() => {});
+        node.classList.remove('is-peek');
+        node.style.removeProperty('--peel');
+        node.classList.add('is-faceup');
+        sound.flip();
+      }
+      node.style.touchAction = '';
+      resolve();
+    };
+    const move = e => {
+      if (start === null) return;
+      const d = (start - e.clientY) / h() * 100;
+      if (Math.abs(d) > 4) moved = true;
+      set(d);
+    };
+    const up = () => {
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', up);
+      start = null;
+      if (!moved) return finish(true);
+      if (peel >= 48) return finish(false);
+      animate(node, [{ '--peel': `${peel}%` }, { '--peel': '0%' }], { duration: ms(180), fill: 'none' });
+      set(0);
+    };
+    const down = e => {
+      e.preventDefault();
+      clearTimeout(timer);
+      onStart?.();
+      start = e.clientY; moved = false;
+      addEventListener('pointermove', move);
+      addEventListener('pointerup', up);
+      addEventListener('pointercancel', up);
+    };
+    node.addEventListener('pointerdown', down);
+    const timer = setTimeout(() => { if (start === null) finish(true); }, auto);
+  });
 }
 
 // The slap: a played card lands with a little bounce, the way a hwatu card hits the blanket.

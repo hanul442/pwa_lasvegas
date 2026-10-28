@@ -1197,3 +1197,17 @@
 /* Card stock has an edge: a thin cream side and a tight contact shadow under the soft drop,
    so a card on the felt looks like it has thickness instead of being printed on it. */
 .card-face{box-shadow:inset 0 0 0 1px #00000024,inset 0 0 0 calc(var(--card-w) * .02) #fffdf8,0 1px 0 #d9d0c0,0 1.6px 0 #b9ae9b,0 2.4px 1px #0006,0 12px 22px #0006}
+
+/* Roulette dolly (roulette.js placeDolly): the clear acrylic marker set on the winning number.
+   A clear disc with a bright rim (the number shows through) and a small white handle on top. */
+.rl-dolly{position:absolute;left:50%;top:50%;z-index:6;width:min(26px,90%);aspect-ratio:1;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 38% 30%,#ffffff99 0 8%,#ffffff26 9% 62%,#ffffff8c 63% 72%,#ffffff1f 73%);
+  box-shadow:0 0 0 1px #ffffffb3,0 3px 0 #0000004d,0 6px 10px #000a}
+.rl-dolly::after{content:"";position:absolute;left:50%;top:-30%;width:30%;height:42%;border-radius:40% 40% 20% 20%;transform:translateX(-50%);background:linear-gradient(90deg,#ffffff8c,#ffffffe6 45%,#ffffff8c);box-shadow:0 1px 0 #0006}
+
+/* Burn and muck pile (holdem-view.js burnOne / fold): mirrors the deck on the other side of
+   the board; cards lie face down a little askew. */
+.pk-burn{position:absolute;top:calc(var(--card-w) * .7 - 19px);left:calc(50% + var(--card-w) * 2.5 + 22px);width:27px;height:38px;--card-w:27px}
+.pk-burn .card{position:absolute;inset:0}
+.table-screen--sevenpoker .pk-burn{top:0;left:calc(50% + 26px)}
+.table-screen--holdem:not(.is-seated) .pk-burn{visibility:hidden}

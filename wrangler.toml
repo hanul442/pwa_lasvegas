@@ -6,8 +6,14 @@ compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+# public/ is served from dist/: scripts/build.mjs minifies it there and stamps sw.js with a version. Wrangler runs
+# the build before every deploy (and before `wrangler dev`), so Workers Builds needs no build command of its own.
+[build]
+command = "node scripts/build.mjs"
+watch_dir = "public"
+
 [assets]
-directory = "./public"
+directory = "./dist"
 # Invite links (/j) are not files, so they reach the Worker, which reads the page through this.
 binding = "ASSETS"
 

@@ -1,5 +1,5 @@
 // Offline app shell. Game and chip API responses are never cached: the server stays authoritative.
-const CACHE = 'vegas-shell-v106';
+const CACHE = 'vegas-shell-v107';
 const SHELL = [
   './', 'index.html', 'styles.css', 'table.css', 'hwatu.css', 'app.js', 'icon.svg', 'logo.svg', 'manifest.webmanifest',
   'js/config.js', 'js/music.js', 'js/api.js', 'js/fx.js', 'js/money.js', 'js/cards.js', 'js/chips.js', 'js/table.js',
@@ -12,9 +12,17 @@ const SHELL = [
   ...'blackjack roulette baccarat dice poker slots horses matgo gostop seotda royale tazza oceans rounders montecarlo casablanca godofgamblers whale'.split(' ').map(id => `art/${id}.webp`)
 ];
 
+// A new build installs next to the running one and waits: the open app keeps getting one consistent set of files
+// (a game opened later still matches the code already running). The app offers "새로고침", which posts
+// 'skip-waiting'; a closed and reopened app picks the new build up by itself. The first install takes over at once.
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL).then(() => cacheVoice(cache))).then(() => self.skipWaiting()));
+  const fresh = SHELL.map(url => new Request(url, { cache: 'reload' }));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(fresh).then(() => cacheVoice(cache))).then(() => { if (!self.registration.active) self.skipWaiting(); }));
 });
+self.addEventListener('message', event => { if (event.data === 'skip-waiting') self.skipWaiting(); });
+
+// On a laptop dev server the files change under you, so there it stays network first.
+const DEV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
 // The dealer's call-outs (under 1 MB) so he still speaks offline. Best effort: a miss here only
 // means that line is fetched the first time it is needed.
@@ -41,12 +49,30 @@ self.addEventListener('fetch', event => {
     })));
     return;
   }
-  // Network first so new builds show up immediately; fall back to the cached shell offline.
-  event.respondWith(
-    fetch(event.request)
-      .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(event.request, copy)); return res; })
-      .catch(() => caches.match(event.request).then(hit => hit || caches.match('index.html')))
-  );
+  const navigate = event.request.mode === 'navigate';
+  if (DEV) {
+    event.respondWith(
+      fetch(event.request)
+        .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(event.request, copy)); return res; })
+        .catch(() => caches.match(event.request).then(hit => hit || caches.match('index.html')))
+    );
+    return;
+  }
+  // This build's own files straight from its cache: the home screen opens without waiting on the network, and a
+  // new build arrives through the waiting worker above. Anything not cached yet comes from the network.
+  event.respondWith(caches.open(CACHE).then(async cache => {
+    const hit = await cache.match(event.request, { ignoreSearch: navigate });
+    if (hit) return hit;
+    try {
+      const res = await fetch(event.request);
+      if (res.ok && res.type === 'basic' && !navigate) cache.put(event.request, res.clone());
+      return res;
+    } catch (err) {
+      const shell = navigate && await cache.match('./');
+      if (shell) return shell;
+      throw err;
+    }
+  }));
 });
 
 // Reminders from the hourly cron (lib/notifications.mjs): daily bonus, free chips, come back.

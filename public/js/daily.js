@@ -42,16 +42,6 @@ async function shareResult(view) {
   return shareImage({ blob, filename: `vegas-daily-${view.no}.png`, title: '오늘의 한 판', text: view.share, params: { daily: '1' } });
 }
 
-// Opening ?daily=1 (a friend's shared result) goes straight to today's game after sign-in.
-export function takeDailyLink() {
-  const params = new URLSearchParams(location.search);
-  if (params.get('daily') !== '1') return false;
-  params.delete('daily');
-  const q = params.toString();
-  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
-  return true;
-}
-
 let open = null;
 export function openDaily({ onClose = () => {} } = {}) {
   if (open) return;

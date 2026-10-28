@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node scripts/build.mjs",
     "dev": "node server.mjs",
     "start": "node scripts/start.mjs",
     "test": "node --test tests/*.test.mjs",
@@ -13,5 +14,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "esbuild": "0.25.11"
   }
 }

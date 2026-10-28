@@ -2,7 +2,6 @@
 // the sheet shows only what you'd change mid-game.
 import { el, isMuted, sound, haptic } from './fx.js';
 import { settings, onSettings, pace, PACES } from './settings.js';
-import { resetGuides } from './guide.js';
 import { voice } from './voice.js';
 import { notifyRow } from './notify.js';
 import { installRow } from './install.js';
@@ -181,7 +180,7 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
   if (!compact) {
     const replay = el('button', 'pill-button', '처음부터 다시 보기');
     replay.type = 'button';
-    replay.addEventListener('click', () => { resetGuides(); done(replay, '다음에 앉으면 다시 나와요'); });
+    replay.addEventListener('click', () => { import('./guide.js').then(m => m.resetGuides()); done(replay, '다음에 앉으면 다시 나와요'); });
     sections.push(section('알림', [notifyRow(row)]));
     sections.push(healthSection(parts));
     sections.push(section('가이드', [

@@ -94,15 +94,26 @@
       </section>
 
       <section class="surface" data-surface="ranking" aria-labelledby="ranking-title">
-        <div class="subtabs" role="tablist" aria-label="내 정보"><button class="subtab" type="button" data-nav="profile">프로필</button><button class="subtab" type="button" data-nav="ranking">랭킹</button><button class="subtab" type="button" data-nav="settings">설정</button></div>
         <h1 id="ranking-title">랭킹</h1>
-        <div class="segmented segmented--two" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
-        <div class="season-head" data-season-head></div>
-        <div class="tabs" role="tablist" data-rank-tabs></div>
-        <ol class="rank-podium" data-rank-podium aria-label="1~3위"></ol>
-        <div class="rank-me" data-rank-me aria-live="polite"></div>
-        <ol class="rank-list" data-rank-list></ol>
-        <section class="duels" data-duels aria-label="친구 대결"></section>
+        <div class="segmented segmented--three rank-views" role="tablist" aria-label="랭킹 보기" data-rank-view></div>
+        <div class="rank-pane" data-rank-pane="tier">
+          <div class="tier-hero" data-tier-hero></div>
+          <h2 class="sub-head">티어 기준 <small>이번 달 최고 순자산</small></h2>
+          <ol class="tier-steps" data-tier-steps aria-label="티어 기준"></ol>
+          <div data-tier-past></div>
+        </div>
+        <div class="rank-pane" data-rank-pane="board" hidden>
+          <div class="segmented segmented--three" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
+          <div class="season-head" data-season-head></div>
+          <div class="tabs" role="tablist" data-rank-tabs></div>
+          <ol class="rank-podium" data-rank-podium aria-label="1~3위"></ol>
+          <div class="rank-me" data-rank-me aria-live="polite"></div>
+          <ol class="rank-list" data-rank-list></ol>
+        </div>
+        <div class="rank-pane" data-rank-pane="friends" hidden>
+          <div data-friend-record></div>
+          <section class="duels" data-duels aria-label="친구 대결"></section>
+        </div>
       </section>
 
       <section class="surface" data-surface="bank" aria-labelledby="bank-title">
@@ -121,13 +132,13 @@
       </section>
 
       <section class="surface" data-surface="profile" aria-labelledby="profile-title">
-        <div class="subtabs" role="tablist" aria-label="내 정보"><button class="subtab" type="button" data-nav="profile">프로필</button><button class="subtab" type="button" data-nav="ranking">랭킹</button><button class="subtab" type="button" data-nav="settings">설정</button></div>
+        <div class="subtabs" role="tablist" aria-label="내 정보"><button class="subtab" type="button" data-nav="profile">프로필</button><button class="subtab" type="button" data-nav="settings">설정</button></div>
         <h1 id="profile-title">프로필</h1>
         <div data-profile></div>
       </section>
 
       <section class="surface" data-surface="settings" aria-labelledby="settings-title">
-        <div class="subtabs" role="tablist" aria-label="내 정보"><button class="subtab" type="button" data-nav="profile">프로필</button><button class="subtab" type="button" data-nav="ranking">랭킹</button><button class="subtab" type="button" data-nav="settings">설정</button></div>
+        <div class="subtabs" role="tablist" aria-label="내 정보"><button class="subtab" type="button" data-nav="profile">프로필</button><button class="subtab" type="button" data-nav="settings">설정</button></div>
         <h1 id="settings-title">설정</h1>
         <p class="lede">이 기기에만 저장돼요. 칩과 기록에는 영향을 주지 않아요.</p>
         <div class="settings-body" data-settings></div>
@@ -150,6 +161,7 @@
       <button class="nav-item is-active" type="button" data-nav="lobby"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20h-5.5v-5h-5v5H4z"/></svg><b class="nav-label">홈</b><i class="nav-dot" data-dot="lobby" hidden></i></button>
       <button class="nav-item" type="button" data-nav="games"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="10" height="14" rx="1.6"/><path d="M15.5 5.2l4.3 1.1a1.4 1.4 0 0 1 1 1.7l-2.9 11.1a1.4 1.4 0 0 1-1.7 1"/></svg><b class="nav-label">게임</b><i class="nav-dot" data-dot="games" hidden></i></button>
       <button class="nav-item" type="button" data-nav="events"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.8l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg><b class="nav-label">이벤트</b><i class="nav-dot" data-dot="events" hidden></i></button>
+      <button class="nav-item" type="button" data-nav="ranking"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20h17M9 20V9.5h6V20M3.5 20v-6.5H9M15 20v-4.5h5.5V20"/><path d="M12 3.6l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 5.7l2-.3z"/></svg><b class="nav-label">랭킹</b><i class="nav-dot" data-dot="ranking" hidden></i></button>
       <button class="nav-item" type="button" data-nav="bank"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9 12 4.5 20.5 9M5 9.5v8M9.7 9.5v8M14.3 9.5v8M19 9.5v8M3.5 20h17"/></svg><b class="nav-label">지갑</b><i class="nav-dot" data-dot="bank" hidden></i></button>
       <button class="nav-item" type="button" data-nav="profile"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.8 20c.9-3.6 3.7-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg><b class="nav-label">내 정보</b><i class="nav-dot" data-dot="profile" hidden></i></button>
     </nav>

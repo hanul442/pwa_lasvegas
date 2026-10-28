@@ -605,19 +605,20 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 /* ---------- 월간 랭크 시즌 (public/js/rank.js) ---------- */
 .segmented--three{grid-template-columns:repeat(3,1fr);max-width:420px;margin:4px 0 16px}
 .tier-emblem{flex:none;display:inline-block;vertical-align:middle;--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
+.tier-hero{--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
 .tier-emblem .tier-face{fill:var(--t-b);stroke:var(--t-a);stroke-width:2}
 .tier-emblem .tier-cut{fill:none;stroke:var(--t-line);stroke-opacity:.55;stroke-width:1.2}
 .tier-emblem .tier-shine{fill:var(--t-a);opacity:.55}
 .tier-emblem .tier-star{fill:var(--t-line)}
-.tier-emblem--iron{--t-a:#8a8f96;--t-b:#2e3135;--t-line:#c9cdd2}
-.tier-emblem--emerald{--t-a:#5fd39a;--t-b:#16452f;--t-line:#dcffec}
-.tier-emblem--grandmaster{--t-a:#ff6f91;--t-b:#4d1226;--t-line:#ffe1ea}
-.tier-emblem--silver{--t-a:#d7dce3;--t-b:#5d636c;--t-line:#ffffff}
-.tier-emblem--gold{--t-a:#e2c27a;--t-b:#6b5426;--t-line:#fff3d1}
-.tier-emblem--platinum{--t-a:#9fe0d8;--t-b:#24524f;--t-line:#e9fffb}
-.tier-emblem--diamond{--t-a:#9cc4ff;--t-b:#20386b;--t-line:#ffffff}
-.tier-emblem--master{--t-a:#c9a0ff;--t-b:#3c2266;--t-line:#f4eaff}
-.tier-emblem--legend{--t-a:#ff8a72;--t-b:#5e1a12;--t-line:#ffe6dc}
+.tier-emblem--iron,.tier-hero--iron{--t-a:#8a8f96;--t-b:#2e3135;--t-line:#c9cdd2}
+.tier-emblem--emerald,.tier-hero--emerald{--t-a:#5fd39a;--t-b:#16452f;--t-line:#dcffec}
+.tier-emblem--grandmaster,.tier-hero--grandmaster{--t-a:#ff6f91;--t-b:#4d1226;--t-line:#ffe1ea}
+.tier-emblem--silver,.tier-hero--silver{--t-a:#d7dce3;--t-b:#5d636c;--t-line:#ffffff}
+.tier-emblem--gold,.tier-hero--gold{--t-a:#e2c27a;--t-b:#6b5426;--t-line:#fff3d1}
+.tier-emblem--platinum,.tier-hero--platinum{--t-a:#9fe0d8;--t-b:#24524f;--t-line:#e9fffb}
+.tier-emblem--diamond,.tier-hero--diamond{--t-a:#9cc4ff;--t-b:#20386b;--t-line:#ffffff}
+.tier-emblem--master,.tier-hero--master{--t-a:#c9a0ff;--t-b:#3c2266;--t-line:#f4eaff}
+.tier-emblem--legend,.tier-hero--legend{--t-a:#ff8a72;--t-b:#5e1a12;--t-line:#ffe6dc}
 .rank-card{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:16px;border:1px solid var(--hair-strong);background:linear-gradient(180deg,#ffffff0d,#ffffff03);color:var(--white);text-align:left;font:inherit}
 .rank-card-text{flex:1;min-width:0;display:grid;gap:4px}
 .rank-card-text b{font:650 20px/1.15 var(--display);font-stretch:112%;letter-spacing:-.01em}
@@ -875,3 +876,68 @@ body.daily-open{overflow:hidden}
 .bust{place-items:start center}
 .bust .bust-inner{margin:auto 0}
 .day-sheet-count{margin:6px 0 0;color:var(--smoke);font-size:14px}
+
+/* ---------- 랭킹 탭 (2026-10-28): 티어 · 순위 · 친구 전적 ---------- */
+.rank-views{max-width:420px;margin:6px 0 18px}
+.rank-pane[hidden]{display:none}
+.tier-hero{position:relative;overflow:hidden;display:grid;gap:18px;padding:18px 18px 16px;border-radius:20px;border:1px solid var(--hair-strong);
+  background:radial-gradient(120% 90% at 18% 0%,color-mix(in srgb,var(--t-a) 22%,transparent),transparent 62%),linear-gradient(180deg,#15171a,#0d0e10)}
+.tier-hero-top{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--smoke)}
+.tier-hero-season{font-weight:600;color:var(--white)}
+.tier-hero-main{display:flex;align-items:center;gap:16px;min-width:0}
+.tier-hero-emblem{flex:none;filter:drop-shadow(0 6px 18px color-mix(in srgb,var(--t-a) 35%,transparent))}
+.tier-hero-name{display:grid;gap:4px;min-width:0}
+.tier-hero-name small{color:var(--smoke);font-size:13px}
+.tier-hero-name strong{font:600 clamp(30px,9vw,44px)/1 var(--display);font-stretch:118%;letter-spacing:-.03em;overflow-wrap:anywhere}
+.tier-hero-climb{display:grid;gap:8px}
+.tier-hero-bar{height:6px;border-radius:3px;background:#ffffff1a;overflow:hidden}
+.tier-hero-bar i{display:block;height:100%;border-radius:3px;background:var(--white)}
+.tier-hero-climb p{display:flex;justify-content:space-between;gap:12px;margin:0;font-size:14px;color:var(--smoke)}
+.tier-hero-climb p b{color:var(--white);font-weight:650}
+.tier-hero-climb p>span:last-child{font-variant-numeric:tabular-nums}
+.tier-hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-top:1px solid var(--hair);padding-top:14px}
+.tier-hero-stats div{min-width:0;padding:0 10px;border-left:1px solid var(--hair)}
+.tier-hero-stats div:first-child{padding-left:0;border-left:0}
+.tier-hero-stats dt{color:var(--smoke);font-size:12.5px;white-space:nowrap}
+.tier-hero-stats dd{margin:4px 0 0;font:600 18px/1.2 var(--display);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tier-hero-stats dd small{font:500 12.5px var(--sans);color:var(--smoke);margin-left:1px}
+.tier-hero-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tier-hero-foot>small{color:var(--smoke);font-size:13px}
+.tier-hero-actions{display:flex;align-items:center;gap:14px}
+.tier-hero-actions .link-button{font-size:13px;color:var(--smoke)}
+.tier-hero-brag{min-height:36px;padding:0 16px;font-size:13px}
+.tier-steps{list-style:none;margin:0;padding:0;border-top:1px solid var(--hair)}
+.tier-step{display:flex;align-items:center;gap:12px;min-height:54px;padding:8px 4px;border-bottom:1px solid var(--hair)}
+.tier-step-name{flex:1;min-width:0;display:grid;gap:2px}
+.tier-step-name b{font-size:15px;font-weight:600}
+.tier-step-name small{color:var(--smoke);font-size:13px}
+.tier-step em{font-style:normal;font-size:13px;font-weight:700;padding:5px 11px;border-radius:999px;background:var(--white);color:var(--ink)}
+.tier-step-check{color:var(--smoke);font-size:15px;padding-right:6px}
+.tier-step-need{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tier-step.is-ahead .tier-emblem{opacity:.55}
+.tier-step.is-ahead .tier-step-name b{color:var(--smoke)}
+.tier-step.is-me{margin:0 -10px;padding:8px 14px;border-radius:14px;border-bottom-color:transparent;background:#ffffff0d;box-shadow:inset 0 0 0 1px var(--hair-strong)}
+.friend-empty{display:grid;justify-items:start;gap:8px;padding:22px 18px;border-radius:18px;border:1px solid var(--hair)}
+.friend-empty b{font-size:17px}
+.friend-empty small{color:var(--smoke);font-size:14px;line-height:1.5}
+.friend-empty .pill-button{margin-top:6px}
+.friend-list,.friend-games{list-style:none;margin:0;padding:0;border-top:1px solid var(--hair)}
+.friend-row,.friend-game{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 2px;border-bottom:1px solid var(--hair)}
+.friend-mono{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--ink-3);box-shadow:inset 0 0 0 1px var(--hair-strong);font:600 15px var(--sans)}
+.friend-main,.friend-game-main{flex:1;min-width:0;display:grid;gap:3px}
+.friend-main b,.friend-game-main b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.friend-game-main b small{font-weight:400;color:var(--smoke);font-size:13px}
+.friend-main small,.friend-game-main>small{color:var(--smoke);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.friend-score{flex:none;display:grid;justify-items:end;gap:2px;text-align:right}
+.friend-score b{font:600 16px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.friend-score b i{font:500 12.5px var(--sans);font-style:normal;color:var(--smoke);margin-left:1px}
+.friend-score small{color:var(--smoke);font-size:12.5px}
+.friend-game-net{flex:none;font:600 16px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.friend-note{margin:8px 0 0;color:var(--dim);font-size:13px}
+.rank-pane .duels{margin-top:34px}
+@media (min-width:720px){
+  .tier-hero{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:32px;padding:24px 26px 20px}
+  .tier-hero-top,.tier-hero-foot{grid-column:1/-1}
+  .tier-hero-climb{align-self:center}
+  .tier-hero-stats{grid-column:1/-1}
+}

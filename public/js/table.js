@@ -663,7 +663,7 @@ export class Table {
       if (big && (big.force || namedWinCounts(net, this.tier.min))) await this.bigWin(net, { ...big, level: Math.max(1, level), multiple, force: true });
       else if (level) await this.bigWin(net, { title: multiple >= 2 ? `${multiple}×` : '대박', level, multiple, force: true });
     }
-    await wait(net > 0 ? 900 : 650);
+    await wait(net > 0 ? 650 : 450);
     const moves = [], raked = [];
     const balance = this.balanceEl.getBoundingClientRect();
     new Set([...held, ...nets.keys()]).forEach(zoneId => {

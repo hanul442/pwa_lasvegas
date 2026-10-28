@@ -56,7 +56,8 @@ test('hand rules: bust, dealer S17, double, split, natural', () => {
 });
 
 test('a full day: ten hands, one score on the board, then no second go', () => {
-  const state = stateWith('a', 'b');
+  // A fixed shoe: with a random one the dealer's first hand is sometimes a natural, and that hole card shows.
+  const state = { ...stateWith('a', 'b'), dailyBj: { secret: 'full-day-test' } };
   let v = dailyCommand(state, 'a', { move: 'start' }, NOW);
   assert.equal(v.status, 'PLAYING');
   assert.equal(v.hands[0].dealer[1], 'HIDDEN');

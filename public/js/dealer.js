@@ -114,8 +114,8 @@ export async function gatherCards(containers, discard, { at = null } = {}) {
   const tray = discard.getBoundingClientRect();
   const spot = at ? center(at) : center(containers[0].getBoundingClientRect());
   const end = center(tray);
-  const pick = 45, slide = 340;
-  const total = cards.length * pick + 260 + slide;
+  const pick = 38, slide = 300;
+  const total = cards.length * pick + 200 + slide;
   sound.gather?.();
   await Promise.all(cards.map((card, i) => {
     const c = center(card.getBoundingClientRect());
@@ -123,7 +123,7 @@ export async function gatherCards(containers, discard, { at = null } = {}) {
     const ex = end.x - c.x, ey = end.y - c.y;
     const start = i * pick;
     const own = total - start;
-    const g = (220) / own, hold = (total - slide - start) / own;
+    const g = 180 / own, hold = (total - slide - start) / own;
     return animate(card, [
       { transform: 'none', opacity: 1 },
       { transform: `translate(${gx}px,${gy}px) rotate(0deg)`, opacity: 1, offset: Math.min(g, hold) },

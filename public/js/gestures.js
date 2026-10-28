@@ -60,8 +60,9 @@ export function feltGestures(felt, { live, onTap, onWave, tip }) {
     let seen = 0;
     try { seen = Number(localStorage.getItem(TIP_KEY) || 0); } catch {}
     if (seen >= 3) return;
+    // tip() returns false when something else is talking (the first-hand tips); try next turn.
+    if (tip('펠트를 톡 치면 히트, 옆으로 쓸면 스탠드') === false) return;
     try { localStorage.setItem(TIP_KEY, String(seen + 1)); } catch {}
-    tip('펠트를 톡 치면 히트, 옆으로 쓸면 스탠드');
   };
 
   return {

@@ -25,9 +25,27 @@ const helpStep = { target: '.table-help', title: '모르면 ? 버튼', body: ['?
 const payNote = '<p class="note"><b>배당 읽는 법</b> 35 : 1은 이기면 건 돈을 그대로 돌려받고, 건 돈의 35배를 더 받는다는 뜻이에요. 1억을 걸었다면 36억이 돌아와요. 지면 건 돈만 잃어요.</p><p class="note"><b>100만 단위</b> 돈은 100만원 단위로만 움직여요. 블랙잭 3:2나 뱅커 0.95처럼 단위 사이에 떨어지는 금액은 위아래 단위 중 하나로 정해지는데, 평균하면 정확히 적힌 배당이 되도록 확률을 맞춰요. 예: 100만원 블랙잭은 반반 확률로 100만 또는 200만원을 더 받아요.</p>';
 const terms = list => `<h3>용어</h3><dl class="terms">${list.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 
+// ---------- first-hand tips ----------
+// One short line each, shown during the first hand only when it applies (guide.js FirstTips).
+// The first tip that holds wins, so order them from the start of a hand to the end.
+const can = (t, word) => (t.actionList || []).some(a => !a.disabled && String(a.label).startsWith(word));
+const fresh = t => !t.locked && !t.total && !t.lastBet;
+const ready = t => !t.locked && t.betReady;
+// `stay`: waits for the player to do it; other tips step aside after a few seconds.
+const startTip = (label, text) => ({ when: ready, stay: true, target: '[data-actions]', text: text || `${label}를 누르면 시작해요` });
+const myHand = t => !!t.root.querySelector('.mg-hand:not(.is-waiting)');
+// Poker tables stay locked while seated, so the first hand ends when 다음 핸드 shows up.
+const handOver = (t, tips) => { if (can(t, '폴드') || can(t, '다이') || can(t, '체크')) tips.acted = true; return tips.acted && can(t, '다음 핸드'); };
+
 export const GUIDES = {
   blackjack: {
     id: 'blackjack', title: '블랙잭',
+    tips: [
+      { when: fresh, stay: true, target: '.bj-spots', text: '칩을 고르고 번호 원을 탭해 걸어요' },
+      startTip('딜', '딜을 누르면 카드가 와요'),
+      { when: t => can(t, '인슈어런스'), target: '[data-actions]', text: '딜러가 A예요. 보험이 필요 없으면 거절해도 돼요' },
+      { when: t => can(t, '히트'), target: '[data-actions]', text: '합을 21에 가깝게. 히트는 한 장 더, 스탠드는 멈춤' }
+    ],
     steps: [
       { target: '.felt', title: '블랙잭은 21 만들기', body: ['내 카드 합을 딜러보다 21에 가깝게 만들면 이겨요. 21을 넘으면 그 자리에서 져요.', '숫자 카드는 적힌 숫자, J·Q·K는 10, A는 1이나 11 중 유리한 쪽으로 쳐요.'], eg: 'K와 7이면 17, A와 6이면 7 또는 17이에요.' },
       ...betSteps({ zone: '.bj-spots', zoneTitle: '베팅 원에 칩 놓기', zoneBody: '번호가 적힌 큰원이 내 자리예요. 원 하나에 카드 한 손을 받아요. 처음에는 원 하나만 써도 충분해요.', zoneEg: '1번 원에만 2만원을 걸면 한 손으로 딜러와 겨뤄요.' }),
@@ -53,6 +71,11 @@ export const GUIDES = {
 
   baccarat: {
     id: 'baccarat', title: '바카라',
+    tips: [
+      { when: fresh, stay: true, target: '.bac-zones', text: '이길 것 같은 쪽, Player나 Banker에 칩을 놓아요' },
+      startTip('딜', '딜을 누르면 카드는 딜러가 알아서 나눠요'),
+      { when: t => t.locked, target: '.bac-sides', text: '합의 끝자리가 9에 가까운 쪽이 이겨요' }
+    ],
     steps: [
       { target: '.bac-sides', title: '어느 쪽이 이길까 맞히기', body: ['바카라에서는 내가 카드를 고르지 않아요. 플레이어와 뱅커 두 쪽 중 어느 쪽이 이길지에 거는 게임이에요.', '카드 합의 끝자리가 9에 가까운 쪽이 이겨요.'], eg: '7과 8이면 15라서 5점, 9와 K면 9점이에요.' },
       ...betSteps({ zone: '.bac-zones', zoneTitle: '어느 쪽에 걸까', zoneBody: 'Player(플레이어), Banker(뱅커), Tie(무승부) 중 한 곳에 걸어요. 다른 칸을 탭하면 칩이 그쪽으로 옮겨 가요.', zoneEg: '뱅커에 1만원을 걸고 뱅커가 이기면 1만 9500원이 돌아와요.' }),
@@ -75,6 +98,11 @@ export const GUIDES = {
 
   roulette: {
     id: 'roulette', title: '룰렛',
+    tips: [
+      { when: fresh, stay: true, target: '.rl-outside', text: '처음엔 Red·Black 같은 반반 칸이 쉬워요' },
+      startTip('스핀', '스핀을 누르면 공이 굴러요'),
+      { when: t => t.locked, target: '.wheel', text: '공이 멈춘 숫자가 들어간 칸이 이겨요' }
+    ],
     steps: [
       { target: '.wheel', title: '공이 어느 숫자에 멈출까', body: ['휠에는 0부터 36까지 숫자 칸이 있어요. 0은 초록, 나머지는 빨강과 검정이 번갈아 있어요.', '공이 멈출 숫자나 색을 미리 맞히면 이겨요.'] },
       { target: '.chip-tray', title: '1. 칩 고르기', body: ['화면 아래 칩을 한 번 탭해서 골라요. 칩에 적힌 금액이 한 번에 놓이는 돈이에요.'] },
@@ -114,6 +142,11 @@ export const GUIDES = {
 
   dice: {
     id: 'dice', title: '식보',
+    tips: [
+      { when: fresh, stay: true, target: '.sb-main', text: '합이 Small(4–10)일지 Big(11–17)일지 걸어요' },
+      startTip('굴리기', '굴리기를 누르면 주사위가 굴러요'),
+      { when: t => t.locked, target: '.dome', text: '세 눈을 더한 합으로 결과가 정해져요' }
+    ],
     steps: [
       { target: '.dome', title: '주사위 세 개', body: ['유리 돔 안에서 주사위 세 개를 굴려요. 세 개의 눈을 더한 합(3~18)을 맞히는 게임이에요.'], eg: '2, 4, 5가 나오면 합은 11이에요.' },
       ...betSteps({ zone: '.sb-main', zoneTitle: '크다 작다에 걸기', zoneBody: 'Small은 합이 4~10, Big은 11~17일 때 이겨요. Odd(홀)·Even(짝)도 있어요. 반반 확률이라 처음 하기 좋아요.', zoneEg: 'Big에 1만원 → 합이 13이면 2만원이 돌아와요.', startLabel: '굴리기' }),
@@ -138,6 +171,13 @@ export const GUIDES = {
 
   matgo: {
     id: 'matgo', title: '맞고',
+    tips: [
+      { when: fresh, stay: true, target: '[data-zone="POINT"]', text: '칩으로 1점에 얼마(점당)인지 정해요' },
+      startTip('시작', '시작을 누르면 패 10장이 와요'),
+      { when: t => can(t, '스톱'), target: '[data-actions]', text: '7점! 스톱은 지금 이기기, 고는 더 키우기예요' },
+      { when: myHand, stay: true, target: '.mg-hand', text: '흰 점 있는 패를 두 번 탭해 내면 같은 달 짝을 가져와요' },
+      { when: t => t.locked && (t.mg?.plays ?? 0) > 0, target: '[data-caps="0"]', text: '가져온 패로 7점을 먼저 내면 이겨요' }
+    ],
     steps: [
       { target: '.felt', title: '맞고는 둘이 치는 고스톱', body: ['화투는 1월부터 12월까지 달마다 그림이 같은 카드가 넉 장씩 있어요. 카드 왼쪽 아래 숫자가 달이에요.', '내 패를 내서 바닥에 있는 같은 달 카드와 짝을 맞추면 둘 다 가져와요. 가져온 카드로 점수를 먼저 7점 내면 이겨요.'] },
       { target: '[data-friends-open]', title: '친구와 하고 싶다면', body: ['"친구와 함께"를 누르면 방을 만들고 4자리 코드를 친구에게 알려 줄 수 있어요. 친구는 코드를 넣고 들어와요.', '빈자리는 AI가 채우고, 규칙과 정산은 지금과 똑같아요.'] },
@@ -173,6 +213,13 @@ export const GUIDES = {
 
   gostop: {
     id: 'gostop', title: '고스톱',
+    tips: [
+      { when: fresh, stay: true, target: '[data-zone="POINT"]', text: '칩으로 1점에 얼마(점당)인지 정해요' },
+      startTip('시작', '시작을 누르면 패 7장씩 돌아가요'),
+      { when: t => can(t, '스톱'), target: '[data-actions]', text: '3점! 스톱은 지금 이기기, 고는 더 키우기예요' },
+      { when: myHand, stay: true, target: '.mg-hand', text: '흰 점 있는 패를 두 번 탭해 내면 같은 달 짝을 가져와요' },
+      { when: t => t.locked && (t.gs?.plays ?? 0) > 0, target: '.mg-board', text: '가져온 패로 3점을 먼저 내면 이겨요' }
+    ],
     steps: [
       { target: '.felt', title: '셋이서 치는 고스톱', body: ['나와 AI 두 명이 돌아가며 패를 내요. 같은 달 화투끼리 짝을 맞춰 가져오는 방법은 맞고와 같아요.', '셋이 하니까 목표가 더 낮아요. 3점만 나면 고 또는 스톱을 할 수 있어요.'] },
       { target: '[data-friends-open]', title: '친구와 하고 싶다면', body: ['"친구와 함께"를 누르면 방을 만들고 4자리 코드를 친구에게 알려 줄 수 있어요. 친구는 코드를 넣고 들어와요.', '빈자리는 AI가 채우고, 규칙과 정산은 지금과 똑같아요.'] },
@@ -198,6 +245,12 @@ export const GUIDES = {
 
   seotda: {
     id: 'seotda', title: '섯다',
+    tips: [
+      { when: fresh, stay: true, target: '[data-zone="ANTE"]', text: '칩으로 모두가 같이 낼 판돈을 정해요' },
+      startTip('시작', '시작을 누르면 한 장씩 받아요'),
+      { when: t => t.sd?.view?.street === 1 && can(t, '다이'), target: '[data-actions]', text: '한 장 보고 걸어요. 체크는 넘기기, 다이는 포기' },
+      { when: t => t.sd?.view?.street === 2 && can(t, '다이'), target: '[data-cards="0"]', text: '같은 달 두 장(땡)이 세고, 아니면 합의 끝자리(끗)로 겨뤄요' }
+    ],
     steps: [
       { target: '.felt', title: '섯다는 두 장으로 겨루기', body: ['1월부터 10월까지 화투 스무 장만 써요. 각자 두 장을 받아 그 조합(족보)이 가장 센 사람이 판돈을 모두 가져가요.', '같은 달 두 장(땡)이 세고, 아니면 두 장 숫자 합의 끝자리(끗)로 겨뤄요.'], eg: '7월과 7월이면 7땡, 3월과 5월이면 8끗이에요.' },
       { target: '.sd-count', title: '1. 상대 수 고르기', body: '시작 전에 AI 상대를 1명에서 4명까지 고를 수 있어요. 처음엔 1명이 쉬워요.' },
@@ -235,6 +288,11 @@ export const GUIDES = {
 
   slots: {
     id: 'slots', title: '슬롯',
+    tips: [
+      { when: fresh, stay: true, target: '[data-zone="LINE"]', text: '여기 놓은 칩이 스핀 한 번에 거는 돈이에요' },
+      startTip('스핀', '스핀을 누르거나 레버를 내려요'),
+      { when: t => t.locked, target: '.slot-window', text: '가운데 줄에 같은 그림 셋이면 이겨요' }
+    ],
     steps: [
       { target: '.slot-window', title: '그림 세 개 맞추기', body: ['레버를 당기면 릴 세 개가 돌다가 하나씩 멈춰요. 가운데 줄 세 칸에 같은 그림이 서면 이겨요.'], eg: '7 7 7이 가운데 줄에 서면 건 돈의 100배를 받아요.' },
       ...betSteps({ zone: '[data-zone="LINE"]', zoneTitle: '한 번에 걸 돈', zoneBody: '여기 놓은 칩이 스핀 한 번에 거는 돈이에요. 스핀할 때마다 이만큼씩 나가요.', zoneEg: '1만원을 놓으면 스핀 한 번에 1만원이에요.', startLabel: '스핀' }),
@@ -264,6 +322,11 @@ export const GUIDES = {
 
   horses: {
     id: 'horses', title: '경마',
+    tips: [
+      { when: fresh, stay: true, target: '.hr-runners', text: '1등 할 것 같은 말의 단승 칸에 칩을 놓아요' },
+      startTip('출발', '출발을 누르면 경주가 시작돼요'),
+      { when: t => t.locked, target: '.hr-track', text: '흰 테두리 점이 내 말이에요' }
+    ],
     steps: [
       { target: '.hr-card', title: '1등을 맞히는 게임', body: ['여섯 마리가 1200m를 달려요. 어느 말이 들어올지 골라 칩을 걸어요.', '말마다 최근 다섯 경주 성적(왼쪽이 최근)과 달리는 스타일이 적혀 있어요. 선행은 처음부터 앞에, 추입은 마지막에 치고 나와요.'] },
       ...betSteps({ zone: '.hr-runners', zoneTitle: '단승 또는 연승에 칩 놓기', zoneBody: '숫자가 배당이에요. 단승 칸은 그 말이 1등을 해야, 연승 칸은 1등이나 2등만 해도 맞아요. 한 경주에 한 곳에만 걸 수 있어요.', zoneEg: '단승 4.2에 1천만원을 걸고 맞히면 4200만원이 돌아와요.', startLabel: '출발' }).map(s => (s.do?.startsWith('출발를') ? { ...s, do: '출발을 눌러 경주를 시작해 보세요' } : s)),
@@ -282,6 +345,13 @@ export const GUIDES = {
 
   poker: {
     id: 'poker', title: '홀덤',
+    tips: [
+      { when: t => !t.locked && !t.total, stay: true, target: '[data-zone="buyin"]', text: '칩을 놓아 테이블에 들고 앉을 돈을 정해요' },
+      startTip('앉기', '앉기를 누르면 카드가 와요'),
+      { when: t => can(t, '폴드'), target: '[data-actions]', text: '약하면 폴드, 괜찮으면 콜·체크, 아주 좋으면 레이즈' },
+      { when: t => t.locked && !can(t, '다음 핸드'), target: '[data-board]', text: '내 두 장 + 가운데 다섯 장으로 가장 센 패를 만들어요' }
+    ],
+    tipsDone: handOver,
     steps: [
       { target: '.felt', title: '텍사스 홀덤', body: ['각자 비밀 카드 두 장을 받고, 가운데에 모두가 같이 쓰는 카드 다섯 장이 열려요.', '내 두 장과 가운데 다섯 장 중 다섯 장으로 가장 센 패를 만든 사람, 또는 끝까지 포기하지 않은 사람이 가운데 돈(팟)을 가져가요.'] },
       { target: '.chip-tray', title: '1. 칩 고르기', body: '아래 칩을 탭해서 골라요. 첫 칩은 이 테이블의 빅 블라인드(기본 베팅) 금액이에요.' },
@@ -307,6 +377,13 @@ export const GUIDES = {
 
   sevenpoker: {
     id: 'sevenpoker', title: '7포커',
+    tips: [
+      { when: t => !t.locked && !t.total, stay: true, target: '[data-zone="buyin"]', text: '칩을 놓아 테이블에 들고 앉을 돈을 정해요' },
+      startTip('앉기', '앉기를 누르면 석 장을 받아요'),
+      { when: t => can(t, '') && (t.actionList || []).some(a => / 오픈$/.test(a.label)), target: '.pk-seat--hero', text: '한 장을 골라 모두에게 보여 줘요. 페어는 숨기는 게 보통이에요' },
+      { when: t => can(t, '다이'), target: '[data-actions]', text: '약하면 다이, 괜찮으면 콜·체크, 좋으면 올려요' }
+    ],
+    tipsDone: handOver,
     steps: [
       { target: '.felt', title: '7포커', body: ['한 사람이 일곱 장을 받아요. 넉 장은 모두에게 보이게(오픈), 석 장은 나만 보게(히든) 놓여요.', '일곱 장 중 다섯 장으로 가장 센 패를 만든 사람, 또는 끝까지 다이하지 않은 사람이 가운데 돈(팟)을 가져가요.'] },
       { target: '.chip-tray', title: '1. 칩 고르기', body: '아래 칩을 탭해서 골라요.' },

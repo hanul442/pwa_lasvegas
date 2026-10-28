@@ -1,5 +1,6 @@
-// Interactive table guide: a coach that lights up one part of the real table at a time and,
-// for hands-on steps, waits until the player actually does it. Plus a rules sheet behind "?".
+// Table help. The first time someone sits at a game they get one short line at a time, right
+// when it matters during their first hand (FirstTips). The full step-by-step coach and the
+// rules sheet live behind "?" for anyone who wants more.
 import { el } from './fx.js';
 import { GUIDES } from './guides.js';
 import { settings } from './settings.js';
@@ -118,6 +119,104 @@ class Coach {
   }
 }
 
+// One line near the part of the table that matters right now, only during the first hand.
+// Each tip shows while its `when` holds and never comes back once it has passed, so a player
+// who already knows the game just plays and the lines fall away by themselves.
+class FirstTips {
+  constructor(table, def) {
+    this.table = table;
+    this.def = def;
+    this.shown = new Set();
+    this.current = null;
+    this.played = false;
+    this.root = null;
+  }
+
+  get active() { return Boolean(this.root); }
+
+  start() {
+    this.root = el('div', 'tip');
+    this.root.innerHTML = '<span class="tip-ring"></span><button type="button" class="tip-line" aria-live="polite"></button>';
+    this.ring = this.root.firstChild;
+    this.line = this.root.lastChild;
+    // Tapping the line puts it away; the table keeps going.
+    this.line.addEventListener('click', () => { if (this.current) this.shown.add(this.current); this.show(null); });
+    this.table.root.append(this.root);
+    this.timer = setInterval(() => this.check(), 250);
+    this.check();
+  }
+
+  stop({ remember = true } = {}) {
+    clearInterval(this.timer);
+    clearTimeout(this.byeTimer);
+    this.root?.remove();
+    this.root = null;
+    if (remember) markSeen(this.def.id);
+  }
+
+  check() {
+    const t = this.table;
+    if (!this.root || !t.root.isConnected) return;
+    // Once the coach or a sheet is open, the player is reading help already.
+    if (t.guide?.active || t.root.querySelector('.sheet.is-open')) { this.show(null); return; }
+    if (this.bye) return this.follow();
+    const done = this.def.tipsDone || (tt => this.played && !tt.locked);
+    if (t.locked) this.played = true;
+    if (done(t, this)) return this.finish();
+    const ok = tip => { try { return tip.when(t); } catch { return false; } };
+    const tip = this.def.tips.find(x => !this.shown.has(x) && ok(x)) || null;
+    // A tip that stops applying has done its job; move on and do not repeat it.
+    if (this.current && this.current !== tip && !ok(this.current)) this.shown.add(this.current);
+    if (tip !== this.current) { this.show(tip); this.since = Date.now(); }
+    // Something to read, not to do, steps aside after a while.
+    else if (tip && !tip.stay && Date.now() - this.since > 7000) { this.shown.add(tip); this.show(null); }
+    this.follow();
+  }
+
+  finish() {
+    this.bye = { target: '.table-help', text: '규칙과 따라 하기는 ? 버튼에 있어요' };
+    markSeen(this.def.id);
+    this.show(this.bye);
+    this.byeTimer = setTimeout(() => this.stop(), 4200);
+  }
+
+  show(tip) {
+    this.current = tip === this.bye ? this.current : tip;
+    this.root.classList.toggle('is-on', Boolean(tip));
+    if (!tip) return;
+    this.line.textContent = tip.text;
+    this.line.setAttribute('aria-label', `${tip.text} (탭해서 닫기)`);
+    this.line.classList.remove('is-in');
+    void this.line.offsetWidth;
+    this.line.classList.add('is-in');
+    this.tip = tip;
+  }
+
+  follow() {
+    if (!this.root.classList.contains('is-on')) return;
+    const tip = this.tip;
+    const node = tip.target ? this.table.root.querySelector(tip.target) : null;
+    const r = node?.isConnected ? node.getBoundingClientRect() : null;
+    const vw = innerWidth, vh = innerHeight;
+    const lh = this.line.offsetHeight || 40;
+    const on = r && r.width && r.height && r.bottom > 0 && r.top < vh;
+    this.ring.classList.toggle('is-none', !on);
+    const lw = this.line.offsetWidth || 240;
+    const cx = on ? (Math.max(0, r.left) + Math.min(vw, r.right)) / 2 : vw / 2;
+    this.line.style.left = `${Math.round(Math.max(12, Math.min(vw - lw - 12, cx - lw / 2)))}px`;
+    let top;
+    if (!on) top = vh * 0.38;
+    else {
+      const pad = 4;
+      Object.assign(this.ring.style, { left: `${Math.max(2, r.left - pad)}px`, top: `${Math.max(2, r.top - pad)}px`, width: `${Math.min(vw - 4, r.width + pad * 2)}px`, height: `${Math.min(vh - 4, r.height + pad * 2)}px` });
+      // Above the spot when there is room (thumbs cover what is below), otherwise below.
+      top = r.top - lh - 12 >= 56 ? r.top - lh - 12 : r.bottom + 12;
+      if (top + lh > vh - 8) top = Math.max(56, r.top + 8);
+    }
+    this.line.style.top = `${Math.round(Math.max(8, Math.min(vh - lh - 8, top)))}px`;
+  }
+}
+
 function rulesSheet(table, def, coach) {
   const sheet = el('section', 'sheet');
   sheet.setAttribute('aria-label', `${def.title} 규칙`);
@@ -132,7 +231,7 @@ function rulesSheet(table, def, coach) {
     if (value) sheet.querySelector('[data-tour]').focus({ preventScroll: true });
   };
   sheet.querySelector('[data-close]').addEventListener('click', () => { open(false); table.root.querySelector('.table-help')?.focus({ preventScroll: true }); });
-  sheet.querySelector('[data-tour]').addEventListener('click', () => { open(false); coach.start(); });
+  sheet.querySelector('[data-tour]').addEventListener('click', () => { open(false); if (table.firstTips?.active) table.firstTips.stop(); coach.start(); });
   table.root.append(sheet);
   return { open, get isOpen() { return sheet.classList.contains('is-open'); } };
 }
@@ -154,12 +253,18 @@ export function attachGuide(table, gameId) {
   const onKey = e => {
     if (e.key !== 'Escape') return;
     if (coach.active) { coach.stop(); e.stopImmediatePropagation(); }
+    else if (table.firstTips?.root?.classList.contains('is-on')) { table.firstTips.line.click(); e.stopImmediatePropagation(); }
     else if (sheet.isOpen) { sheet.open(false); e.stopImmediatePropagation(); }
   };
   window.addEventListener('keydown', onKey, true);
   const destroy = table.destroy.bind(table);
-  table.destroy = () => { if (coach.active) coach.stop({ remember: false }); window.removeEventListener('keydown', onKey, true); return destroy(); };
+  table.destroy = () => { if (coach.active) coach.stop({ remember: false }); if (table.firstTips?.active) table.firstTips.stop({ remember: false }); window.removeEventListener('keydown', onKey, true); return destroy(); };
   table.guide = coach;
-  if (settings.get('guides') && !seen(def.id)) setTimeout(() => { if (table.root.isConnected && !coach.active) coach.start(); }, 700);
+  // First visit: short lines during the first hand instead of a stack of cards before it.
+  if (settings.get('guides') && !seen(def.id) && def.tips?.length) {
+    const tips = new FirstTips(table, def);
+    table.firstTips = tips;
+    setTimeout(() => { if (table.root.isConnected && !coach.active && !tips.active) tips.start(); }, 600);
+  }
   return coach;
 }

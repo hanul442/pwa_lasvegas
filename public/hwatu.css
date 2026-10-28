@@ -180,6 +180,16 @@
 .coach-foot button.is-primary{background:var(--ink);color:var(--white);border-color:var(--ink)}
 .coach-foot button:disabled{opacity:.35}
 .coach-foot button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+/* first-hand tips: one line, no dimming, the table stays playable */
+.tip{position:fixed;inset:0;z-index:88;pointer-events:none;display:none}
+.tip.is-on{display:block}
+.tip-ring{position:fixed;border-radius:14px;box-shadow:0 0 0 2px #ffffffd9;animation:tip-ring 1.6s var(--ease-out,ease) infinite;transition:left .25s,top .25s,width .25s,height .25s}
+.tip-ring.is-none{display:none}
+@keyframes tip-ring{0%{box-shadow:0 0 0 2px #ffffffd9,0 0 0 0 #ffffff55}70%{box-shadow:0 0 0 2px #ffffffd9,0 0 0 10px #ffffff00}100%{box-shadow:0 0 0 2px #ffffffd9,0 0 0 0 #ffffff00}}
+.tip-line{position:fixed;left:16px;width:max-content;max-width:min(420px,calc(100vw - 24px));margin:0;padding:10px 16px;border:0;border-radius:999px;background:var(--white);color:var(--ink);font:600 14px/1.35 var(--sans);letter-spacing:-.01em;text-align:center;text-wrap:balance;box-shadow:0 10px 28px #000000b3,0 0 0 1px #0000000f;pointer-events:auto;cursor:pointer;transition:top .25s var(--ease-out,ease)}
+.tip-line.is-in{animation:tip-in .32s var(--ease-out,ease)}
+@keyframes tip-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tip-line:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 
 /* Portrait phones: the 맞고 hand wraps to two rows so each card is big enough to read and tap. */
 @media (max-width:599px) and (orientation:portrait){
@@ -252,8 +262,8 @@
   .sd-seat--opp .sd-hand-name{position:absolute;left:calc(50% + var(--opp-w) + 8px);top:calc(var(--opp-w) * .8);z-index:3;transform:translateY(-50%)}
 }
 @media (prefers-reduced-motion:reduce){
-  .sheet,.coach-ring,.coach-bubble{transition:none}
-  .hw.is-option::after,.coach-do::before{animation:none}
+  .sheet,.coach-ring,.coach-bubble,.tip-ring,.tip-line{transition:none}
+  .hw.is-option::after,.coach-do::before,.tip-ring,.tip-line.is-in{animation:none}
 }
 
 /* ---------- 고스톱 (three seats) ---------- */

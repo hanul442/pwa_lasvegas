@@ -136,3 +136,22 @@ test('every lobby game has an interactive guide and a rules sheet', async () => 
   assert.match(guide, /until/, 'hands-on steps wait for the player');
   assert.match(guide, /stopImmediatePropagation/, 'Escape closes the guide before leaving the table');
 });
+
+test('first visit shows one-line tips during the first hand instead of the card coach', async () => {
+  const guide = await read('js/guide.js');
+  const guides = await read('js/guides.js');
+  assert.match(guide, /class FirstTips/);
+  assert.match(guide, /new FirstTips\(table, def\)/, 'first visit starts the tips');
+  assert.doesNotMatch(guide, /!seen\(def\.id\)\) setTimeout\(\(\) => \{ if \(table\.root\.isConnected && !coach\.active\) coach\.start\(\)/, 'the step-by-step coach no longer opens by itself');
+  assert.match(guide, /data-tour/, 'the full walk-through is still behind ?');
+  // Every game keeps its tips short: one line on a folded phone.
+  const { GUIDES } = await import('../public/js/guides.js');
+  for (const [id, def] of Object.entries(GUIDES)) {
+    assert.ok(def.tips?.length >= 2, `${id} has first-hand tips`);
+    for (const tip of def.tips) {
+      assert.equal(typeof tip.when, 'function', id);
+      assert.ok(tip.text.length <= 36, `${id}: "${tip.text}" is too long for one line`);
+    }
+  }
+  assert.ok(guides.includes('stay: true'), 'tips that wait for an action stay until it is done');
+});

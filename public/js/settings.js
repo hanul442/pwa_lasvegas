@@ -12,7 +12,7 @@ export const DEFAULTS = {
   voiceVolume: 80,
   pace: null,       // 'relaxed' | 'normal' | 'fast' | 'minimal'; null follows the system motion setting
   haptics: true,
-  guides: true,     // start the table coach the first time someone sits at a game
+  guides: true,     // one-line tips during the first hand at each game
   awake: false,     // keep the screen on while sitting at a table
   bjHint: false,
   gestures: true,   // blackjack: tap the felt to hit, wave across it to stand (js/gestures.js)    // blackjack: light up the basic-strategy move on the player's turn

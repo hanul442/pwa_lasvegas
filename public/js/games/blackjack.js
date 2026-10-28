@@ -363,7 +363,7 @@ export async function mountBlackjack(ctx, { event = null } = {}) {
   // Hand signals ride on whatever the action row offers: tap = 히트, wave = 스탠드.
   const myTurn = () => !t.busy && (room.active ? rv?.status === 'PLAYING' && rv.turn === 0 && Boolean(rv.options) : round?.status === 'PLAYER');
   const signal = key => { const a = t.actionList?.find(x => x.key === key); if (a && !a.disabled) t.run(a.onClick); };
-  const hands = feltGestures(t.felt, { live: myTurn, onTap: () => signal('H'), onWave: () => signal('S'), tip: text => t.toast(text) });
+  const hands = feltGestures(t.felt, { live: myTurn, onTap: () => signal('H'), onWave: () => signal('S'), tip: text => (t.firstTips?.active ? false : t.toast(text)) });
   let wasTurn = false;
   const refreshAll = () => {
     refreshActions();

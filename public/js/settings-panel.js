@@ -184,7 +184,7 @@ export function renderSettings(root, { compact = false, game = null } = {}) {
     sections.push(section('알림', [notifyRow(row)]));
     sections.push(healthSection(parts));
     sections.push(section('가이드', [
-      add(toggle('guides', '처음 앉을 때 가이드', '게임에 처음 앉으면 테이블에서 따라 하는 가이드가 시작돼요')),
+      add(toggle('guides', '첫 판 한 줄 안내', '게임 첫 판에 지금 할 일을 한 줄씩 알려 줘요. 자세한 가이드는 ? 버튼에 있어요')),
       row('본 가이드 기록', '모든 게임의 가이드를 처음 앉을 때처럼 다시 보여 줘요', replay)
     ]));
     sections.push(section('이 기기', [

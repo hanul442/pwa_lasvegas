@@ -8,7 +8,9 @@ import { createChip } from './chips.js';
 let open = null;
 
 // Resolves with the new state once chips are bought, or null when the player backs out.
-export function buyInSheet(state, tier) {
+// `event`: an event table, which asks the player to hold its entry (state.eventEntry) and sells its
+// chips whatever floor the event stands on.
+export function buyInSheet(state, tier, { event = null } = {}) {
   if (open) return open;
   const range = state?.cashier?.floors?.[tier.slug];
   if (!range || range.max < tier.min) {
@@ -22,11 +24,13 @@ export function buyInSheet(state, tier) {
     sheet.setAttribute('aria-modal', 'true');
     sheet.setAttribute('aria-labelledby', 'buyin-title');
     const step = tier.min;
-    let amount = Math.max(range.min, Math.min(range.default, range.max));
+    const entry = event ? (state.events || []).concat(state.eventsAlways || []).find(e => e.id === event)?.entry || 0 : 0;
+    const fee = event ? state.eventFees?.[event] : null;
+    let amount = Math.max(range.min, Math.min(Math.max(range.default, Math.ceil(entry / step) * step), range.max));
     const inHand = state.user.account.available;
     sheet.innerHTML = `<p class="lounge-eyebrow">바이인 · ${tier.name}</p>
       <h2 id="buyin-title" data-buyin-amount></h2>
-      <p class="lounge-note">가진 돈에서 이 테이블 칩을 사요. 일어나면 남은 칩은 그대로 돈으로 돌아가요.${inHand > 0 ? ` 지금 손에 든 칩 ${formatCH(inHand)}원도 같이 써요.` : ''}</p>
+      <p class="lounge-note">가진 돈에서 이 테이블 칩을 사요. 일어나면 남은 칩은 그대로 돈으로 돌아가요.${inHand > 0 ? ` 지금 손에 든 칩 ${formatCH(inHand)}원도 같이 써요.` : ''}${entry ? ` 이벤트 테이블은 칩 ${formatCH(entry)}원 이상을 들고 앉아야 해요.` : ''}${fee && !fee.paid ? ` 첫 판에 입장료 ${formatCH(fee.fee)}원을 내요 (${fee.per === 'day' ? '하루' : '이번 주'} 한 번).` : ''}</p>
       <div class="buyin-chips" aria-hidden="true"></div>
       <label class="buyin-range"><span class="sr-only">바이인 금액</span><input type="range" min="${range.min}" max="${range.max}" step="${step}" value="${amount}"></label>
       <p class="buyin-scale"><span>${formatCH(range.min)}</span><span>가진 돈 ${formatCH(range.wallet)}원</span><span>${formatCH(range.max)}</span></p>
@@ -78,7 +82,7 @@ export function buyInSheet(state, tier) {
     buy.addEventListener('click', async () => {
       buy.disabled = true;
       try {
-        const out = await api.buyIn(tier.slug, amount);
+        const out = await api.buyIn(tier.slug, amount, event);
         sound.chip?.(); haptic?.([12, 30, 12]);
         close(out.state);
       } catch (e) { buy.disabled = false; errorToast(e); }

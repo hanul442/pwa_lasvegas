@@ -137,7 +137,7 @@ test('the shop over the API: skins only, buy, equip, the refund notice and error
   assert.equal('luxury' in s.shop, false);
   assert.equal('luxury' in s.user, false);
   assert.equal('assets' in s.user, false);
-  assert.deepEqual(Object.keys(s.shop.cosmetics[0]).sort(), ['achievement', 'achievementLabel', 'blurb', 'equipped', 'floor', 'house', 'id', 'name', 'owned', 'price', 'renewable', 'slot'].sort());
+  assert.deepEqual(Object.keys(s.shop.cosmetics[0]).sort(), ['achievement', 'achievementLabel', 'blurb', 'equipped', 'floor', 'house', 'id', 'name', 'onSale', 'owned', 'price', 'renewable', 'season', 'slot'].sort());
   assert.deepEqual(s.shop.equipped, { cardBack: null, felt: null, chips: null, frame: null });
   const row = buildRankingSnapshot(state).wealth.find(r => r.id === 'hanseo');
   assert.equal('showcase' in row, false);

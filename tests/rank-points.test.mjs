@@ -53,6 +53,16 @@ test('every settled round notes RP, and the API shows my RP and the board', asyn
   const s = (await handleApi({ method: 'GET', header: n => ({ 'x-player-id': 'hanseo' })[n], body: async () => ({}) }, new URL('http://x/api/state'), store, {})).data;
   assert.equal(s.rp.points, 10);
   assert.equal(s.rp.tier, 'iron');
-  assert.equal(s.rp.toNext, 90);
+  assert.equal(s.rp.division, 'IV');
+  assert.equal(s.rp.toNext, 15, 'to 아이언 III');
+  assert.equal(s.rp.nextDivision, 'III');
   assert.equal(s.rankings.rp.find(r => r.id === 'hanseo').value, 10);
+});
+
+test('tiers split into IV–I divisions of 25 RP; 레전드 has none', async () => {
+  const { rpDivision, rpNextStep } = await import('../lib/rank-points.mjs');
+  assert.deepEqual([0, 24, 25, 50, 75, 99, 100, 899, 900, 5000].map(rpDivision), ['IV', 'IV', 'III', 'II', 'I', 'I', 'IV', 'I', null, null]);
+  assert.deepEqual(rpNextStep(80).next, { id: 'bronze', division: 'IV', need: 20 });
+  assert.deepEqual(rpNextStep(880).next, { id: 'legend', division: null, need: 20 });
+  assert.equal(rpNextStep(950).next, null);
 });

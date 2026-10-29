@@ -48,11 +48,11 @@ test('old big-loss rows written as 3,000,000,000원 are reworded too', () => {
 test('no banner or push the server writes carries a raw number', () => {
   const state = defaultState();
   const since = Date.now() - 1000;
-  for (const [type, extra] of [['JACKPOT', { game: 'Slots' }], ['HOT_WIN', { game: 'Roulette', multiple: 2 }], ['BANKRUPTCY', { game: 'Baccarat' }], ['LUXURY', { name: '요트' }], ['BIG_LOSS', { game: 'Seotda' }]]) {
+  for (const [type, extra] of [['JACKPOT', { game: 'Slots' }], ['HOT_WIN', { game: 'Roulette', multiple: 2 }], ['BANKRUPTCY', { game: 'Baccarat' }], ['BIG_LOSS', { game: 'Seotda' }]]) {
     pushFeed(state, { type, actorId: 'zero', amount: 12_345_000_000, ...extra });
   }
   const items = newsFor(state, 'hanseo', since);
-  assert.equal(items.length, 5);
+  assert.equal(items.length, 4);
   for (const n of items) assert.doesNotMatch(`${n.title} ${n.body}`, RAW, n.type);
 });
 

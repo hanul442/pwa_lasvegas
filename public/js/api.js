@@ -126,7 +126,6 @@ export const api = {
   bankruptcy: () => request('/api/bank/bankruptcy', { method: 'POST' }),
   // 상점: itemId from the catalog in lib/shop.mjs; equip with itemId null puts the house look back.
   shopBuy: itemId => request('/api/shop/buy', { method: 'POST', body: { itemId } }),
-  shopSell: itemId => request('/api/shop/sell', { method: 'POST', body: { itemId } }),
   shopEquip: (slot, itemId) => request('/api/shop/equip', { method: 'POST', body: { slot, itemId } }),
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   // 오늘의 한 판 (lib/daily-blackjack.mjs): step is how many commands this page has seen.

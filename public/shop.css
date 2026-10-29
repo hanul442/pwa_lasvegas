@@ -1,8 +1,7 @@
-/* 상점: luxury assets drawn in a fine ivory line, and the skins players wear at the tables.
+/* 상점: the skins players wear at the tables.
    The screen stays black and white; colour shows up only in the felt swatches and the chips. */
 
 /* ---------- the screen ---------- */
-.shop-tabs{margin-top:0}
 .shop-pane{padding-top:6px}
 .shop-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:14px 0 0;border:1px solid var(--hair);border-radius:16px;background:var(--hair);overflow:hidden}
 .shop-summary div{padding:12px 14px;background:#0d0e10;min-width:0}
@@ -11,54 +10,18 @@
 .shop-summary--two{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 6px}
 .shop-note{margin:12px 0 4px;color:var(--smoke);font-size:14px;line-height:1.6}
 
-.skin-grid,.showcase-list,.lux-shelf,.lux-grid,.skin-slots{list-style:none;margin:0;padding:0}
-.lux-icon{width:44px;height:44px;color:var(--white);opacity:.9}
+.skin-grid,.skin-slots{list-style:none;margin:0;padding:0}
 .shop-head{margin-top:26px}
 .shop-empty{margin:4px 0 0;padding:18px;border:1px dashed var(--hair-strong);border-radius:16px;color:var(--smoke);font-size:14px;line-height:1.6}
 
-/* my collection: a shelf of what I own, dearest first */
-.lux-shelf{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 6px;margin:0 -2px;scrollbar-width:none}
-.lux-shelf::-webkit-scrollbar{display:none}
-.lux-shelf li{flex:none;scroll-snap-align:start}
-.lux-piece{display:grid;justify-items:start;gap:2px;width:132px;min-height:132px;padding:14px;border:1px solid var(--hair-strong);border-radius:16px;text-align:left;
   background:radial-gradient(120% 90% at 20% 0,#22262d,#0d0e10 70%)}
-.lux-piece .lux-icon{width:40px;height:40px;opacity:1;margin-bottom:8px}
-.lux-piece-name{font:600 14px/1.3 var(--sans);letter-spacing:-.01em}
-.lux-piece small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
 
-/* the next goal: the cheapest piece not owned, and how close the chips are */
-.lux-goal{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:6px 14px;width:100%;margin-top:14px;padding:14px 16px 16px;border:1px solid var(--hair);border-radius:16px;background:#0d0e10;text-align:left}
-.lux-goal-label{grid-column:1/-1;font-size:13px;color:var(--smoke)}
-.lux-goal-text{display:grid;min-width:0}
-.lux-goal-text b{font:600 16px/1.35 var(--sans)}
-.lux-goal-text small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
-.lux-goal-bar{grid-column:1/-1;height:3px;margin-top:6px;border-radius:3px;background:var(--hair);overflow:hidden}
-.lux-goal-bar i{display:block;height:100%;background:var(--white);border-radius:inherit}
-.lux-goal.is-ready{border-color:var(--hair-strong)}
-.lux-goal.is-ready .lux-goal-text small{color:var(--white)}
 
-/* the ladder: cards are the buttons */
-.lux-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
-@media (min-width:640px){.lux-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (min-width:1000px){.lux-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.lux-grid li{display:flex}
-.lux-card{position:relative;display:grid;align-content:start;justify-items:start;gap:1px;width:100%;padding:14px;border:1px solid var(--hair);border-radius:16px;background:#0d0e10;text-align:left;transition:border-color .2s}
-.lux-card .lux-icon{width:40px;height:40px;margin-bottom:12px}
-.lux-card-group{font-size:13px;color:var(--smoke)}
-.lux-card-name{font:600 15px/1.3 var(--sans);letter-spacing:-.01em}
-.lux-card-price{margin-top:6px;font:600 17px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.lux-card-own,.lux-card-need,.lux-card-buy{margin-top:2px;font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums}
-.lux-card-own{display:inline-flex;align-items:center;gap:5px;color:var(--white)}
-.lux-card-own i{width:9px;height:9px;background:var(--star);clip-path:var(--star-shape);flex:none}
-.lux-card.is-owned{border-color:var(--hair-strong);background:radial-gradient(120% 80% at 20% 0,#1e2228,#0d0e10 70%)}
-.lux-card.is-short .lux-icon,.lux-card.is-short .lux-card-name,.lux-card.is-short .lux-card-price{opacity:.6}
-@media (hover:hover){.lux-card:hover,.lux-piece:hover,.lux-goal:hover{border-color:#ffffff66}}
-.lux-card:focus-visible,.lux-piece:focus-visible,.lux-goal:focus-visible,.skin-slot:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.skin-slot:focus-visible{outline:2px solid var(--white);outline-offset:2px}
 
 /* sheets */
 .shop-sheet-body{margin-top:6px}
 .shop-sheet-hero{display:flex;align-items:center;gap:16px;margin:10px 0 4px}
-.shop-sheet-hero .lux-icon{width:56px;height:56px}
 .shop-sheet-hero b{display:block;font:600 24px var(--sans);font-variant-numeric:tabular-nums}
 .shop-sheet-hero small{color:var(--smoke);font-size:13px}
 .shop-sheet .lounge-note b{color:var(--white)}
@@ -88,18 +51,10 @@
   background:radial-gradient(70% 70% at 50% 30%,var(--felt-a) 0,var(--felt-b) 55%,var(--felt-c) 100%)}
 .skin-preview.felt-swatch--house{background:linear-gradient(112deg,#165e45 0 34%,#143660 34% 67%,#4f1320 67%)}
 
-/* the collection, on the profile and in another player's sheet */
-.showcase-list{margin-top:6px}
-.showcase-list li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--hair);font-size:15px}
-.showcase-list .lux-icon{width:32px;height:32px}
-.showcase-list small{color:var(--smoke);font-size:13px;font-variant-numeric:tabular-nums}
-.shop-sheet .showcase-list{max-height:min(46dvh,360px);overflow:auto}
 .profile-shop{margin-top:14px}
 
-/* ranking: the three dearest pieces beside the name */
+/* ranking rows open a player sheet */
 .rank-row[role="button"]{cursor:pointer}
-.rank-showcase{display:inline-flex;gap:4px;margin-left:8px;vertical-align:-2px;color:var(--smoke)}
-.rank-lux{width:17px;height:17px;stroke-width:2}
 
 /* ---------- card backs (cards.js adds back--name) ---------- */
 .card-back.back--oxblood,.card-back.back--navy,.card-back.back--pinstripe,.card-back.back--grid{
@@ -287,19 +242,9 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 :root[data-chip-accent] .bet-stack:not(.bet-stack--payout) .chip:last-child{animation:chip-halo .8s ease-out both}
 @keyframes chip-halo{from{outline:2px solid #fff6dcd9;outline-offset:0}to{outline:2px solid transparent;outline-offset:calc(var(--size,40px) * .5)}}
 
-/* Luxury owners walk in: the dearest piece on a plate across the top of the felt. */
-.owner-entrance{position:absolute;z-index:6;left:0;right:0;top:12px;display:flex;justify-content:center;pointer-events:none;animation:owner-in 3s var(--ease-out) both}
-@keyframes owner-in{0%{opacity:0;transform:translateY(-12px)}12%,78%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
-.owner-plate{position:relative;display:inline-flex;align-items:center;gap:10px;padding:7px 18px 7px 10px;border-radius:999px;background:#0a0b0deb;box-shadow:0 0 0 1px #fff6dc59,0 12px 30px #000b}
-.owner-plate .lux-icon{width:32px;height:32px;color:var(--star);opacity:1}
-.owner-plate>span{display:grid;line-height:1.25;text-align:left}
-.owner-plate small{font:600 13px var(--sans);letter-spacing:.1em;color:var(--smoke)}
-.owner-plate b{font:600 15px var(--sans);letter-spacing:-.01em;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.owner-beam{position:absolute;top:-12px;left:50%;width:260px;height:200px;margin-left:-130px;background:radial-gradient(60% 100% at 50% 0,#fff6dc38,transparent 75%);clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);animation:owner-beam 2.6s ease both}
-@keyframes owner-beam{0%{opacity:0}25%,70%{opacity:1}100%{opacity:0}}
-.owner-sparks,.acquire-sparks{position:absolute;inset:0;pointer-events:none}
-.owner-sparks{inset:-8px 8% auto;height:120px}
-.owner-spark,.acquire-spark{position:absolute;width:10px;height:10px;background:var(--star);clip-path:var(--star-shape);transform:scale(0);animation:spark 1.5s ease var(--d) both}
+/* Stars for the purchase moment. */
+.acquire-sparks{position:absolute;inset:0;pointer-events:none}
+.acquire-spark{position:absolute;width:10px;height:10px;background:var(--star);clip-path:var(--star-shape);transform:scale(0);animation:spark 1.5s ease var(--d) both}
 @keyframes spark{0%{transform:scale(0);opacity:0}40%{transform:scale(var(--s)) rotate(45deg);opacity:1}100%{transform:scale(0) rotate(90deg) translateY(18px);opacity:0}}
 
 /* The effect line in a buy sheet */
@@ -315,9 +260,6 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 @keyframes acquire-turn{to{transform:rotate(1turn)}}
 .acquire-inner{position:relative;display:grid;justify-items:center;gap:6px;max-width:440px;text-align:center}
 .acquire-art{margin-bottom:16px}
-.acquire-lux .lux-icon{display:block;width:clamp(110px,34vw,150px);height:clamp(110px,34vw,150px);color:var(--star);opacity:1;stroke-width:1.1}
-.acquire-lux .lux-icon :is(path,rect,circle){stroke-dasharray:1;stroke-dashoffset:1;animation:lux-draw 1.5s cubic-bezier(.4,0,.2,1) .2s forwards}
-@keyframes lux-draw{to{stroke-dashoffset:0}}
 .acquire-stage{position:relative;width:min(84vw,360px);border-radius:18px;overflow:hidden;animation:acquire-rise .7s var(--ease-out) both}
 .acquire-stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 35%,#ffffff33 50%,transparent 65%);transform:translateX(-100%);animation:felt-sheen 1.6s ease .45s both}
 .acquire-eyebrow{margin:0;color:var(--smoke);font:500 13px var(--sans);letter-spacing:.2em}
@@ -333,11 +275,9 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .acquire--3 .acquire-spark{animation-iteration-count:2}
 
 @media (prefers-reduced-motion:reduce){
-  .card-back[class*="back--"]>.card-glint,.owner-beam,.owner-sparks,.acquire-beam,.acquire-sparks,.acquire-stage::after{display:none}
+  .card-back[class*="back--"]>.card-glint,.acquire-beam,.acquire-sparks,.acquire-stage::after{display:none}
   .table-screen .felt.felt--skin::before{display:none}
   :root[data-chip-accent] .bet-stack .chip:last-child,.acquire-glow,.acquire-title,.acquire-line,.acquire-note,.acquire-stamp,.acquire-stage{animation:none}
-  .acquire-lux .lux-icon :is(path,rect,circle){animation:none;stroke-dashoffset:0}
-  .owner-entrance{animation:none}
 }
 /* 족보 도감 nameplates (lib/cosmetics.mjs): half the book, then the whole of it. A small hwatu
    card sits in the plate; the master plate adds the warm star and a second line of light. */

@@ -21,7 +21,7 @@ import { dayBlock } from './js/day-sheet.js';
 import { errorToast, watchConnection, toast } from './js/notice.js';
 import { mountNightly } from './js/nightly.js';
 import { hotStatus, clock, pct, startTime } from './js/hot.js';
-import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
+import { renderShop, applyCosmetics, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
@@ -383,6 +383,7 @@ function applyState(next) {
   for (const card of nightlyCards) card.update(state);
   renderGameLists();
   maybeBust(state);
+  noteLuxuryRefund(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop, openRankBoard);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();
@@ -1001,8 +1002,6 @@ function renderBoards() {
   const emblem = r => (rankPeriod === 'tier' && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
   const me = state?.user?.id;
   const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
-  // Each row wears the player's three dearest luxury pieces (lib/shop.mjs); a tap opens their collection.
-  const showcase = r => (r.showcase || []).map(id => luxuryItem(state, id)).filter(Boolean).map(x => luxuryIcon(x.icon, 'rank-lux')).join('');
   const board = rankPeriod === 'tier' ? `tier:${state?.rankSeason?.season.id}` : rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
   const move = rankMoves(board, rows);
   const moveTag = r => {
@@ -1014,7 +1013,7 @@ function renderBoards() {
   const open = (node, r) => {
     node.tabIndex = 0;
     node.setAttribute('role', 'button');
-    node.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 컬렉션 보기`);
+    node.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 플레이어 보기`);
     node.addEventListener('click', () => openPlayerSheet(state, r));
     node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerSheet(state, r); } });
   };
@@ -1026,8 +1025,7 @@ function renderBoards() {
   rankBoardShown = board;
   podium.replaceChildren(...[2, 1, 3].map(n => top.find(r => r.rank === n)).filter(Boolean).map(r => {
     const li = el('li', `podium-spot podium-spot--${r.rank}${r.id === me ? ' is-me' : ''}`);
-    const lux = showcase(r);
-    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
+    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span><span class="podium-step" aria-hidden="true"></span>`;
     open(li, r);
     return li;
   }));
@@ -1054,12 +1052,19 @@ function renderBoards() {
   const rest = rows.filter(r => r.rank > 3);
   document.querySelector('[data-rank-list]').replaceChildren(...rest.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}`);
-    const lux = showcase(r);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}</span><span class="rank-value">${value(r)}</span>`;
     open(li, r);
     return li;
   }));
   if (!rows.length) document.querySelector('[data-rank-list]').innerHTML = '<li class="rank-empty">아직 이 순위에 오른 사람이 없어요. 한 판 하고 첫 이름을 올려 보세요.</li>';
+}
+
+// 사치품 were retired on 2026-10-29: say once where the refunded chips came from.
+function noteLuxuryRefund(s) {
+  const r = s?.latestRefund;
+  if (!r?.id) return;
+  try { if (localStorage.getItem('vegas:luxury-refund') === r.id) return; localStorage.setItem('vegas:luxury-refund', r.id); } catch { return; }
+  toast(`사치품이 없어져서 산 값 그대로 ${formatCH(r.amount)}원을 칩으로 돌려드렸어요`, { duration: 8000 });
 }
 
 // ---------- profile ----------
@@ -1075,16 +1080,10 @@ function renderProfile() {
     const rate = s.rounds ? Math.round((s.wins / s.rounds) * 100) : 0;
     return `<tr><th scope="row">${gameName(g)}</th><td>${s.rounds}</td><td>${rate}%</td><td>${formatCH(s.biggestWin)}</td><td class="${s.pnl > 0 ? 'pos' : s.pnl < 0 ? 'neg' : ''}">${s.pnl > 0 ? '+' : ''}${formatCH(s.pnl)}</td></tr>`;
   }).join('');
-  // 자산: the luxury on show (lib/shop.mjs), dearest first. Trophies only; floors run on chips.
-  const owned = (u.luxury || []).map(x => ({ ...x, item: luxuryItem(state, x.id) })).filter(x => x.item).sort((p, q) => q.price - p.price);
-  const assets = u.assets ?? state.shop?.assets ?? 0;
-  const showcase = owned.length
-    ? `<ul class="showcase-list showcase-list--profile">${owned.map(x => `<li>${luxuryIcon(x.item.icon)}<span>${x.item.name}</span><small>${formatCH(x.price)}</small></li>`).join('')}</ul>`
-    : '<p class="lounge-note">아직 산 사치품이 없어요. 상점에서 시계부터 섬까지 살 수 있어요.</p>';
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(a.available)}원${assets ? ` · 자산 ${formatCH(assets)}원` : ''}${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
+      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(a.available)}원${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
     </div>
     ${u.guest ? guestCard(state) : ''}
     <dl class="stat-grid">
@@ -1096,9 +1095,7 @@ function renderProfile() {
       <div><dt>최장 연승</dt><dd>${eng.streak?.best || 0}연승${eng.streak?.current > 1 ? ` <small>지금 ${eng.streak.current}</small>` : ''}</dd></div>
     </dl>
     <div data-invite-card></div>
-    <h2 class="sub-head">자산 <small>${formatCH(assets)}원 · 사치품 ${owned.length}점</small></h2>
-    ${showcase}
-    <button type="button" class="pill-button profile-shop" data-go-shop>상점 가기</button>
+    <button type="button" class="pill-button profile-shop" data-go-shop>꾸미기 상점 가기</button>
     <div data-wrapped-list></div>
     ${state.rankSeason?.history?.length ? `<h2 class="sub-head">월간 시즌 기록 <small>최고 ${tierName(state.rankSeason.best?.tier || state.rankSeason.history[0].tier)}</small></h2>${rankBadges(state.rankSeason.history)}` : ''}
     ${badges ? `<h2 class="sub-head">주간 시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}

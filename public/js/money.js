@@ -1,8 +1,29 @@
 // Money as the app writes it, everywhere: chips and buttons (formatCH: 1억 2천만, 2.5조) and
 // sentences (formatMoney: 7억 2천만원). Pure functions with no DOM, so the server imports this
 // same file for push notifications, banners and feed text; nothing shows a raw 1000000000.
+// At a table money is counted in chips (한서 2026-10-29: "바이인해서 들어갔으면 거기서는 또 다른
+// 액수 단위를 써야지"): one chip is 100만원, the smallest unit any amount comes in, the same on every
+// floor, so chips carry from table to table. The Gold Room's bets are 10–100칩, a 5억 buy-in is
+// 500칩. The client switches this on while a table is open (app.js); the server never does.
+export const CHIP_WON = 1_000_000;
+let tableUnits = false;
+export function setTableUnits(on) { tableUnits = Boolean(on); }
+export const inTableUnits = () => tableUnits;
+// A count of chips: 15, 500, 3,000, then 12만 and 1.5억 for the very top floors.
+export function chipCount(value) {
+  const c = (Number(value) || 0) / CHIP_WON;
+  const sign = c < 0 ? '-' : '', a = Math.abs(c);
+  if (a < 100_000) return sign + (a < 10 ? Math.round(a * 10) / 10 : Math.round(a)).toLocaleString('ko-KR');
+  return sign + wonCH(a);
+}
+// The unit word after an amount: 원, or 칩 at a table. formatUnit(5e8) → "5억원" / "500칩".
+export const unitWord = () => (tableUnits ? '칩' : '원');
+export const formatUnit = value => `${formatCH(value)}${unitWord()}`;
+
 // Chips read like Korean money: 1억 2천만, 3500만, 10만. Short enough for chips and buttons.
-export function formatCH(value) {
+// At a table: a chip count (chipCount).
+export function formatCH(value) { return tableUnits ? chipCount(value) : wonCH(value); }
+export function wonCH(value) {
   const n = Math.round(Number(value) || 0);
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
@@ -25,6 +46,10 @@ function trim(x) { return x >= 100 ? String(Math.round(x)) : x >= 10 ? x.toFixed
 // Spelled out the way people say money: 7억 2천만원, 1조 3500억원, 2만 5천원, 800원.
 // The two largest units are kept, so a big win reads at a glance.
 export function formatMoney(value, unit = '원') {
+  if (tableUnits && unit === '원') return `${chipCount(Math.abs(Number(value) || 0))}칩`;
+  return formatWon(value, unit);
+}
+export function formatWon(value, unit = '원') {
   const n = Math.abs(Math.round(Number(value) || 0));
   if (n < 10_000) return `${n.toLocaleString('ko-KR')}${unit}`;
   const groups = [[1e12, '조'], [1e8, '억'], [1e4, '만'], [1, '']]

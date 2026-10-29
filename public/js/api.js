@@ -238,6 +238,7 @@ const MESSAGES = {
   BUY_IN_REQUIRED: '테이블 칩이 모자라요. 가진 돈으로 칩을 사 주세요.',
   BUY_IN_TOO_SMALL: '바이인은 이 테이블 최소 베팅 이상이어야 해요.',
   BUY_IN_OUT_OF_RANGE: '바이인은 최소 베팅 20~100번어치 사이로 골라 주세요.',
+  BUY_IN_STACK_FULL: '이 테이블 칩이 이미 최소 베팅 100번어치 넘게 있어요.',
   FLOOR_PASS_REQUIRED: '이 층에 앉으려면 이번 달 입장권이 필요해요. 상점 꾸미기에서 이 층 꾸미기를 사거나 갱신해 주세요.',
   NEW_ACCOUNT_ROOM_LIMIT: '가입 7일이 안 된 계정은 친구방을 High Limit 층까지만 쓸 수 있어요.',
   EVENT_ENTRY_REQUIRED: '이벤트 테이블은 칩을 100억 이상 가진 사람만 앉을 수 있어요.',

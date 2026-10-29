@@ -3,7 +3,7 @@
 // and plays the bots; this screen replays its events one by one so every move is visible.
 // The felt itself lives in holdem-view.js; "친구와 함께" seats friends at it (holdem-room.js).
 import { api, errorMessage } from '../api.js';
-import { wait, formatCH, flyFrom, flyTo, animate, sound, el } from '../fx.js';
+import { wait, formatCH, flyFrom, flyTo, animate, sound, el, formatUnit } from '../fx.js';
 import { createChip, breakdown } from '../chips.js';
 import { Table } from '../table.js';
 import { gameName } from '../names.js';
@@ -47,7 +47,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
         <span class="royale-kicker">${ev?.kicker || ''}</span>
         <strong class="royale-title">${(ev?.title || 'Casino Royale').toUpperCase()}</strong>
         ${boss ? `<span class="royale-boss">${boss.level + 1}단계 보스 · <b>${boss.boss}</b></span>` : ''}
-        <span class="royale-buyin"><small>바이인</small>${formatCH(entry)}원</span>
+        <span class="royale-buyin"><small>바이인</small>${formatUnit(entry)}</span>
         <ul class="royale-rules">${(ev?.rules || []).map(r => `<li>${r}</li>`).join('')}</ul>
       </div>`);
     pk.hintLine.textContent = tourney === 'rounders' ? '보스가 기다리고 있어요' : tourney === 'whale' ? '세계 최고 부자 다섯 명이 기다리고 있어요' : '하이롤러 다섯 명이 기다리고 있어요';

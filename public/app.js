@@ -3,7 +3,7 @@ import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { renderAccountTools, forgetShownCode } from './js/account.js';
-import { formatCH, rollNumber, isMuted, setMuted, sound, preloadSounds, el } from './js/fx.js';
+import { formatCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits } from './js/fx.js';
 import { moneyOf } from './js/money.js';
 import { buyInSheet, cashOutQuiet } from './js/cashier.js';
 import { music } from './js/music.js';
@@ -128,6 +128,8 @@ function showSurface(name, { focus = false } = {}) {
   });
   document.body.classList.toggle('game-mode', name === 'table');
   document.body.classList.toggle('tier-mode', name === 'tiers');
+  // At a table amounts are counted in chips (js/money.js), everywhere else in 원.
+  setTableUnits(name === 'table');
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
@@ -229,6 +231,9 @@ const BUY_IN_GAMES = new Set(['poker', 'sevenpoker']);
 function tableAfterRound(st) {
   const t = activeTable, cur = TIERS[activeTier];
   if (!st?.user || !t || !cur || !selectedGame || selectedGame.event || BUY_IN_GAMES.has(selectedGame.id) || t.root.classList.contains('is-room')) return;
+  // 캐셔: the stack ran under this table's smallest bet with money still in the wallet. Not a bust
+  // and no move downstairs: offer more chips right at this seat (or getting up).
+  if (st.cashier?.on && st.user.account.available < cur.min && (st.cashier.floors?.[cur.slug]?.max ?? 0) >= cur.min) { buyMore('rebuy', st); return; }
   const open = sittableTiers(selectedGame, st);
   if (open.includes(cur.slug)) return;
   const tiers = Object.values(TIERS).filter(x => open.includes(x.slug));
@@ -237,7 +242,7 @@ function tableAfterRound(st) {
   const to = up ? tiers.find(x => x.min > cur.min) || tiers.at(-1) : [...tiers].reverse().find(x => x.min < cur.min) || tiers[0];
   const reason = up
     ? `자산이 커져서 ${cur.name}을 졸업하고 위층으로 올라왔어요.`
-    : `칩이 ${cur.name} 최소 베팅 ${formatCH(cur.min)}보다 적어서 옮겼어요.`;
+    : `칩이 ${cur.name} 최소 베팅 ${formatMoney(cur.min)}보다 적어서 옮겼어요.`;
   applyState(st);
   openTable(to.slug).then(() => activeTable?.moved?.(`${to.name} · ${formatCH(to.min)}–${formatCH(to.max)}`, reason));
 }
@@ -253,9 +258,10 @@ let tableSeq = 0;
 async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!selectedGame) return;
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
-  // 캐셔 (js/cashier.js): short of this table's smallest bet in hand, buy chips with money first.
+  // 캐셔 (js/cashier.js): not seated yet (chips held without a seat go back to the wallet), or
+  // short of this table's smallest bet (an event: its entry) in hand: buy chips with money first.
   const eventNeed = selectedGame.event ? [...(state?.events || []), ...(state?.eventsAlways || [])].find(e => e.id === selectedGame.event)?.entry || 0 : 0;
-  if (!seated && state?.cashier?.on && TIERS[tier] && state.user.account.available < Math.max(TIERS[tier].min, eventNeed)) {
+  if (!seated && state?.cashier?.on && TIERS[tier] && (!state.cashier.seat || state.user.account.available < Math.max(TIERS[tier].min, eventNeed))) {
     const bought = await buyInSheet(state, TIERS[tier], { event: selectedGame.event || null });
     if (!bought) return;
     applyState(bought);
@@ -328,12 +334,22 @@ function leaveTable({ useHistory = true } = {}) {
 
 document.querySelector('[data-tier-back]').addEventListener('click', () => leaveTable());
 // "바이인" on a 칩이 모자라요 notice (js/notice.js): buy more chips for the table I'm at.
-document.addEventListener('vegas:buyin', async () => {
+// The table's + and the rebuy after a round use it too: chips are bought right at the seat.
+// The table keeps the newest state from its rounds (table.js setServerState); the menus' copy can lag.
+async function buyMore(mode, st = activeTable?.serverState || state) {
   const tier = TIERS[activeTier];
-  if (!tier || !state) return;
-  const next = await buyInSheet(state, tier, { event: selectedGame?.event || null });
-  if (next) { applyState(next); activeTable?.setServerState?.(next); }
-});
+  if (!tier || !st) return;
+  if (!mode) mode = st.user.account.available < tier.min ? 'rebuy' : 'topup';
+  const next = await buyInSheet(st, tier, { mode, event: selectedGame?.event || null, onLeave: () => leaveTable() });
+  if (!next) return;
+  applyState(next);
+  const t = activeTable;
+  if (!t) return;
+  t.setServerState?.(next);
+  // The new chips roll into the table's chip count.
+  t.catchChips?.();
+}
+document.addEventListener('vegas:buyin', () => buyMore());
 window.addEventListener('popstate', event => {
   if (event.state?.vegasSurface === 'tiers') { if (selectedGame) { setTierHeader(selectedGame); renderTiers(); } showSurface('tiers', { focus: true }); return; }
   if (event.state?.vegasSurface === 'table') { showSurface('tiers'); return; }
@@ -343,6 +359,8 @@ window.addEventListener('keydown', event => { if (event.key === 'Escape') leaveT
 // The table's wallet pill: leave the table (as ← does) and land on 지갑.
 addEventListener('vegas:open-wallet', () => {
   if (!document.body.classList.contains('game-mode')) { showSurface('bank', { focus: true }); return; }
+  // With the cashier the + buys more chips from the seat instead (js/cashier.js).
+  if (state?.cashier?.on && TIERS[activeTier] && !selectedGame?.event && !activeTable?.root?.classList.contains('is-room')) { buyMore(); return; }
   returnSurface = 'bank';
   if (history.state?.vegasSurface === 'table') history.go(tableOverTiers ? -2 : -1);
   else showSurface('bank', { focus: true });
@@ -389,8 +407,14 @@ function paintNavDots(st) {
   }
 }
 
-// Every fresh server state lands here: wallet, lobby lounge, ranking and profile.
+// Every fresh server state lands here: wallet, lobby lounge, ranking and profile. The menus behind
+// a table are drawn in 원 even while the table counts in chips.
 function applyState(next) {
+  const units = inTableUnits();
+  setTableUnits(false);
+  try { paintState(next); } finally { setTableUnits(units); }
+}
+function paintState(next) {
   state = next;
   setBragName(state.user?.nickname);
   // The top bar is all the player's money (chips in hand and the wallet, lib/cashier.mjs).

@@ -152,6 +152,14 @@ async function main() {
         await page.evaluate(([g, t]) => dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game: g, tier: t } })), [game, tier]);
         await page.waitForSelector(`.table-screen--${game}, .table-screen`, { timeout: 15000 }).catch(() => {});
         await wait(1800);
+        // The cashier (js/cashier.js): leaving the last table cashed the chips in, so buy a stack
+        // here from the seat, as a player would with the table's +.
+        if (await page.evaluate(() => document.querySelector('.table-screen [data-balance]')?.textContent.trim() === '0')) {
+          await page.evaluate(() => document.dispatchEvent(new CustomEvent('vegas:buyin')));
+          await wait(700);
+          await page.evaluate(() => document.querySelector('.buyin-sheet .pill-button--solid')?.click());
+          await wait(1200);
+        }
         await closeOverlays(page);
         let first = '';
         for (const step of ['idle', 'play', 'end']) {

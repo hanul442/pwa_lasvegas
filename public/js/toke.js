@@ -4,7 +4,7 @@
 // odds, payouts and RP never change (lib/tips.mjs).
 import { api, errorMessage } from './api.js';
 import { createChip } from './chips.js';
-import { animate, flyTo, sound, formatCH, el, wait } from './fx.js';
+import { animate, flyTo, sound, formatCH, el, wait, formatUnit } from './fx.js';
 import { buzz } from './haptics.js';
 import { voice } from './voice.js';
 
@@ -20,8 +20,8 @@ export class Toke {
     this.sending = false;
     const box = el('button', 'toke');
     box.type = 'button';
-    box.setAttribute('aria-label', `딜러에게 팁 주기 · ${formatCH(this.amount)}원`);
-    box.title = `딜러 팁 (뽀찌) · ${formatCH(this.amount)}원`;
+    box.setAttribute('aria-label', `딜러에게 팁 주기 · ${formatUnit(this.amount)}`);
+    box.title = `딜러 팁 (뽀찌) · ${formatUnit(this.amount)}`;
     box.innerHTML = '<span class="toke-slot" aria-hidden="true"></span><span class="toke-word">TIPS</span>';
     box.addEventListener('click', () => this.give(null));
     table.root.append(box);
@@ -146,7 +146,7 @@ export class Toke {
     // The thanks shows in the table's one toast spot, under the box: his words, then the tip.
     this.t.toast(`“${SAID[line]}”`);
     const node = this.t.root.querySelector('[data-toast]');
-    node.append(el('small', 'toke-note', `딜러 팁 ${formatCH(tip.amount)}원${tip.count > 1 ? ` · 누적 ${tip.count}번` : ''}`));
+    node.append(el('small', 'toke-note', `딜러 팁 ${formatUnit(tip.amount)}${tip.count > 1 ? ` · 누적 ${tip.count}번` : ''}`));
   }
 
   destroy() {

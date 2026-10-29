@@ -1016,6 +1016,9 @@ body.daily-open{overflow:hidden}
 .mstreak-note{margin:10px 0 0;color:var(--smoke);font-size:12px}
 /* 캐셔 바이인 (js/cashier.js) */
 .buyin-sheet h2{font-variant-numeric:tabular-nums}
+/* Over the first-time coach (hwatu.css .coach, 90): buying chips comes first. */
+.buyin-scrim{z-index:95}.lounge-sheet.buyin-sheet{z-index:96}
+.buyin-sheet h2 small{font-size:15px;font-weight:500;color:var(--muted,#ffffff8c);letter-spacing:0}
 .buyin-chips{display:flex;gap:6px;min-height:46px;margin:14px 0 6px}
 .buyin-chips .chip{--size:42px;animation:buyin-chip .3s var(--ease-out) both;animation-delay:calc(var(--i) * 40ms)}
 @keyframes buyin-chip{from{transform:translateY(8px);opacity:0}}

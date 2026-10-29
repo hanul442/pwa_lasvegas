@@ -266,7 +266,7 @@ function skinTile(state, item, onChanged, pass, { showFloor = false } = {}) {
   li.append(preview(item, state.user.nickname));
   const where = showFloor && pass ? pass.name : SLOT_NAME[item.slot];
   const status = item.owned ? (item.house ? '기본' : item.achievement ? '업적 보상' : '보유') : item.achievement ? `업적 「${item.achievementLabel}」` : null;
-  li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}</span><small>${where}${status ? ` · ${status}` : ''}</small>`));
+  li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}${item.season ? '<span class="skin-limited">한정</span>' : ''}</span><small>${where}${status ? ` · ${status}` : ''}</small>`));
   if (item.renewable && pass && !pass.passed) {
     const short = available < item.price;
     const b = el('button', `pill-button skin-act skin-price${short ? ' is-short' : ''}`, `갱신 ${won(item.price)}`);
@@ -342,6 +342,18 @@ function cosmeticsTab(state, onChanged, rerender) {
 
   if (view === 'floors') {
     box.append(el('p', 'shop-note', era ? '층마다 그 층의 꾸미기가 넷 있어요. 층은 RP 티어로 열리고, 꾸미기는 모양만 바꿔요.' : '층마다 그 층의 꾸미기가 넷 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
+    // 시즌 한정 (lib/cosmetics.mjs SEASON_COSMETICS): this season's four, sold only until it ends.
+    const limited = all.filter(x => x.season && x.onSale);
+    if (limited.length) {
+      const sec = el('section', 'season-shop');
+      const ends = state.shop.season?.endsAt ? new Date(Date.parse(state.shop.season.endsAt) - 1).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' }) : '';
+      sec.append(el('div', 'season-shop-head', `<h3>시즌 한정</h3><small>${state.shop.season?.name || ''}${ends ? ` · ${ends}까지` : ''}</small>`));
+      sec.append(el('p', 'shop-note', '이번 시즌에만 파는 꾸미기예요. 시즌이 끝나면 다시 팔지 않고, 산 꾸미기는 계속 가져요.'));
+      const grid = el('ul', 'skin-grid');
+      for (const item of limited) grid.append(skinTile(state, item, onChanged, null));
+      sec.append(grid);
+      box.append(sec);
+    }
     const auto = era ? (focusFloor || null) : floorToOpen(passes);
     let focus = null;
     for (const pass of passes) {

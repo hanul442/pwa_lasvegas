@@ -682,7 +682,7 @@
 .tier-ladder li.is-me{border-color:var(--hair-strong);background:#ffffff0a}
 @media (max-width:400px){.tier-ladder li span{font-size:10px;letter-spacing:-.04em}.tier-ladder li small{font-size:9px}}
 .rank-name .tier-emblem,.podium-name .tier-emblem{margin-right:6px;vertical-align:-5px}
-.rank-name .rank-division,.podium-name .rank-division{margin-right:6px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted,#9a9a9a)}
+.rank-name .rank-division,.podium-name .rank-division{margin-right:6px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--dim)}
 .rank-history{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:8px}
 .rank-history li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--hair)}
 .rank-history span{display:grid;gap:2px;min-width:0}
@@ -1040,3 +1040,18 @@ body.daily-open{overflow:hidden}
 .friend-duel.is-in b{color:var(--white)}
 .friend-duel .friend-main{padding-left:2px}
 @media (max-width:380px){.friend-panel{padding-left:0}}
+
+/* 승급전 (js/rank-tab.js promoHtml) */
+.promo-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--hair-strong);background:#ffffff08}
+.promo-card>div{display:grid;gap:2px;min-width:0}
+.promo-card small{color:var(--smoke);font-size:11px;font-weight:700;letter-spacing:.06em}
+.promo-card strong{font-size:16px}
+.promo-card span{color:var(--smoke);font-size:12.5px;line-height:1.4}
+.promo-card .pill-button{flex:none;min-height:44px}
+.promo-score{display:grid;gap:6px;margin:0;flex:none}
+.promo-dots{display:flex;gap:5px}
+.promo-dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--hair-strong)}
+.promo-dots i.is-win{background:#fff;border-color:#fff}
+.promo-dots i.is-loss{background:#ff5d5d;border-color:#ff5d5d}
+.promo-last{margin:0;font-size:13px;font-weight:600}
+.promo-last.pos{color:#7ee2a8}.promo-last.neg{color:#ff8a8a}

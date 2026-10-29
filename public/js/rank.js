@@ -32,9 +32,9 @@ export function tierEmblem(id, { size = 40, label = true } = {}) {
 // From 2026-10-29 the tier is the month's RP (lib/rank-season.mjs mode 'rp'); before, the month's
 // best net worth. `carry`: the month ends by dropping RP three tiers instead of resetting chips.
 export const rpMode = r => r?.mode === 'rp';
-export const scoreLine = r => (rpMode(r) ? `이번 달 RP ${r.rp}` : `이번 달 최고 순자산 ${formatCH(r.peak)}`);
+export const scoreLine = r => (rpMode(r) ? `이번 시즌 RP ${r.rp}` : `이번 달 최고 순자산 ${formatCH(r.peak)}`);
 export const needText = (r, need) => (rpMode(r) ? `${need} RP` : formatCH(need));
-const resetNote = r => (r.carry ? '매달 1일 0시에 RP가 3티어 내려간 채로 새 시즌이 시작돼요. 칩·꾸미기·명패·배지·업적은 그대로예요.' : '매달 1일 0시에 칩·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.');
+const resetNote = r => (r.carry ? '시즌이 끝나면 RP가 3티어 내려간 채로 새 시즌이 시작돼요. 칩·꾸미기·명패·배지·업적은 그대로예요.' : '매달 1일 0시에 칩·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.');
 
 const daysLeft = iso => Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 86_400_000));
 

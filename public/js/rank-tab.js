@@ -24,6 +24,24 @@ export function myMonthRank(state) {
   return mine ? { rank: mine.rank, of: rows.length } : null;
 }
 
+// 승급전 (lib/promo.mjs): the offer in a tier's division I, the score of a running series, or how
+// the last one ended.
+export function promoHtml(state) {
+  const p = state?.promo;
+  if (!p) return '';
+  if (p.active) {
+    const a = p.active;
+    const dots = (n, of, cls) => Array.from({ length: of }, (_, i) => `<i class="${i < n ? cls : ''}"></i>`).join('');
+    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 건 판만 세요 · 2승이면 ${tierName(a.target, 'IV')}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
+  }
+  if (p.offer) {
+    const o = p.offer;
+    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)}로 바로 올라가기</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 3판 중 2승</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
+  }
+  if (p.last && Date.now() - Date.parse(p.last.at) < 6 * 3_600_000) return `<p class="promo-last ${p.last.result === 'won' ? 'pos' : 'neg'}">${tierName(p.last.target)} 승급전 ${p.last.result === 'won' ? '성공' : '실패'}</p>`;
+  return '';
+}
+
 // The big card: emblem, tier, this month's peak, the climb to the next tier, and where I stand.
 export function tierHeroHtml(state) {
   const rs = state?.rankSeason;
@@ -37,18 +55,18 @@ export function tierHeroHtml(state) {
     <div class="tier-hero-top"><span class="tier-hero-season">${rs.season.name}</span><span class="tier-hero-clock">${leftText(rs.season.endsAt)} 남음</span></div>
     <div class="tier-hero-main">
       <span class="tier-hero-emblem">${tierEmblem(rs.tier, { size: 84 })}</span>
-      <div class="tier-hero-name"><small>이번 달 티어</small><strong>${tierName(rs.tier, rs.division)}</strong></div>
+      <div class="tier-hero-name"><small>${rpMode(rs) ? '이번 시즌 티어' : '이번 달 티어'}</small><strong>${tierName(rs.tier, rs.division)}</strong></div>
     </div>
     <div class="tier-hero-climb">
       <div class="tier-hero-bar" role="progressbar" aria-label="다음 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
       <p>${next}<span>${pct}%</span></p>
     </div>
     <dl class="tier-hero-stats">
-      <div><dt>이번 달 순위</dt><dd>${place ? `${place.rank}<small>위 / ${place.of}명</small>` : '<small>아직 없음</small>'}</dd></div>
-      ${rpMode(rs) ? `<div><dt>이번 달 RP</dt><dd>${rs.rp}</dd></div>` : `<div><dt>최고 순자산</dt><dd>${formatCH(rs.peak)}</dd></div>`}
+      <div><dt>${rpMode(rs) ? '이번 시즌 순위' : '이번 달 순위'}</dt><dd>${place ? `${place.rank}<small>위 / ${place.of}명</small>` : '<small>아직 없음</small>'}</dd></div>
+      ${rpMode(rs) ? `<div><dt>이번 시즌 RP</dt><dd>${rs.rp}</dd></div>` : `<div><dt>최고 순자산</dt><dd>${formatCH(rs.peak)}</dd></div>`}
       <div><dt>역대 최고</dt><dd>${rs.best ? tierName(rs.best.tier) : '<small>첫 시즌</small>'}</dd></div>
     </dl>
-    <div class="tier-hero-foot"><small>${rs.carry ? '매달 1일 0시에 RP가 3티어 내려가요' : '매달 1일 0시에 칩·빚이 초기화돼요'}</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
+    <div class="tier-hero-foot"><small>${rs.carry ? '시즌이 끝나면 RP가 3티어 내려가요' : '매달 1일 0시에 칩·빚이 초기화돼요'}</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
 }
 
 // RP 베타 (lib/rank-points.mjs): the score that becomes the tier from the December season. It moves

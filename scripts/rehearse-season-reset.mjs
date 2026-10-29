@@ -1,6 +1,6 @@
 // 시즌 리셋 리허설: a casino full of players in every state a real one has at 23:40 on the last
 // night of the month (open blackjack hands, Hold'em and 7포커 seats, a friends 섯다 room, loans,
-// luxury, a guest), then the clock crosses midnight in Seoul and every account is checked.
+// a guest), then the clock crosses midnight in Seoul and every account is checked.
 // Run: node scripts/rehearse-season-reset.mjs [YYYY-MM] (default: the month before the next reset).
 import { handleApi } from '../lib/api.mjs';
 import { defaultState, netWorth, debtOf, seasonOwedOf } from '../lib/state.mjs';
@@ -65,7 +65,6 @@ for (const p of Object.values(people)) { const a = state.users[p.id].account; a.
 await tryStep('부자', '대출', () => must('부자', P('부자').token, 'POST', '/api/bank/borrow', { lender: 'lender', amount: 1 * 억, days: 7 }));
 await tryStep('빚쟁이', '대출', async () => { grant(P('빚쟁이').id, 1 * 억); await must('빚쟁이', P('빚쟁이').token, 'POST', '/api/bank/borrow', { lender: 'lender', amount: 1 * 억, days: 7 }); });
 clock = RealDate.parse(`${MONTH}-31T23:40:00+09:00`);
-await tryStep('부자', '요트 구매', () => must('부자', P('부자').token, 'POST', '/api/shop/buy', { itemId: 'yacht' }));
 let bjRound = null;
 await tryStep('부자', '블랙잭 3박스 진행 중', async () => { const d = await must('부자', P('부자').token, 'POST', '/api/blackjack/v2/start', { stakes: [100 * 억, 100 * 억, 100 * 억], floor: 'sky-lounge' }); bjRound = d.round; });
 let hold = null;
@@ -83,7 +82,7 @@ await tryStep('게스트', '바카라', () => must('게스트', P('게스트').t
 const before = {};
 for (const [n, p] of Object.entries(people)) {
   const u = state.users[p.id];
-  before[n] = { avail: u.account.available, locked: u.account.locked, debt: debtOf(u), worth: netWorth(u), luxury: (u.luxury || []).length, floors: (u.account.unlockedFloors || []).length, hand: JSON.stringify(u.handBook ?? null).length };
+  before[n] = { avail: u.account.available, locked: u.account.locked, debt: debtOf(u), worth: netWorth(u), floors: (u.account.unlockedFloors || []).length, hand: JSON.stringify(u.handBook ?? null).length };
 }
 
 // ---- midnight in Seoul ----
@@ -95,7 +94,7 @@ for (const [n, p] of Object.entries(people)) {
 }
 for (const [n, p] of Object.entries(people)) {
   const u = state.users[p.id];
-  after[n] = { avail: u.account.available, locked: u.account.locked, owed: seasonOwedOf(u), debt: debtOf(u), worth: netWorth(u), luxury: (u.luxury || []).length, floors: (u.account.unlockedFloors || []).length, badge: u.badges?.[0]?.kind === 'RANK' ? u.badges[0].tier : null, wrapped: (u.wrappedHistory || []).length, guest: Boolean(u.guest) };
+  after[n] = { avail: u.account.available, locked: u.account.locked, owed: seasonOwedOf(u), debt: debtOf(u), worth: netWorth(u), floors: (u.account.unlockedFloors || []).length, badge: u.badges?.[0]?.kind === 'RANK' ? u.badges[0].tier : null, wrapped: (u.wrappedHistory || []).length, guest: Boolean(u.guest) };
 }
 
 // ---- 00:01: everyone finishes what was on the table ----

@@ -80,6 +80,13 @@ export function pendingJoin() {
   catch { return null; }
 }
 
+// A seat next to a friend from the friends list: the same path as opening their invite link.
+export function setPendingJoin({ code, game, tier = null }) {
+  if (!ROOM_GAMES[game]) return null;
+  try { sessionStorage.setItem(KEY, JSON.stringify({ code, game, tier })); } catch {}
+  return pendingJoin();
+}
+
 // The game screen takes the invite meant for it (once).
 export function takePendingJoin(game) {
   const v = pendingJoin();

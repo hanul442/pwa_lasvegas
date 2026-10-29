@@ -21,12 +21,14 @@ import { dayBlock } from './js/day-sheet.js';
 import { errorToast, watchConnection, toast } from './js/notice.js';
 import { mountNightly } from './js/nightly.js';
 import { hotStatus, clock, pct, startTime } from './js/hot.js';
-import { renderShop, applyCosmetics, luxuryIcon, luxuryItem, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
+import { renderShop, applyCosmetics, openPlayerSheet, showShopTab, nameFrame } from './js/shop.js';
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
-import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
+import { capturePendingJoin, pendingJoin, dropPendingJoin, setPendingJoin } from './js/invite.js';
+import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
+import { isNewcomer, isSettlingIn, firstDayCard } from './js/first-day.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -126,7 +128,8 @@ function showSurface(name, { focus = false } = {}) {
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
   if (name === 'events') renderEventTab();
-  if (name === 'lobby' && state) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
+  // A newcomer's first hands come without popups (js/first-day.js).
+  if (name === 'lobby' && state && !isSettlingIn(state)) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'bank') { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (name === 'shop') renderShop(document.querySelector('[data-shop]'), state, applyState);
@@ -242,7 +245,7 @@ const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[s
 let tableOverTiers = false;
 let activeTier = null;
 let tableSeq = 0;
-async function openTable(tier, { seated = false } = {}) {
+async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!selectedGame) return;
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
   rememberTable(selectedGame.id, tier);
@@ -282,6 +285,8 @@ async function openTable(tier, { seated = false } = {}) {
   if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
   guide.attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
+  // The first-hand button on home: the table minimum is already on box 2, so 딜 is the only tap left.
+  if (firstBet && !activeTable.locked && !activeTable.total) activeTable.addChip('b2', activeTable.tier.min, activeTable.tray?.getBoundingClientRect());
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
@@ -383,13 +388,15 @@ function applyState(next) {
   for (const card of nightlyCards) card.update(state);
   renderGameLists();
   maybeBust(state);
+  noteLuxuryRefund(state);
   renderLounge(document.querySelector('[data-lounge]'), state, applyState, openPassShop, openRankBoard);
   if (isActive('ranking')) renderRanking();
   if (isActive('profile')) renderProfile();
   if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
+  document.body.classList.toggle('is-settling', isSettlingIn(state));
+  if (isActive('lobby') && !isSettlingIn(state)) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -412,13 +419,13 @@ function openNightlyFromLink() {
 }
 
 // The lobby's way back in: a round still holding chips, then the last three tables played.
-function sitAt(game, tier, trigger, { seated = false } = {}) {
+function sitAt(game, tier, trigger, { seated = false, firstBet = false } = {}) {
   lastLobbyTrigger = trigger;
   setReturn('lobby');
   selectedGame = game;
   setTierHeader(game);
   renderTiers();
-  openTable(tier, { seated });
+  openTable(tier, { seated, firstBet });
 }
 // An event table only while that event runs, at its own table.
 function tableStillThere(game, tier) {
@@ -585,10 +592,28 @@ addEventListener('vegas:choose-game', event => {
 // popular games row. Everything else lives in its tab.
 const weekGame = () => GAMES.find(x => x.event && eventOf(x) && !eventOf(x).always);
 function renderHome() {
+  renderFirstDay();
   renderHero();
   renderCats();
   renderToday();
   if (isActive('events')) renderEventTab();
+}
+
+// The first three hands (js/first-day.js): home is my chips, today's 손익 and one button. The very
+// first tap sits at blackjack with the minimum already bet; after that it goes back to the last table.
+function renderFirstDay() {
+  const slot = document.querySelector('[data-home-first]');
+  const on = isSettlingIn(state);
+  document.body.classList.toggle('is-first-day', on);
+  slot.hidden = !on;
+  if (!on) { slot.replaceChildren(); return; }
+  const bj = GAMES.find(g => g.id === 'blackjack');
+  const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier) && state.user.account.available >= TIERS[x.tier].min);
+  slot.replaceChildren(firstDayCard(state, {
+    again: recent?.game.name,
+    onPlay: (b, { first }) => (first || !recent ? sitAt(bj, FIRST_TIER.slug, b, { firstBet: first }) : sitAt(recent.game, recent.tier, b)),
+    onBrowse: () => showSurface('games', { focus: true })
+  }));
 }
 
 function heroButton(text, cls, onClick) {
@@ -880,7 +905,7 @@ const RANK_TABS = {
 let rankPeriod = 'tier';
 let rankTab = 'tier';
 // The ranking tab has three views: 티어 (my tier and the ladder), 순위 (the boards), 친구 (친구 전적).
-const RANK_VIEWS = [['tier', '티어'], ['board', '순위'], ['friends', '친구 전적']];
+const RANK_VIEWS = [['tier', '티어'], ['board', '순위'], ['friends', '친구']];
 const RANK_VIEW_KEY = 'vegas:rank-view';
 let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
 function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
@@ -955,6 +980,12 @@ function renderTierPane() {
 }
 function renderFriendPane() {
   const box = document.querySelector('[data-friend-record]');
+  showFriends(document.querySelector('[data-friends]'), {
+    frame: (id, n) => nameFrame(state, id, n),
+    toast,
+    // 옆자리: sit at a friend's room the way their invite link would.
+    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); }
+  });
   box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
   box.querySelector('[data-friend-play]')?.addEventListener('click', () => showSurface('games', { focus: true }));
   renderDuels(document.querySelector('[data-duels]'), state, applyState);
@@ -1001,8 +1032,6 @@ function renderBoards() {
   const emblem = r => (rankPeriod === 'tier' && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
   const me = state?.user?.id;
   const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
-  // Each row wears the player's three dearest luxury pieces (lib/shop.mjs); a tap opens their collection.
-  const showcase = r => (r.showcase || []).map(id => luxuryItem(state, id)).filter(Boolean).map(x => luxuryIcon(x.icon, 'rank-lux')).join('');
   const board = rankPeriod === 'tier' ? `tier:${state?.rankSeason?.season.id}` : rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
   const move = rankMoves(board, rows);
   const moveTag = r => {
@@ -1014,7 +1043,7 @@ function renderBoards() {
   const open = (node, r) => {
     node.tabIndex = 0;
     node.setAttribute('role', 'button');
-    node.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 컬렉션 보기`);
+    node.setAttribute('aria-label', `${r.rank}위 ${r.nickname}, 플레이어 보기`);
     node.addEventListener('click', () => openPlayerSheet(state, r));
     node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerSheet(state, r); } });
   };
@@ -1026,8 +1055,7 @@ function renderBoards() {
   rankBoardShown = board;
   podium.replaceChildren(...[2, 1, 3].map(n => top.find(r => r.rank === n)).filter(Boolean).map(r => {
     const li = el('li', `podium-spot podium-spot--${r.rank}${r.id === me ? ' is-me' : ''}`);
-    const lux = showcase(r);
-    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span>${lux ? `<span class="rank-showcase">${lux}</span>` : ''}<span class="podium-step" aria-hidden="true"></span>`;
+    li.innerHTML = `<span class="podium-medal">${r.rank}</span><span class="podium-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}</span>${moveTag(r)}<span class="podium-value">${value(r)}</span><span class="podium-step" aria-hidden="true"></span>`;
     open(li, r);
     return li;
   }));
@@ -1054,12 +1082,19 @@ function renderBoards() {
   const rest = rows.filter(r => r.rank > 3);
   document.querySelector('[data-rank-list]').replaceChildren(...rest.map(r => {
     const li = el('li', `rank-row${r.id === me ? ' is-me' : ''}`);
-    const lux = showcase(r);
-    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}${lux ? `<span class="rank-showcase">${lux}</span>` : ''}</span><span class="rank-value">${value(r)}</span>`;
+    li.innerHTML = `<span class="rank-no">${r.rank}</span><span class="rank-name">${emblem(r)}${nameFrame(state, r.id, r.nickname)}${r.id === me ? ' <small>나</small>' : ''}${moveTag(r)}</span><span class="rank-value">${value(r)}</span>`;
     open(li, r);
     return li;
   }));
   if (!rows.length) document.querySelector('[data-rank-list]').innerHTML = '<li class="rank-empty">아직 이 순위에 오른 사람이 없어요. 한 판 하고 첫 이름을 올려 보세요.</li>';
+}
+
+// 사치품 were retired on 2026-10-29: say once where the refunded chips came from.
+function noteLuxuryRefund(s) {
+  const r = s?.latestRefund;
+  if (!r?.id) return;
+  try { if (localStorage.getItem('vegas:luxury-refund') === r.id) return; localStorage.setItem('vegas:luxury-refund', r.id); } catch { return; }
+  toast(`사치품이 없어져서 산 값 그대로 ${formatCH(r.amount)}원을 칩으로 돌려드렸어요`, { duration: 8000 });
 }
 
 // ---------- profile ----------
@@ -1075,16 +1110,10 @@ function renderProfile() {
     const rate = s.rounds ? Math.round((s.wins / s.rounds) * 100) : 0;
     return `<tr><th scope="row">${gameName(g)}</th><td>${s.rounds}</td><td>${rate}%</td><td>${formatCH(s.biggestWin)}</td><td class="${s.pnl > 0 ? 'pos' : s.pnl < 0 ? 'neg' : ''}">${s.pnl > 0 ? '+' : ''}${formatCH(s.pnl)}</td></tr>`;
   }).join('');
-  // 자산: the luxury on show (lib/shop.mjs), dearest first. Trophies only; floors run on chips.
-  const owned = (u.luxury || []).map(x => ({ ...x, item: luxuryItem(state, x.id) })).filter(x => x.item).sort((p, q) => q.price - p.price);
-  const assets = u.assets ?? state.shop?.assets ?? 0;
-  const showcase = owned.length
-    ? `<ul class="showcase-list showcase-list--profile">${owned.map(x => `<li>${luxuryIcon(x.item.icon)}<span>${x.item.name}</span><small>${formatCH(x.price)}</small></li>`).join('')}</ul>`
-    : '<p class="lounge-note">아직 산 사치품이 없어요. 상점에서 시계부터 섬까지 살 수 있어요.</p>';
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(a.available)}원${assets ? ` · 자산 ${formatCH(assets)}원` : ''}${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
+      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(a.available)}원${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
     </div>
     ${u.guest ? guestCard(state) : ''}
     <dl class="stat-grid">
@@ -1096,9 +1125,7 @@ function renderProfile() {
       <div><dt>최장 연승</dt><dd>${eng.streak?.best || 0}연승${eng.streak?.current > 1 ? ` <small>지금 ${eng.streak.current}</small>` : ''}</dd></div>
     </dl>
     <div data-invite-card></div>
-    <h2 class="sub-head">자산 <small>${formatCH(assets)}원 · 사치품 ${owned.length}점</small></h2>
-    ${showcase}
-    <button type="button" class="pill-button profile-shop" data-go-shop>상점 가기</button>
+    <button type="button" class="pill-button profile-shop" data-go-shop>꾸미기 상점 가기</button>
     <div data-wrapped-list></div>
     ${state.rankSeason?.history?.length ? `<h2 class="sub-head">월간 시즌 기록 <small>최고 ${tierName(state.rankSeason.best?.tier || state.rankSeason.history[0].tier)}</small></h2>${rankBadges(state.rankSeason.history)}` : ''}
     ${badges ? `<h2 class="sub-head">주간 시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
@@ -1193,6 +1220,16 @@ function takeDailyLink() {
   history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
   return true;
 }
+// ./?rank=friends from a "친구가 들어왔어요" push: open the friends list.
+let friendsWanted = (() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('rank') !== 'friends') return false;
+  params.delete('rank');
+  const q = params.toString();
+  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
+  return true;
+})();
+function openFriendsLink() { if (friendsWanted && state) { friendsWanted = false; rankView = 'friends'; showSurface('ranking', { focus: true }); } }
 function openDailyLink() { if (dailyWanted && state) { dailyWanted = false; showDaily(); } }
 
 // ---------- account ----------
@@ -1216,6 +1253,7 @@ function signedIn(next) {
   openInvite();
   openNightlyFromLink();
   openDailyLink();
+  openFriendsLink();
 }
 function signedOut(notice) {
   stopNews();
@@ -1312,7 +1350,7 @@ dailyWanted = takeDailyLink();
 capturePendingJoin();
 // An invite link (/j?...) leaves the address bar once read, so a reload is the plain app.
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname === '/j' || location.pathname === '/j/' ? '/' : location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); openFriendsLink(); } });
 else openSignIn(signedIn);
 // Once home is up and quiet, fetch the game played last so its table opens without a wait.
 addEventListener('load', () => (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(() => warmGame(GAMES.find(g => g.id === recentTables()[0]?.game)), { timeout: 4000 }), { once: true });

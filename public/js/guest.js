@@ -8,6 +8,7 @@ import { pendingRef, dropPendingRef, setMyInviteCode, shareFriendInvite } from '
 
 let lastWin = undefined; // the newest win this page has seen; undefined until the first state
 let nudgedAt = 0;
+let nudgeDue = false; // a win earned the nudge; it shows once off the table
 let seenInvite = null;
 let sheet = null;
 const NUDGE_GAP = 3 * 60_000;
@@ -22,12 +23,15 @@ export function onGuestState(st, applyState) {
   if (lastWin === undefined) lastWin = win?.id ?? null;
   else if (win && win.id !== lastWin) {
     lastWin = win.id;
-    if (st.user.guest && Date.now() - nudgedAt > NUDGE_GAP) {
-      nudgedAt = Date.now();
-      // After the win's own animation, not on top of it.
-      setTimeout(() => toast(`이겼어요! ${formatCH(st.user.account.available + st.user.account.locked)}원, 이 칩 지키려면 이름 정하기`, { action: '이름 정하기', onAction: () => openNameSheet(applyState), duration: 9000 }), 2200);
-    }
+    if (st.user.guest && Date.now() - nudgedAt > NUDGE_GAP) { nudgedAt = Date.now(); nudgeDue = true; }
   }
+  // At a table the toast would sit on the chips and buttons, so it waits for the next screen off
+  // the table (closing a table fetches a fresh state, which lands here).
+  if (nudgeDue && st.user.guest && !document.body.classList.contains('game-mode')) {
+    nudgeDue = false;
+    setTimeout(() => toast(`이겼어요! ${formatCH(st.user.account.available + st.user.account.locked)}원, 이 칩 지키려면 이름 정하기`, { action: '이름 정하기', onAction: () => openNameSheet(applyState), duration: 9000 }), 900);
+  }
+  if (!st.user.guest) nudgeDue = false;
   const inv = st.invite;
   if (inv) {
     const mark = { total: inv.total || 0, paid: Boolean(inv.invitedBy?.paid) };

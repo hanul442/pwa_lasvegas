@@ -109,6 +109,9 @@ export const api = {
   state: () => request('/api/state'),
   feedReact: (id, kind) => request('/api/feed/react', { method: 'POST', body: { id, kind } }),
   news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
+  friends: () => request('/api/friends'),
+  friendAdd: nickname => request('/api/friends/add', { method: 'POST', body: { nickname } }),
+  friendRemove: id => request('/api/friends/remove', { method: 'POST', body: { id } }),
   pushKey: () => request('/api/push/key'),
   pushSubscribe: subscription => request('/api/push/subscribe', { method: 'POST', body: { subscription } }),
   pushUnsubscribe: endpoint => request('/api/push/unsubscribe', { method: 'POST', body: { endpoint } }),
@@ -126,7 +129,6 @@ export const api = {
   bankruptcy: () => request('/api/bank/bankruptcy', { method: 'POST' }),
   // 상점: itemId from the catalog in lib/shop.mjs; equip with itemId null puts the house look back.
   shopBuy: itemId => request('/api/shop/buy', { method: 'POST', body: { itemId } }),
-  shopSell: itemId => request('/api/shop/sell', { method: 'POST', body: { itemId } }),
   shopEquip: (slot, itemId) => request('/api/shop/equip', { method: 'POST', body: { slot, itemId } }),
   rescue: pick => request('/api/rescue', { method: 'POST', body: { pick } }),
   // 오늘의 한 판 (lib/daily-blackjack.mjs): step is how many commands this page has seen.
@@ -264,6 +266,10 @@ const MESSAGES = {
   SESSION_CLOSED: '이미 끝난 테이블이에요.',
   ROOM_NOT_FOUND: '그 코드의 방을 찾지 못했어요. 코드를 다시 확인해 주세요.',
   ROOM_FULL: '방이 꽉 찼어요. 다른 방을 골라 주세요.',
+  FRIEND_NOT_FOUND: '그 닉네임의 플레이어를 찾지 못했어요.',
+  FRIEND_IS_ME: '나는 친구로 추가할 수 없어요.',
+  FRIEND_LIST_FULL: '친구는 50명까지 추가할 수 있어요.',
+  FRIEND_NAME_REQUIRED: '친구 닉네임을 넣어 주세요.',
   ALREADY_IN_ROOM: '이미 다른 방에 앉아 있어요.',
   NOT_IN_ROOM: '이 방에서 이미 일어났어요.',
   NOT_HOST: '딜은 방장이 시작해요.',

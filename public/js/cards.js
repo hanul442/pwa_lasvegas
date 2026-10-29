@@ -15,47 +15,81 @@ const PIPS = {
   10: [[0, 0], [100, 0], [50, 17], [0, 33], [100, 33], [0, 67], [100, 67], [50, 83], [0, 100], [100, 100]]
 };
 
-// Court cards (J·Q·K): a figure drawn in fine line on the card stock, mirrored head to head
-// like a real double-ended court card. Ink follows the suit colour (currentColor); `p` areas
-// are the paper itself so lines behind a face or collar stay hidden.
-const COURT_HALF = {
-  K: `<path class="tone" d="M-1 36.2C6 34.6 14 33.8 22 33.5H38C46 33.8 54 34.6 61 36.2V45H-1Z"/><path class="s hatch" d="M5 35.4Q6.4 40.6 5.6 45M11 34.6Q12.8 40 12.2 45M16.6 34.1Q18.2 39.6 17.8 45M43.4 34.1Q41.8 39.6 42.2 45M49 34.6Q47.2 40 47.8 45M55 35.4Q53.6 40.6 54.4 45"/>
-    <path class="s" d="M47 14V35.5"/><circle class="f" cx="47" cy="11.4" r="2.4"/><path class="s" d="M47 6.6v2.6M45.7 7.9h2.6"/>
-    <path class="s" d="M-1 36.2C6 34.6 14 33.8 22 33.5M61 36.2C54 34.6 46 33.8 38 33.5"/>
-    <path class="f" d="M21 33.8C23 35 24.5 36 25.8 37.5L28.2 45H18.5C19.5 40 20 36.5 21 33.8ZM39 33.8C37 35 35.5 36 34.2 37.5L31.8 45H41.5C40.5 40 40 36.5 39 33.8Z"/>
-    <path class="pe" d="M21.6 39.2h.01M24 42.8h.01M20.4 43.2h.01M38.4 39.2h.01M36 42.8h.01M39.6 43.2h.01"/>
-    <path class="p s" d="M22.5 15.5C22.5 21 23.5 24 23.5 26C23.5 32 27 36.5 30 37.5C33 36.5 36.5 32 36.5 26C36.5 24 37.5 21 37.5 15.5Z"/>
-    <path class="s t" d="M26 26.6C28 25.3 29.3 25.7 30 26.5C30.7 25.7 32 25.3 34 26.6M27.2 30.5l.4 3M30 31v3.8M32.8 30.5l-.4 3M25.4 19.4h3M31.6 19.4h3M30 20.3l-.9 3.9h1.5"/>
-    <circle class="f" cx="27" cy="21.2" r=".7"/><circle class="f" cx="33" cy="21.2" r=".7"/>
-    <path class="f" d="M20.5 15.8L19.4 6.6L24.5 10.6L30 4L35.5 10.6L40.6 6.6L39.5 15.8Z"/><circle class="p" cx="30" cy="11.6" r="1.25"/>`,
-  Q: `<path class="tone" d="M-1 36.2C6 34.6 14 33.8 22 33.5H38C46 33.8 54 34.6 61 36.2V45H-1Z"/><path class="s hatch" d="M5 35.4Q6.4 40.6 5.6 45M11 34.6Q12.8 40 12.2 45M16.6 34.1Q18.2 39.6 17.8 45M43.4 34.1Q41.8 39.6 42.2 45M49 34.6Q47.2 40 47.8 45M55 35.4Q53.6 40.6 54.4 45"/>
-    <circle class="s" cx="13" cy="26.5" r="2.6"/><circle class="f" cx="13" cy="26.5" r=".95"/><path class="s" d="M13.4 29.2L16.2 41M14.6 34.6c2.4-1.9 3.8-1.2 4.6.2"/>
-    <path class="f" d="M21 17C19 24 19.5 31 16.5 37C20 37.5 23 36 24.5 33H35.5C37 36 40 37.5 43.5 37C40.5 31 41 24 39 17C38 11 22 11 21 17Z"/>
-    <path class="s" d="M-1 36.4C6 35.2 15 34.7 23.5 34.5M61 36.4C54 35.2 45 34.7 36.5 34.5M30 41.5V45"/>
-    <path class="p s" d="M27.4 29.5V33.6C25.5 34.2 24.3 34.4 23.5 34.5Q30 42.5 36.5 34.5C35.7 34.4 34.5 34.2 32.6 33.6V29.5Z"/>
-    <path class="pe d" d="M25.6 36.4h.01M27.6 38.2h.01M30 38.9h.01M32.4 38.2h.01M34.4 36.4h.01"/>
-    <path class="p s" d="M23.6 17.2C23.6 25.8 26 30.6 30 30.6C34 30.6 36.4 25.8 36.4 17.2C34.5 15.6 32 16.6 30 14.2C28 16.6 25.5 15.6 23.6 17.2Z"/>
-    <path class="s t" d="M25.4 20.8Q27 19.5 28.6 20.8M31.4 20.8Q33 19.5 34.6 20.8M30 21.8l-.8 3.3h1.4M28.2 27.4Q30 28.6 31.8 27.4"/>
-    <path class="f st" d="M23 14.4L23.4 8.6L26.8 11.6L30 5.4L33.2 11.6L36.6 8.6L37 14.4Z"/><circle class="p" cx="30" cy="11.4" r="1"/>`,
-  J: `<path class="tone" d="M-1 36.2C6 34.6 14 33.8 22 33.5H38C46 33.8 54 34.6 61 36.2V45H-1Z"/><path class="s hatch" d="M5 35.4Q6.4 40.6 5.6 45M11 34.6Q12.8 40 12.2 45M16.6 34.1Q18.2 39.6 17.8 45M43.4 34.1Q41.8 39.6 42.2 45M49 34.6Q47.2 40 47.8 45M55 35.4Q53.6 40.6 54.4 45"/>
-    <path class="s" d="M12 9V37"/><path class="f" d="M12 3.6L13.9 9H10.1ZM12.4 11C16.2 11 17 14.4 16.4 17.4C15 15.8 13.8 15.2 12.4 15.2Z"/>
-    <path class="s" d="M-1 36.6C6 35.6 13 35.1 21.5 35M61 36.6C54 35.6 47 35.1 38.5 35"/>
-    <path class="f" d="M26 35.6H34L35.6 45H24.4Z"/><path class="pe" d="M30 38.6h.01M30 42.2h.01"/>
-    <path class="p s" d="M21 33.2L23.3 36L25.6 33.4L27.8 36.2L30 33.6L32.2 36.2L34.4 33.4L36.7 36L39 33.2L37 31.6H23Z"/>
-    <path class="p s" d="M23.6 16.4C23.6 25.6 26 30.6 30 30.6C34 30.6 36.4 25.6 36.4 16.4Z"/>
-    <path class="f" d="M22.2 16C21.2 21 21.6 25 23.6 28.2L25 20.6L23.8 16ZM37.8 16C38.8 21 38.4 25 36.4 28.2L35 20.6L36.2 16Z"/>
-    <path class="s t" d="M25.6 19.2L28.4 18.7M31.6 18.7L34.4 19.2M30 20.8V24.8H31M28.6 27.4H31.4"/>
-    <circle class="f" cx="27.2" cy="21.2" r=".75"/><circle class="f" cx="32.8" cy="21.2" r=".75"/>
-    <path class="s" d="M36.6 9.8C40.6 6 44.4 5 47.6 3.8C45.4 6.6 42.6 8.6 38.6 11.2M40.2 8L42 8.8M42.8 6.4L44.6 7.1"/>
-    <path class="f" d="M21 16.6C20 10.2 25 7.4 31 7.4C37 7.4 41.2 10 40.6 14.6L39.2 16.6Z"/><path class="ps" d="M21.6 15H39.6"/>`
+// Suits are drawn, not typed: a ♠ from the font looks different on every phone (and can turn into
+// an emoji on Android). Shapes follow casino poker decks (Copag/KEM): full spade, round-lobed club.
+const SUIT_KEY = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' };
+const SUIT_PATH = {
+  s: '<path d="M50 3C58 18 93 37 93 60C93 74 83 82 71.5 82C63.5 82 57.5 78 53.8 72.5C54.6 82.5 58.6 90.5 67 97H33C41.4 90.5 45.4 82.5 46.2 72.5C42.5 78 36.5 82 28.5 82C17 82 7 74 7 60C7 37 42 18 50 3Z"/>',
+  h: '<path d="M50 94C45 86 5 63.5 5 34C5 16 18 5 31.5 5C41 5 47 11 50 18.5C53 11 59 5 68.5 5C82 5 95 16 95 34C95 63.5 55 86 50 94Z"/>',
+  d: '<path d="M50 2C59 19 72 35 88 50C72 65 59 81 50 98C41 81 28 65 12 50C28 35 41 19 50 2Z"/>',
+  c: '<circle cx="50" cy="26.5" r="19.5"/><circle cx="26.5" cy="58" r="19.5"/><circle cx="73.5" cy="58" r="19.5"/><path d="M50 38L38 60H62ZM46.5 58C46 77 42 89 33 97H67C58 89 54 77 53.5 58Z"/>'
 };
+const suitPath = suit => SUIT_PATH[SUIT_KEY[suit]] || SUIT_PATH.s;
+export const suitSvg = (suit, cls = 'suit') => `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${suitPath(suit)}</svg>`;
+
+// Court cards (J·Q·K): a double-ended portrait filling a framed panel, as on a real casino deck,
+// drawn in flat fields of the deck's four inks: line black, red, slate and cream skin. The robe
+// takes the suit's colour (red suits red, black suits slate) and the trim the other one.
+// Each half is drawn in a 60×51 box; the second half is the first turned 180°.
+const COAT = 'M0 51V39C3 34.5 11 32 19 31.4H41C49 32 57 34.5 60 39V51Z';
+const COURT_HALF = {
+  K: `<path class="pa ln" d="M44.8 1.4H47.2V40H44.8Z"/><path class="hl" d="M46 3.6V38"/>
+    <path class="robe ln" d="${COAT}"/>
+    <path class="trim ln" d="M0 39C3 34.5 11 32 19 31.4L23.6 34.2L14.6 51H0Z"/>
+    <path class="hl" d="M2.4 42.4L9 37.2M3 47.2L12.6 39.6M7.6 49.6L15.8 43"/>
+    <path class="pa ln" d="M19 31.4L23.6 34.2L14.6 51H11.4L20.8 33.4Z"/>
+    <path class="k" d="M19.6 35.6l1 .9-1.1.6zM17.4 40l1 .9-1.1.6zM15.2 44.4l1 .9-1.1.6zM13.2 48.6l1 .9-1.1.6z"/>
+    <path class="trim ln" d="M27 36H33V51H27Z"/><circle class="pa" cx="30" cy="40" r="1"/><circle class="pa" cx="30" cy="44.2" r="1"/><circle class="pa" cx="30" cy="48.4" r="1"/>
+    <path class="pa ln" d="M18.4 31.6C22.4 35.2 26.2 36.8 30 36.8C33.8 36.8 37.6 35.2 41.6 31.6L38.6 30H21.4Z"/>
+    <path class="k" d="M22.6 33l.9 1.3-1 .4zM26.4 34.8l.9 1.2-1 .4zM33.6 34.8l.1 1.6-1-.4zM37.4 33l.1 1.7-1-.4z"/>
+    <path class="sk ln" d="M41.2 41.6C41.8 39.4 45 38.8 47.8 39.8C49.8 40.8 49.4 44 47.2 45C44.8 45.6 41.8 44.6 41.2 41.6Z"/><path class="pa ln" d="M38.8 41.6L41.6 39.6L42.4 44.6L39.4 45.2Z"/>
+    <path class="k" d="M22.4 13C20.2 16 19.8 21.5 21 27L22.6 24ZM37.6 13C39.8 16 40.2 21.5 39 27L37.4 24Z"/>
+    <path class="sk ln" d="M22.5 12.5H37.5V22.5C37.5 27.5 34.2 30.5 30 30.5C25.8 30.5 22.5 27.5 22.5 22.5Z"/>
+    <path class="pa ln" d="M22.2 22C22.2 29.5 25 34 30 35.2C35 34 37.8 29.5 37.8 22C35.6 25 33 26.2 30 26.2C27 26.2 24.4 25 22.2 22Z"/>
+    <path class="hl" d="M25 27L26.4 32M28.4 28L28.8 34M31.6 28L31.2 34M35 27L33.6 32"/>
+    <path class="k" d="M25.8 25.2C27.6 24 29 24.2 30 25.1C31 24.2 32.4 24 34.2 25.2C32.4 26.4 31 26.2 30 25.7C29 26.2 27.6 26.4 25.8 25.2Z"/>
+    <path class="ln nf" d="M24.8 15.6L28.2 15.1M31.8 15.1L35.2 15.6M30.4 18Q29.4 21.2 30.2 21.8H31.2"/><circle class="k" cx="26.6" cy="18" r=".75"/><circle class="k" cx="33.4" cy="18" r=".75"/>
+    <path class="trim ln" d="M22 13L20.6 3.4L25.6 7.6L30 1.6L34.4 7.6L39.4 3.4L38 13Z"/><path class="pa ln" d="M22 10.4H38V13.4H22Z"/>
+    <circle class="robe" cx="25.4" cy="11.9" r=".85"/><circle class="robe" cx="30" cy="11.9" r=".85"/><circle class="robe" cx="34.6" cy="11.9" r=".85"/><circle class="pa ln" cx="30" cy="1.4" r="1.1"/>`,
+  Q: `<path class="robe ln" d="${COAT}"/>
+    <path class="trim ln" d="M60 39C57 34.5 49 32 41 31.4L36.4 34.2L45.4 51H60Z"/>
+    <path class="hl" d="M57.6 42.4L51 37.2M57 47.2L47.4 39.6M52.4 49.6L44.2 43"/>
+    <path class="pa ln" d="M41 31.4L36.4 34.2L45.4 51H48.6L39.2 33.4Z"/>
+    <path class="k" d="M21.8 11C18.6 17 18.6 26 20.4 33.4H24.6L24 14ZM38.2 11C41.4 17 41.4 26 39.6 33.4H35.4L36 14Z"/>
+    <path class="sk ln" d="M20.4 31.4L24.6 38.6H35.4L39.6 31.4Z"/><path class="sk ln" d="M27.6 28.6H32.4V33H27.6Z"/>
+    <path class="trim ln" d="M24.6 38.6H35.4L30 51Z"/><circle class="pa" cx="30" cy="41.8" r=".9"/><circle class="pa" cx="30" cy="45.4" r=".9"/>
+    <path class="pe" d="M23 32.4h.01M24.6 34.4h.01M26.6 35.7h.01M28.8 36.3h.01M31.2 36.3h.01M33.4 35.7h.01M35.4 34.4h.01M37 32.4h.01"/>
+    <path class="ln nf" d="M15 40C14.6 32 15 23 16.4 16"/><path class="trim ln" d="M15.2 29C12 27.8 10.4 25.2 10.4 22.6C13.4 23 15 25.2 15.4 27.6ZM15.8 25.4C18.6 23.2 21 23 22.4 23.6C21.4 26 18.8 27.2 16 27Z"/>
+    <path class="robe ln" d="M12.8 16.2C12.2 11.8 14 9 16.4 7.8C18.8 9 20.6 11.8 20 16.2C18.6 18 14.2 18 12.8 16.2Z"/><path class="hl" d="M16.4 8.8V16.8M14.4 10.6C14.8 13.2 15 14.8 15.2 17M18.4 10.6C18 13.2 17.8 14.8 17.6 17"/>
+    <path class="sk ln" d="M12 40.4C12.6 38.4 15.6 38 17.8 39C19.4 40 19 42.6 17.2 43.4C15 44 12.4 43 12 40.4Z"/>
+    <path class="sk ln" d="M23 12.6H37V22.5C37 27.6 34 30.6 30 30.6C26 30.6 23 27.6 23 22.5Z"/>
+    <path class="k" d="M22.8 15C24 10.4 27.4 9.2 30 10.8C32.6 9.2 36 10.4 37.2 15C34 13.4 32 13.4 30 14.6C28 13.4 26 13.4 22.8 15Z"/>
+    <path class="ln nf" d="M25.2 18.8Q26.8 17.5 28.4 18.8M31.6 18.8Q33.2 17.5 34.8 18.8M30.3 20.6Q29.5 22.8 30 23.3H30.8"/><circle class="k" cx="26.8" cy="19.4" r=".6"/><circle class="k" cx="33.2" cy="19.4" r=".6"/>
+    <path class="red" d="M28.2 26.2Q30 27.6 31.8 26.2Q30 25.4 28.2 26.2Z"/>
+    <path class="trim ln" d="M24 10.4L24.8 3.6L27.8 6.4L30 1.8L32.2 6.4L35.2 3.6L36 10.4Z"/><circle class="pa ln" cx="30" cy="1.6" r=".95"/><circle class="pa" cx="27.2" cy="8.8" r=".6"/><circle class="pa" cx="32.8" cy="8.8" r=".6"/>`,
+  J: `<path class="ln nf" d="M11.2 2.4V44"/><path class="trim ln" d="M11.2 5.2C6.8 6 5 9.4 5.4 13.4C7.4 11.8 9.4 11.2 11.2 11.5Z"/><path class="k" d="M11.2 0L12.6 3.8H9.8Z"/>
+    <path class="robe ln" d="${COAT}"/>
+    <path class="trim ln" d="M3.6 37.2L11.6 33.2L13 36L5.4 40.2ZM56.4 37.2L48.4 33.2L47 36L54.6 40.2ZM6.6 43.4L15 39L16.4 41.8L8.4 46.4ZM53.4 43.4L45 39L43.6 41.8L51.6 46.4ZM9.6 49.6L18.4 45L19.6 47.8L12.4 51ZM50.4 49.6L41.6 45L40.4 47.8L47.6 51Z"/>
+    <path class="trim ln" d="M27 33H33V51H27Z"/><circle class="pa" cx="30" cy="36.8" r=".95"/><circle class="pa" cx="30" cy="40.8" r=".95"/><circle class="pa" cx="30" cy="44.8" r=".95"/><circle class="pa" cx="30" cy="48.8" r=".95"/>
+    <path class="pa ln" d="M19 30.2Q21.8 34.4 24.6 30.8Q27.3 34.8 30 31Q32.7 34.8 35.4 30.8Q38.2 34.4 41 30.2L39.2 28.4H20.8Z"/>
+    <path class="sk ln" d="M8.8 42C9.4 39.8 12.6 39.4 14.8 40.4C16.4 41.4 16 44 14.2 44.8C12 45.4 9.2 44.4 8.8 42Z"/>
+    <path class="k" d="M22.2 14C20.4 17.4 20.4 22.4 22.2 26L24.2 22.2V14ZM37.8 14C39.6 17.4 39.6 22.4 37.8 26L35.8 22.2V14Z"/>
+    <path class="sk ln" d="M23 12.8H37V22.5C37 27.6 34 30.4 30 30.4C26 30.4 23 27.6 23 22.5Z"/>
+    <path class="ln nf" d="M24.8 16.6L28.2 16.2M31.8 16.2L35.2 16.6M30.4 19Q29.4 22 30.2 22.6H31.2M27.8 26.8Q30 27.8 32.2 26.8"/><circle class="k" cx="26.6" cy="18.8" r=".72"/><circle class="k" cx="33.4" cy="18.8" r=".72"/>
+    <path class="k" d="M27 24.8C28.4 24 29.3 24.1 30 24.7C30.7 24.1 31.6 24 33 24.8C31.8 25.3 30.7 25.3 30 25.1C29.3 25.3 28.2 25.3 27 24.8Z"/>
+    <path class="robe ln" d="M37.4 7.8C40.4 5.2 43 3.6 46 2.6C44.2 5.4 41.6 7.4 38.6 9Z"/><path class="hl" d="M38.2 8.4C40.8 6.4 43 4.8 45.4 3.2"/>
+    <path class="trim ln" d="M21 13C20 6.6 24.6 3.4 30.4 3.4C36.6 3.4 40.8 6 40.3 11.2L38.6 13Z"/><path class="pa ln" d="M21.8 11H39.2V13.6H21.8Z"/>`
+};
+const PIP_SIDE = { K: 0, Q: 1, J: 1 };
 const courtCache = {};
-function courtArt(rank) {
-  if (!courtCache[rank]) {
+function courtArt(rank, suit) {
+  const key = rank + suit;
+  if (!courtCache[key]) {
     const half = COURT_HALF[rank] || COURT_HALF.K;
-    courtCache[rank] = `<svg class="court-art" viewBox="0 0 60 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g transform="matrix(1.1 0 0 1.1 -3 -4.5)">${half}</g><g transform="rotate(180 30 45) matrix(1.1 0 0 1.1 -3 -4.5)">${half}</g><path class="s rule" d="M-1 46.6L61 43.4"/></svg>`;
+    const pip = `<g transform="translate(${PIP_SIDE[rank] ? 49.4 : 2.6} 2.6) scale(.08)" class="ink">${suitPath(suit)}</g>`;
+    courtCache[key] = `<svg class="court-art" viewBox="0 0 60 102" preserveAspectRatio="none" aria-hidden="true"><g>${half}${pip}</g><g transform="rotate(180 30 51)">${half}${pip}</g><path class="ln nf mid" d="M0 52.4L60 49.6"/><rect class="frame" x=".5" y=".5" width="59" height="101" rx="1.6"/></svg>`;
   }
-  return courtCache[rank];
+  return courtCache[key];
 }
 
 export function parseCard(text) {
@@ -65,17 +99,18 @@ export function parseCard(text) {
 
 function faceMarkup(card) {
   const { rank, suit } = card;
-  const corner = `<span class="card-corner"><b>${rank}</b><i>${suit}</i></span>`;
+  const corner = `<span class="card-corner"><b${rank === '10' ? ' class="is-ten"' : ''}>${rank}</b><i>${suitSvg(suit)}</i></span>`;
   let center;
   if (PIPS[rank]) {
-    center = `<span class="card-pips">${PIPS[rank].map(([x, y]) => `<i style="--x:${x};--y:${y}"${y > 50 ? ' class="flip"' : ''}>${suit}</i>`).join('')}</span>`;
+    center = `<span class="card-pips">${PIPS[rank].map(([x, y]) => `<i style="--x:${x};--y:${y}"${y > 50 ? ' class="flip"' : ''}>${suitSvg(suit)}</i>`).join('')}</span>`;
   } else if (rank === 'A') {
-    center = `<span class="card-ace">${suit}</span>`;
+    // The ace of spades carries the house mark, as on a casino's own deck.
+    center = `<span class="card-ace${suit === '♠' ? ' is-house' : ''}">${suitSvg(suit)}${suit === '♠' ? '<i class="ace-star" aria-hidden="true"></i>' : ''}</span>`;
   } else {
-    center = `<span class="card-court" data-rank="${rank}">${courtArt(rank)}</span>`;
+    center = `<span class="card-court" data-rank="${rank}">${courtArt(rank, suit)}</span>`;
   }
   // card-mark: the big suit that the large-index faces (Hold'em) show in place of the pips.
-  return `${corner}${center}${corner.replace('card-corner', 'card-corner card-corner--end')}<span class="card-mark" aria-hidden="true">${suit}</span>`;
+  return `${corner}${center}${corner.replace('card-corner', 'card-corner card-corner--end')}<span class="card-mark" aria-hidden="true">${suitSvg(suit)}</span>`;
 }
 
 // 꾸미기 (lib/shop.mjs): the card back this player wears, applied to every card dealt from now on.

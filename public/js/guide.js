@@ -4,14 +4,15 @@
 import { el } from './fx.js';
 import { GUIDES } from './guides.js';
 import { settings } from './settings.js';
+import { remember } from './seen.js';
 
 const seenKey = id => `vegas:guide:${id}`;
 const seen = id => { try { return localStorage.getItem(seenKey(id)) === '1'; } catch { return true; } };
-const markSeen = id => { try { localStorage.setItem(seenKey(id), '1'); } catch {} };
+const markSeen = id => remember(seenKey(id), '1');
 
 // Forget which guides were seen, so each game's coach starts again on the next visit.
 export function resetGuides() {
-  try { Object.keys(GUIDES).forEach(id => localStorage.removeItem(seenKey(GUIDES[id].id || id))); } catch {}
+  Object.keys(GUIDES).forEach(id => remember(seenKey(GUIDES[id].id || id), ''));
 }
 
 class Coach {

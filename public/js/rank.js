@@ -4,6 +4,7 @@ import { el, formatCH, sound, haptic } from './fx.js';
 import { toast } from './notice.js';
 import { bragButton } from './share.js';
 import { bragTier } from './brags.js';
+import { remember } from './seen.js';
 
 export const TIERS = {
   iron: { name: '아이언', min: 0, label: '시작' },
@@ -124,7 +125,8 @@ export function maybeSeasonWarning(state, open) {
   const stage = left <= DAY ? 'day' : left <= 3 * DAY ? 'three' : null;
   if (!stage) return;
   const key = `vegas:season-warn:${r.season.id}:${stage}:${state.user.id}`;
-  try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { return; }
+  try { if (localStorage.getItem(key)) return; } catch { return; }
+  remember(key, '1');
   open();
 }
 
@@ -151,7 +153,7 @@ export function maybeSeasonMoment(state, { force = false, onWrapped } = {}) {
   const { mine, reset } = last;
   if (!force && !mine && !reset) return;
   const key = `vegas:rank-moment:${last.id || mine?.season}:${state.user.id}`;
-  if (!force) { try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { return; } }
+  if (!force) { try { if (localStorage.getItem(key)) return; } catch { return; } remember(key, '1'); }
   const node = el('div', 'floor-moment rank-moment');
   node.setAttribute('role', 'dialog');
   node.setAttribute('aria-modal', 'true');
@@ -195,7 +197,8 @@ export function celebrateTier(state) {
   const now = order.indexOf(r.tier);
   const key = `vegas:tier-seen:${r.season.id}:${state.user.id}`;
   let seen = null;
-  try { seen = localStorage.getItem(key); localStorage.setItem(key, r.tier); } catch { return; }
+  try { seen = localStorage.getItem(key); } catch { return; }
+  if (seen !== r.tier) remember(key, r.tier);
   if (seen === null || order.indexOf(seen) < 0 || now <= order.indexOf(seen) || now <= 0) return;
   const node = el('div', 'floor-moment rank-moment tier-up');
   node.setAttribute('role', 'dialog');

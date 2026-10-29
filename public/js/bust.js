@@ -7,6 +7,7 @@ import { playerId } from './api.js';
 import { gameName } from './lounge.js';
 import { loadLogo, shareImage } from './share.js';
 import { dayChart, chartPoints } from './day-chart.js';
+import { remember } from './seen.js';
 
 const ROASTS = [
   '카지노는 이겼고, 나는 졌다',
@@ -60,7 +61,8 @@ const RECENT_MS = 60 * 60_000;
 // True once per id: marks it seen so a later state (the lobby after the table) doesn't show it again.
 function firstSight(key, item) {
   if (!item?.id || Date.now() - Date.parse(item.createdAt) > RECENT_MS) return false;
-  try { if (localStorage.getItem(key) === item.id) return false; localStorage.setItem(key, item.id); } catch {}
+  try { if (localStorage.getItem(key) === item.id) return false; } catch {}
+  remember(key, item.id);
   return true;
 }
 

@@ -38,6 +38,7 @@ import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
 import { replayBlock, loadReplays } from './js/replay.js';
 import { bragRank, bragTier } from './js/brags.js';
+import { remember } from './js/seen.js';
 import { tierHeroHtml, promoHtml, rpCardHtml, leagueHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
 import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
@@ -1147,7 +1148,8 @@ function renderBoards() {
 function noteLuxuryRefund(s) {
   const r = s?.latestRefund;
   if (!r?.id) return;
-  try { if (localStorage.getItem('vegas:luxury-refund') === r.id) return; localStorage.setItem('vegas:luxury-refund', r.id); } catch { return; }
+  try { if (localStorage.getItem('vegas:luxury-refund') === r.id) return; } catch { return; }
+  remember('vegas:luxury-refund', r.id);
   toast(`사치품이 없어져서 산 값 그대로 ${formatCH(r.amount)}원을 칩으로 돌려드렸어요`, { duration: 8000 });
 }
 

@@ -57,7 +57,7 @@ export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
   // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
-  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판 ±30, 하루 +300까지. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today} / ${rp.dayCap}</p>`;
+  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];
@@ -70,8 +70,8 @@ export function rpCardHtml(state) {
       <span class="rp-card-rank">${mine ? `${mine.rank}<small>위</small>` : '<small>순위 없음</small>'}</span>
     </div>
     <div class="tier-hero-bar" role="progressbar" aria-label="다음 RP 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-    <p class="rp-card-foot"><span>${rp.next ? `${tierName(rp.next)}까지 ${rp.toNext} RP` : '최고 티어'}</span><span>오늘 +${rp.today} / ${rp.dayCap}</span></p>
-    <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판 ±30, 하루 +300까지. 내 티어보다 높은 층에서 이기면 1.5배.</p>`;
+    <p class="rp-card-foot"><span>${rp.next ? `${tierName(rp.next)}까지 ${rp.toNext} RP` : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
+    <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배.</p>`;
 }
 
 // 주간 리그 (lib/rank-league.mjs): my group of thirty, ranked by this week's RP. The top five move

@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser, floorRefusal, tableBase, netWorth } from '../lib/state.mjs';
 import { addLedger, floorsFor } from '../lib/economy.mjs';
-import { rankView, rankStandings, settleFinishedRankSeason } from '../lib/rank-season.mjs';
+import { rankView, rankStandings, settleFinishedRankSeason, monthBoundary } from '../lib/rank-season.mjs';
 import { noteRp, rpView, rpPointsNow } from '../lib/rank-points.mjs';
 import { dailyStatus, claimDaily, supportStatus, claimSupport, WELFARE_STEPS, WELFARE_BELOW, PAY_MIN } from '../lib/engagement.mjs';
 import { buyIn, cashOut, sweepChips, buyInRange, cashierView } from '../lib/cashier.mjs';
@@ -129,7 +129,7 @@ test('the cashier: chips nobody sits with go to the wallet, a buy-in buys a tabl
   });
 });
 
-test('11/1 closes October by RP and keeps the chips; November RP starts three tiers lower', () => {
+test('October and November are one season: 11/1 closes nothing, 12/1 closes it by RP and keeps the chips', () => {
   const state = defaultState();
   const a = player(state, 'a', 'AAA'), b = player(state, 'b', 'BBB');
   at(OCT, () => {
@@ -139,36 +139,30 @@ test('11/1 closes October by RP and keeps the chips; November RP starts three ti
     giveRp(b, 650, OCT);
     a.loans = [{ id: 'l1', balance: 5e8 }];
   });
-  const closed = at(NOV1, () => settleFinishedRankSeason(state));
+  assert.equal(at(NOV1, () => settleFinishedRankSeason(state)), null, '11/1 is mid-season');
+  const season = monthBoundary(NOV);
+  assert.equal(season.id, 'rank-2026-10');
+  assert.equal(season.name, '10~11월 시즌');
+  assert.equal(season.endsAt, new Date(DEC1 - 30 * 60_000).toISOString(), 'closes 12/1 00:00 KST');
+  assert.equal(at(NOV, () => rpPointsNow(b)), 650, 'RP carries on through November');
+  noteRp(b, { game: 'Baccarat', stake: 1e7, netPnl: 1e7 }, NOV);
+  assert.ok(b.rp.points > 650 && b.rp.season === 'rank-2026-10');
+  b.rp.points = 650;
+  const closed = at(DEC1, () => settleFinishedRankSeason(state));
+  assert.equal(closed.id, 'rank-2026-10');
   assert.equal(closed.mode, 'rp');
   assert.deepEqual(closed.podium.map(p => [p.userId, p.tier, p.rp]), [['b', 'diamond', 650], ['a', 'bronze', 120]]);
   assert.equal(b.badges[0].tier, 'diamond');
   assert.equal(b.rankHistory[0].rp, 650);
   assert.equal(a.account.available, 900e9, 'no chip reset');
   assert.deepEqual(a.loans, [], 'old loans are written off');
-  assert.equal(at(NOV1, () => rpPointsNow(b)), 300);
-  assert.equal(at(NOV1, () => rpPointsNow(a)), 0);
-});
-
-test('12/1 closes November by RP and keeps the chips; RP comes back three tiers lower', () => {
-  const state = defaultState();
-  const u = player(state, 'u', 'UUU');
-  at(OCT, () => settleFinishedRankSeason(state));
-  at(NOV1, () => settleFinishedRankSeason(state));
-  at(NOV, () => { addLedger(state, u, { type: 'ADMIN_GRANT', amount: 7e9 }); giveRp(u, 650, NOV); u.loans = [{ id: 'old', balance: 3e8 }]; });
-  const chips = u.account.available;
-  const closed = at(DEC1, () => settleFinishedRankSeason(state));
-  assert.equal(closed.id, 'rank-2026-11');
-  assert.equal(u.rankHistory[0].tier, 'diamond');
-  assert.equal(u.account.available, chips, 'chips stay');
-  assert.deepEqual(u.loans, [], 'old loans are written off');
-  assert.equal(u.rank.reset.mode, 'rp');
-  assert.equal(u.rank.reset.carry, 300);
-  assert.equal(at(DEC1, () => rpPointsNow(u)), 300, '다이아몬드 650 → 골드 300');
-  assert.equal(at(DEC1, () => rankView(state, u)).tier, 'gold');
-  noteRp(u, { game: 'Baccarat', stake: 1e6, netPnl: 1e6 }, DEC1 + 1000);
-  assert.ok(u.rp.points > 300 && u.rp.carried === 300);
-  assert.ok(netWorth(u) >= chips);
+  assert.equal(b.rank.reset.mode, 'rp');
+  assert.equal(b.rank.reset.carry, 300);
+  assert.equal(at(DEC1, () => rpPointsNow(b)), 300, '다이아몬드 650 → 골드 300');
+  assert.equal(at(DEC1, () => rankView(state, b)).tier, 'gold');
+  assert.equal(at(DEC1, () => rpPointsNow(a)), 0);
+  assert.equal(monthBoundary(DEC1).id, 'rank-2026-12', 'from December, one month a season again');
+  assert.equal(monthBoundary(Date.parse('2027-01-01T00:30:00+09:00') - 86_400_000).endsAt, '2026-12-31T15:00:00.000Z');
 });
 
 test('the RP season over the API: buy in, play, a locked floor, cash out, the closed bank', async () => {

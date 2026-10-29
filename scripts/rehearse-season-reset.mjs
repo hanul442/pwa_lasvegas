@@ -7,11 +7,15 @@ import { defaultState, netWorth, debtOf, seasonOwedOf } from '../lib/state.mjs';
 import { addLedger } from '../lib/economy.mjs';
 import { forceHotTable } from '../lib/hot-table.mjs';
 import { rpEraFor } from '../lib/rank-points.mjs';
+import { monthBoundary } from '../lib/rank-tier.mjs';
 
 forceHotTable('off');
 const RealDate = Date;
-const MONTH = process.argv[2] || '2026-10';
-let clock = RealDate.parse(`${MONTH}-27T12:00:00+09:00`);
+const MONTH = process.argv[2] || '2026-11';
+// The season holding that month, which may run longer than the month (October + November 2026).
+const SEASON = monthBoundary(RealDate.parse(`${MONTH}-15T12:00:00+09:00`));
+const END = RealDate.parse(SEASON.endsAt), H = 3_600_000;
+let clock = END - 108 * H; // four and a half days before the reset
 // Every `new Date()` and Date.now() in the app reads this clock.
 globalThis.Date = class extends RealDate {
   constructor(...a) { if (a.length) super(...a); else super(clock); }
@@ -65,7 +69,7 @@ for (const p of Object.values(people)) { const a = state.users[p.id].account; a.
 // ---- 10/27: loans (the bank stops lending in a month's last three days) ----
 await tryStep('부자', '대출', () => must('부자', P('부자').token, 'POST', '/api/bank/borrow', { lender: 'lender', amount: 1 * 억, days: 7 }));
 await tryStep('빚쟁이', '대출', async () => { grant(P('빚쟁이').id, 1 * 억); await must('빚쟁이', P('빚쟁이').token, 'POST', '/api/bank/borrow', { lender: 'lender', amount: 1 * 억, days: 7 }); });
-clock = RealDate.parse(`${MONTH}-31T23:40:00+09:00`);
+clock = END - H / 3;
 let bjRound = null;
 await tryStep('부자', '블랙잭 3박스 진행 중', async () => { const d = await must('부자', P('부자').token, 'POST', '/api/blackjack/v2/start', { stakes: [100 * 억, 100 * 억, 100 * 억], floor: 'sky-lounge' }); bjRound = d.round; });
 let hold = null;
@@ -87,7 +91,7 @@ for (const [n, p] of Object.entries(people)) {
 }
 
 // ---- midnight in Seoul ----
-clock = RealDate.parse(`${MONTH}-31T15:00:20Z`);
+clock = END + 20_000;
 const after = {};
 for (const [n, p] of Object.entries(people)) {
   const r = await call(p.token, 'GET', '/api/state');
@@ -131,12 +135,12 @@ for (const [n, p] of Object.entries(people)) {
   }
   if (a !== u.account.available || l !== u.account.locked) problems.push(`${n}: 장부와 지갑 불일치`);
   if (u.account.available < 0) problems.push(`${n}: 칩이 음수`);
-  const income = rows.filter(x => Date.parse(x.createdAt) >= RealDate.parse(`${MONTH}-31T15:00:00Z`) && ['DAILY_BONUS', 'PAY', 'REFERRAL', 'SUPPORT', 'WELFARE'].some(t => String(x.type).includes(t))).reduce((s, x) => s + Math.max(0, x.amount), 0);
+  const income = rows.filter(x => Date.parse(x.createdAt) >= END && ['DAILY_BONUS', 'PAY', 'REFERRAL', 'SUPPORT', 'WELFARE'].some(t => String(x.type).includes(t))).reduce((s, x) => s + Math.max(0, x.amount), 0);
   const worth = netWorth(u);
   // After the reset nobody should be worth more than what the new month already paid them.
   const fin = { avail: u.account.available, locked: u.account.locked, owed: seasonOwedOf(u), worth, income };
   // An RP month (from 2026-10-29) keeps the chips: only loans go, and nothing is owed to the house.
-  if (rpEraFor(`rank-${MONTH}`)) {
+  if (rpEraFor(SEASON.id)) {
     if (debtOf(u) > 0) problems.push(`${n}: RP 시즌 마감 뒤에도 빚 ${debtOf(u) / 억}억이 남음`);
     if (seasonOwedOf(u) > 0) problems.push(`${n}: RP 시즌인데 시즌 칩 ${seasonOwedOf(u) / 억}억을 걷음`);
     if (rows.some(x => x.type === 'SEASON_RESET' && x.amount !== 0)) problems.push(`${n}: RP 시즌인데 칩을 가져감`);
@@ -149,7 +153,7 @@ console.log('--- 10/31 23:40 ---'); for (const n in before) console.log(n.padEnd
 console.log('--- 11/1 00:00 리셋 직후 ---'); for (const n in after) { const { final, ...r } = after[n]; console.log(n.padEnd(6), fmt(r)); }
 console.log('--- 11/1 00:01 테이블 정리 + 일급 ---'); for (const n in after) console.log(n.padEnd(6), fmt(after[n].final));
 console.log('--- 진행 ---'); for (const x of notes) console.log(' ', x);
-console.log('--- 시즌 ---', JSON.stringify(state.meta.lastRankSeason?.podium?.map(p => [p.nickname, p.tier])));
+console.log('--- 시즌 ---', SEASON.id, SEASON.endsAt, JSON.stringify(state.meta.lastRankSeason?.podium?.map(p => [p.nickname, p.tier])));
 console.log(problems.length ? `문제 ${problems.length}개:\n  ${problems.join('\n  ')}` : '문제 없음');
 for (const n of process.env.SHOW?.split(",") || []) console.log(n, state.ledger.filter(x => x.userId === people[n].id).slice(-8).map(x => [x.type, x.amount / 억, x.createdAt]));
 process.exit(problems.length ? 1 : 0);

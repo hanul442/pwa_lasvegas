@@ -96,20 +96,24 @@
 
       <section class="surface" data-surface="ranking" aria-labelledby="ranking-title">
         <h1 id="ranking-title">랭킹</h1>
-        <div class="segmented segmented--three rank-views" role="tablist" aria-label="랭킹 보기" data-rank-view></div>
+        <div class="segmented segmented--four rank-views" role="tablist" aria-label="랭킹 보기" data-rank-view></div>
         <div class="rank-pane" data-rank-pane="tier">
           <div class="tier-hero" data-tier-hero></div>
+          <div class="rp-card" data-rp-card></div>
           <h2 class="sub-head">티어 기준 <small>이번 달 최고 순자산</small></h2>
           <ol class="tier-steps" data-tier-steps aria-label="티어 기준"></ol>
           <div data-tier-past></div>
         </div>
         <div class="rank-pane" data-rank-pane="board" hidden>
-          <div class="segmented segmented--three" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
+          <div class="segmented segmented--four" role="radiogroup" aria-label="랭킹 기간" data-rank-period></div>
           <div class="season-head" data-season-head></div>
           <div class="tabs" role="tablist" data-rank-tabs></div>
           <ol class="rank-podium" data-rank-podium aria-label="1~3위"></ol>
           <div class="rank-me" data-rank-me aria-live="polite"></div>
           <ol class="rank-list" data-rank-list></ol>
+        </div>
+        <div class="rank-pane" data-rank-pane="league" hidden>
+          <div data-league></div>
         </div>
         <div class="rank-pane" data-rank-pane="friends" hidden>
           <div class="friends-live" data-friends></div>

@@ -604,6 +604,41 @@ body.game-mode .app-toast{bottom:calc(24px + env(safe-area-inset-bottom))}
 
 /* ---------- 월간 랭크 시즌 (public/js/rank.js) ---------- */
 .segmented--three{grid-template-columns:repeat(3,1fr);max-width:420px;margin:4px 0 16px}
+.segmented--four{grid-template-columns:repeat(4,minmax(0,1fr));max-width:520px;margin:4px 0 16px}
+.segmented--four .segment{padding-inline:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 주간 리그 (public/js/rank-tab.js leagueHtml) */
+.league-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:4px}
+.league-head small{display:block;font-size:13px;color:var(--smoke)}
+.league-head strong{font:600 26px/1.15 var(--display);font-stretch:112%;letter-spacing:-.02em}
+.league-clock{font-size:13px;color:var(--smoke);white-space:nowrap;font-variant-numeric:tabular-nums}
+.league-rule,.league-last{margin:8px 0 0;font-size:13px;line-height:1.6;color:var(--smoke)}
+.league-empty{margin:16px 0 0;padding:18px;border:1px dashed var(--hair-strong);border-radius:16px;color:var(--smoke);font-size:14px;line-height:1.6}
+.league-me{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:14px;margin:16px 0 6px;padding:12px 16px;border:1px solid var(--hair-strong);border-radius:16px}
+.league-list{list-style:none;margin:0;padding:0}
+.league-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:14px;padding:12px 4px;border-bottom:1px solid var(--hair)}
+.league-row.has-line{border-bottom:1px dashed var(--hair-strong)}
+.league-row.is-up .rank-no{color:#5fd39a}
+.league-row.is-down .rank-no{color:#ff7b72}
+.league-row.is-me{background:#ffffff0d;border-radius:10px}
+.league-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.league-name small{color:var(--smoke)}
+.league-ai{font-size:11px;letter-spacing:.06em}
+/* RP 베타 (public/js/rank-tab.js rpCardHtml): the score that becomes the tier in December */
+.rp-card:empty{display:none}
+.rp-card{display:grid;gap:12px;margin-top:12px;padding:16px 18px;border:1px solid var(--hair);border-radius:18px;background:#0d0e10}
+.rp-card-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--smoke)}
+.rp-badge{padding:2px 9px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--white);font:600 12px var(--sans);letter-spacing:.06em}
+.rp-card-main{display:flex;align-items:center;gap:14px;min-width:0}
+.rp-card-name{display:grid;gap:2px;min-width:0;flex:1}
+.rp-card-name strong{font:600 22px/1.1 var(--display);font-stretch:112%;letter-spacing:-.02em}
+.rp-card-name span{font-size:14px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.rp-card-name b{color:var(--white);font-weight:650}
+.rp-last{margin-left:6px;font-size:13px}
+
+.rp-card-rank{font:600 22px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rp-card-rank small{font:500 13px var(--sans);color:var(--smoke);margin-left:2px}
+.rp-card-foot{display:flex;justify-content:space-between;gap:12px;margin:0;font-size:14px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.rp-card-rule{margin:0;font-size:13px;line-height:1.6;color:var(--smoke)}
 .tier-emblem{flex:none;display:inline-block;vertical-align:middle;--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
 .tier-hero{--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
 .tier-emblem .tier-face{fill:var(--t-b);stroke:var(--t-a);stroke-width:2}

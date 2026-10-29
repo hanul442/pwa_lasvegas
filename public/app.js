@@ -28,6 +28,7 @@ import { startPlaytime } from './js/playtime.js';
 import { capturePendingJoin, pendingJoin, dropPendingJoin, setPendingJoin } from './js/invite.js';
 import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
+import { isNewcomer, isSettlingIn, firstDayCard } from './js/first-day.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -127,7 +128,8 @@ function showSurface(name, { focus = false } = {}) {
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
   if (name === 'events') renderEventTab();
-  if (name === 'lobby' && state) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
+  // A newcomer's first hands come without popups (js/first-day.js).
+  if (name === 'lobby' && state && !isSettlingIn(state)) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'bank') { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (name === 'shop') renderShop(document.querySelector('[data-shop]'), state, applyState);
@@ -243,7 +245,7 @@ const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[s
 let tableOverTiers = false;
 let activeTier = null;
 let tableSeq = 0;
-async function openTable(tier, { seated = false } = {}) {
+async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!selectedGame) return;
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
   rememberTable(selectedGame.id, tier);
@@ -283,6 +285,8 @@ async function openTable(tier, { seated = false } = {}) {
   if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
   guide.attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
+  // The first-hand button on home: the table minimum is already on box 2, so 딜 is the only tap left.
+  if (firstBet && !activeTable.locked && !activeTable.total) activeTable.addChip('b2', activeTable.tier.min, activeTable.tray?.getBoundingClientRect());
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
@@ -391,7 +395,8 @@ function applyState(next) {
   if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
+  document.body.classList.toggle('is-settling', isSettlingIn(state));
+  if (isActive('lobby') && !isSettlingIn(state)) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -414,13 +419,13 @@ function openNightlyFromLink() {
 }
 
 // The lobby's way back in: a round still holding chips, then the last three tables played.
-function sitAt(game, tier, trigger, { seated = false } = {}) {
+function sitAt(game, tier, trigger, { seated = false, firstBet = false } = {}) {
   lastLobbyTrigger = trigger;
   setReturn('lobby');
   selectedGame = game;
   setTierHeader(game);
   renderTiers();
-  openTable(tier, { seated });
+  openTable(tier, { seated, firstBet });
 }
 // An event table only while that event runs, at its own table.
 function tableStillThere(game, tier) {
@@ -587,10 +592,28 @@ addEventListener('vegas:choose-game', event => {
 // popular games row. Everything else lives in its tab.
 const weekGame = () => GAMES.find(x => x.event && eventOf(x) && !eventOf(x).always);
 function renderHome() {
+  renderFirstDay();
   renderHero();
   renderCats();
   renderToday();
   if (isActive('events')) renderEventTab();
+}
+
+// The first three hands (js/first-day.js): home is my chips, today's 손익 and one button. The very
+// first tap sits at blackjack with the minimum already bet; after that it goes back to the last table.
+function renderFirstDay() {
+  const slot = document.querySelector('[data-home-first]');
+  const on = isSettlingIn(state);
+  document.body.classList.toggle('is-first-day', on);
+  slot.hidden = !on;
+  if (!on) { slot.replaceChildren(); return; }
+  const bj = GAMES.find(g => g.id === 'blackjack');
+  const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier) && state.user.account.available >= TIERS[x.tier].min);
+  slot.replaceChildren(firstDayCard(state, {
+    again: recent?.game.name,
+    onPlay: (b, { first }) => (first || !recent ? sitAt(bj, FIRST_TIER.slug, b, { firstBet: first }) : sitAt(recent.game, recent.tier, b)),
+    onBrowse: () => showSurface('games', { focus: true })
+  }));
 }
 
 function heroButton(text, cls, onClick) {

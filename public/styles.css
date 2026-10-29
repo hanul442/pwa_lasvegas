@@ -625,3 +625,33 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .invite-share{width:100%;min-height:50px;font-size:16px}
 .invite-fine{color:var(--dim);font-size:12px;line-height:1.5}
 .table-loading{margin:30vh auto 0;text-align:center;color:var(--muted);font-size:14px;letter-spacing:.02em}
+
+/* ---------- 첫날 (js/first-day.js): until the first hand, home is chips, today's 손익 and one button ---------- */
+.is-first-day .home-top,.is-first-day .home-nightly,.is-first-day .home-today,.is-first-day .lounge{display:none}
+.first-day{display:grid;gap:14px;padding:24px 20px 18px;border-radius:20px;background:linear-gradient(180deg,#16181c,#0d0e10);box-shadow:inset 0 0 0 1px #ffffff17,inset 0 1px 0 #ffffff1c}
+.first-day-kicker{font:700 12.5px/1.2 var(--sans);letter-spacing:.08em;color:var(--star)}
+.first-day-money{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
+.first-day-money>div{display:grid;gap:6px;min-width:0}
+.first-day-money small{color:var(--smoke);font-size:13px}
+.first-day-money b{font:700 clamp(30px,9vw,44px)/1 var(--display);font-stretch:118%;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.first-day-money>div+div b{font-size:clamp(22px,6vw,30px);align-self:end}
+.first-day-money em{margin-left:3px;font:500 .45em var(--sans);font-style:normal;color:var(--smoke)}
+.first-day-money .is-zero{color:var(--smoke)}
+.first-day-go{min-height:56px;margin-top:4px;border:0;border-radius:14px;background:var(--go);color:var(--go-ink);font:800 17px/1 var(--sans)}
+.first-day-go::after{content:" →"}
+.first-day-note{margin:-4px 0 0;color:var(--smoke);font-size:13px;text-align:center}
+.first-day-more{justify-self:center;min-height:40px;padding:0 14px;border:0;background:none;color:var(--white);font:600 14px/1 var(--sans);text-decoration:underline;text-underline-offset:4px;text-decoration-color:#ffffff40}
+@media (min-width:720px){.first-day{max-width:560px;padding:30px}}
+.is-first-day .nav-dot{display:none}
+.first-day-money .is-down{color:#ff8a82}
+.first-day-money .is-up{color:var(--white)}
+.first-day-money>div>small+b+small{font-size:12px}
+@media (orientation:landscape) and (max-height:520px){
+  .first-day{grid-template-columns:minmax(0,1fr) minmax(0,.8fr);align-items:center;gap:8px 20px;padding:16px 20px}
+  .first-day-kicker{grid-column:1/-1}
+  .first-day-money b{font-size:30px}
+  .first-day-money>div+div b{font-size:22px}
+  .first-day-go{grid-column:2;grid-row:2;margin:0}
+  .first-day-note{display:none}
+  .first-day-more{grid-column:1/-1;min-height:32px}
+}

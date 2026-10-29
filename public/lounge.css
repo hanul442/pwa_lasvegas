@@ -1058,3 +1058,17 @@ body.daily-open{overflow:hidden}
 .promo-dots i.is-loss{background:#ff5d5d;border-color:#ff5d5d}
 .promo-last{margin:0;font-size:13px;font-weight:600}
 .promo-last.pos{color:#7ee2a8}.promo-last.neg{color:#ff8a8a}
+
+/* RP 팝업 (js/rp-pop.js): under the top bar, never in the way of the table */
+.rp-pop{position:fixed;z-index:129;left:50%;top:calc(var(--top-h) + 10px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 32px);padding:8px 14px 8px 10px;border-radius:14px;background:#0a0b0df2;border:1px solid var(--hair-strong);color:var(--white);pointer-events:none;opacity:0;transform:translate(-50%,-10px);transition:opacity .22s,transform .22s var(--ease-out)}
+.rp-pop.is-shown{opacity:1;transform:translate(-50%,0)}
+.rp-pop.is-big{padding:10px 16px 10px 12px;border-color:#ffffffa0;box-shadow:0 10px 30px #000a}
+.rp-pop-text{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:baseline;min-width:0}
+.rp-pop-delta{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.rp-pop-delta.pos{color:#7ee2a8}.rp-pop-delta.neg{color:#ff8a8a}
+.rp-pop-tier{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-pop-tier small{color:var(--dim);font-weight:500;margin-left:4px}
+.rp-pop-next{grid-column:1/-1;color:var(--smoke);font-size:12px}
+.rp-pop.is-big .rp-pop-tier{font-size:15px}
+body.game-mode .rp-pop{top:calc(10px + env(safe-area-inset-top))}
+@media (prefers-reduced-motion:reduce){.rp-pop{transition:opacity .2s;transform:translate(-50%,0)}}

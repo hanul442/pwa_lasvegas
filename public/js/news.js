@@ -65,6 +65,18 @@ function next() {
     }
     banner.querySelector('.news-text').append(row);
   }
+  // A friend's 1:1 도전 (lib/challenge.mjs): take the seat right from the banner.
+  if (n.join) {
+    const go = el('button', 'news-join', '받기');
+    go.type = 'button';
+    go.addEventListener('pointerdown', e => e.stopPropagation());
+    go.addEventListener('click', e => {
+      e.stopPropagation();
+      document.dispatchEvent(new CustomEvent('vegas:join-room', { detail: n.join }));
+      close();
+    });
+    banner.append(go);
+  }
   document.body.append(banner);
   requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('is-open')));
   if (n.push) haptic(25);
@@ -80,7 +92,7 @@ function next() {
   let startY = null;
   banner.addEventListener('pointerdown', e => { startY = e.clientY; });
   banner.addEventListener('pointermove', e => { if (startY !== null && e.clientY - startY < -16) close(); });
-  setTimeout(close, (document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW) + (n.reactable ? 1800 : 0));
+  setTimeout(close, (document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW) + (n.reactable ? 1800 : 0) + (n.join ? 6000 : 0));
 }
 
 export function startNews() {

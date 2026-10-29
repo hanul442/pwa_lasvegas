@@ -275,7 +275,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     t.root.classList.toggle('is-watching', Boolean(watching));
     chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
     chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
-    chipEl.hidden = Boolean(view.nightly || watching); // the nightly tournament seats whoever registered, nobody by invite
+    chipEl.hidden = Boolean(view.nightly || watching || view.challenge); // the nightly tournament seats whoever registered, nobody by invite
     chat.show(!watching); // the rail can't talk to the table
     await applyRoom(view, null, Date.now());
     // 밤 9시 토너먼트: everyone starts away (their turns play themselves); opening the table takes the seat back.
@@ -441,6 +441,23 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     if (view.tourney) await tourneyNews(view, at ?? Date.now());
   }
 
+  // 1:1 도전 (lib/challenge.mjs): waiting for the friend, the hand count, or the result.
+  let duelShown = null;
+  function challengeLine(v) {
+    const c = v.challenge;
+    if (!c) return '';
+    const meId = watching || v.players.find(p => p.seat === v.me && v.me >= 0)?.userId;
+    const other = c.from.id === meId ? c.to : c.from;
+    const who = watching ? watchName : '나';
+    if (!c.accepted && !c.done) return `${other.nickname}님을 기다려요 · ${Math.max(1, Math.ceil((c.expiresAt - v.serverNow) / 60_000))}분 안에 안 오면 취소돼요`;
+    if (!c.done) return `1:1 도전 · ${Math.min(c.played + 1, c.hands)}/${c.hands}핸드 · ${who} ${signed(c.nets?.[meId] || 0)}`;
+    const text = c.winner === meId ? `${watching ? `${watchName} ` : ''}도전 승리` : c.winner ? `도전 패배 · ${other.nickname}님 승` : '도전 무승부';
+    const line = `${text} · ${who} ${signed(c.nets?.[meId] || 0)}`;
+    if (duelShown !== v.code && !watching) { duelShown = v.code; t.toast(c.forfeit ? `${c.forfeit === meId ? '자리를 떠서' : `${other.nickname}님이 자리를 떠서`} 도전이 끝났어요` : `도전 끝! ${line}`); }
+    return `${line} · 나가면 칩을 정산해요`;
+  }
+  const signed = n => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${formatCH(Math.abs(n))}`;
+
   function paintStatus(view, at) {
     const tb = view.table;
     const turn = view.turn;
@@ -453,7 +470,9 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     pk.markTurn(tb.toAct);
     const people = view.players.length;
     let line = '';
-    if (view.tourney && !view.started) line = view.isHost ? `초대를 눌러 친구를 불러 주세요 · ${people}/${view.size}명 · 시작하면 늦은 등록은 막혀요` : `방장이 토너먼트를 시작하길 기다리는 중 · ${people}/${view.size}명`;
+    const duel = challengeLine(view);
+    if (duel) line = duel;
+    else if (view.tourney && !view.started) line = view.isHost ? `초대를 눌러 친구를 불러 주세요 · ${people}/${view.size}명 · 시작하면 늦은 등록은 막혀요` : `방장이 토너먼트를 시작하길 기다리는 중 · ${people}/${view.size}명`;
     else if (!view.started) line = view.isHost ? `초대를 눌러 친구에게 링크를 보내 주세요 · ${people}명 앉음` : `방장이 딜을 시작하길 기다리는 중 · ${people}명 앉음`;
     else if (view.nightly && view.waiting) line = '탈락 · 이 테이블을 지켜보는 중';
     else if (view.nightly && !view.table.handNo) line = '곧 첫 카드가 나가요 · 블라인드는 3분마다 올라요';
@@ -602,7 +621,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
       leaveButton(),
       ...show,
       ...queue,
-      ...(room && room.isHost && !room.started ? [{ label: tn ? '토너먼트 시작' : '딜 시작', key: '↵', primary: true, disabled: pk.animating || Boolean(tn && room.players.length < 2), onClick: deal }] : [])
+      ...(room && room.isHost && !room.started && !room.challenge ? [{ label: tn ? '토너먼트 시작' : '딜 시작', key: '↵', primary: true, disabled: pk.animating || Boolean(tn && room.players.length < 2), onClick: deal }] : [])
     ]);
   }
 

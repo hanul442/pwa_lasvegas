@@ -45,7 +45,7 @@ export function rankBlock(state, onOpen) {
         <span class="rank-bar" aria-hidden="true"><i style="width:${Math.round(r.progress * 100)}%"></i></span></span>
       <span class="rank-card-go" aria-hidden="true">→</span>
     </button>
-    <p class="lounge-note rank-note">매달 1일 0시에 칩·사치품·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.${r.best ? ` 내 최고 기록 ${tierName(r.best.tier)} (${r.best.name}).` : ''}</p>`;
+    <p class="lounge-note rank-note">매달 1일 0시에 칩·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.${r.best ? ` 내 최고 기록 ${tierName(r.best.tier)} (${r.best.name}).` : ''}</p>`;
   box.querySelector('.rank-card').addEventListener('click', () => { sound.tick(); onOpen?.(); });
   return box;
 }
@@ -76,7 +76,7 @@ setInterval(() => {
   document.querySelectorAll('[data-season-clock]').forEach(n => { n.textContent = seasonClock(Date.parse(n.dataset.ends) - Date.now()); });
 }, 1000);
 
-const RESETS = ['칩 (테이블 위 칩 포함)', '사치품', '빚과 대출', '열린 층과 입장권'];
+const RESETS = ['칩 (테이블 위 칩 포함)', '빚과 대출', '열린 층과 입장권'];
 const KEEPS = ['꾸미기와 명패', '배지와 업적', '게임 기록', '이번 달 티어 배지'];
 
 // The warning sheet: the clock, where I stand, and what goes and what stays.
@@ -116,7 +116,7 @@ export function maybeSeasonWarning(state, open) {
 }
 
 // At a table (or anywhere) the last hour, ten minutes and minute are called out.
-const CALLS = [[60, '시즌 초기화까지 1시간 남았어요. 자정에 칩·사치품·빚이 정리돼요.'], [10, '시즌 초기화까지 10분! 테이블에 걸린 칩도 함께 정리돼요.'], [1, '1분 뒤 시즌 초기화예요.']];
+const CALLS = [[60, '시즌 초기화까지 1시간 남았어요. 자정에 칩·빚이 정리돼요.'], [10, '시즌 초기화까지 10분! 테이블에 걸린 칩도 함께 정리돼요.'], [1, '1분 뒤 시즌 초기화예요.']];
 const called = new Set();
 export function watchSeasonEnd(getState) {
   setInterval(() => {
@@ -146,7 +146,7 @@ export function maybeSeasonMoment(state, { force = false, onWrapped } = {}) {
   // VEGAS 랩드 for the month just closed (js/wrapped.js), when this player played it.
   const wrapped = onWrapped ? (state.wrapped?.history || []).find(h => h.season === last.id && h.rounds) : null;
   const podium = (last.podium || []).map(p => `<li${p.userId === state.user.id ? ' class="is-me"' : ''}><span class="rank-moment-place">${p.rank}</span>${tierEmblem(p.tier, { size: 24, label: false })}<b>${p.nickname}</b><small>${formatCH(p.peak)}</small></li>`).join('');
-  const cleared = reset ? [reset.chips ? `칩 ${formatCH(reset.chips)}` : '', reset.luxury ? `사치품 ${reset.luxury}개` : '', reset.loans ? `대출 ${reset.loans}건` : ''].filter(Boolean).join(' · ') : '';
+  const cleared = reset ? [reset.chips ? `칩 ${formatCH(reset.chips)}` : '', reset.loans ? `대출 ${reset.loans}건` : ''].filter(Boolean).join(' · ') : '';
   node.innerHTML = `<div class="floor-moment-inner">
     ${mine ? tierEmblem(mine.tier, { size: 84 }) : ''}
     <p>${seasonShort(last.name)} 결과</p>

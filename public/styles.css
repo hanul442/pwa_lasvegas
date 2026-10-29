@@ -148,7 +148,6 @@ button:disabled{cursor:not-allowed}
 .podium-value{font:600 15px var(--display);font-variant-numeric:tabular-nums;color:var(--smoke)}
 .podium-spot--1 .podium-value{color:var(--star);font-size:17px}
 .podium-spot .rank-move{margin:0}
-.podium-spot .rank-showcase{margin:0}
 .podium-step{display:block;width:100%;height:46px;margin-top:6px;border-radius:12px 12px 4px 4px;background:linear-gradient(#1c1f24,#0f1114);box-shadow:inset 0 1px 0 #ffffff1f}
 .podium-spot--1 .podium-step{height:78px;background:linear-gradient(#2a2720,#12110e);box-shadow:inset 0 1px 0 #fff6dc55}
 .podium-spot--3 .podium-step{height:30px}

@@ -941,3 +941,16 @@ body.daily-open{overflow:hidden}
   .tier-hero-climb{align-self:center}
   .tier-hero-stats{grid-column:1/-1}
 }
+
+/* 친구 목록 (js/friends.js): who is here now, where they sit, a seat next to them. */
+.friends-live{margin-bottom:22px}
+.friend-live .friend-mono{position:relative}
+.friend-dot{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:var(--ink-3);box-shadow:0 0 0 2px var(--ink)}
+.friend-live.is-online .friend-dot{background:#3ecf7a}
+.friend-live .friend-main small em{font-style:normal;color:var(--white);font-weight:600}
+.friend-acts{flex:none;display:flex;align-items:center;gap:6px}
+.friend-act{min-height:36px;padding:0 14px;font-size:14px}
+.friend-x{width:36px;height:36px;border:0;background:none;color:var(--dim);font-size:20px;line-height:1}
+.friend-add{display:flex;gap:8px;margin-top:12px}
+.friend-add input{flex:1;min-width:0;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--hair-strong);background:var(--ink-2);color:var(--white);font:15px var(--sans)}
+.friend-add .pill-button{flex:none}

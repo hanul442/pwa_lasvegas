@@ -48,7 +48,7 @@ export function tierHeroHtml(state) {
       <div><dt>최고 순자산</dt><dd>${formatCH(rs.peak)}</dd></div>
       <div><dt>역대 최고</dt><dd>${rs.best ? tierName(rs.best.tier) : '<small>첫 시즌</small>'}</dd></div>
     </dl>
-    <div class="tier-hero-foot"><small>매달 1일 0시에 칩·사치품·빚이 초기화돼요</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
+    <div class="tier-hero-foot"><small>매달 1일 0시에 칩·빚이 초기화돼요</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
 }
 
 // All ten tiers, highest first: what each needs, how many players sit there this month, and mine.

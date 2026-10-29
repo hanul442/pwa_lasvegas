@@ -562,7 +562,7 @@ export function createFriends(t, pk, bar, hooks) {
   let hudTimer = 0, skew = 0;
   let news = null; // { level, out, left }: what this screen has already announced
   let resultShown = false;
-  const tourneyName = (tb, v = room) => [v?.nightly ? '밤 9시 토너먼트' : '친구 토너먼트', `${formatCH(tb.smallBlind)}/${formatCH(tb.bigBlind)}`];
+  const tourneyName = (tb, v = room) => [v?.nightly ? `${v.tourney?.label || '밤 9시'} 토너먼트` : '친구 토너먼트', `${formatCH(tb.smallBlind)}/${formatCH(tb.bigBlind)}`];
   async function moveTable(to) {
     stop();
     let res;
@@ -638,7 +638,7 @@ export function createFriends(t, pk, bar, hooks) {
       const win = me.place === 1 || net > 0;
       const rows = tn.standings.filter(r => !view.nightly || r.place).map(r => ({ place: r.place, name: r.me ? `${r.nickname} (나)` : r.nickname, note: r.forfeit ? '기권' : r.payout ? `+${formatCH(r.payout)}` : '', me: r.me }));
       const detail = me.payout ? `상금 ${formatCH(me.payout)} · 바이인 ${formatCH(view.buyIn)}` : `바이인 ${formatCH(view.buyIn)}`;
-      await eventResult({ event: 'friends', win, title: view.nightly ? '밤 9시 토너먼트' : '친구 토너먼트', place: me.place, amount: Math.abs(net), detail, nickname: t.nickname, rows });
+      await eventResult({ event: 'friends', win, title: view.nightly ? `${tn.label || '밤 9시'} 토너먼트` : '친구 토너먼트', place: me.place, amount: Math.abs(net), detail, nickname: t.nickname, rows });
     }
     let res = null;
     try { res = await api.holdemRoomLeave(code); } catch {}
@@ -652,7 +652,7 @@ export function createFriends(t, pk, bar, hooks) {
     try { res = await api.holdemRoomBack(code, sent); }
     catch (e) { if (!quiet) t.toast(errorMessage(e)); return; }
     t.setServerState(res.state);
-    t.toast(quiet ? '밤 9시 토너먼트 자리에 앉았어요' : '자리로 돌아왔어요');
+    t.toast(quiet ? `${room?.tourney?.label || '밤 9시'} 토너먼트 자리에 앉았어요` : '자리로 돌아왔어요');
     await enqueue(res.room, sent, Date.now());
   }
 

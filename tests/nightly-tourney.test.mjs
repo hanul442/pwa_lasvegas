@@ -47,7 +47,7 @@ test('payouts: top three in a field of six, top six beyond, whole 100만s adding
   }
 });
 
-test('registration: all day until 21:00, buy-in locked, refunded on unregister, closed once it starts', () => {
+test('registration: all day until the start, buy-in locked, refunded on unregister, closed once it starts', () => {
   const w = world(4);
   const { state } = w;
   const noon = START - 9 * 3600_000;
@@ -222,4 +222,18 @@ test('over the API: the card, register, and the state summary carries it', async
     const reg = await call('POST', '/api/nightly/register');
     assert.equal(reg.status, 409);
   }
+});
+
+test('the hour: 18시 from 2026-10-29, a night made earlier keeps its own hour in every label', async () => {
+  const { nightlyLabel, hourOf } = await import('../lib/nightly-tourney.mjs');
+  assert.equal(NIGHTLY.hour, 18);
+  assert.equal(nightlyLabel(), '저녁 6시');
+  assert.equal(nightlyLabel(21), '밤 9시');
+  assert.equal(new Date(nightlyStart('2026-10-30')).toISOString(), '2026-10-30T09:00:00.000Z');
+  const w = world(4);
+  const old = Date.parse('2026-10-29T21:00:00+09:00');
+  w.state.nightly = { id: '2026-10-29', startsAt: old, status: 'REG', buyIn: NIGHTLY.buyIn, bonus: NIGHTLY.bonus, entries: {}, tables: [], out: [], field: 0, prize: 0, payouts: [], startedAt: null, endedAt: null, winner: null, reminded: false, startPushed: false };
+  assert.equal(hourOf(w.state.nightly), 21);
+  const v = nightlyView(w.state, w.state.users.min, old - 3600_000);
+  assert.deepEqual([v.label, v.clock, v.nextLabel, v.nextClock], ['밤 9시', '21:00', '저녁 6시', '18:00']);
 });

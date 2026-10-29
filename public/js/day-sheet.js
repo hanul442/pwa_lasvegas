@@ -25,6 +25,8 @@ export function dayBlock(state) {
     ['오늘 최고점', `${formatCH(d.peak)}`, ''],
     ...(d.high > 0 && net < d.high ? [['최고 수익에서 놓친 돈', `-${formatCH(d.high - net)}`, 'is-down']] : []),
     ...(d.busts ? [['파산', `${d.busts}번`, 'is-down']] : []),
+    // 뽀찌 (lib/tips.mjs) is chips given away, not a hand lost, so it stands on its own line.
+    ...(d.tips ? [['딜러 팁', `-${formatCH(d.tips)}`, '']] : []),
     ...(m?.rounds > d.rounds ? [[`이번 달 · ${m.rounds}판`, signed(m.net ?? m.won - m.lost), tone(m.net ?? m.won - m.lost)]] : [])
   ];
   box.innerHTML = `

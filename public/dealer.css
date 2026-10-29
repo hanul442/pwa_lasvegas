@@ -25,3 +25,25 @@
 .felt.is-gesture-live{touch-action:pan-y}
 
 html[data-pace="minimal"] .riffle,html[data-pace="minimal"] .dealer-paddle{display:none}
+
+/* 뽀찌 (js/toke.js): the toke box on the felt's top rail, by the dealer. A black lacquer box with a
+   coin slot; it glints after a good win, and a chip tossed at it drops into the slot. */
+.toke{position:absolute;z-index:6;translate:-50% -50%;display:flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 8px;border-radius:7px;border:0;cursor:pointer;
+  background:linear-gradient(#24272d,#0b0c0f);box-shadow:inset 0 1px 0 #ffffff2e,inset 0 -1px 0 #0009,0 0 0 1px #f4f5f726,0 4px 10px #000a;color:#f4f5f7b8;-webkit-tap-highlight-color:transparent}
+.toke::before{content:"";position:absolute;inset:-10px -6px;border-radius:12px}/* a finger-sized target around the small box */
+.toke-slot{width:16px;height:4px;border-radius:2px;background:#000;box-shadow:inset 0 1px 1px #000,0 1px 0 #ffffff26}
+.toke-word{font:700 9px/1 var(--display);font-stretch:125%;letter-spacing:.22em}
+.toke:hover,.toke.is-hover{color:#fff;box-shadow:inset 0 1px 0 #ffffff40,0 0 0 1.5px #f4f5f7aa,0 4px 12px #000a}
+.toke:focus-visible{outline:2px solid #f4f5f7;outline-offset:3px}
+.toke.is-glint{animation:toke-glint 1.6s ease-in-out infinite}
+.toke.is-glint .toke-word{color:#fff}
+@keyframes toke-glint{0%,100%{box-shadow:inset 0 1px 0 #ffffff2e,0 0 0 1px #f4f5f726,0 4px 10px #000a}50%{box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1.5px #ffe7b0cc,0 0 16px #ffd98a66,0 4px 10px #000a}}
+.toke.is-fed .toke-slot{background:#3a2f1a;box-shadow:inset 0 1px 1px #000,0 0 6px #ffd98a88}
+.toke-flyer{z-index:210}
+/* The dealer's knuckle on the lid. */
+.toke-knock{position:fixed;z-index:211;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid #f4f5f7cc;pointer-events:none;animation:toke-knock .45s ease-out forwards}
+@keyframes toke-knock{from{transform:scale(.4);opacity:.9}to{transform:scale(1.25);opacity:0}}
+html[data-pace="minimal"] .toke-knock{display:none}
+@media (prefers-reduced-motion:reduce){.toke.is-glint{animation:none;box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1.5px #ffe7b0cc,0 4px 10px #000a}.toke-knock{animation-duration:.01s}}
+.toke-note{display:block;margin-top:3px;font-size:12px;font-weight:500;opacity:.72}
+.toast:has(.toke-note){border-radius:18px;white-space:nowrap}

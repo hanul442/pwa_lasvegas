@@ -51,7 +51,7 @@ function saveHint(r) { try { localStorage.setItem(HINT_KEY, JSON.stringify(r)); 
 // that opens after five winning hands in a row.
 export async function mountBlackjack(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
-  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : gameName('blackjack'), multi: true, pushDouble: true, hot: !ev });
+  const t = new Table({ ...ctx, game: 'blackjack', title: ev ? ev.title : gameName('blackjack'), multi: true, pushDouble: true, hot: !ev, toke: true });
   const don = createDoubleOrNothing(t);
   t.body.innerHTML = `
     <div class="bj">

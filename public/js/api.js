@@ -143,6 +143,8 @@ export const api = {
   blackjackStart: (stakes, floor, sides = {}) => request('/api/blackjack/v2/start', { method: 'POST', body: { stakes, floor, ...sides } }),
   blackjackAction: (roundId, action, handIndex) => request('/api/blackjack/v2/action', { method: 'POST', body: { roundId, action, handIndex } }),
   // sideBets: { PLAYER_PAIR?: stake, BANKER_PAIR?: stake } riding alongside the main bet.
+  // 뽀찌: one chip to the dealer (lib/tips.mjs).
+  tip: (game, amount) => request('/api/tip', { method: 'POST', body: { game, amount } }),
   double: (roundId, pick) => request('/api/double', { method: 'POST', body: { roundId, pick } }),
   // Instant rounds take an optional idempotency `key`: a retry of the same bet passes the same one.
   baccarat: (stake, floor, betType, sideBets, event, key) => request('/api/baccarat/play', { method: 'POST', key, body: { stake, floor, betType, sideBets, ...(event ? { event } : {}) } }),
@@ -223,6 +225,8 @@ const MESSAGES = {
   NETWORK: '서버에 연결할 수 없어요. 연결을 확인하고 다시 시도해 주세요.',
   RACE_CARD_STALE: '출전표가 바뀌었어요. 새 배당을 보고 다시 걸어 주세요.',
   INSUFFICIENT_BANKROLL: '칩이 부족해요. 베팅을 줄이거나 충전해 주세요.',
+  TIP_TOO_FAST: '딜러가 아직 앞 칩을 챙기는 중이에요.',
+  NO_DEALER_HERE: '이 테이블엔 팁 받을 딜러가 없어요.',
   FLOOR_LOCKED: '아직 잠긴 층이에요. 순자산(보유 칩 − 빚)을 늘리면 열려요.',
   FLOOR_OUTGROWN: '자산이 많아져서 이 층은 졸업했어요. 위층 테이블로 가 주세요.',
   FLOOR_RP_LOCKED: '아직 RP 티어가 모자라요. 아래층에서 RP를 모으면 열려요.',

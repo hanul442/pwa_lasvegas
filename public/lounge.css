@@ -372,6 +372,7 @@
 .bank-held-text small{color:var(--smoke);font-size:12px}
 .bank-held .pill-button{flex:none}
 .bank-flag{margin:0;padding:10px 14px;border:1px solid #ff4f4f66;border-radius:12px;color:#ffb3b3;font-size:14px}
+.bank-flag--note{border-color:#ffffff2e;color:#ffffffcc;line-height:1.5}
 .bank-block{padding:22px 0 20px;border-bottom:1px solid var(--hair)}
 .loan-list,.lender-list,.pay-list{list-style:none;margin:0;padding:0}
 .loan{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--hair)}
@@ -1012,6 +1013,18 @@ body.daily-open{overflow:hidden}
 .mstreak-day.is-on i{background:var(--white);border-color:var(--white);color:var(--ink);font-weight:700}
 .mstreak-day small{font-size:11px;color:var(--star);white-space:nowrap;font-variant-numeric:tabular-nums}
 .mstreak-note{margin:10px 0 0;color:var(--smoke);font-size:12px}
+/* 캐셔 바이인 (js/cashier.js) */
+.buyin-sheet h2{font-variant-numeric:tabular-nums}
+.buyin-chips{display:flex;gap:6px;min-height:46px;margin:14px 0 6px}
+.buyin-chips .chip{--size:42px;animation:buyin-chip .3s var(--ease-out) both;animation-delay:calc(var(--i) * 40ms)}
+@keyframes buyin-chip{from{transform:translateY(8px);opacity:0}}
+.buyin-range{display:block;margin:6px 0 2px}
+.buyin-range input{width:100%;accent-color:#fff;height:28px}
+.buyin-scale{display:flex;justify-content:space-between;gap:8px;margin:0;color:var(--muted,#ffffff8c);font-size:12px;font-variant-numeric:tabular-nums}
+.buyin-scale span:nth-child(2){text-align:center}
+.buyin-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.buyin-pick.is-active{background:#fff;color:#000}
+@media (prefers-reduced-motion:reduce){.buyin-chips .chip{animation:none}}
 /* 1:1 도전 (js/friends.js): a friend's row opens into the challenge picker. */
 .friend-live{flex-wrap:wrap}
 .friend-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}

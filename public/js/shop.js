@@ -3,6 +3,7 @@
 import { api, errorMessage } from './api.js';
 import { errorToast } from './notice.js';
 import { el, formatCH, sound, haptic, ms, reducedMotion } from './fx.js';
+import { moneyOf } from './money.js';
 import { createCard, setCardBack } from './cards.js';
 import { createChip } from './chips.js';
 import { bragButton } from './share.js';
@@ -202,7 +203,7 @@ function stage(state, tryOn = null) {
 }
 
 function buySkinSheet(state, item, onChanged, pass) {
-  const available = state.user.account.available;
+  const available = moneyOf(state);
   const short = available < item.price;
   const opens = pass && !pass.passed;
   const body = el('div');
@@ -231,7 +232,7 @@ function buySkinSheet(state, item, onChanged, pass) {
 
 // A skin bought in an earlier month: buying it again is this month's pass to its floor.
 function renewSheet(state, item, onChanged, pass) {
-  const available = state.user.account.available;
+  const available = moneyOf(state);
   const short = available < item.price;
   const body = el('div');
   body.append(stage(state, item));
@@ -260,7 +261,7 @@ async function equip(item, onChanged, button) {
 }
 
 function skinTile(state, item, onChanged, pass, { showFloor = false } = {}) {
-  const available = state.user.account.available;
+  const available = moneyOf(state);
   const li = el('li', `skin-tile${item.equipped ? ' is-equipped' : ''}${item.owned ? '' : ' is-locked'}`);
   li.append(preview(item, state.user.nickname));
   const where = showFloor && pass ? pass.name : SLOT_NAME[item.slot];
@@ -323,8 +324,8 @@ function cosmeticsTab(state, onChanged, rerender) {
     slots.append(li);
   }
   worn.append(slots);
-  const passCount = passes.filter(p => p.passed).length;
-  box.append(el('h2', 'sub-head shop-head', `착용 중 <small>입장권 ${passCount}/${passes.length}층</small>`), worn);
+  const passCount = passes.filter(p => p.passed).length, era = Boolean(state.shop.era);
+  box.append(el('h2', 'sub-head shop-head', era ? '착용 중' : `착용 중 <small>입장권 ${passCount}/${passes.length}층</small>`), worn);
 
   const filter = el('div', 'shop-filter');
   filter.setAttribute('role', 'tablist');
@@ -340,17 +341,17 @@ function cosmeticsTab(state, onChanged, rerender) {
   box.append(filter);
 
   if (view === 'floors') {
-    box.append(el('p', 'shop-note', '층마다 그 층의 꾸미기가 넷 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
-    const auto = floorToOpen(passes);
+    box.append(el('p', 'shop-note', era ? '층마다 그 층의 꾸미기가 넷 있어요. 층은 RP 티어로 열리고, 꾸미기는 모양만 바꿔요.' : '층마다 그 층의 꾸미기가 넷 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
+    const auto = era ? (focusFloor || null) : floorToOpen(passes);
     let focus = null;
     for (const pass of passes) {
       const items = all.filter(x => x.floor === pass.slug);
       const owned = items.filter(x => x.owned).length;
-      const section = el('details', `pass-floor${pass.passed ? ' is-passed' : ''}${pass.unlocked && !pass.passed ? ' is-due' : ''}`);
+      const section = el('details', `pass-floor${pass.passed && (!era || pass.unlocked) ? ' is-passed' : ''}${pass.unlocked && !pass.passed ? ' is-due' : ''}`);
       section.dataset.passFloor = pass.slug;
       section.open = floorOpenByHand.has(pass.slug) ? floorOpenByHand.get(pass.slug) : pass.slug === auto;
       section.addEventListener('toggle', () => floorOpenByHand.set(pass.slug, section.open));
-      const state_ = pass.passed
+      const state_ = era ? (pass.unlocked ? '열린 층' : `RP ${pass.rpNeed}이면 열려요`) : pass.passed
         ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`)
         : pass.unlocked ? '순자산 충족 · 하나만 사거나 갱신하면 입장' : `순자산 ${formatCH(pass.threshold)}원 + 이번 달 입장권`;
       const head = el('summary', 'pass-head', `<span class="pass-mark" aria-hidden="true"></span><span class="pass-name">${pass.name}</span><span class="pass-count">${owned}/${items.length}</span><small class="pass-state">${state_}</small>`);

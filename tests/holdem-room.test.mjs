@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRoom, joinRoom, leaveRoom, startRoom, roomAction, showCards, tick, roomDue, roomView, listRooms, tableChips, TURN_MS, NEXT_HAND_MS, MISSED_TURNS_LIMIT } from '../lib/holdem-room.mjs';

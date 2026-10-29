@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // 7포커 friends' rooms: the Hold'em room (lib/holdem-room.mjs) with the 7포커 engine.
 import test from 'node:test';
 import assert from 'node:assert/strict';

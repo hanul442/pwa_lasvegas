@@ -47,7 +47,8 @@ test('뽀찌 refuses tables with no dealer, odd amounts, too fast, and more than
 
 test('POST /api/tip pays the dealer and returns the new state', async () => {
   let state = defaultState();
-  newUser(state, 'tipper', 'TIPPER').account.available = 100_000_000;
+  // Seated, so the chips stay at the table (lib/cashier.mjs sweeps an unseated player's chips).
+  Object.assign(newUser(state, 'tipper', 'TIPPER').account, { available: 100_000_000, seat: { floor: 'gold-room', at: new Date().toISOString() } });
   const store = { load: async () => structuredClone(state), mutate: async fn => { const next = structuredClone(state); const out = await fn(next); state = next; return out; } };
   const call = (body) => handleApi({ method: 'POST', header: n => ({ 'x-player-id': 'tipper' })[n], body: async () => body }, new URL('http://x/api/tip'), store, {});
   const before = state.users.tipper.account.available;

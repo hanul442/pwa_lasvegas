@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // The holes the 2026-10-19 economy audit closed (한서 "3번빼고 다 진행").
 import test from 'node:test';
 import assert from 'node:assert/strict';

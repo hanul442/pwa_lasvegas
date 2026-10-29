@@ -62,7 +62,7 @@ export async function predeploy(dir = join(root, 'dist')) {
     if (guest.status >= 300 || !guest.data.token) problems.push(`API: guest sign-in answered ${guest.status} ${JSON.stringify(guest.data).slice(0, 120)}`);
     else {
       const me = await call('GET', '/api/state', null, guest.data.token);
-      if (me.status !== 200 || !(me.data.user?.account?.available > 0)) problems.push(`API: state for a new guest answered ${me.status} ${JSON.stringify(me.data).slice(0, 120)}`);
+      if (me.status !== 200 || !((me.data.user?.account?.available ?? 0) + (me.data.user?.account?.wallet ?? 0) > 0)) problems.push(`API: state for a new guest answered ${me.status} ${JSON.stringify(me.data).slice(0, 120)}`);
     }
   } catch (err) { problems.push(`API: ${err.stack?.split('\n').slice(0, 2).join(' ') || err}`); }
 

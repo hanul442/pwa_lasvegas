@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // Every amount moves in whole 100만s (한서's call): bets, payouts, blinds, raises, split pots,
 // loans and handouts.
 import test from 'node:test';

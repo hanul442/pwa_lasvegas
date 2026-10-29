@@ -15,7 +15,9 @@ test('RP follows the result against the bet, not the size of the bet', () => {
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 0 }), 0, 'a push moves nothing');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 35_000_000 }), RP_ROUND_CAP, 'a straight-up hit is capped');
   // The same even-money win on a higher floor than the player's tier counts 1.5×, a lower one 0.5×.
-  assert.equal(rpForRound({ stake: 10_000_000, netPnl: 10_000_000, points: 0 }), 15);
+  // A bet past the Gold Room's 1억 top can only be made upstairs; the Gold Room's own top bet can't.
+  assert.equal(rpForRound({ stake: 200_000_000, netPnl: 200_000_000, points: 0 }), 15);
+  assert.equal(rpForRound({ stake: 100_000_000, netPnl: 100_000_000, points: 0 }), 10);
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_000_000, points: 450 }), 5);
 });
 

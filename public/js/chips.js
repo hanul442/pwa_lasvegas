@@ -5,8 +5,7 @@ import { el, formatCH } from './fx.js';
 // 한서's call: no 3억 or 7억). The table's colours go up with the floor, so a glance at the rack
 // says where you are sitting.
 const STEPS = [1, 2, 5, 10];
-// One colour per chip value from 100만 to 1조, rising through the floors. A table's 10× chip is
-// the next table's 1× chip, so the two share a colour and no rack repeats one.
+// Chip colours, rising through the floors.
 const COLORS = 'teal purple wine ivory pink gold black wine ivory teal gold pink black ivory wine gold wine black ivory purple black teal ivory wine gold'.split(' ');
 // A table is a floor: same slug, same name. Its range runs from the smallest bet to ten times it.
 // Higher floors play harder (lib/constants.mjs DIFFICULTY_STARS, H17_FROM_LEVEL): sharper AI, and
@@ -14,24 +13,26 @@ const COLORS = 'teal purple wine ivory pink gold black wine ivory teal gold pink
 const STARS = [1, 2, 3, 4, 5, 5, 5, 5];
 const tier = (slug, name, min, level) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min), level, stars: STARS[level], h17: level >= 3 });
 
-// Six floors from 100만 in the Gold Room to 1천억 in The Vault, each ten times the last
-// (lib/constants.mjs FLOORS). A floor opens at three of its smallest bets in net worth and
-// closes to anyone worth more than a hundred of them.
+// Eight floors from 1천만 in the Gold Room to 300억 on Olympus, each about three times the last
+// (lib/constants.mjs FLOORS, since the RP season of 2026-10-29). The RP tier opens them.
 export const TIERS = Object.fromEntries([
-  ['gold-room', 'Gold Room', 1_000_000],
-  ['high-limit', 'High Limit', 10_000_000],
+  ['gold-room', 'Gold Room', 10_000_000],
+  ['high-limit', 'High Limit', 30_000_000],
   ['salon-prive', 'Salon Privé', 100_000_000],
-  ['penthouse', 'Penthouse', 1_000_000_000],
-  ['sky-lounge', 'Sky Lounge', 10_000_000_000],
-  ['vault', 'The Vault', 100_000_000_000],
-  ['crown', 'The Crown', 1_000_000_000_000],
-  ['olympus', 'Olympus', 10_000_000_000_000]
+  ['penthouse', 'Penthouse', 300_000_000],
+  ['sky-lounge', 'Sky Lounge', 1_000_000_000],
+  ['vault', 'The Vault', 3_000_000_000],
+  ['crown', 'The Crown', 10_000_000_000],
+  ['olympus', 'Olympus', 30_000_000_000]
 ].map(([slug, name, min], i) => [slug, tier(slug, name, min, i)]));
 
 // The cheapest table in the casino.
 export const FIRST_TIER = Object.values(TIERS)[0];
 
-export const CHIP_COLORS = Object.fromEntries(Object.values(TIERS).flatMap((t, i) => t.chips.map((v, k) => [v, COLORS[i * 3 + k]])));
+// Every chip value in the casino, low to high, takes the next colour, so a value looks the same on
+// every table that uses it and neighbouring values never match.
+const VALUES = [...new Set(Object.values(TIERS).flatMap(t => t.chips))].sort((a, b) => a - b);
+export const CHIP_COLORS = Object.fromEntries(VALUES.map((v, i) => [v, COLORS[i % COLORS.length]]));
 
 // Big money is played with plaques, the rectangular pearl tiles of a high-roller table (the
 // Casino Royale look): every value from 1억 up, so Salon Privé and the floors above it bet

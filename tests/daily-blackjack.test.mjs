@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dailyShoe, playHand, dailyCommand, dailyView, seoulDay, dayNumber, bookScore, total, DAILY_HANDS, DAILY_START } from '../lib/daily-blackjack.mjs';

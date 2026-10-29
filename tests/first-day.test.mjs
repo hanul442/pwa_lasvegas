@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // 처음 온 사람의 첫날 (public/js/first-day.js): the starting chips are no floor news, a hand counts
 // in stats so the first-day home steps aside, and home keeps quiet for the first hands.
 import test from 'node:test';

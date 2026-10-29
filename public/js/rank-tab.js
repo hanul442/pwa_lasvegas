@@ -3,7 +3,7 @@
 // drawn in app.js renderRanking.
 import { formatCH } from './fx.js';
 import { gameName } from './names.js';
-import { tierEmblem, tierName, rankBadges, TIERS } from './rank.js';
+import { tierEmblem, tierName, rankBadges, TIERS, rpMode } from './rank.js';
 
 const signed = v => `${v > 0 ? '+' : ''}${formatCH(v)}`;
 const tone = v => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
@@ -31,7 +31,7 @@ export function tierHeroHtml(state) {
   const pct = Math.round((rs.progress || 0) * 100);
   const place = myMonthRank(state);
   const next = rs.next
-    ? `<span>${tierName(rs.next.id)}까지 <b>${formatCH(rs.next.need)}원</b></span>`
+    ? `<span>${tierName(rs.next.id)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`
     : '<span><b>최고 티어</b>에 올랐어요</span>';
   return `
     <div class="tier-hero-top"><span class="tier-hero-season">${rs.season.name}</span><span class="tier-hero-clock">${leftText(rs.season.endsAt)} 남음</span></div>
@@ -45,10 +45,10 @@ export function tierHeroHtml(state) {
     </div>
     <dl class="tier-hero-stats">
       <div><dt>이번 달 순위</dt><dd>${place ? `${place.rank}<small>위 / ${place.of}명</small>` : '<small>아직 없음</small>'}</dd></div>
-      <div><dt>최고 순자산</dt><dd>${formatCH(rs.peak)}</dd></div>
+      ${rpMode(rs) ? `<div><dt>이번 달 RP</dt><dd>${rs.rp}</dd></div>` : `<div><dt>최고 순자산</dt><dd>${formatCH(rs.peak)}</dd></div>`}
       <div><dt>역대 최고</dt><dd>${rs.best ? tierName(rs.best.tier) : '<small>첫 시즌</small>'}</dd></div>
     </dl>
-    <div class="tier-hero-foot"><small>매달 1일 0시에 칩·빚이 초기화돼요</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
+    <div class="tier-hero-foot"><small>${rs.carry ? '매달 1일 0시에 RP가 3티어 내려가요' : '매달 1일 0시에 칩·빚이 초기화돼요'}</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
 }
 
 // RP 베타 (lib/rank-points.mjs): the score that becomes the tier from the December season. It moves
@@ -56,6 +56,8 @@ export function tierHeroHtml(state) {
 export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
+  // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
+  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판 ±30, 하루 +300까지. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today} / ${rp.dayCap}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];
@@ -99,9 +101,10 @@ export function tierStepsHtml(state) {
   for (const r of state?.rankings?.tier || []) if (r.tier) count[r.tier] = (count[r.tier] || 0) + 1;
   return ids.map((id, i) => ({ id, i })).reverse().map(({ id, i }) => {
     const state_ = i < mine ? 'is-done' : i === mine ? 'is-me' : 'is-ahead';
-    const need = i > mine && rs ? Math.max(0, TIERS[id].min - rs.peak) : 0;
-    const note = i === mine ? '<em>지금</em>' : i < mine ? '<span class="tier-step-check" aria-label="달성">✓</span>' : `<span class="tier-step-need">${formatCH(need)} 더</span>`;
-    return `<li class="tier-step ${state_}">${tierEmblem(id, { size: 30, label: false })}<span class="tier-step-name"><b>${tierName(id)}</b><small>${i === 0 ? '시작' : `${TIERS[id].label} 이상`}${count[id] ? ` · ${count[id]}명` : ''}</small></span>${note}</li>`;
+    const rp = rpMode(rs);
+    const need = i > mine && rs ? Math.max(0, rp ? i * 100 - rs.rp : TIERS[id].min - rs.peak) : 0;
+    const note = i === mine ? '<em>지금</em>' : i < mine ? '<span class="tier-step-check" aria-label="달성">✓</span>' : `<span class="tier-step-need">${rp ? `${need} RP` : formatCH(need)} 더</span>`;
+    return `<li class="tier-step ${state_}">${tierEmblem(id, { size: 30, label: false })}<span class="tier-step-name"><b>${tierName(id)}</b><small>${i === 0 ? '시작' : rp ? `RP ${i * 100} 이상` : `${TIERS[id].label} 이상`}${count[id] ? ` · ${count[id]}명` : ''}</small></span>${note}</li>`;
   }).join('');
 }
 

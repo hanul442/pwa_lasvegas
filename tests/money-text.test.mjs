@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // One money format everywhere: push notifications, the top banner, the lounge feed and the
 // screens all write 7억 2천만원, never a raw 720000000 or 720,000,000원 (한서: "통일성이 생명").
 import test from 'node:test';

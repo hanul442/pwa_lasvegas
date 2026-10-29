@@ -6,6 +6,7 @@ import { handleApi } from '../lib/api.mjs';
 import { defaultState, netWorth, debtOf, seasonOwedOf } from '../lib/state.mjs';
 import { addLedger } from '../lib/economy.mjs';
 import { forceHotTable } from '../lib/hot-table.mjs';
+import { rpEraFor } from '../lib/rank-points.mjs';
 
 forceHotTable('off');
 const RealDate = Date;
@@ -134,7 +135,12 @@ for (const [n, p] of Object.entries(people)) {
   const worth = netWorth(u);
   // After the reset nobody should be worth more than what the new month already paid them.
   const fin = { avail: u.account.available, locked: u.account.locked, owed: seasonOwedOf(u), worth, income };
-  if (worth > income) problems.push(`${n}: 리셋 뒤 순자산 ${worth / 억}억 > 새 달 수입 ${income / 억}억 (10월 칩이 남음)`);
+  // An RP month (from 2026-10-29) keeps the chips: only loans go, and nothing is owed to the house.
+  if (rpEraFor(`rank-${MONTH}`)) {
+    if (debtOf(u) > 0) problems.push(`${n}: RP 시즌 마감 뒤에도 빚 ${debtOf(u) / 억}억이 남음`);
+    if (seasonOwedOf(u) > 0) problems.push(`${n}: RP 시즌인데 시즌 칩 ${seasonOwedOf(u) / 억}억을 걷음`);
+    if (rows.some(x => x.type === 'SEASON_RESET' && x.amount !== 0)) problems.push(`${n}: RP 시즌인데 칩을 가져감`);
+  } else if (worth > income) problems.push(`${n}: 리셋 뒤 순자산 ${worth / 억}억 > 새 달 수입 ${income / 억}억 (10월 칩이 남음)`);
   if (u.account.locked === 0 && seasonOwedOf(u) > 0) problems.push(`${n}: 테이블은 비었는데 갚을 시즌 칩 ${seasonOwedOf(u) / 억}억이 남음`);
   after[n].final = fin;
 }

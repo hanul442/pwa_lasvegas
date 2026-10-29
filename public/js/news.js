@@ -33,6 +33,8 @@ async function poll() {
 
 function next() {
   if (showing || !queue.length) return;
+  // A newcomer's first hands (js/first-day.js): other people's news would only cover the table.
+  if (document.body.classList.contains('is-settling')) { queue = []; return; }
   // 오늘의 한 판 fills the screen and its 닫기 and score sit where the banner drops: hold the news
   // until it closes.
   if (document.body.classList.contains('daily-open')) { clearTimeout(next.wait); next.wait = setTimeout(next, 1500); return; }

@@ -122,7 +122,7 @@ export function createRoomClient(t, game, hooks) {
   bar.innerHTML = '<button type="button" class="pk-roomchip rm-chip"></button><span class="rm-status" aria-live="polite"></span><span class="rm-clock" aria-live="off"></span>';
   t.felt.append(bar);
   const chipEl = bar.querySelector('.rm-chip'), statusEl = bar.querySelector('.rm-status'), clockEl = bar.querySelector('.rm-clock');
-  chipEl.addEventListener('click', () => shareInvite({ game, label, code, tier: room?.tier, toast: m => t.toast(m) }));
+  chipEl.addEventListener('click', () => shareInvite({ game, label, code, tier: room?.floor || room?.tier, toast: m => t.toast(m) }));
   const chat = createRoomChat(t, { send: line => api.roomChat(code, line), onView: v => chat.sync(v.chat) });
   bar.insertBefore(chat.button, statusEl);
   const tableName = t.root.querySelector('.table-name span');

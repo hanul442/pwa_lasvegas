@@ -25,7 +25,8 @@ import { renderShop, applyCosmetics, openPlayerSheet, showShopTab, nameFrame } f
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
-import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
+import { capturePendingJoin, pendingJoin, dropPendingJoin, setPendingJoin } from './js/invite.js';
+import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
@@ -881,7 +882,7 @@ const RANK_TABS = {
 let rankPeriod = 'tier';
 let rankTab = 'tier';
 // The ranking tab has three views: 티어 (my tier and the ladder), 순위 (the boards), 친구 (친구 전적).
-const RANK_VIEWS = [['tier', '티어'], ['board', '순위'], ['friends', '친구 전적']];
+const RANK_VIEWS = [['tier', '티어'], ['board', '순위'], ['friends', '친구']];
 const RANK_VIEW_KEY = 'vegas:rank-view';
 let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
 function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
@@ -956,6 +957,12 @@ function renderTierPane() {
 }
 function renderFriendPane() {
   const box = document.querySelector('[data-friend-record]');
+  showFriends(document.querySelector('[data-friends]'), {
+    frame: (id, n) => nameFrame(state, id, n),
+    toast,
+    // 옆자리: sit at a friend's room the way their invite link would.
+    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); }
+  });
   box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
   box.querySelector('[data-friend-play]')?.addEventListener('click', () => showSurface('games', { focus: true }));
   renderDuels(document.querySelector('[data-duels]'), state, applyState);
@@ -1190,6 +1197,16 @@ function takeDailyLink() {
   history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
   return true;
 }
+// ./?rank=friends from a "친구가 들어왔어요" push: open the friends list.
+let friendsWanted = (() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('rank') !== 'friends') return false;
+  params.delete('rank');
+  const q = params.toString();
+  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
+  return true;
+})();
+function openFriendsLink() { if (friendsWanted && state) { friendsWanted = false; rankView = 'friends'; showSurface('ranking', { focus: true }); } }
 function openDailyLink() { if (dailyWanted && state) { dailyWanted = false; showDaily(); } }
 
 // ---------- account ----------
@@ -1213,6 +1230,7 @@ function signedIn(next) {
   openInvite();
   openNightlyFromLink();
   openDailyLink();
+  openFriendsLink();
 }
 function signedOut(notice) {
   stopNews();
@@ -1309,7 +1327,7 @@ dailyWanted = takeDailyLink();
 capturePendingJoin();
 // An invite link (/j?...) leaves the address bar once read, so a reload is the plain app.
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname === '/j' || location.pathname === '/j/' ? '/' : location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); openFriendsLink(); } });
 else openSignIn(signedIn);
 // Once home is up and quiet, fetch the game played last so its table opens without a wait.
 addEventListener('load', () => (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(() => warmGame(GAMES.find(g => g.id === recentTables()[0]?.game)), { timeout: 4000 }), { once: true });

@@ -32,6 +32,7 @@ import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
 import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
+import { replayBlock, loadReplays } from './js/replay.js';
 import { bragRank, bragTier } from './js/brags.js';
 import { tierHeroHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
 import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
@@ -1103,6 +1104,7 @@ function renderProfile() {
     ${state.rankSeason?.history?.length ? `<h2 class="sub-head">월간 시즌 기록 <small>최고 ${tierName(state.rankSeason.best?.tier || state.rankSeason.history[0].tier)}</small></h2>${rankBadges(state.rankSeason.history)}` : ''}
     ${badges ? `<h2 class="sub-head">주간 시즌 배지</h2><ul class="badge-list">${badges}</ul>` : ''}
     <h2 class="sub-head">족보 도감 <small>${state.handBook ? `${state.handBook.count} / ${state.handBook.total}` : ''}</small></h2><div data-hand-book></div>
+    <h2 class="sub-head">큰 판 다시보기 <small>${loadReplays().length || ''}</small></h2><div data-replays></div>
     <h2 class="sub-head">업적 <small>${(state.achievements || []).filter(x => x.claimed).length} / ${(state.achievements || []).length}</small></h2><div data-achievements></div>
     <h2 class="sub-head">게임별 기록</h2>
     ${games ? `<div class="game-stats-wrap"><table class="game-stats"><thead><tr><th scope="col">게임</th><th scope="col">판</th><th scope="col">승률</th><th scope="col">최대 승리</th><th scope="col">손익</th></tr></thead><tbody>${games}</tbody></table></div>` : '<p class="lounge-note">아직 플레이한 게임이 없어요.</p>'}
@@ -1117,6 +1119,7 @@ function renderProfile() {
   root.querySelector('[data-name-guest]')?.addEventListener('click', () => openNameSheet(applyState));
   renderAchievements(root.querySelector('[data-achievements]'));
   root.querySelector('[data-hand-book]').replaceWith(handBookBlock(state));
+  root.querySelector('[data-replays]').replaceWith(replayBlock(state));
   root.querySelector('[data-go-shop]').addEventListener('click', () => showSurface('shop', { focus: true }));
   renderLedger(root.querySelector('[data-ledger]'), state);
   renderAccountTools(root.querySelector('[data-account-tools]'), state, applyState);

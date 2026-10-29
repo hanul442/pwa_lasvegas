@@ -287,6 +287,7 @@ export async function mountSeotda(ctx) {
     banter.seotdaResult(r, allSeats());
     if (net > 0) voice.say('you-win');
     t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
+    t.keepReplay(net, { label, staked: 0 });
     if (net > 0) { sound.win(); haptic([20, 60, 30]); t.glow(); } else if (net < 0) { sound.lose(); haptic(30); } else sound.push();
     if (net > 0 && /광땡|장땡/.test(r.hands[ME] || '')) await t.bigWin(net, { title: r.hands[ME], subtitle: `섯다 · ${formatCH(r.pot)} 판을 가져왔어요` });
     await wait(900);

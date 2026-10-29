@@ -8,6 +8,7 @@ import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 const OUCH_MIN = 20;
 import { errorMessage, newKey } from './api.js';
 import { maybeBust } from './bust.js';
+import { readFelt, recordReplay, updateReplay, isBigLoss } from './replay.js';
 import { buzz } from './haptics.js';
 import { toast as noticeToast } from './notice.js';
 import { rake, pushPay } from './dealer.js';
@@ -654,6 +655,7 @@ export class Table {
     const ouch = net < 0 && -net >= OUCH_MIN * this.tier.min;
     const day = this.dayNews(net);
     if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? (ouch ? 'lose banner--ouch' : 'lose') : 'push'), net, hot?.bonus > 0 ? `핫 테이블 +${Math.round(hot.rate * 100)}% · +${formatMoney(hot.bonus)}` : '', net < 0 ? day : '');
+    this.keepReplay(net, { label, staked });
     if (net > 0) { sound.win(); buzz('win'); this.glow(); }
     else if (net < 0) { sound.lose(); buzz(ouch ? 'ouch' : 'lose'); if (ouch) this.ouch(); }
     else { sound.push(); buzz('push'); }
@@ -880,7 +882,29 @@ export class Table {
   // win paid a max bet's worth at this table, unless `force` (a jackpot, or already checked).
   bigWin(amount, { title, subtitle, level = 0, multiple = 0, force = false } = {}) {
     if (!force && !namedWinCounts(amount, this.tier.min)) return Promise.resolve();
+    this.keepReplay(amount, { title, force: true });
     return bigWin({ title, subtitle, amount, game: this.title, nickname: this.nickname, level: level || Math.max(1, bigWinLevel(amount, 0, this.tier.min)), multiple, min: this.tier.min, badges: this.winBadges(amount) });
+  }
+
+  // 큰 판 다시보기 (public/js/replay.js): a round that won or lost 25 table minimums, or that the
+  // big-win screen stopped for, leaves its face-up cards in the profile to be played back.
+  // Called while the cards are still on the felt, before they are swept.
+  keepReplay(net, { label = '', title = '', staked = this.total, force = false } = {}) {
+    const min = this.tier.min, exact = !force, last = this.replayLast;
+    if (!net) return;
+    try {
+      // The round's result and its big-win screen are one replay, whichever comes first.
+      if (last && last.exact !== exact && Date.now() - last.at < 6000) {
+        this.replayLast = null;
+        updateReplay(last.entry, { net, staked, label, title, groups: readFelt(this.body), exact });
+        return;
+      }
+      if (!(force || bigWinLevel(net, staked, min) || isBigLoss(net, min))) return;
+      const groups = readFelt(this.body);
+      const felt = [...(this.felt?.classList || [])].find(c => c.startsWith('felt--'))?.slice(6) || '';
+      const entry = recordReplay({ game: this.game, gameTitle: this.title, tier: this.tier.name, felt, net, staked, min, label, title, groups });
+      this.replayLast = entry && { entry, exact, at: Date.now() };
+    } catch {}
   }
 
   // What else this win just did: the biggest single win this player has had at any game, or

@@ -451,6 +451,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const names = [...new Set(winners)].map(i => (i === me ? '나' : pk.nameOf(i, current?.seats?.[i] || {})));
         const label = lastStanding ? (net > 0 ? 'Last standing' : `${names.join(', ')} · Last standing`) : net > 0 ? 'You win' : names.length ? `${names.join(', ')} wins` : '';
         if (label || net) t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
+        t.keepReplay(net, { label, staked: 0 });
         if (net > 0) voice.say('you-win');
         if (net < 0) sound.lose();
         pk.onEnd?.({ net, winners });

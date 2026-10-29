@@ -43,11 +43,13 @@ export function mountNightly(slot, { getState, applyState, openTable, toast }) {
   function paint() {
     if (!view) { slot.replaceChildren(); return; }
     const v = view, t = now();
+    // Tonight's own hour, and the daily one from tomorrow (they differ the day the hour changes).
+    const label = v.label || '밤 9시', at = v.clock || '21:00', daily = v.nextLabel || label, nextAt = v.nextClock || at;
     const status = v.status === 'REG' && t >= v.startsAt ? 'RUNNING' : v.status;
     const card = el('article', `nightly-card is-${status.toLowerCase()}`);
-    card.setAttribute('aria-label', '매일 밤 9시 홀덤 토너먼트');
+    card.setAttribute('aria-label', `매일 ${daily} 홀덤 토너먼트`);
     const badge = status === 'RUNNING' ? '<span class="nightly-live">LIVE</span>'
-      : status === 'REG' ? `<span class="nightly-when">오늘 21:00</span>` : '<span class="nightly-when">내일 21:00</span>';
+      : status === 'REG' ? `<span class="nightly-when">오늘 ${at}</span>` : `<span class="nightly-when">내일 ${nextAt}</span>`;
     let big, sub;
     if (status === 'REG') {
       big = `<b class="nightly-big" data-nightly-clock>${bigClock(v.startsAt - t)}</b>`;
@@ -64,7 +66,7 @@ export function mountNightly(slot, { getState, applyState, openTable, toast }) {
     }
     const payouts = v.payouts.slice(0, 3).map((p, i) => `${i + 1}위 ${formatCH(p)}`).join(' · ');
     card.innerHTML = `
-      <header class="nightly-head"><span class="nightly-kicker">매일 밤 9시 · 홀덤 토너먼트</span>${badge}</header>
+      <header class="nightly-head"><span class="nightly-kicker">매일 ${daily} · 홀덤 토너먼트</span>${badge}</header>
       <div class="nightly-main">${big}<span class="nightly-sub">${sub}</span></div>
       <dl class="nightly-stats">
         <div><dt>바이인</dt><dd>${formatCH(v.buyIn)}</dd></div>
@@ -95,14 +97,14 @@ export function mountNightly(slot, { getState, applyState, openTable, toast }) {
     } else if (status === 'REG') {
       actions.append(el('span', 'nightly-done', '등록 완료'));
       button('취소', 'home-ghost', () => register(false));
-      actions.append(el('span', 'nightly-note', '9시 정각에 자리를 정해 드려요 · 10분 전에 알림'));
+      actions.append(el('span', 'nightly-note', `${label.split(' ')[1]} 정각에 자리를 정해 드려요 · 10분 전에 알림`));
     } else if (status === 'RUNNING' && v.me?.seated) {
       button('내 테이블로', 'home-cta nightly-cta', () => openTable(v));
       if (v.me.place) actions.append(el('span', 'nightly-note', `${v.me.place}위로 탈락${v.me.payout ? ` · 상금 ${formatCH(v.me.payout)}` : ''}`));
     } else if (status === 'RUNNING' && v.me?.place) {
       actions.append(el('span', 'nightly-done', `${v.me.place}위${v.me.payout ? ` · +${formatCH(v.me.payout)}` : ''}`));
     } else if (status === 'RUNNING') {
-      actions.append(el('span', 'nightly-note', '등록은 마감됐어요 · 내일 밤 9시에 만나요'));
+      actions.append(el('span', 'nightly-note', `등록은 마감됐어요 · 내일 ${daily}에 만나요`));
     } else if (v.me?.place) {
       actions.append(el('span', 'nightly-done', `오늘 ${v.me.place}위${v.me.payout ? ` · +${formatCH(v.me.payout)}` : ''}`));
     }

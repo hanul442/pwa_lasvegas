@@ -310,42 +310,8 @@ export function feedBlock(state, onChanged) {
   return box;
 }
 
-// ---------- floor ladder ----------
-export function floorBlock(state, onPass) {
-  const floors = state.floors || [];
-  // The next floor still to enter: reached by net worth (unlocked) and holding its skin (passed).
-  const next = floors.find(f => !f.entered && f.slug !== floors[0]?.slug);
-  const box = el('section', 'lounge-block lounge-block--floor');
-  const top = [...floors].reverse().find(f => f.entered || f === floors[0]);
-  const open = floors.filter(f => f.open).map(f => f.name).join(' · ');
-  if (!next) { box.innerHTML = `<header class="lounge-head"><h2>${top?.name}</h2><small>가장 높은 층에 있어요</small></header>`; return box; }
-  if (next.rpNeed != null) {
-    // The RP era (lib/economy.mjs floorsFor): RP opens the floors, nothing else is asked.
-    const pct = Math.round(next.progress * 100);
-    box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 층</small>${next.name}</h2><small>${pct}%</small></header>
-    <span class="mission-bar mission-bar--floor"><i style="width:${pct}%"></i></span>
-    <p class="lounge-note">RP ${next.rpRemaining} 더 모아 RP ${next.rpNeed}이 되면 열려요. 지금 앉을 수 있는 곳은 ${open}이에요.</p>`;
-    return box;
-  }
-  const progress = next.unlocked ? 1 : next.progress;
-  const todo = [
-    next.unlocked ? '' : `순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이고`,
-    next.passed ? '' : `상점에서 ${next.name} 꾸미기를 하나 사면`
-  ].filter(Boolean).join(', ');
-  box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 층</small>${next.name}</h2><small>${Math.round(progress * 100)}%${next.passed ? ' · 입장권 보유' : ''}</small></header>
-    <span class="mission-bar mission-bar--floor"><i style="width:${Math.round(progress * 100)}%"></i></span>
-    <p class="lounge-note">${todo.replace(/고$/, '면')} 올라가요. 지금 앉을 수 있는 곳은 ${open}이에요.</p>`;
-  if (!next.passed) {
-    const b = el('button', `pill-button${next.unlocked ? ' pill-button--solid' : ''} floor-pass-go`, `${next.name} 꾸미기 보기`);
-    b.type = 'button';
-    b.addEventListener('click', () => onPass?.(next.slug));
-    box.append(b);
-  }
-  return box;
-}
-
 // Home keeps only what needs an answer now: the lucky-card rescue and duel invites. Missions,
-// the season and the hot table sit in the home strip; the feed is in 이벤트, the next floor in 지갑.
+// the season and the hot table sit in the home strip; the feed is in 이벤트, the floors in 랭킹.
 export function renderLounge(root, state, onChanged) {
   if (!state?.engagement) { root.replaceChildren(); return; }
   const blocks = [];

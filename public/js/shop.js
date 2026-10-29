@@ -138,7 +138,7 @@ const VIEW_KEY = 'vegas:shop-skin-view';
 const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const recall = key => { try { return localStorage.getItem(key); } catch { return null; } };
 // The 꾸미기 tab shows either the floors (each floor's skins are its pass) or one slot at a time.
-const VIEWS = [['floors', '층 입장권'], ['cardBack', '카드 뒷면'], ['felt', '펠트'], ['chips', '칩'], ['frame', '명패']];
+const VIEWS = [['floors', '층별'], ['cardBack', '카드 뒷면'], ['felt', '펠트'], ['chips', '칩'], ['frame', '명패']];
 let view = VIEWS.some(([k]) => k === recall(VIEW_KEY)) ? recall(VIEW_KEY) : 'floors';
 // A floor whose skins the 꾸미기 tab opens and scrolls to once, when a locked table sent the player here.
 let focusFloor = null;
@@ -388,7 +388,7 @@ function cosmeticsTab(state, onChanged, rerender) {
     const passOf = slug => passes.find(p => p.slug === slug) || null;
     const rank = x => x.equipped ? 0 : x.owned ? 1 : x.achievement ? 3 : 2;
     const items = all.filter(x => x.slot === view).sort((a, b) => rank(a) - rank(b) || a.price - b.price);
-    box.append(el('p', 'shop-note', `${SLOT_NAME[view]} ${items.length}가지. 층 꾸미기는 그 층 입장권도 돼요.`));
+    box.append(el('p', 'shop-note', `${SLOT_NAME[view]} ${items.length}가지.${era ? '' : ' 층 꾸미기는 그 층 입장권도 돼요.'}`));
     const grid = el('ul', 'skin-grid');
     for (const item of items) grid.append(skinTile(state, item, onChanged, item.floor ? passOf(item.floor) : null, { showFloor: true }));
     box.append(grid);

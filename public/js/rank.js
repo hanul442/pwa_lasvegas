@@ -86,7 +86,7 @@ setInterval(() => {
 }, 1000);
 
 const RESETS = ['칩 (테이블 위 칩 포함)', '빚과 대출', '열린 층과 입장권'];
-const KEEPS = ['꾸미기와 명패', '배지와 업적', '게임 기록', '이번 달 티어 배지'];
+const KEEPS = ['꾸미기와 명패', '배지와 업적', '게임 기록', '이번 시즌 티어 배지'];
 
 // The warning sheet: the clock, where I stand, and what goes and what stays.
 export function seasonEndBlock(state, { onShop, onBoard, onWrapped } = {}) {
@@ -94,10 +94,10 @@ export function seasonEndBlock(state, { onShop, onBoard, onWrapped } = {}) {
   if (!r) return null;
   const box = el('section', 'season-end');
   const nextLine = r.next ? `${tierName(r.next.id, r.next.division)}까지 ${needText(r, r.next.need)}` : '최고 티어예요';
-  const resets = r.carry ? ['RP (3티어 아래에서 다시 시작)', '남은 빚'] : RESETS;
+  const resets = r.carry ? ['RP (3티어 아래에서 다시 시작)', ...(state.bank?.debt > 0 ? ['남은 빚'] : [])] : RESETS;
   const keeps = r.carry ? ['칩', ...KEEPS] : KEEPS;
-  const tip = r.carry ? '티어는 이번 달 RP로 정해져요. 지면 RP가 깎이니 마지막까지 신중하게. 칩은 그대로 남아요.'
-    : rpMode(r) ? '티어는 이번 달 RP로 정해져요. 지면 RP가 깎이니 마지막까지 신중하게. 칩은 사라지지만 꾸미기는 남아요.'
+  const tip = r.carry ? '티어는 이번 시즌 RP로 정해져요. 지면 RP가 깎이니 마지막까지 신중하게. 칩은 그대로 남아요.'
+    : rpMode(r) ? '티어는 이번 시즌 RP로 정해져요. 지면 RP가 깎이니 마지막까지 신중하게. 칩은 사라지지만 꾸미기는 남아요.'
     : '티어는 이번 달에 찍은 최고 순자산으로 정해져서, 마지막에 잃어도 내려가지 않아요. 칩은 사라지지만 꾸미기는 남아요.';
   box.innerHTML = `
     <span class="season-end-kicker">${seasonShort(r.season.name)} 마감${r.season.preseason ? ' · 첫 초기화' : ''}</span>
@@ -110,7 +110,7 @@ export function seasonEndBlock(state, { onShop, onBoard, onWrapped } = {}) {
       <div><h3>그대로 남아요</h3><ul class="is-keep">${keeps.map(x => `<li>${x}</li>`).join('')}</ul></div>
     </div>
     <p class="season-end-tip">${tip}</p>
-    <div class="season-end-actions">${state.wrapped?.live && onWrapped ? '<button type="button" class="pill-button pill-button--solid" data-wrapped>이번 달 결산 미리 보기</button>' : ''}<button type="button" class="pill-button" data-shop>상점 보기</button></div>`;
+    <div class="season-end-actions">${state.wrapped?.live && onWrapped ? '<button type="button" class="pill-button pill-button--solid" data-wrapped>이번 시즌 결산 미리 보기</button>' : ''}<button type="button" class="pill-button" data-shop>상점 보기</button></div>`;
   box.querySelector('[data-wrapped]')?.addEventListener('click', () => { sound.tick(); onWrapped(state.wrapped.live); });
   box.querySelector('[data-shop]').addEventListener('click', () => { sound.tick(); onShop?.(); });
   box.querySelector('[data-board]').addEventListener('click', () => { sound.tick(); onBoard?.(); });
@@ -181,7 +181,7 @@ export function maybeSeasonMoment(state, { force = false, onWrapped } = {}) {
   node.querySelector('[data-close]').addEventListener('click', close);
   node.querySelector('[data-wrapped]')?.addEventListener('click', () => { close(); onWrapped(wrapped); });
   if (mine) {
-    const brag = bragButton(() => bragTier({ tier: mine.tier, name: tierName(mine.tier, mine.division), season: seasonShort(last.name), rank: mine.rank, of: mine.of, peak: mine.peak }), '티어 자랑하기');
+    const brag = bragButton(() => bragTier({ tier: mine.tier, name: tierName(mine.tier, mine.division), season: seasonShort(last.name), rank: mine.rank, of: mine.of, peak: mine.peak, rp: mine.rp }), '티어 자랑하기');
     if (wrapped) { brag.classList.remove('pill-button--solid'); node.querySelector('[data-wrapped]').after(brag); }
     else { node.querySelector('[data-close]').classList.remove('pill-button--solid'); node.querySelector('.moment-actions').prepend(brag); }
   }
@@ -210,7 +210,7 @@ export function celebrateTier(state) {
   sound.win(); haptic([30, 50, 30, 50, 120]);
   requestAnimationFrame(() => node.classList.add('is-open'));
   const close = () => { clearTimeout(timer); node.classList.remove('is-open'); setTimeout(() => node.remove(), 400); };
-  const brag = bragButton(async () => { clearTimeout(timer); await bragTier({ tier: r.tier, name: tierName(r.tier, r.division), season: seasonShort(r.season.name), peak: r.peak, up: true }); });
+  const brag = bragButton(async () => { clearTimeout(timer); await bragTier({ tier: r.tier, name: tierName(r.tier, r.division), season: seasonShort(r.season.name), peak: r.peak, rp: r.rp, up: true }); });
   node.querySelector('.moment-actions').prepend(brag);
   node.querySelector('[data-close]').addEventListener('click', close);
   brag.focus({ preventScroll: true });

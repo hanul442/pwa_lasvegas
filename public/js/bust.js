@@ -178,7 +178,7 @@ export function bailoutMoment(bail) {
       <p class="bigwin-sub">BAILOUT</p>
       <h2 class="bigwin-title">구제금융</h2>
       <strong class="bigwin-amount">+<span data-amount>0</span> <small>원</small></strong>
-      <p class="bust-note">칩이 바닥나서 은행이 바로 채워 줬어요.${left === null ? '' : left ? ` 오늘 ${left}번 더 받을 수 있어요.` : ' 오늘은 이게 마지막이에요.'}</p>
+      <p class="bust-note">칩이 바닥나서 구제금융이 바로 들어왔어요.${left === null ? '' : left ? ` 오늘 ${left}번 더 받을 수 있어요.` : ' 오늘은 이게 마지막이에요.'}</p>
       <div class="bigwin-actions">
         <button type="button" class="pill-button pill-button--solid" data-close>다시 테이블로</button>
       </div>

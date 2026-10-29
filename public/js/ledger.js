@@ -1,15 +1,18 @@
-// 칩 내역 on the profile: every ledger row the server sends (the latest 50), grouped by day, each
+// 칩 기록 on the 지갑 page: every ledger row the server sends (the latest 50), grouped by day, each
 // with its time, what it was (the game in Korean), the amount and the balance after it.
-// A filter narrows it to 게임, 보너스 or 은행.
+// A filter narrows it to 게임, 테이블 (buying in and getting up) or 보너스; old loan rows get an
+// 은행 filter only when there are any.
 import { el, formatCH } from './fx.js';
 import { gameName } from './names.js';
 
 const LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '칩 충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', EVENT_BONUS: '이벤트 보너스', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금', PURCHASE: '구매', RESALE: '되팔기', LUXURY_REFUND: '사치품 환불', SEASON_RESET: '시즌 초기화', INVITE_REWARD: '친구 초대', DEALER_TIP: '딜러 팁', BUY_IN: '바이인', CASH_OUT: '테이블 정산', WALLET_DRAW: '지갑에서', EVENT_FEE: '이벤트 입장료', PROMO_FEE: '승급전 참가비' };
 const BANK = new Set(['LOAN_DISBURSE', 'LOAN_REPAY', 'LOAN_COLLECT', 'BANKRUPTCY', 'BANKRUPTCY_SEIZURE', 'DEBT_DISCHARGED']);
-const FILTERS = [['all', '전체'], ['game', '게임'], ['bonus', '보너스'], ['bank', '은행']];
+const TABLE = new Set(['BUY_IN', 'CASH_OUT', 'WALLET_DRAW']);
+const FILTERS = [['all', '전체'], ['game', '게임'], ['table', '테이블'], ['bonus', '보너스'], ['bank', '은행']];
 
 export function ledgerKind(x) {
   if (BANK.has(x.type)) return 'bank';
+  if (TABLE.has(x.type)) return 'table';
   if (/^(GAME|BET)_/.test(x.type) || x.type === 'JACKPOT_WIN') return 'game';
   return 'bonus';
 }
@@ -23,10 +26,12 @@ let filter = 'all';
 
 export function renderLedger(box, state) {
   const rows = state?.ledger || [];
-  const head = el('h2', 'sub-head', `칩 내역 <small>최근 ${rows.length}건</small>`);
+  const head = el('h2', 'sub-head', `칩 기록 <small>최근 ${rows.length}건</small>`);
+  const hasBank = rows.some(x => ledgerKind(x) === 'bank');
+  if (filter === 'bank' && !hasBank) filter = 'all';
   const seg = el('div', 'segmented ledger-filter');
   seg.setAttribute('role', 'radiogroup');
-  seg.setAttribute('aria-label', '칩 내역 종류');
+  seg.setAttribute('aria-label', '칩 기록 종류');
   const list = el('ul', 'ledger');
   const paint = () => {
     seg.querySelectorAll('.segment').forEach(b => b.setAttribute('aria-checked', String(b.dataset.filter === filter)));
@@ -46,7 +51,7 @@ export function renderLedger(box, state) {
     if (!items.length) items.push(el('li', '', `<span>${rows.length ? '이 종류의 기록은 아직 없어요' : '아직 기록이 없어요'}</span>`));
     list.replaceChildren(...items);
   };
-  seg.append(...FILTERS.map(([key, label]) => {
+  seg.append(...FILTERS.filter(([key]) => key !== 'bank' || hasBank).map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';
     b.dataset.filter = key;

@@ -6,7 +6,7 @@ import { brandCard, shareImage, bragName } from './share.js';
 const QUOTES = {
   floor: ['“한 층 더 올라왔어요”', '“이제 여기가 내 자리”', '“엘리베이터 버튼 누르는 맛”'],
   buy: ['“돈은 이렇게 쓰는 거예요”', '“플렉스 했어요”', '“구경 오세요”'],
-  tier: ['“이번 달은 내가 주인공”', '“딜러도 알아보는 얼굴”', '“다음 달에도 여기서 봐요”'],
+  tier: ['“이번 시즌은 내가 주인공”', '“딜러도 알아보는 얼굴”', '“다음 시즌에도 여기서 봐요”'],
   rank: ['“나 잡아 봐라”', '“여기가 내 자리”', '“다들 분발하세요”']
 };
 const pick = (list, seed) => list[Math.abs([...String(seed)].reduce((h, c) => h * 31 + c.charCodeAt(0), 7)) % list.length];
@@ -22,13 +22,14 @@ export async function bragPurchase({ eyebrow = 'NEW ACQUISITION', title, line = 
 }
 
 // tier: the tier id; name: its Korean name; season: e.g. "2026년 10월"; rank/of when known.
-export async function bragTier({ tier, name, season = '', rank = 0, of = 0, peak = 0, up = false }, nickname = bragName()) {
-  const big = rank && of ? `${of}명 중 ${rank}위` : peak ? `최고 순자산 ${formatCH(peak)}원` : '';
-  const blob = await brandCard({ kicker: `${season ? `${season} · ` : ''}${up ? '티어 승급' : '월간 티어'}`, title: name, big, quote: pick(QUOTES.tier, `${tier}${season}`), nickname, tier });
+// rp: this season's RP when the tier is RP (from 2026-10-29); peak: net worth, for seasons before it.
+export async function bragTier({ tier, name, season = '', rank = 0, of = 0, peak = 0, rp = null, up = false }, nickname = bragName()) {
+  const big = rank && of ? `${of}명 중 ${rank}위` : rp != null ? `RP ${rp}` : peak ? `최고 순자산 ${formatCH(peak)}원` : '';
+  const blob = await brandCard({ kicker: `${season ? `${season} · ` : ''}${up ? '티어 승급' : '시즌 티어'}`, title: name, big, quote: pick(QUOTES.tier, `${tier}${season}`), nickname, tier });
   return shareImage({ blob, filename: 'vegas-tier.png', title: 'VEGAS 티어', text: `VEGAS ${season ? `${season} ` : ''}${name} ${up ? '달성' : '티어'}! ${big} 🏆`.replace(/ {2,}/g, ' '), nickname });
 }
 
-// board: "월간 티어", "이번 주 수익" ...; value: already formatted.
+// board: "시즌 티어", "이번 주 수익" ...; value: already formatted.
 export async function bragRank({ rank, board, value, tier = null }, nickname = bragName()) {
   const blob = await brandCard({ kicker: `VEGAS 랭킹 · ${board}`, title: `${rank}위`, big: value, quote: pick(QUOTES.rank, `${rank}${board}`), nickname, tier });
   return shareImage({ blob, filename: 'vegas-rank.png', title: 'VEGAS 랭킹', text: `VEGAS ${board} 랭킹 ${rank}위 (${value}) 🥇`, nickname });

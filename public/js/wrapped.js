@@ -11,6 +11,8 @@ const CARD_MS = 6500;
 const TIER_COLOR = { iron: '#8a8f96', bronze: '#b07a4f', silver: '#d7dce3', gold: '#e2c27a', platinum: '#9fe0d8', emerald: '#5fd39a', diamond: '#9cc4ff', master: '#c9a0ff', grandmaster: '#ff6f91', legend: '#ff8a72' };
 
 const monthOf = w => Number(String(w.season || '').slice(-2)) || new Date().getMonth() + 1;
+// The season's name for the cards: "10~11월" for a two-month season, else "10월".
+const seasonLabel = w => { const n = String(w.name || '').replace(' (프리시즌)', '').replace(/ 시즌$/, ''); return /월$/.test(n) ? n : `${monthOf(w)}월`; };
 const pct = x => `${Math.round((x || 0) * 100)}%`;
 const signed = n => `${n > 0 ? '+' : ''}${formatCH(n)}`;
 const dateOf = iso => (iso ? new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' }) : '');
@@ -30,17 +32,17 @@ export function persona(w) {
 }
 
 function cards(w, nickname) {
-  const m = monthOf(w);
+  const m = seasonLabel(w);
   const fav = w.games?.[0];
   const p = persona(w);
   const out = [];
   out.push({ key: 'intro', html: `
     <span class="wr-kicker">VEGAS 랩드</span>
-    <h2 class="wr-huge">${m}월</h2>
-    <p class="wr-lead">${esc(nickname)}님의 한 달을<br>정리해 봤어요</p>
+    <h2 class="wr-huge">${m}</h2>
+    <p class="wr-lead">${esc(nickname)}님의 이번 시즌을<br>정리해 봤어요</p>
     <small class="wr-foot">${w.live ? `${dateOf(new Date().toISOString())}까지 · 아직 진행 중` : `${String(w.name || '').replace(' (프리시즌)', '')} 마감`}</small>` });
   out.push({ key: 'rounds', html: `
-    <span class="wr-kicker">이번 달 플레이</span>
+    <span class="wr-kicker">이번 시즌 플레이</span>
     <h2 class="wr-huge"><span data-roll="${w.rounds}">${w.rounds.toLocaleString('ko-KR')}</span><small>판</small></h2>
     <p class="wr-lead">${w.days ? `${w.days}일 동안 테이블에 앉았어요` : '테이블에 이만큼 앉았어요'}</p>
     <dl class="wr-stats">
@@ -65,15 +67,15 @@ function cards(w, nickname) {
     <span class="wr-kicker">눈물의 한 판</span>
     <h2 class="wr-big wr-neg">${formatCH(w.worst.pnl)}</h2>
     <p class="wr-lead">${gameName(w.worst.game)}에서 한 번에</p>
-    <small class="wr-foot">${w.pnl >= 0 ? '그래도 이번 달은 남겼어요' : '그래도 다음 판은 또 오죠'}</small>` });
+    <small class="wr-foot">${w.pnl >= 0 ? '그래도 이번 시즌은 남겼어요' : '그래도 다음 판은 또 오죠'}</small>` });
   out.push({ key: 'tier', tier: w.tier, html: `
-    <span class="wr-kicker">이번 달 최고 순자산</span>
-    <h2 class="wr-big">${formatCH(w.peak)}</h2>
+    <span class="wr-kicker">${w.rp != null ? '이번 시즌 RP' : '이번 시즌 최고 순자산'}</span>
+    <h2 class="wr-big">${w.rp != null ? `${w.rp}<small> RP</small>` : formatCH(w.peak)}</h2>
     <div class="wr-tier">${tierEmblem(w.tier, { size: 96 })}<b>${tierName(w.tier)}</b></div>
     <p class="wr-lead">${w.rank && w.of ? `${w.of.toLocaleString('ko-KR')}명 중 ${w.rank}위${w.live ? ' (지금)' : ''}` : ''}</p>
     ${w.bestRun >= 3 ? `<small class="wr-foot">최장 ${w.bestRun}연승</small>` : ''}` });
   out.push({ key: 'end', html: `
-    <span class="wr-kicker">${m}월의 나는</span>
+    <span class="wr-kicker">${m}의 나는</span>
     <h2 class="wr-big">${esc(p.title)}</h2>
     <p class="wr-lead">${esc(p.line)}</p>
     <dl class="wr-stats">
@@ -96,7 +98,7 @@ export function openWrapped(w, { nickname = '' } = {}) {
   node.setAttribute('role', 'dialog');
   node.setAttribute('aria-modal', 'true');
   node.tabIndex = -1;
-  node.setAttribute('aria-label', `VEGAS 랩드 ${monthOf(w)}월`);
+  node.setAttribute('aria-label', `VEGAS 랩드 ${seasonLabel(w)}`);
   node.innerHTML = `
     <div class="wr-progress" aria-hidden="true">${list.map(() => '<span><i></i></span>').join('')}</div>
     <button type="button" class="wr-close" aria-label="닫기">✕</button>
@@ -242,7 +244,7 @@ export async function wrappedCard(w, nickname = '') {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#b3b8bf';
   ctx.font = `600 38px ${KR}`;
-  ctx.fillText(`VEGAS 랩드 · ${monthOf(w)}월${w.live ? ' (진행 중)' : ''}`, W / 2, 280);
+  ctx.fillText(`VEGAS 랩드 · ${seasonLabel(w)}${w.live ? ' (진행 중)' : ''}`, W / 2, 280);
   ctx.fillStyle = '#f4f5f7';
   fit(ctx, nickname, W - 200, 700, 72, KR);
   ctx.fillText(nickname, W / 2, 380);
@@ -265,7 +267,7 @@ export async function wrappedCard(w, nickname = '') {
     ['승률', pct(w.winRate)],
     ['가장 많이 한 게임', fav ? gameName(fav.game) : '-'],
     ['인생 한 판', w.best ? `+${formatCH(w.best.pnl)}` : '-'],
-    ['최고 순자산', formatCH(w.peak)],
+    w.rp != null ? ['시즌 RP', `${w.rp} RP`] : ['최고 순자산', formatCH(w.peak)],
     ['티어', `${tierName(w.tier)}${w.rank && w.of ? ` · ${w.rank}위` : ''}`]
   ];
   const top = 1130, rowH = 220, colW = (W - 200) / 2;
@@ -291,10 +293,10 @@ export async function wrappedCard(w, nickname = '') {
 export async function shareWrapped(w, nickname = '') {
   const blob = await wrappedCard(w, nickname);
   if (!blob) return;
-  const m = monthOf(w);
+  const m = seasonLabel(w);
   const p = persona(w);
-  const text = `VEGAS ${m}월 결산: ${p.title} · ${tierName(w.tier)} · ${w.rounds.toLocaleString('ko-KR')}판`;
-  await shareImage({ blob, filename: `vegas-wrapped-${m}.png`, title: `VEGAS 랩드 ${m}월`, text, ...(nickname ? { nickname } : {}) });
+  const text = `VEGAS ${m} 결산: ${p.title} · ${tierName(w.tier)} · ${w.rounds.toLocaleString('ko-KR')}판`;
+  await shareImage({ blob, filename: `vegas-wrapped-${String(w.season || m).replace('rank-', '')}.png`, title: `VEGAS 랩드 ${m}`, text, ...(nickname ? { nickname } : {}) });
 }
 
 // The profile's row: this month so far, then the months gone by.
@@ -303,10 +305,10 @@ export function wrappedBlock(state) {
   const months = [...(wr?.live ? [wr.live] : []), ...(wr?.history || []).filter(h => h.rounds)];
   if (!months.length) return null;
   const box = el('section', 'wr-list');
-  box.innerHTML = `<h2 class="sub-head">VEGAS 랩드 <small>한 달 결산 카드</small></h2>
+  box.innerHTML = `<h2 class="sub-head">VEGAS 랩드 <small>시즌 결산 카드</small></h2>
     <ul>${months.map((m, k) => `<li><button type="button" class="wr-row" data-k="${k}">
       ${tierEmblem(m.tier, { size: 34, label: false })}
-      <span><b>${monthOf(m)}월 결산${m.live ? ' <em>진행 중</em>' : ''}</b><small>${m.rounds.toLocaleString('ko-KR')}판 · ${persona(m).title} · ${tierName(m.tier)}</small></span>
+      <span><b>${seasonLabel(m)} 결산${m.live ? ' <em>진행 중</em>' : ''}</b><small>${m.rounds.toLocaleString('ko-KR')}판 · ${persona(m).title} · ${tierName(m.tier)}</small></span>
       <span class="wr-row-go" aria-hidden="true">→</span></button></li>`).join('')}</ul>`;
   box.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => openWrapped(months[Number(b.dataset.k)], { nickname: state.user?.nickname })));
   return box;

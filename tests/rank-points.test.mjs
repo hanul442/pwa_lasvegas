@@ -19,7 +19,7 @@ test('RP follows the result against the bet, not the size of the bet', () => {
   // A bet past the Gold Room's 1억 top can only be made upstairs; the Gold Room's own top bet can't.
   assert.equal(rpForRound({ stake: 200_000_000, netPnl: 200_000_000, points: 0 }), 15);
   assert.equal(rpForRound({ stake: 100_000_000, netPnl: 100_000_000, points: 0 }), 10);
-  assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_000_000, points: 450 }), 5);
+  assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_000_000, points: 450 }), 3.5, 'a platinum player below their floor: 0.5 × 0.7');
 });
 
 test('no cap on a day, points never go below 0, and a new season starts three tiers lower', () => {
@@ -28,13 +28,13 @@ test('no cap on a day, points never go below 0, and a new season starts three ti
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
   assert.equal(rpView(u, NOV).points, 300);
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).today, 450, 'the second win: the Gold Room is below a gold player, 0.5×');
+  assert.equal(rpView(u, NOV).today, 420, 'the second win: a gold player below their floor, 0.5 × 0.8');
   assert.equal(rpView(u, NOV).tier, 'platinum');
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, NOV + 86_400_000);
-  assert.equal(rpView(u, NOV + 86_400_000).today, 5, 'next day counts from 0');
-  assert.equal(rpForRound({ stake: 1e6, netPnl: 1e6, points: 300 }), 5, 'the Gold Room is below a gold-tier player: 0.5×');
+  assert.equal(rpView(u, NOV + 86_400_000).today, 3, 'next day counts from 0');
+  assert.equal(rpForRound({ stake: 1e6, netPnl: 1e6, points: 300 }), 4, 'the Gold Room is below a gold-tier player: 0.5 × 0.8');
   const DEC = Date.parse('2026-12-02T03:00:00Z');
-  assert.equal(rpView(u, DEC).points, 100, '플래티넘 455 → 브론즈 100');
+  assert.equal(rpView(u, DEC).points, 100, '플래티넘 423 → 브론즈 100');
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, DEC);
   assert.equal(u.rp.prev.season, 'rank-2026-10', 'October and November are one season');
 });
@@ -65,4 +65,16 @@ test('tiers split into IV–I divisions of 25 RP; 레전드 has none', async () 
   assert.deepEqual(rpNextStep(80).next, { id: 'bronze', division: 'IV', need: 20 });
   assert.deepEqual(rpNextStep(880).next, { id: 'legend', division: null, need: 20 });
   assert.equal(rpNextStep(950).next, null);
+});
+
+import { FLOORS } from '../lib/constants.mjs';
+import { rpFloorLevel } from '../lib/rank-points.mjs';
+
+test('the climb gets steeper: higher tiers win less and lose more on the same bet', () => {
+  // Bets on the player's own floor, so only the tier scale moves the numbers.
+  const own = points => ({ stake: FLOORS[Math.min(FLOORS.length - 1, rpFloorLevel(points))].maxBet, points });
+  const win = points => rpForRound({ ...own(points), netPnl: own(points).stake });
+  const loss = points => rpForRound({ ...own(points), netPnl: -own(points).stake });
+  assert.deepEqual([0, 150, 250, 650, 950].map(win), [10, 10, 9, 5, 3.5]);
+  assert.deepEqual([0, 650, 950].map(loss), [-7.5, -10, -13]);
 });

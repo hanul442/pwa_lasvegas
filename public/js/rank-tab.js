@@ -75,7 +75,7 @@ export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
   // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
-  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 IV부터 I까지 25 RP씩 네 단계예요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
+  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 IV부터 I까지 25 RP씩 네 단계예요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 실버부터는 티어가 높을수록 이기면 덜 오르고 지면 더 내려가요 (다이아는 이기면 절반, 지면 건 만큼, 레전드는 이기면 0.35배). 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];

@@ -13,7 +13,8 @@ import { createRoomClient } from './room-client.js';
 import { createBanter } from '../banter.js';
 
 const ME = 0;
-const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', DDADANG: '따당', HALF: '하프', CALL: '콜', ALLIN: '올인' };
+const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', DDADANG: '따당', QUARTER: '쿼터', HALF: '하프', CALL: '콜', ALLIN: '올인', REJOIN: '재경기 참여', PASS: '안 들어감' };
+const RAISE = new Set(['BBING', 'DDADANG', 'QUARTER', 'HALF', 'ALLIN', 'REJOIN']);
 const LINE = { DIE: 'die', CHECK: 'check', HALF: 'half', CALL: 'call' };
 const NAMES = ['박사장', '김여사', '타짜 정', '막내']; // the server's roster, for the empty table
 const COUNT_KEY = 'vegas.seotda.players';
@@ -121,7 +122,7 @@ export async function mountSeotda(ctx) {
     node.innerHTML = `<b>${LABEL[action]}</b>${cost ? ` ${formatCH(cost)}` : ''}`;
     voice.say(LINE[action]);
     node.classList.add('is-shown');
-    node.classList.toggle('is-raise', action === 'HALF' || action === 'BBING' || action === 'DDADANG' || action === 'ALLIN');
+    node.classList.toggle('is-raise', RAISE.has(action));
     animate(node, [{ opacity: 0, transform: 'translateY(4px) scale(.85)' }, { opacity: 1, transform: 'none' }], { duration: 220, fill: 'none' });
   }
   const hush = () => t.body.querySelectorAll('[data-said]').forEach(n => { n.textContent = ''; n.classList.remove('is-shown', 'is-raise'); });
@@ -188,6 +189,7 @@ export async function mountSeotda(ctx) {
         else sound.tick();
         const put = $(`[data-put="${e.seat}"]`);
         if (put && e.contrib != null) put.textContent = formatCH(e.contrib);
+        if (e.action === 'REJOIN') seatEl(e.seat)?.classList.remove('is-folded');
         if (e.action === 'DIE') {
           seatEl(e.seat)?.classList.add('is-folded');
           cardsOf(e.seat).querySelectorAll('.hw').forEach(n => animate(n, [{ transform: 'none' }, { transform: 'translateY(6px)' }], { duration: 300 }));
@@ -208,7 +210,7 @@ export async function mountSeotda(ctx) {
         await shout(`${e.name} · 재경기`);
         banter.seotdaRedeal(allSeats());
         await doubleStamp(t.body, '판돈 묻고 다시');
-        t.toast('판돈은 그대로 묻어 두고, 남은 사람끼리 다시 받아요');
+        t.toast(view?.players?.some(p => p.folded) ? '판돈은 그대로 묻고 다시 받아요 · 다이한 사람은 판돈 절반을 내면 들어올 수 있어요' : '판돈은 그대로 묻어 두고, 남은 사람끼리 다시 받아요');
         await clearCards();
         delete t.body.dataset.street2;
         hush();
@@ -348,18 +350,22 @@ export async function mountSeotda(ctx) {
     }
     if (playing || view.turn !== ME) {
       const who = playing ? liveTurn : view.turn;
-      const waiting = { label: who >= 0 && who !== ME ? `${view.players[who]?.name || '상대'} 차례` : who === DEALING ? '패 받는 중' : '베팅 중', ghost: true, disabled: true };
+      const asking = view.phase === 'REJOIN' && !playing;
+      const waiting = { label: who >= 0 && who !== ME ? `${view.players[who]?.name || '상대'} ${asking ? '재경기 참여 고르는 중' : '차례'}` : who === DEALING ? '패 받는 중' : '베팅 중', ghost: true, disabled: true };
       t.setActions(room.active ? [room.leaveAction(), waiting] : [waiting]);
       return;
     }
     const turn = `${view.id}:${view.street}:${view.pot}`;
     if (prompted !== turn) { prompted = turn; voice.say('your-action'); }
     const opts = view.options;
-    t.hint(view.street === 1 ? '첫 장을 보고 베팅해요' : '마지막 베팅이에요');
+    const capped = opts.some(o => o.capped) || (view.toCall > 0 && !opts.some(o => RAISE.has(o.action) && o.action !== 'ALLIN') && view.contrib[ME] + view.toCall >= view.cap);
+    t.hint(view.phase === 'REJOIN' ? `재경기예요 · 판돈 절반 ${formatCH(opts[0]?.cost || 0)}을 내면 다시 들어가요`
+      : capped ? `판돈 상한 · 한 사람 ${formatCH(view.cap)}까지만 걸 수 있어요`
+      : view.street === 1 ? '첫 장을 보고 베팅해요' : '마지막 베팅이에요');
     t.setActions([...(room.active ? [room.leaveAction()] : []), ...opts.map(o => ({
-      label: `${LABEL[o.action]}${o.cost ? ` ${formatCH(o.cost)}` : ''}`,
-      ghost: o.action === 'DIE',
-      primary: o.action === 'CALL' || (o.action === 'CHECK' && !opts.some(x => x.action === 'CALL')) || (o.action === 'ALLIN' && !opts.some(x => x.action === 'CALL' || x.action === 'CHECK')),
+      label: `${LABEL[o.action]}${o.cost ? ` <small class="action-amt">${formatCH(o.cost)}</small>` : ''}`,
+      ghost: o.action === 'DIE' || o.action === 'PASS',
+      primary: o.action === 'CALL' || o.action === 'REJOIN' || (o.action === 'CHECK' && !opts.some(x => x.action === 'CALL')) || (o.action === 'ALLIN' && !opts.some(x => x.action === 'CALL' || x.action === 'CHECK')),
       disabled: o.cost > t.available,
       onClick: () => act(o.action)
     }))]);

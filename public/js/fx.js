@@ -35,7 +35,15 @@ export function flyFrom(el, fromRect, { duration = 420, delay = 0, lift = 0, spi
         { transform: `translate(${dx}px,${dy}px) rotate(${spin}deg) scale(${scale})` },
         { transform: 'translate(0,0) rotate(0) scale(1)' }
       ];
-  return animate(el, frames, { duration, delay, easing: easing || 'cubic-bezier(.16,.84,.3,1)', fill: 'backwards' });
+  // Chips are heavy: a thrown one lands with a short press into the felt instead of stopping dead.
+  if (lift && el.classList.contains('chip') && !reducedMotion()) {
+    const end = frames.pop();
+    frames.push({ transform: 'translate(0,0) rotate(0) scale(.93)', offset: 0.9 }, end);
+  }
+  // While it is in the air a thing casts a wide, soft shadow; the shadow tightens as it lands.
+  if (lift) el.classList.add('is-airborne');
+  const done = animate(el, frames, { duration, delay, easing: easing || 'cubic-bezier(.16,.84,.3,1)', fill: 'backwards' });
+  return lift ? done.then(() => el.classList.remove('is-airborne')) : done;
 }
 
 // Moves `el` from where it sits now to `toRect`, leaving it there.
@@ -226,14 +234,14 @@ export const sound = {
   shuffle() { const ac = audio(); if (ac && !sample(ac, 'shuffle', { gain: 0.8, jitter: 0.02 })) synth.card(ac); },
   // The dealer sweeping the cards in.
   gather() { const ac = audio(); if (ac) sample(ac, 'gather', { gain: 0.6 }); },
-  chip() { const ac = audio(); if (ac && !sample(ac, 'chip', { gain: 0.55, jitter: 0.06 })) synth.chip(ac); },
+  chip() { const ac = audio(); if (ac && !sample(ac, 'chip', { gain: 0.9, jitter: 0.06 })) synth.chip(ac); },
   // A short run of chips dropping onto a stack.
   chips(count = 4) {
     const ac = audio(); if (!ac) return;
     const n = Math.max(1, Math.min(count, 8));
     for (let i = 0; i < n; i++) {
       const at = i * 0.055 + Math.random() * 0.015;
-      if (!sample(ac, 'stack', { at, gain: 0.5 - i * 0.03, jitter: 0.06 })) { setTimeout(() => sound.chip(), at * 1000); }
+      if (!sample(ac, 'stack', { at, gain: 0.8 - i * 0.05, jitter: 0.06 })) { setTimeout(() => sound.chip(), at * 1000); }
     }
   },
   tick() { const ac = audio(); if (ac) noiseBurst(ac, { length: 0.012, freq: 6000, q: 3, gain: 0.18 }); },
@@ -250,7 +258,7 @@ export const sound = {
   win() {
     const ac = audio(); if (!ac) return;
     if (!sample(ac, 'rake', { gain: 0.6 })) return synth.win(ac);
-    [0.16, 0.24, 0.31, 0.37].forEach((at, i) => sample(ac, 'stack', { at, gain: 0.5 - i * 0.06, jitter: 0.07 }));
+    [0.16, 0.24, 0.31, 0.37].forEach((at, i) => sample(ac, 'stack', { at, gain: 0.8 - i * 0.08, jitter: 0.07 }));
   },
   // A loss: no fanfare, just the dealer taking the cards and chips away.
   lose() {
@@ -259,7 +267,7 @@ export const sound = {
     sample(ac, 'rake', { at: 0.18, gain: 0.3, rate: 0.92 });
   },
   // A push: two chips knocked together, the bet stays.
-  push() { const ac = audio(); if (ac && !sample(ac, 'collide', { gain: 0.6 })) synth.push(ac); },
+  push() { const ac = audio(); if (ac && !sample(ac, 'collide', { gain: 0.85 })) synth.push(ac); },
   // A lightning strike: a dry crack, then a low roll under it.
   strike() {
     const ac = audio(); if (!ac) return;

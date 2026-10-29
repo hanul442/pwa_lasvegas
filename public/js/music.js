@@ -16,7 +16,11 @@ let BEAT = 60 / 144;
 const SWING = 0.63; // the off-beat eighth lands at 63% of the beat
 const FULL = 0.3;
 // The settings slider scales the band; 60 (the default) sits a little under full.
-const volume = () => FULL * Math.min(1, (settings.get('music') ?? 60) / 75);
+// Measured in Chromium (2026-10-29), the hwatu bands (gayageum and drums, few sustained notes)
+// came out ~4 dB under the brass themes and noir ~2 dB under; these trims bring every table to the
+// same loudness so switching games never needs a volume change.
+const TRIM = { matgo: 1.55, gostop: 1.6, seotda: 1.6, noir: 1.25 };
+const volume = () => FULL * Math.min(1, (settings.get('music') ?? 60) / 75) * (TRIM[theme] || 1);
 
 // Chords as [root MIDI note, chord tones above the root].
 const MAJ6 = [0, 4, 7, 9], DOM7 = [0, 4, 7, 10], MIN7 = [0, 3, 7, 10], DIM7 = [0, 3, 6, 9];

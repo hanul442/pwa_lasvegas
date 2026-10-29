@@ -15,11 +15,21 @@ const TOTAL_PAY = { 4: 60, 5: 30, 6: 17, 7: 12, 8: 8, 9: 6, 10: 6, 11: 6, 12: 6,
 function cube() {
   return `<div class="die"><div class="die-cube">${FACES.map(([side, n]) => `<span class="die-face die-face--${side}">${Array.from({ length: 9 }, (_, i) => `<i${PIPS[n].includes(i + 1) ? ' class="on"' : ''}></i>`).join('')}</span>`).join('')}</div></div>`;
 }
+// A flat die face for the single-number spots.
+const face = n => `<span class="sb-pips" aria-hidden="true">${Array.from({ length: 9 }, (_, i) => `<i${PIPS[n].includes(i + 1) ? ' class="on"' : ''}></i>`).join('')}</span>`;
 const pose = n => `rotateX(-22deg) rotateY(28deg) ${FACE_ROT[n]}`;
 
-// A bet's net on these dice, by the server's payouts: a triple loses every even-money bet.
+// A spot's server bet: T<n> a total, S<n> a single number, else the zone is the bet type.
+function zoneBet(zone) {
+  if (zone.startsWith('T')) return { betType: 'TOTAL', target: Number(zone.slice(1)) };
+  if (zone.startsWith('S') && zone.length === 2) return { betType: 'SINGLE', target: Number(zone.slice(1)) };
+  return { betType: zone };
+}
+// A bet's net on these dice, by the server's payouts (lib/games.mjs sicboBetNet): a triple loses
+// every even-money bet, and a single number pays 1:1 for each die showing it.
 function betNet(zone, stake, dice) {
   const total = dice[0] + dice[1] + dice[2], triple = dice[0] === dice[1] && dice[1] === dice[2];
+  if (zone.startsWith('S') && zone.length === 2) { const n = dice.filter(d => d === Number(zone[1])).length; return n ? stake * n : -stake; }
   if (zone.startsWith('T')) return Number(zone.slice(1)) === total ? stake * TOTAL_PAY[total] : -stake;
   if (zone === 'ANY_TRIPLE') return triple ? stake * 30 : -stake;
   const won = !triple && (zone === 'SMALL' ? total <= 10 : zone === 'BIG' ? total >= 11 : zone === 'ODD' ? total % 2 === 1 : total % 2 === 0);
@@ -45,7 +55,7 @@ function crowdPlan(npc, t) {
 // `event: 'godofgamblers'` seats God of Gamblers (lib/events.mjs): 도신's bonus after four wins in a row.
 export async function mountDice(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
-  const t = new Table({ ...ctx, game: 'dice', title: ev ? ev.title : gameName('dice'), feltClass: 'felt--red', hot: !ev });
+  const t = new Table({ ...ctx, game: 'dice', title: ev ? ev.title : gameName('dice'), feltClass: 'felt--red', multi: true, zoneMin: false, zoneWord: '한 곳당', hot: !ev });
   const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
   if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
   const totals = Object.entries(TOTAL_PAY).map(([n, p]) => `<button type="button" class="zone zone--total" data-zone="T${n}"><strong>${n}</strong><small>${p}:1</small></button>`).join('');
@@ -59,6 +69,7 @@ export async function mountDice(ctx, { event = null } = {}) {
         <button type="button" class="zone" data-zone="EVEN"><strong>Even</strong><small>1:1</small></button>
         <button type="button" class="zone zone--big-small" data-zone="BIG"><strong>Big</strong><small>11–17 · 1:1</small></button>
       </div>
+      <div class="sb-singles">${[1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="zone zone--single" data-zone="S${n}" aria-label="${n} 단일 숫자, 하나 1배 둘 2배 셋 3배">${face(n)}</button>`).join('')}<small class="sb-singles-pay" aria-hidden="true">숫자 · 1개 1:1 · 2개 2:1 · 3개 3:1</small></div>
       <div class="sb-totals">${totals}</div>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
@@ -103,7 +114,7 @@ export async function mountDice(ctx, { event = null } = {}) {
     const total = values.reduce((a, b) => a + b, 0);
     totalEl.textContent = values[0] === values[1] && values[1] === values[2] ? `Triple ${values[0]}` : `${total}, ${total <= 10 ? 'Small' : 'Big'}`;
     totalEl.classList.add('is-shown');
-    const hits = [`T${total}`];
+    const hits = [`T${total}`, ...new Set(values.map(v => `S${v}`))];
     const triple = values[0] === values[1] && values[1] === values[2];
     if (triple) hits.push('ANY_TRIPLE');
     else hits.push(total <= 10 ? 'SMALL' : 'BIG', total % 2 ? 'ODD' : 'EVEN');
@@ -118,13 +129,12 @@ export async function mountDice(ctx, { event = null } = {}) {
 
   async function go() {
     if (!t.betReady) return;
-    const zone = t.bet.zone;
-    const betType = zone.startsWith('T') ? 'TOTAL' : zone;
-    const target = zone.startsWith('T') ? Number(zone.slice(1)) : undefined;
+    // Chips on any number of spots, one roll for all; the server settles each on its own.
+    const bets = t.betZones.map(zone => ({ zone, ...zoneBet(zone), stake: t.zoneTotal(zone) }));
     const key = t.roundKey();
     t.lock();
     // The bet goes to the server while the AI players drop their last chips, not after.
-    const request = api.sicbo(t.total, t.tier.floor, betType, target, ev?.id, key);
+    const request = api.sicboRoll(bets.map(({ zone, ...b }) => b), t.tier.floor, ev?.id, key);
     request.catch(() => {});
     await crowd.close();
     let res;
@@ -139,7 +149,7 @@ export async function mountDice(ctx, { event = null } = {}) {
     const hot = res.round.hotTable;
     const net = res.round.netPnl + (hot?.bonus || 0);
     await Promise.all([
-      t.settle(net, { label: `${res.round.dice.join(' · ')}`, hot }),
+      t.settle(net, { label: `${res.round.dice.join(' · ')}`, hot, zones: new Map(res.round.bets.map((b, i) => [bets[i].zone, b.netPnl])) }),
       crowd.settle((zone, stake) => betNet(zone, stake, res.round.dice))
     ]);
     await t.syncBalance();

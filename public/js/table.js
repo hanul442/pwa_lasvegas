@@ -1,7 +1,6 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
-import { ownerEntrance } from './shop.js';
 import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 
 // A hand that loses this many table minimums (two max bets) gets the hard landing.
@@ -146,8 +145,6 @@ export class Table {
     this.renderTray();
     this.renderRack();
     this.hotEl = root.querySelector('[data-hot]');
-    // Luxury owners walk in with their dearest piece (looks only; lib/shop.mjs never touches odds).
-    if (skin) ownerEntrance(state, this.felt);
     this.hotOn = hot;
     this.hotWindows = [];
     this.watchHot(state, { announce: true });

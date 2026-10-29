@@ -45,6 +45,7 @@ function moveFor(room, seat, rand, wallet = Infinity) {
     // A player only raises or calls with chips they still have; otherwise they fold.
     const opts = seotdaOptions(r, seat).filter(o => o.cost <= wallet).map(o => o.action);
     const pick = rand();
+    if (opts.includes('PASS')) return { action: opts.includes('REJOIN') && pick < 0.6 ? 'REJOIN' : 'PASS' };
     return { action: pick < 0.15 && opts.includes('HALF') ? 'HALF' : opts.includes('CALL') ? (pick > 0.9 ? 'DIE' : 'CALL') : opts.includes('CHECK') ? 'CHECK' : opts.includes('ALLIN') && pick < 0.7 ? 'ALLIN' : 'DIE' };
   }
   return matgoAiDecision(r, seat, max => Math.floor(rand() * max));

@@ -8,7 +8,7 @@ import { api, errorMessage } from '../api.js';
 import { el, formatCH, sound } from '../fx.js';
 import { TIERS } from '../chips.js';
 import { seatedElsewhere } from './seat-elsewhere.js';
-import { shareInvite, takePendingJoin } from '../invite.js';
+import { shareInvite, takePendingJoin, takePendingWatch } from '../invite.js';
 import { createRoomChat } from '../room-chat.js';
 
 const POLL_MS = 1500;
@@ -22,6 +22,9 @@ export function createRoomClient(t, game, hooks) {
   const stakeNow = () => hooks.stake?.() ?? t.total; // baccarat: the main bet, not the pair spots
   let room = null, code = null, cursor = null;
   let active = false;
+  // 관전 (lib/watch.mjs): the friend whose chair I watch from; nothing at the table is mine to play.
+  let watching = null, watchName = '';
+  const own = { setActions: t.setActions.bind(t), settle: t.settle.bind(t), bigWin: t.bigWin.bind(t) };
   let pollTimer = null, listTimer = null, clockTimer = null;
   let queue = Promise.resolve();
 
@@ -157,6 +160,9 @@ export function createRoomClient(t, game, hooks) {
 
   // Back to a room this person is still sitting in (reload, came back later).
   async function resume() {
+    // 관전 from the friends list.
+    const watch = takePendingWatch(game);
+    if (watch) { await watchRoom(watch.code, watch.watch); return true; }
     // Opened from a friend's invite link: sit at that room.
     // (Already sitting in it, e.g. the host opening their own link: just go back to it.)
     const invited = takePendingJoin(game);
@@ -169,6 +175,42 @@ export function createRoomClient(t, game, hooks) {
     return true;
   }
 
+  // Watch a friend's chair: the felt plays exactly as at their seat, with their cards, but the
+  // action row only offers 그만 보기 and a win or loss is theirs, not mine.
+  async function watchRoom(roomCode, friendId) {
+    let res;
+    try { res = await api.room(roomCode, null, friendId); } catch (e) { t.toast(errorMessage(e)); return; }
+    watching = friendId;
+    watchName = res.room.watching?.nickname || '친구';
+    t.setActions = () => own.setActions([
+      { label: '그만 보기', anytime: true, onClick: stopWatching },
+      { label: `${watchName}님 자리 관전 중`, ghost: true, disabled: true }
+    ]);
+    t.settle = async (net, { label } = {}) => {
+      t.banner(`${watchName} ${label || ''}`.trim(), net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
+      if (net > 0) sound.win(); else if (net < 0) sound.lose();
+      await sleep(900);
+      t.resetRound();
+    };
+    t.bigWin = () => Promise.resolve();
+    await enter(res.room);
+    t.toast(`${watchName}님 자리에서 관전해요. 카드는 ${watchName}님 것만 보여요`);
+  }
+  function unwatch() {
+    if (!watching) return;
+    watching = null;
+    t.setActions = own.setActions;
+    t.settle = own.settle;
+    t.bigWin = own.bigWin;
+  }
+  async function stopWatching() {
+    if (!active) return;
+    stop();
+    active = false;
+    await queue;
+    await exit('관전을 마쳤어요');
+  }
+
   async function enter(view) {
     close();
     active = true;
@@ -176,11 +218,13 @@ export function createRoomClient(t, game, hooks) {
     cursor = null;
     t.locked = true;
     t.root.classList.add('is-room');
-    tableName.textContent = `${tierName(view.tier)} · 친구 방 · ${word} ${formatCH(view.stake)}`;
+    t.root.classList.toggle('is-watching', Boolean(watching));
+    tableName.textContent = watching ? `${watchName}님 관전 · ${word} ${formatCH(view.stake)}` : `${tierName(view.tier)} · 친구 방 · ${word} ${formatCH(view.stake)}`;
+    chipEl.hidden = Boolean(watching); // the rail doesn't hand out seats
     chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
     chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
     bar.hidden = false;
-    chat.show(true);
+    chat.show(!watching); // the rail can't talk to the table
     await hooks.clear();
     await applyView(view, null);
     schedule(POLL_MS);
@@ -194,7 +238,9 @@ export function createRoomClient(t, game, hooks) {
     cursor = null;
     bar.hidden = true;
     chat.show(false);
-    t.root.classList.remove('is-room', 'is-playing');
+    unwatch();
+    chipEl.hidden = false;
+    t.root.classList.remove('is-room', 'is-playing', 'is-watching');
     tableName.textContent = tableNameText;
     t.locked = false;
     await hooks.clear();
@@ -209,6 +255,7 @@ export function createRoomClient(t, game, hooks) {
   // stops at once, and the felt is cleared after whatever is on screen finishes.
   let leaving = false;
   async function leave() {
+    if (watching) return stopWatching();
     if (leaving || !active) return;
     leaving = true;
     const midHand = room?.round?.status === 'PLAYING';
@@ -242,9 +289,10 @@ export function createRoomClient(t, game, hooks) {
     if (document.hidden || t.busy) return schedule();
     const sent = cursor && { ...cursor };
     let res;
-    try { res = await api.room(code, sent); }
+    try { res = await api.room(code, sent, watching); }
     catch (e) {
       if (e.code === 'ROOM_NOT_FOUND') { await exit('방이 닫혔어요'); return; }
+      if (watching && /^WATCH_/.test(e.code || '')) { active = false; await exit(e.code === 'WATCH_GONE' ? `${watchName}님이 방에서 나갔어요` : errorMessage(e)); return; }
       return schedule(POLL_MS * 2);
     }
     if (typeof res.available === 'number') t.available = res.available;
@@ -272,7 +320,7 @@ export function createRoomClient(t, game, hooks) {
   // Bring the felt up to a room view: play what's new, or redraw when too far behind.
   async function applyView(view, sent) {
     if (!active || view.code !== code) return;
-    if (!view.seated) { await exit('테이블에서 일어났어요'); return; }
+    if (!view.seated && !(watching && view.watching)) { await exit(watching ? `${watchName}님이 방에서 나갔어요` : '테이블에서 일어났어요'); return; }
     if (cursor && older(view.cursor, cursor)) return; // a reply older than what is on the felt
     room = view;
     chat.sync(view.chat);
@@ -299,9 +347,13 @@ export function createRoomClient(t, game, hooks) {
     if (!v) return;
     const people = v.players.length;
     let line = '';
-    if (!v.started) line = v.isHost ? `초대를 눌러 친구에게 링크를 보내 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
+    const rail = (v.watchers || []).filter(w => w.userId !== v.watching?.userId);
+    if (watching) line = v.waiting || !v.playing ? '다음 판을 기다려요' : '👀 관전 중';
+    else if (!v.started) line = v.isHost ? `초대를 눌러 친구에게 링크를 보내 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
     else if (v.waiting) line = '다음 판부터 AI 자리에 앉아요';
     else if (v.round?.status === 'SETTLED') line = '다음 판을 곧 돌려요';
+    // The players see who is on the rail.
+    if (!watching && rail.length) line = `${line ? `${line} · ` : ''}👀 ${rail.length === 1 ? `${rail[0].nickname} 관전 중` : `${rail.length}명 관전 중`}`;
     statusEl.textContent = line;
     clearInterval(clockTimer);
     clockEl.textContent = '';
@@ -309,11 +361,11 @@ export function createRoomClient(t, game, hooks) {
     const turn = v.turn;
     if (!turn) return;
     const deadline = Date.now() + (turn.deadline - v.serverNow);
-    const who = turn.seat === 0 ? '내 차례' : (v.round?.seats?.[turn.seat]?.name || '상대');
+    const who = turn.seat === 0 ? (watching ? `${watchName} 차례` : '내 차례') : (v.round?.seats?.[turn.seat]?.name || '상대');
     const paint = () => {
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       clockEl.textContent = `${who} · ${left}초`;
-      clockEl.classList.toggle('is-mine', turn.seat === 0);
+      clockEl.classList.toggle('is-mine', turn.seat === 0 && !watching);
       clockEl.classList.toggle('is-short', left <= 5);
       if (!left) clearInterval(clockTimer);
     };
@@ -324,7 +376,7 @@ export function createRoomClient(t, game, hooks) {
   // ---------- moves ----------
   // Sends my move with the cursor of what this screen has played; the reply plays like a poll.
   async function act(move) {
-    if (!room) return;
+    if (!room || watching) return;
     const sent = cursor && { ...cursor };
     let res;
     try { res = await api.roomAction(code, room.handNo, room.seq, move, sent); }
@@ -351,6 +403,7 @@ export function createRoomClient(t, game, hooks) {
 
   return {
     get active() { return active; },
+    get watching() { return Boolean(watching); },
     get view() { return room; },
     open, resume, act, idleActions, leaveAction,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },

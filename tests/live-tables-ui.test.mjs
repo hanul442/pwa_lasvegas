@@ -38,7 +38,7 @@ test('every live table plays through the server-authoritative API', () => {
   assert.match(games.blackjack, /api\.blackjackOpen\(\)/, 'unfinished rounds must be resumable');
   assert.match(games.baccarat, /api\.baccarat\(/);
   assert.match(games.roulette, /api\.rouletteSpin\(/);
-  assert.match(games.dice, /api\.sicbo\(/);
+  assert.match(games.dice, /api\.sicboRoll\(/);
   assert.match(games.holdem, /api\.holdemSit\(/);
   assert.match(games.holdem, /api\.holdemAction\(/);
   assert.match(games.holdem, /api\.holdemOpen\(\)/, 'an open seat must be resumable');

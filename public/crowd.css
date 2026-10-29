@@ -21,7 +21,7 @@
 .npc-stack--payout{translate:calc(var(--npc) * .6) 0}
 .npc-stack--payout[data-seat="2"]{translate:calc(var(--npc) * -.6) 0}
 .bac-zones .npc-stack{--npc:26px}
-.sb-main .npc-stack,.zone--total .npc-stack,.zone--pair .npc-stack,.rl-outside .npc-stack,.rl-dozens .npc-stack{--npc:18px;left:2px;bottom:2px}
+.sb-main .npc-stack,.zone--total .npc-stack,.zone--single .npc-stack,.zone--pair .npc-stack,.rl-outside .npc-stack,.rl-dozens .npc-stack{--npc:18px;left:2px;bottom:2px}
 .zone--total .npc-stack[data-seat="1"],.zone--pair .npc-stack[data-seat="1"],.rl-outside .npc-stack[data-seat="1"],.rl-dozens .npc-stack[data-seat="1"]{bottom:auto;top:2px}
 .zone--total .npc-stack[data-seat="2"],.zone--pair .npc-stack[data-seat="2"],.rl-outside .npc-stack[data-seat="2"],.rl-dozens .npc-stack[data-seat="2"]{left:auto;right:2px;bottom:auto;top:2px}
 .zone--total .npc-stack[data-seat="3"],.zone--pair .npc-stack[data-seat="3"],.rl-outside .npc-stack[data-seat="3"],.rl-dozens .npc-stack[data-seat="3"]{top:2px}
@@ -99,6 +99,7 @@
   .has-crowd .sb{min-height:0;align-content:center}
   .has-crowd .sb-main .zone{min-height:46px}
   .has-crowd .zone--total{min-height:38px}
+  .has-crowd .zone--single{min-height:32px}
   .has-crowd .dome{width:min(24dvw,34dvh)}
   .has-crowd .wheel{width:min(24dvw,34dvh)}
   .has-crowd .rl-board{grid-template-rows:repeat(3,26px)}
@@ -132,6 +133,8 @@
 @media (orientation:landscape) and (max-height:420px){
   .has-crowd .sb-main .zone{min-height:44px;padding-block:2px}
   .has-crowd .zone--total{min-height:34px;padding-block:1px;gap:0}
+  .has-crowd .zone--single{min-height:30px;padding-block:1px}
+  .has-crowd .sb-singles{gap:3px}
   .has-crowd .sb-totals{gap:3px}
 }
 

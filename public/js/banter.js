@@ -320,9 +320,10 @@ export function createBanter({ anchor, who, me = 0, rnd = Math.random }) {
 
     // 섯다: a bet as it lands on the felt.
     seotdaBet(e, seats) {
-      const raise = e.action === 'HALF' || e.action === 'BBING' || e.action === 'DDADANG' || e.action === 'ALLIN';
+      if (e.action === 'REJOIN' || e.action === 'PASS') return;
+      const raise = ['HALF', 'BBING', 'DDADANG', 'QUARTER', 'ALLIN'].includes(e.action);
       if (e.seat === me || !who(e.seat)) {
-        if (e.action === 'HALF' || e.action === 'DDADANG' || e.action === 'ALLIN') { const s = someone(seats, e.seat); if (s >= 0) say(s, 'humanRaise'); }
+        if (['HALF', 'DDADANG', 'QUARTER', 'ALLIN'].includes(e.action)) { const s = someone(seats, e.seat); if (s >= 0) say(s, 'humanRaise'); }
         return;
       }
       say(e.seat, raise ? 'raise' : e.action === 'CALL' ? 'call' : e.action === 'DIE' ? 'fold' : 'check');

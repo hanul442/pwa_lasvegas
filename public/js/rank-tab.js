@@ -48,7 +48,46 @@ export function tierHeroHtml(state) {
       <div><dt>최고 순자산</dt><dd>${formatCH(rs.peak)}</dd></div>
       <div><dt>역대 최고</dt><dd>${rs.best ? tierName(rs.best.tier) : '<small>첫 시즌</small>'}</dd></div>
     </dl>
-    <div class="tier-hero-foot"><small>매달 1일 0시에 칩·사치품·빚이 초기화돼요</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
+    <div class="tier-hero-foot"><small>매달 1일 0시에 칩·빚이 초기화돼요</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
+}
+
+// RP 베타 (lib/rank-points.mjs): the score that becomes the tier from the December season. It moves
+// with each round by what the round won against its own bet, so bigger bets don't buy it.
+export function rpCardHtml(state) {
+  const rp = state?.rp;
+  if (!rp) return '';
+  const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
+  const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
+  const board = state?.rankings?.rp || [];
+  const mine = board.find(r => r.id === state?.user?.id);
+  return `
+    <div class="rp-card-head"><span class="rp-badge">RP 베타</span><small>12월 시즌부터 이 점수가 티어가 돼요</small></div>
+    <div class="rp-card-main">
+      ${tierEmblem(rp.tier, { size: 44 })}
+      <div class="rp-card-name"><strong>${tierName(rp.tier)}</strong><span><b>${rp.points}</b> RP ${last}</span></div>
+      <span class="rp-card-rank">${mine ? `${mine.rank}<small>위</small>` : '<small>순위 없음</small>'}</span>
+    </div>
+    <div class="tier-hero-bar" role="progressbar" aria-label="다음 RP 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+    <p class="rp-card-foot"><span>${rp.next ? `${tierName(rp.next)}까지 ${rp.toNext} RP` : '최고 티어'}</span><span>오늘 +${rp.today} / ${rp.dayCap}</span></p>
+    <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판 ±30, 하루 +300까지. 내 티어보다 높은 층에서 이기면 1.5배.</p>`;
+}
+
+// 주간 리그 (lib/rank-league.mjs): my group of thirty, ranked by this week's RP. The top five move
+// up a league and the bottom five down when the week ends (Monday 0시); AI fill the empty seats.
+export function leagueHtml(state, frame = (id, n) => n) {
+  const lg = state?.league;
+  if (!lg) return '<p class="lounge-note">리그를 불러오는 중이에요.</p>';
+  const last = lg.last ? `<p class="league-last">지난주 ${lg.last.rank}위 / ${lg.last.of}명 · ${lg.last.move > 0 ? '승급했어요' : lg.last.move < 0 ? '강등됐어요' : '잔류'}</p>` : '';
+  const head = `<div class="league-head"><div><small>이번 주 리그</small><strong>${lg.name}</strong></div><span class="league-clock">${leftText(lg.endsAt)} 남음</span></div>
+    <p class="league-rule">이번 주에 얻은 RP로 30명이 겨뤄요. ${lg.top ? '' : `상위 ${lg.up}명은 승급, `}${lg.bottom ? '' : `하위 ${lg.down}명은 강등, `}1~3위는 배지를 받아요. 월요일 0시에 끝나요.</p>${last}`;
+  if (!lg.joined) return `${head}<p class="league-empty">${state.user?.guest ? '이름을 정하고 계정을 만들면 리그에 들어갈 수 있어요.' : `이번 주 첫 판을 하면 ${lg.name} 30명 조에 들어가요.`}</p>`;
+  const of = lg.rows.length;
+  const rows = lg.rows.map(r => {
+    const zone = !lg.top && r.rank <= lg.up ? 'is-up' : !lg.bottom && r.rank > of - lg.down ? 'is-down' : '';
+    const line = !lg.top && r.rank === lg.up ? ' has-line' : !lg.bottom && r.rank === of - lg.down ? ' has-line' : '';
+    return `<li class="league-row ${zone}${line}${r.me ? ' is-me' : ''}"><span class="rank-no">${r.rank}</span><span class="league-name">${r.ai ? r.nickname : frame(r.id, r.nickname)}${r.me ? ' <small>나</small>' : ''}${r.ai ? ' <small class="league-ai">AI</small>' : ''}</span><span class="rank-value">${r.value} RP</span></li>`;
+  }).join('');
+  return `${head}<div class="league-me"><span class="rank-me-no">${lg.rank}<small>위</small></span><span class="rank-me-text"><b>${lg.score} RP</b><small>${lg.rank <= lg.up && !lg.top ? '승급권이에요' : lg.rank > of - lg.down && !lg.bottom ? '강등권이에요. 한 판 더!' : '잔류권'}</small></span></div><ol class="league-list" aria-label="${lg.name} 순위">${rows}</ol>`;
 }
 
 // All ten tiers, highest first: what each needs, how many players sit there this month, and mine.

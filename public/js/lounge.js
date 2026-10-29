@@ -4,7 +4,7 @@ import { api, playerId } from './api.js';
 import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock } from './social.js';
-import { errorToast } from './notice.js';
+import { errorToast, toast } from './notice.js';
 import { gameName } from './names.js';
 import { bragButton } from './share.js';
 import { bragFloor } from './brags.js';
@@ -164,6 +164,8 @@ export function missionsBlock(state, onChanged) {
         try {
           const out = await api.missionClaim(m.id);
           await chipsToWallet(b, out.claim.amount + out.claim.bonus);
+          const run = out.claim.streak;
+          if (run) toast(run.day === 7 ? `미션 7일 연속 · 개근 +${formatCH(run.amount)}` : `미션 ${run.count}일 연속 · 보너스 +${formatCH(run.amount)}`);
           onChanged(out.state);
         } catch (e) { b.disabled = false; errorToast(e, () => b.click()); }
       });
@@ -175,7 +177,25 @@ export function missionsBlock(state, onChanged) {
   }
   box.append(list);
   box.append(el('p', 'lounge-note', ms.swept || claimedAll ? '오늘 미션을 모두 끝냈어요. 내일 또 만나요.' : `세 개를 모두 받으면 보너스 +${formatCH(ms.sweepBonus)}`));
+  if (ms.streak) box.append(streakStrip(ms));
   return box;
+}
+
+// 미션 연속 달성: seven stamps for the week-long run, the 3rd and 7th marked with what they add.
+function streakStrip(ms) {
+  const st = ms.streak, cycle = 7, PAYS = { 3: 1, 7: 3 };
+  // Stamps filled so far in this cycle: today's counts once it is done.
+  const filled = st.doneToday ? st.day : st.day - 1;
+  const strip = el('div', 'mstreak');
+  const stamps = Array.from({ length: cycle }, (_, i) => {
+    const d = i + 1, on = d <= filled, today = !st.doneToday && d === st.day;
+    return `<li class="mstreak-day${on ? ' is-on' : ''}${today ? ' is-today' : ''}${PAYS[d] ? ' is-pay' : ''}"><i>${on ? '✓' : d}</i>${PAYS[d] ? `<small>+${formatCH(PAYS[d] * ms.sweepBonus)}</small>` : ''}</li>`;
+  }).join('');
+  const n = st.next;
+  const line = st.count > 0 ? `${st.count}일 연속 다 끝냈어요` : '세 개를 다 끝낸 날이 이어지면 보너스가 붙어요';
+  const nextText = !n ? '' : n.inDays === 0 ? ` · 오늘 끝내면 +${formatCH(n.bonus)}` : ` · ${n.inDays}일 더 하면 +${formatCH(n.bonus)}`;
+  strip.innerHTML = `<p class="mstreak-head"><b>미션 연속 달성</b><small>${line}${nextText}</small></p><ol class="mstreak-days">${stamps}</ol><p class="mstreak-note">7일째엔 개근 명패도 받아요 · 하루 빠지면 1일부터</p>`;
+  return strip;
 }
 
 // ---------- lucky card rescue ----------
@@ -224,6 +244,7 @@ export function feedText(f) {
     case 'HOT_WIN': return f.multiple >= 5 ? `${who}님 대박! ${gameName(f.game)}에서 ${f.multiple}배 적중, ${formatMoney(f.amount)} 벌었어요` : `${who}님 대박! ${gameName(f.game)}에서 ${formatMoney(f.amount)} 벌었어요`;
     case 'JACKPOT': return `${who}님이 잭팟을 터뜨려 ${formatMoney(f.amount)} 벌었어요`;
     case 'INVITE': return `${who}님이 친구 ${f.friend}님을 데려와 둘 다 ${formatMoney(f.amount)} 받았어요`;
+    case 'MISSION_STREAK': return `${who}님이 7일 연속 오늘의 미션을 다 끝냈어요`;
     case 'DAILY_STREAK': return `${who}님이 7일 연속 출근해서 주급을 받았어요`;
     case 'MONTHLY_PAY': return `${who}님이 28일 개근으로 월급 ${formatMoney(f.amount)}을 받았어요`;
     case 'PERSONAL_BANKRUPTCY': return `${who}님이 빚 ${formatMoney(f.amount)}을 안고 파산 신청했어요`;
@@ -233,7 +254,6 @@ export function feedText(f) {
     case 'FLOOR_UNLOCK': return f.text?.replace(/^(.+) unlocked (.+)\.$/, '$1님이 $2 층에 올라섰어요') || '';
     case 'BANKRUPTCY': return f.amount ? `${who}님 파산! ${gameName(f.game)}에서 ${formatMoney(f.amount)} 날리고 빈털터리` : `${who}님이 파산했어요. 다시 일어설 수 있을까요?`;
     case 'BIG_LOSS': return f.amount ? `${who}님이 ${f.game ? gameName(f.game) : '큰 판'}에서 ${formatMoney(f.amount)}을 잃었어요` : `${who}님이 큰 판에서 졌어요`;
-    case 'LUXURY': return `${who}님이 ${f.name}${/[가-힣]$/.test(f.name || '') && (f.name.charCodeAt(f.name.length - 1) - 0xac00) % 28 ? '을' : '를'} ${formatMoney(f.amount)}에 샀어요`;
     case 'BIG_WIN': return f.text || '';
     case 'CHALLENGE_WON': return `${who}님이 ${f.opponent}님과의 대결에서 이겼어요`;
     default: return f.text || '';

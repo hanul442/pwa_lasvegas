@@ -74,8 +74,8 @@ test('installable PWA never caches game or chip API responses', () => {
 
 test('chip tiers match server floor limits', () => {
   assert.equal(Object.keys(TIERS).length, FLOORS.length, 'one table per floor');
-  assert.equal(TIERS['gold-room'].min, 1_000_000, 'the smallest bet is 100만');
-  assert.equal(TIERS.vault.max, 1_000_000_000_000, 'The Vault goes up to 1조');
+  assert.equal(TIERS['gold-room'].min, 10_000_000, 'the smallest bet is 1천만 (RP season)');
+  assert.equal(TIERS.olympus.max, 300_000_000_000, 'Olympus goes up to 3천억');
   // Every table's whole range must be accepted by its floor on the server.
   for (const tier of Object.values(TIERS)) {
     const floor = FLOORS.find(f => f.slug === tier.floor);
@@ -83,7 +83,7 @@ test('chip tiers match server floor limits', () => {
     assert.ok(tier.min >= floor.minBet && tier.max <= floor.maxBet, tier.slug);
     for (const stake of [tier.min, tier.max]) assert.ok(floor.stakeTiers.includes(stakeTierFor(stake)?.slug), `${tier.slug} ${stake}`);
   }
-  assert.deepEqual(breakdown(90_000_000, TIERS['high-limit'].chips), [50_000_000, 20_000_000, 20_000_000]);
+  assert.deepEqual(breakdown(270_000_000, TIERS['high-limit'].chips), [150_000_000, 60_000_000, 60_000_000]);
   // Round chips only: 1, 2, 5 and 10 times the table minimum.
   assert.deepEqual(TIERS['salon-prive'].chips, [100_000_000, 200_000_000, 500_000_000, 1_000_000_000]);
 });

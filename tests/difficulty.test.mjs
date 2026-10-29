@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // Higher floors play harder (한서's call): sharper AI at every table, and from the Penthouse up the
 // blackjack dealer hits soft 17.
 import test from 'node:test';

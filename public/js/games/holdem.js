@@ -26,7 +26,11 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
       <span>상대</span>${[1, 2, 3, 4, 5].map(n => `<button type="button" role="radio" data-opp="${n}" aria-checked="${n === 5}">${n}</button>`).join('')}
     </div>
     <button type="button" class="pk-friends-open" data-friends-open>친구와 함께</button>` });
-  t.body.querySelector('[data-blinds]').textContent = `블라인드 ${formatCH(pk.bb / 2)} / ${formatCH(pk.bb)} · 최소 바이인 ${formatCH(pk.bb * 5)}`;
+  // The circle says only the minimum; the blinds go under the hint line, so no text runs out of it.
+  t.body.querySelector('[data-blinds]').textContent = `최소 ${formatCH(pk.bb * 5)}`;
+  pk.hintLine.insertAdjacentHTML('afterend', `<p class="pk-blinds">블라인드 ${formatCH(pk.bb / 2)} / ${formatCH(pk.bb)}</p>`);
+  // Five outlines where the flop, turn and river will land, until I sit down.
+  t.body.querySelector('[data-board]').insertAdjacentHTML('afterend', `<div class="pk-ghosts" aria-hidden="true">${'<i></i>'.repeat(5)}</div>`);
   const entry = t.tier.max;
   const hud = el('div', 'royale-hud');
   hud.hidden = true;
@@ -67,6 +71,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     opponents = Number(b.dataset.opp);
     t.body.querySelectorAll('[data-opp]').forEach(x => x.setAttribute('aria-checked', String(x === b)));
     sound.tick();
+    preview();
   }));
   const bar = createActionBar(t, pk);
   const { sizer } = bar;
@@ -246,11 +251,22 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
   const showAction = () => (canShow() ? [{ label: '카드 공개', onClick: async () => { await pk.showOff(0, (session || busted)?.table.seats[0]?.cards || []); } }] : []);
 
   // ---------- controls ----------
+  // Before I sit down the chairs I'd play against stand around the oval, dimmed, one per 상대,
+  // so the felt shows the table instead of an empty cloth.
+  function preview() {
+    const seats = t.body.querySelector('[data-seats]');
+    if (royale || t.root.classList.contains('is-seated') || friends?.active) { seats.classList.remove('is-preview'); return; }
+    pk.me = 0;
+    pk.buildSeats({ seats: Array.from({ length: opponents + 1 }, () => ({ kind: 'empty', stack: 0 })) });
+    seats.classList.add('is-preview');
+  }
   function showSeated(on) {
     t.root.classList.toggle('is-seated', on);
+    if (on) t.body.querySelector('[data-seats]').classList.remove('is-preview');
     sitdown.hidden = on;
     hintLine.hidden = on;
     readoutLabel.textContent = on ? '내 스택' : '바이인';
+    if (!on) preview();
     if (on) { t.locked = true; t.root.classList.add('is-playing'); }
   }
 
@@ -347,6 +363,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     await t.syncBalance();
   } catch {}
   refreshActions();
+  if (!session) preview();
   // Walking away from the solo table cashes the stack out, the way a player takes their chips to the
   // cage; otherwise winnings sat locked at the table and never reached the wallet. A hand still in
   // progress is folded first. The returned promise lets the lobby refresh after the cash-out lands.

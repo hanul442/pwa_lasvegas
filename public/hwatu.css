@@ -63,9 +63,9 @@
 .mg-pile:has(.hw[hidden])::before{display:none}
 .mg-pile .hw{translate:-3px -5px}
 .mg-pile-count{position:absolute;right:-12px;bottom:-12px;z-index:3;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:#0a0b0dcc;border:1px solid #ffffff24;color:var(--smoke);font:600 13px/18px var(--sans);font-variant-numeric:tabular-nums;text-align:center}
-/* Empty capture slots read as places on the cloth, not as a scoreboard. */
-.mg-cap-cards:empty{box-sizing:border-box;width:var(--cap-w);border:1px dashed #efe7d91f;border-radius:9%/5.6%}
-.mg-cap:has(.mg-cap-cards:empty)>span b{color:var(--smoke);font-weight:500}
+/* A group shows only once it holds a card: no "광 0" and no dashed boxes on a fresh cloth.
+   It keeps its place, so the first capture doesn't push the other groups around. */
+.mg-cap:has(.mg-cap-cards:empty){visibility:hidden}
 .mg-slot{display:flex;min-width:var(--hw-w)}
 .mg-slot .hw+.hw{margin-left:calc(var(--hw-w) * -.55)}
 .mg-slot.has-option .hw+.hw{margin-left:6px}

@@ -144,7 +144,7 @@ export async function mountSeotda(ctx) {
       if (squeeze) {
         // The second card waits face down for my thumb (패 들춰보기).
         const was = t.hintEl.textContent;
-        t.hint('패를 밀어 올려 확인하세요 · 탭하면 바로 뒤집어요');
+        t.hint('밀어 올려 확인 · 탭하면 뒤집기');
         await peekHwatu(node, id);
         t.hint(was);
       } else await flipHwatu(node, id);

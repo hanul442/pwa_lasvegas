@@ -23,6 +23,8 @@
 @media (max-width:519px){.table-name strong{font-size:clamp(16px,4.8vw,19px);font-stretch:108%}}
 .table-name>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
 .table-name>span i{font-style:normal;white-space:nowrap}
+/* very narrow phones (360px): the subtitle breaks between room and range instead of being cut */
+@media (max-width:380px){.table-name>span{white-space:normal;line-height:1.25}}
 /* my chips: the same wallet pill as the home top bar, with + to 지갑 */
 .table-balance{display:flex;align-items:center;gap:6px;min-height:40px;padding:4px 4px 4px 14px;border-radius:999px;background:var(--ink-3);transition:color .4s}
 .table-balance small{font-size:13px;color:var(--smoke)}
@@ -212,7 +214,9 @@
 .day-tag.is-down{color:#ff8a82;box-shadow:0 0 0 1px #ff4f4f40}
 .day-tag.is-up{color:#5fd39a}
 @media (prefers-reduced-motion:reduce){.table-screen.is-ouch .felt,.banner--ouch{animation:none}.day-tag{transition:opacity .2s}}
-.toast{position:absolute;left:50%;bottom:14px;z-index:21;max-width:calc(100% - 28px);transform:translate(-50%,16px);opacity:0;padding:10px 16px;border-radius:999px;background:#0a0b0dee;border:1px solid var(--hair);font-size:13px;text-align:center;pointer-events:none;transition:transform .3s var(--ease-out),opacity .3s}
+/* One toast spot for the whole app: top middle. On a table that is the felt's top edge, over the
+   dealer's chip rack, so it never covers my cards, chips or buttons (notice.js puts app toasts there too). */
+.toast{position:absolute;left:50%;top:12px;z-index:21;max-width:calc(100% - 28px);transform:translate(-50%,-16px);opacity:0;padding:10px 16px;border-radius:999px;background:#0a0b0dee;border:1px solid var(--hair);font-size:13px;text-align:center;pointer-events:none;transition:transform .3s var(--ease-out),opacity .3s}
 .toast.is-shown{opacity:1;transform:translate(-50%,0)}
 .felt.is-glow{animation:felt-glow 1.6s ease-out}
 @keyframes felt-glow{0%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}30%{box-shadow:0 0 0 1px #0008,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffffaa,inset 0 0 120px #ffffff1a,0 24px 60px #000c,0 0 50px #ffffff22}100%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}}
@@ -653,6 +657,21 @@
 /* sit down: buy-in circle and table size */
 .pk-sitdown{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:grid;justify-items:center;gap:12px}
 .pk-sitdown[hidden]{display:none}
+/* before sitting down (holdem.js preview): the chairs around the oval, dimmed, and five outlines where
+   the board will land, so the felt shows a table waiting for me instead of a bare cloth */
+.pk-seats.is-preview :is(.pk-seat--hero,.pk-bet,.pk-stack){display:none}
+.pk-seats.is-preview .pk-seat{opacity:.55}
+.pk-seats.is-preview .pk-plate{border-style:dashed;background:#0000003d}
+.pk-ghosts{display:none;gap:clamp(3px,1vw,8px)}
+.table-screen--holdem:not(.is-seated):not(.is-royale) .pk-ghosts{display:flex}
+.table-screen--holdem:not(.is-seated) .pk-board:empty{display:none}
+.pk-ghosts i{width:var(--card-w);height:calc(var(--card-w) * 1.4);border:1px solid #efe7d92e;border-radius:calc(var(--card-w) * .09);box-shadow:inset 0 0 0 3px #00000014}
+.pk-blinds{margin:-4px 0 0;font-size:13px;color:var(--smoke);text-align:center}
+.table-screen--holdem:is(.is-seated,.is-royale) .pk-blinds{display:none}
+/* phones and short landscape: no room for chairs beside the buy-in, so only the board outlines stay
+   (smaller, so the hint and blinds clear the buy-in circle) */
+@media (max-width:599px){.pk-seats.is-preview{display:none}.pk-ghosts{--card-w:clamp(30px,8.4vw,40px)}.table-screen--holdem:not(.is-seated):not(.is-royale) .pk-center{margin-top:-34px}}
+@media (orientation:landscape) and (max-height:520px){.pk-seats.is-preview,.table-screen--holdem .pk-ghosts{display:none!important}}
 .pk-buyin{--size:46px;width:132px;height:132px;border-radius:50%;outline:1px solid #efe7d926;outline-offset:6px}
 .pk-opponents{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--smoke)}
 .pk-opponents span{margin-right:4px;white-space:nowrap}
@@ -887,6 +906,8 @@
 /* a long dealer hand left on the felt after a round reaches under it on a phone */
 @media (max-width:519px){.bj:has([data-dealer]>:nth-child(4)) .bj-friends{visibility:hidden}}
 .bj-seat.is-friend .bj-seat-plate b{color:var(--white)}
+/* 360px phones with three AI seats: each name plate sits under its cards, so the right seat stays on the felt */
+@media (max-width:380px) and (orientation:portrait){.bj-ai[data-count="3"] .bj-seat{flex-direction:column;gap:2px}.bj-ai[data-count="3"] .bj-seat-plate{padding:1px 7px}}
 
 /* ---------- 묻고 더블로 가 ---------- */
 .dd-stamp{position:absolute;left:50%;top:46%;z-index:60;display:grid;justify-items:center;gap:4px;padding:16px 26px 14px;border:3px solid var(--white);border-radius:6px;background:#0a0b0de6;color:var(--white);pointer-events:none;box-shadow:0 0 0 1px #0008,0 24px 60px #000c;transform:translate(-50%,-50%) rotate(-4deg)}

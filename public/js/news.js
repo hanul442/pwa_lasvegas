@@ -37,7 +37,7 @@ function next() {
   if (document.body.classList.contains('is-settling')) { queue = []; return; }
   // 오늘의 한 판 fills the screen and its 닫기 and score sit where the banner drops: hold the news
   // until it closes.
-  if (document.body.classList.contains('daily-open')) { clearTimeout(next.wait); next.wait = setTimeout(next, 1500); return; }
+  if (document.body.classList.contains('daily-open') || document.querySelector('.rp-player')) { clearTimeout(next.wait); next.wait = setTimeout(next, 1500); return; }
   showing = true;
   const n = queue.shift();
   const banner = el('div', `news-banner news-banner--${n.type.toLowerCase().replace(/_/g, '-')}`);

@@ -72,6 +72,24 @@ export function rpCardHtml(state) {
     <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판 ±30, 하루 +300까지. 내 티어보다 높은 층에서 이기면 1.5배.</p>`;
 }
 
+// 주간 리그 (lib/rank-league.mjs): my group of thirty, ranked by this week's RP. The top five move
+// up a league and the bottom five down when the week ends (Monday 0시); AI fill the empty seats.
+export function leagueHtml(state, frame = (id, n) => n) {
+  const lg = state?.league;
+  if (!lg) return '<p class="lounge-note">리그를 불러오는 중이에요.</p>';
+  const last = lg.last ? `<p class="league-last">지난주 ${lg.last.rank}위 / ${lg.last.of}명 · ${lg.last.move > 0 ? '승급했어요' : lg.last.move < 0 ? '강등됐어요' : '잔류'}</p>` : '';
+  const head = `<div class="league-head"><div><small>이번 주 리그</small><strong>${lg.name}</strong></div><span class="league-clock">${leftText(lg.endsAt)} 남음</span></div>
+    <p class="league-rule">이번 주에 얻은 RP로 30명이 겨뤄요. ${lg.top ? '' : `상위 ${lg.up}명은 승급, `}${lg.bottom ? '' : `하위 ${lg.down}명은 강등, `}1~3위는 배지를 받아요. 월요일 0시에 끝나요.</p>${last}`;
+  if (!lg.joined) return `${head}<p class="league-empty">${state.user?.guest ? '이름을 정하고 계정을 만들면 리그에 들어갈 수 있어요.' : `이번 주 첫 판을 하면 ${lg.name} 30명 조에 들어가요.`}</p>`;
+  const of = lg.rows.length;
+  const rows = lg.rows.map(r => {
+    const zone = !lg.top && r.rank <= lg.up ? 'is-up' : !lg.bottom && r.rank > of - lg.down ? 'is-down' : '';
+    const line = !lg.top && r.rank === lg.up ? ' has-line' : !lg.bottom && r.rank === of - lg.down ? ' has-line' : '';
+    return `<li class="league-row ${zone}${line}${r.me ? ' is-me' : ''}"><span class="rank-no">${r.rank}</span><span class="league-name">${r.ai ? r.nickname : frame(r.id, r.nickname)}${r.me ? ' <small>나</small>' : ''}${r.ai ? ' <small class="league-ai">AI</small>' : ''}</span><span class="rank-value">${r.value} RP</span></li>`;
+  }).join('');
+  return `${head}<div class="league-me"><span class="rank-me-no">${lg.rank}<small>위</small></span><span class="rank-me-text"><b>${lg.score} RP</b><small>${lg.rank <= lg.up && !lg.top ? '승급권이에요' : lg.rank > of - lg.down && !lg.bottom ? '강등권이에요. 한 판 더!' : '잔류권'}</small></span></div><ol class="league-list" aria-label="${lg.name} 순위">${rows}</ol>`;
+}
+
 // All ten tiers, highest first: what each needs, how many players sit there this month, and mine.
 export function tierStepsHtml(state) {
   const rs = state?.rankSeason;

@@ -33,7 +33,7 @@ import { startShine } from './js/shine.js';
 import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
 import { bragRank, bragTier } from './js/brags.js';
-import { tierHeroHtml, rpCardHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
+import { tierHeroHtml, rpCardHtml, leagueHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
 import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
 watchErrors();
@@ -882,7 +882,7 @@ const RANK_TABS = {
 let rankPeriod = 'tier';
 let rankTab = 'tier';
 // The ranking tab has three views: 티어 (my tier and the ladder), 순위 (the boards), 친구 (친구 전적).
-const RANK_VIEWS = [['tier', '티어'], ['board', '순위'], ['friends', '친구 전적']];
+const RANK_VIEWS = [['tier', '티어'], ['league', '리그'], ['board', '순위'], ['friends', '친구 전적']];
 const RANK_VIEW_KEY = 'vegas:rank-view';
 let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
 function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
@@ -935,6 +935,7 @@ function renderRanking() {
   document.querySelectorAll('[data-rank-pane]').forEach(p => { p.hidden = p.dataset.rankPane !== rankView; });
   if (rankView === 'tier') renderTierPane();
   else if (rankView === 'friends') renderFriendPane();
+  else if (rankView === 'league') document.querySelector('[data-league]').innerHTML = leagueHtml(state, (id, n) => nameFrame(state, id, n));
   else renderBoards();
 }
 function renderTierPane() {

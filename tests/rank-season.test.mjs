@@ -33,7 +33,6 @@ test('a month closes once: badges for the tier reached, then everyone starts aga
     settleFinishedRankSeason(state); // first look: the casino counts from October
     addLedger(state, u, { type: 'ADMIN_GRANT', amount: 300e9 });
     addLedger(state, u, { type: 'ADMIN_DEDUCT', amount: -250e9 }); // lost most of it: the peak stays
-    u.luxury = [{ id: 'watch', price: 1e8, boughtAt: 'x' }];
     u.loans = [{ id: 'l1', balance: 5e8 }];
   });
   const view = at(OCT, () => rankView(state, u));
@@ -53,10 +52,9 @@ test('a month closes once: badges for the tier reached, then everyone starts aga
   assert.equal(u.badges[0].rank, 1);
   assert.equal(u.rankHistory[0].tier, 'platinum');
   assert.equal(u.rank.best.tier, 'platinum');
-  // The fresh start: wallet, luxury and debt gone, floors shut down to the Gold Room.
+  // The fresh start: wallet and debt gone, floors shut down to the Gold Room.
   assert.equal(u.account.available, 0);
   assert.equal(u.account.locked, locked, 'chips on a table are left to come home');
-  assert.deepEqual(u.luxury, []);
   assert.deepEqual(u.loans, []);
   assert.deepEqual(u.account.unlockedFloors, ['gold-room']);
   assert.equal(state.ledger.at(-1).type, 'SEASON_RESET');
@@ -89,7 +87,7 @@ test('the month that ended is due until closed, and the results show what the fr
   const { rankSeasonDue } = await import('../lib/rank-season.mjs');
   const state = defaultState();
   const u = state.users.hanseo;
-  at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); u.luxury = [{ id: 'watch', price: 1e8, boughtAt: 'x' }]; });
+  at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); });
   assert.equal(rankSeasonDue(state, OCT), false);
   assert.equal(rankSeasonDue(state, NOV), true);
   const chips = u.account.available;
@@ -98,7 +96,7 @@ test('the month that ended is due until closed, and the results show what the fr
   const last = at(NOV, () => rankView(state, u)).last;
   assert.equal(last.id, 'rank-2026-10');
   assert.equal(last.mine.tier, 'gold');
-  assert.deepEqual(last.reset, { chips, luxury: 1, loans: 0 });
+  assert.deepEqual(last.reset, { chips, loans: 0 });
 });
 
 test('the hourly cron closes the month at midnight, then the 1st announces each badge', async () => {

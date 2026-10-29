@@ -4,7 +4,7 @@
 import { el, formatCH } from './fx.js';
 import { gameName } from './names.js';
 
-const LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '칩 충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', EVENT_BONUS: '이벤트 보너스', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금', PURCHASE: '구매', RESALE: '되팔기', SEASON_RESET: '시즌 초기화', INVITE_REWARD: '친구 초대' };
+const LABEL = { INITIAL_GRANT: '시작 칩', GAME_WIN: '승리', GAME_LOSS: '패배', GAME_PUSH: '무승부', BET_LOCK: '베팅', BET_SETTLE: '정산', AUTO_RECHARGE: '칩 충전', BANKRUPTCY: '파산', ADMIN_GRANT: '지급', ADMIN_DEDUCT: '회수', DAILY_BONUS: '일급', MISSION_REWARD: '미션 보상', SEASON_REWARD: '시즌 보상', RESCUE_GRANT: '럭키 카드', JACKPOT_WIN: '잭팟', EVENT_BONUS: '이벤트 보너스', LOAN_DISBURSE: '대출', LOAN_REPAY: '상환', LOAN_COLLECT: '자동 회수', BANKRUPTCY_SEIZURE: '파산 압류', DEBT_DISCHARGED: '빚 탕감', WEEKLY_PAY: '주급', MONTHLY_PAY: '월급', GOV_GRANT: '정부 지원금', WELFARE: '구제금융', ACHIEVEMENT: '업적', CHALLENGE_PRIZE: '대결 상금', PURCHASE: '구매', RESALE: '되팔기', LUXURY_REFUND: '사치품 환불', SEASON_RESET: '시즌 초기화', INVITE_REWARD: '친구 초대' };
 const BANK = new Set(['LOAN_DISBURSE', 'LOAN_REPAY', 'LOAN_COLLECT', 'BANKRUPTCY', 'BANKRUPTCY_SEIZURE', 'DEBT_DISCHARGED']);
 const FILTERS = [['all', '전체'], ['game', '게임'], ['bonus', '보너스'], ['bank', '은행']];
 

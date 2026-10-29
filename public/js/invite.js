@@ -2,7 +2,7 @@
 // A link looks like /?join=ABCD&g=seotda&t=gold-room. The app keeps it until the friend has signed
 // in and the game screen asks for it (takePendingJoin), so signing up first still works.
 const KEY = 'vegas:pending-join';
-const ROOM_GAMES = { holdem: 'poker', seotda: 'seotda', gostop: 'gostop', matgo: 'matgo', blackjack: 'blackjack', baccarat: 'baccarat' };
+const ROOM_GAMES = { holdem: 'poker', seotda: 'seotda', gostop: 'gostop', matgo: 'matgo', blackjack: 'blackjack', baccarat: 'baccarat', sevenpoker: 'sevenpoker' };
 
 // Invite links go to /j: the server gives that page a 카카오톡 preview naming who invited the friend
 // to which game (lib/link-preview.mjs). `r` is my invite code, so the friend's first round pays us
@@ -78,6 +78,22 @@ export function capturePendingJoin() {
 export function pendingJoin() {
   try { const v = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return v && ROOM_GAMES[v.game] ? { ...v, screen: ROOM_GAMES[v.game] } : null; }
   catch { return null; }
+}
+
+// A seat next to a friend from the friends list: the same path as opening their invite link.
+// watch: a friend's id to only watch their chair (lib/watch.mjs) instead of sitting down.
+export function setPendingJoin({ code, game, tier = null, watch = null }) {
+  if (!ROOM_GAMES[game]) return null;
+  try { sessionStorage.setItem(KEY, JSON.stringify({ code, game, tier, watch })); } catch {}
+  return pendingJoin();
+}
+
+// The game screen takes a 관전 meant for it (once): { code, watch } or null.
+export function takePendingWatch(game) {
+  const v = pendingJoin();
+  if (!v || v.game !== game || !v.watch) return null;
+  try { sessionStorage.removeItem(KEY); } catch {}
+  return { code: v.code, watch: v.watch };
 }
 
 // The game screen takes the invite meant for it (once).

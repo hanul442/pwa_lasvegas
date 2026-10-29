@@ -285,3 +285,6 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .name-frame--jokbo::before,.name-frame--jokbo-master::before{content:"";position:absolute;left:6px;top:50%;width:8px;height:12px;margin-top:-6px;border-radius:1.5px;background:linear-gradient(180deg,#c8352b 0 34%,#f7f2e8 34%);box-shadow:0 0 0 1px #0a0b0d}
 .name-frame--jokbo-master{position:relative;border:1px solid #f7f2e8;background:linear-gradient(180deg,#fff6dc22,#f7f2e805);box-shadow:0 0 0 1px #0a0b0d,0 0 0 2px #fff6dc90,0 0 14px #fff6dc38;padding-left:21px;padding-right:20px}
 .name-frame--jokbo-master::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;margin-top:-4.5px;background:var(--star);clip-path:var(--star-shape)}
+/* 개근 명패 (7일 연속 미션): seven stamped days in a row under the name */
+.name-frame--attend{position:relative;border:1px solid #f7f2e8b8;background:linear-gradient(180deg,#f7f2e810,#f7f2e803);padding-bottom:5px}
+.name-frame--attend::after{content:"";position:absolute;left:50%;bottom:2px;width:31px;height:3px;margin-left:-15.5px;background:radial-gradient(circle at 1.5px 1.5px,#c8352b 1.5px,transparent 1.6px) 0 0/5px 3px repeat-x}

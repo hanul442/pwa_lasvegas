@@ -155,14 +155,14 @@ test('섯다 올인: short of the call, the last chips go in and the rest is a s
 
 test('섯다 올인 also covers a raise past the wallet, and everyone all in runs the cards out', () => {
   const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(2) }), [['05-1', '06-1'], ['01-1', '02-1']]);
-  r.stacks = [80, 500];
-  assert.deepEqual(seotdaOptions(r, 0), [{ action: 'DIE', cost: 0 }, { action: 'CHECK', cost: 0 }, { action: 'ALLIN', cost: 80 }], '삥 100 is past 80, so 올인 80 instead');
+  r.stacks = [40, 500];
+  assert.deepEqual(seotdaOptions(r, 0), [{ action: 'DIE', cost: 0 }, { action: 'CHECK', cost: 0 }, { action: 'ALLIN', cost: 40 }], '삥 100 and 쿼터 50 are past 40, so 올인 40 instead');
   seotdaAct(r, 0, 'ALLIN');
   assert.deepEqual(seotdaOptions(r, 1).map(o => o.action), ['DIE', 'CALL'], 'no raising against a seat that cannot answer');
   seotdaAct(r, 1, 'CALL');
   assert.equal(r.status, 'READY_TO_SETTLE', 'nobody left to bet: the cards run out to the showdown');
   assert.equal(r.hands[0].length, 2);
-  assert.deepEqual(r.result.payouts, [0, 360]);
+  assert.deepEqual(r.result.payouts, [0, 280]);
 });
 
 test('섯다 선: the last winner leads the next hand', () => {
@@ -272,6 +272,10 @@ test('섯다 구사 calls a 재경기 among the seats still in; the pot carries 
   assert.equal(r.status, 'PLAYING');
   assert.equal(r.redeals, 1);
   assert.ok(events.some(e => e.type === 'redeal'));
+  assert.equal(r.phase, 'REJOIN', 'the seat that died is asked first');
+  assert.equal(r.turn, 2);
+  assert.deepEqual(seotdaOptions(r, 2), [{ action: 'REJOIN', cost: 150 }, { action: 'PASS', cost: 0 }]);
+  seotdaAct(r, 2, 'PASS', events);
   assert.equal(events.filter(e => e.type === 'deal' && e.street === 1).length, 2);
   assert.equal(r.pot, 300);
   assert.deepEqual(r.hands.map(h => h.length), [1, 1, 0], 'only live seats are dealt back in');
@@ -291,7 +295,7 @@ test('섯다 an old two-seat round with no folded field still loads and finishes
     status: 'PLAYING', phase: 'BET', history: [{ street: 1, seat: 1, action: 'BBING', cost: 100 }], result: null
   };
   const v = seotdaPublic(old, 0);
-  assert.deepEqual(v.options.map(o => o.action), ['DIE', 'CALL', 'DDADANG', 'HALF']);
+  assert.deepEqual(v.options.map(o => o.action), ['DIE', 'CALL', 'DDADANG', 'HALF'], '쿼터 here is the same money as 따당');
   assert.equal(v.players[1].cards[0], 'HIDDEN');
   seotdaAct(old, 0, 'CALL');
   assert.equal(old.street, 2);
@@ -433,4 +437,48 @@ test('섯다 API finishes a two-seat round saved by the old engine', async () =>
   assert.equal(res.data.round.status, 'SETTLED');
   assert.equal(res.data.state.user.account.locked, 0);
   assert.equal(res.data.state.user.account.available, start + res.data.round.netPnl);
+});
+
+test('섯다 재경기: a seat that died buys back in for half the pot and plays for all of it', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(3) }), [['04-3', '09-3'], ['01-1', '02-1'], ['05-1', '06-3']]);
+  seotdaAct(r, 0, 'BBING');
+  seotdaAct(r, 1, 'CALL');
+  seotdaAct(r, 2, 'DIE');
+  seotdaAct(r, 0, 'CHECK');
+  seotdaAct(r, 1, 'CHECK');
+  assert.equal(r.phase, 'REJOIN');
+  assert.equal(r.pot, 500);
+  assert.equal(seotdaOptions(r, 2)[0].cost, 250, 'half of 500');
+  seotdaAct(r, 2, 'REJOIN');
+  assert.equal(r.phase, 'BET');
+  assert.equal(r.folded[2], false);
+  assert.equal(r.pot, 750);
+  assert.equal(seotdaOptions(r, r.turn).find(o => o.action === 'CHECK')?.cost, 0, 'the match puts seat 2 level: nobody owes a call');
+  // Seat 2 gets the best hand in the 재경기 and takes the whole pot.
+  r.deck.push('08-3', '03-3', '01-3');
+  r.deck.splice(r.deck.indexOf('08-1'), 1); r.deck.push('08-1');
+  for (let i = 0; i < 20 && r.status === 'PLAYING'; i++) seotdaAct(r, r.turn, 'CHECK');
+  assert.equal(r.status, 'READY_TO_SETTLE');
+  const total = [0, 1, 2].reduce((a, s) => a + seotdaNet(r, s), 0);
+  assert.equal(total, 0, 'every chip won is one someone lost');
+  assert.equal(r.result.payouts.reduce((a, b) => a + b, 0), 750);
+});
+
+test('섯다 판돈 상한: raises stop at 20× the ante and get cut down to it', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(2) }), [['05-1', '06-1'], ['01-1', '02-1']]);
+  r.contrib = [1500, 1500]; r.pot = 3000;
+  const opts = seotdaOptions(r, 0);
+  assert.ok(opts.every(o => o.cost <= 500), 'nobody past 2000 in');
+  assert.ok(opts.some(o => o.capped && o.cost === 500), 'the 하프 is cut to the cap');
+  assert.equal(opts.filter(o => o.cost === 500).length, 1, 'cut raises show once');
+  seotdaAct(r, 0, opts.find(o => o.capped).action);
+  assert.deepEqual(seotdaOptions(r, 1).map(o => o.action), ['DIE', 'CALL'], 'at the cap: call or die');
+});
+
+test('섯다 쿼터 is a quarter of the pot', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(2) }), [['05-1', '06-1'], ['01-1', '02-1']]);
+  assert.equal(seotdaOptions(r, 0).find(o => o.action === 'QUARTER').cost, 50);
+  seotdaAct(r, 0, 'QUARTER');
+  assert.equal(r.pot, 250);
+  assert.equal(seotdaOptions(r, 1).find(o => o.action === 'QUARTER').cost, 50 + 80, 'call 50 + a quarter of 300 → 80 (tenths of the ante)');
 });

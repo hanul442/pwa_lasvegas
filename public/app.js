@@ -25,8 +25,10 @@ import { renderShop, applyCosmetics, openPlayerSheet, showShopTab, nameFrame } f
 import { rememberTable, recentTables, lastTier, openTableSwitcher } from './js/table-nav.js';
 import { ensureTerms } from './js/terms.js';
 import { startPlaytime } from './js/playtime.js';
-import { capturePendingJoin, pendingJoin, dropPendingJoin } from './js/invite.js';
+import { capturePendingJoin, pendingJoin, dropPendingJoin, setPendingJoin } from './js/invite.js';
+import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
+import { isNewcomer, isSettlingIn, firstDayCard } from './js/first-day.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -126,7 +128,8 @@ function showSurface(name, { focus = false } = {}) {
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();
   if (name === 'events') renderEventTab();
-  if (name === 'lobby' && state) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
+  // A newcomer's first hands come without popups (js/first-day.js).
+  if (name === 'lobby' && state && !isSettlingIn(state)) { celebrateFloors(state); celebrateTier(state); setTimeout(() => maybeAsk(), 1200); }
   if (name === 'profile') renderProfile();
   if (name === 'bank') { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (name === 'shop') renderShop(document.querySelector('[data-shop]'), state, applyState);
@@ -242,7 +245,7 @@ const outgrownTier = slug => Boolean(state?.floors?.find(f => f.slug === TIERS[s
 let tableOverTiers = false;
 let activeTier = null;
 let tableSeq = 0;
-async function openTable(tier, { seated = false } = {}) {
+async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!selectedGame) return;
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
   rememberTable(selectedGame.id, tier);
@@ -282,6 +285,8 @@ async function openTable(tier, { seated = false } = {}) {
   if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
   guide.attachGuide(activeTable, selectedGame.guide || selectedGame.id);
   attachQuickSettings(activeTable);
+  // The first-hand button on home: the table minimum is already on box 2, so 딜 is the only tap left.
+  if (firstBet && !activeTable.locked && !activeTable.total) activeTable.addChip('b2', activeTable.tier.min, activeTable.tray?.getBoundingClientRect());
   if (OPENS_WITH_BETS.has(selectedGame.id) && !activeTable.locked) voice.say('place-bets');
   activeTable.root.querySelector('.table-back')?.focus({ preventScroll: true });
 }
@@ -390,7 +395,8 @@ function applyState(next) {
   if (isActive('bank')) { renderBank(document.querySelector('[data-bank]'), state, applyState); renderBankFloor(); }
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
-  if (isActive('lobby')) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
+  document.body.classList.toggle('is-settling', isSettlingIn(state));
+  if (isActive('lobby') && !isSettlingIn(state)) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -413,13 +419,13 @@ function openNightlyFromLink() {
 }
 
 // The lobby's way back in: a round still holding chips, then the last three tables played.
-function sitAt(game, tier, trigger, { seated = false } = {}) {
+function sitAt(game, tier, trigger, { seated = false, firstBet = false } = {}) {
   lastLobbyTrigger = trigger;
   setReturn('lobby');
   selectedGame = game;
   setTierHeader(game);
   renderTiers();
-  openTable(tier, { seated });
+  openTable(tier, { seated, firstBet });
 }
 // An event table only while that event runs, at its own table.
 function tableStillThere(game, tier) {
@@ -586,10 +592,28 @@ addEventListener('vegas:choose-game', event => {
 // popular games row. Everything else lives in its tab.
 const weekGame = () => GAMES.find(x => x.event && eventOf(x) && !eventOf(x).always);
 function renderHome() {
+  renderFirstDay();
   renderHero();
   renderCats();
   renderToday();
   if (isActive('events')) renderEventTab();
+}
+
+// The first three hands (js/first-day.js): home is my chips, today's 손익 and one button. The very
+// first tap sits at blackjack with the minimum already bet; after that it goes back to the last table.
+function renderFirstDay() {
+  const slot = document.querySelector('[data-home-first]');
+  const on = isSettlingIn(state);
+  document.body.classList.toggle('is-first-day', on);
+  slot.hidden = !on;
+  if (!on) { slot.replaceChildren(); return; }
+  const bj = GAMES.find(g => g.id === 'blackjack');
+  const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier) && state.user.account.available >= TIERS[x.tier].min);
+  slot.replaceChildren(firstDayCard(state, {
+    again: recent?.game.name,
+    onPlay: (b, { first }) => (first || !recent ? sitAt(bj, FIRST_TIER.slug, b, { firstBet: first }) : sitAt(recent.game, recent.tier, b)),
+    onBrowse: () => showSurface('games', { focus: true })
+  }));
 }
 
 function heroButton(text, cls, onClick) {
@@ -747,7 +771,8 @@ function renderToday() {
   if (ms?.items?.length) {
     const ready = ms.items.filter(i => i.done && !i.claimed).length;
     const done = ms.items.filter(i => i.done).length;
-    const sub = ready ? `보상 ${ready}개 받기` : ms.swept || done === ms.items.length ? '오늘은 모두 끝냈어요' : `모두 하면 보너스 +${formatCH(ms.sweepBonus)}`;
+    const run = ms.streak?.count ? ` · ${ms.streak.count}일 연속` : '';
+    const sub = ready ? `보상 ${ready}개 받기` : ms.swept || done === ms.items.length ? `오늘은 모두 끝냈어요${run}` : `모두 하면 보너스 +${formatCH(ms.sweepBonus + (ms.streak?.next?.inDays === 0 ? ms.streak.next.bonus : 0))}${run}`;
     chips.push(todayChip({ mark: MARK.mission, title: `오늘의 미션 ${done}/${ms.items.length}`, sub, hot: ready > 0, onClick: () => openBlockSheet(() => state?.engagement?.missions && missionsBlock(state, applyState)) }));
   }
   const rs = state.rankSeason;
@@ -881,8 +906,8 @@ const RANK_TABS = {
 };
 let rankPeriod = 'tier';
 let rankTab = 'tier';
-// The ranking tab has three views: 티어 (my tier and the ladder), 순위 (the boards), 친구 (친구 전적).
-const RANK_VIEWS = [['tier', '티어'], ['league', '리그'], ['board', '순위'], ['friends', '친구 전적']];
+// The ranking tab has four views: 티어 (my tier and the ladder), 리그 (this week's group), 순위 (the boards), 친구.
+const RANK_VIEWS = [['tier', '티어'], ['league', '리그'], ['board', '순위'], ['friends', '친구']];
 const RANK_VIEW_KEY = 'vegas:rank-view';
 let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
 function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
@@ -959,6 +984,14 @@ function renderTierPane() {
 }
 function renderFriendPane() {
   const box = document.querySelector('[data-friend-record]');
+  showFriends(document.querySelector('[data-friends]'), {
+    frame: (id, n) => nameFrame(state, id, n),
+    toast,
+    // 옆자리: sit at a friend's room the way their invite link would.
+    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); },
+    // 관전: the same screen, from the friend's chair (js/games/room-client.js, holdem-room.js).
+    onWatch: (where, f) => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier, watch: f.id })) openInvite(); }
+  });
   box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
   box.querySelector('[data-friend-play]')?.addEventListener('click', () => showSurface('games', { focus: true }));
   renderDuels(document.querySelector('[data-duels]'), state, applyState);
@@ -1195,6 +1228,16 @@ function takeDailyLink() {
   history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
   return true;
 }
+// ./?rank=friends from a "친구가 들어왔어요" push: open the friends list.
+let friendsWanted = (() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('rank') !== 'friends') return false;
+  params.delete('rank');
+  const q = params.toString();
+  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
+  return true;
+})();
+function openFriendsLink() { if (friendsWanted && state) { friendsWanted = false; rankView = 'friends'; showSurface('ranking', { focus: true }); } }
 function openDailyLink() { if (dailyWanted && state) { dailyWanted = false; showDaily(); } }
 
 // ---------- account ----------
@@ -1218,6 +1261,7 @@ function signedIn(next) {
   openInvite();
   openNightlyFromLink();
   openDailyLink();
+  openFriendsLink();
 }
 function signedOut(notice) {
   stopNews();
@@ -1314,7 +1358,7 @@ dailyWanted = takeDailyLink();
 capturePendingJoin();
 // An invite link (/j?...) leaves the address bar once read, so a reload is the plain app.
 history.replaceState({ vegasSurface: 'lobby' }, '', location.pathname === '/j' || location.pathname === '/j/' ? '/' : location.pathname);
-if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); } });
+if (sessionToken()) refresh().then(() => { renderTiers(); if (state) { startNotifications(inMenus, askReady); startNews(); ensureTerms(); openInvite(); openDailyLink(); openFriendsLink(); } });
 else openSignIn(signedIn);
 // Once home is up and quiet, fetch the game played last so its table opens without a wait.
 addEventListener('load', () => (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(() => warmGame(GAMES.find(g => g.id === recentTables()[0]?.game)), { timeout: 4000 }), { once: true });

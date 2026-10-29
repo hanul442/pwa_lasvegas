@@ -70,8 +70,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     me: 0, seatEls: [], animating: false,
     bb: BLINDS[t.tier.slug] || BLINDS[Object.keys(BLINDS)[0]],
     chipSet: null,
+    // What my own plate says ('나', or a friend's name while watching their chair).
+    meName: '나',
     // Plate text for a seat; drivers may replace it.
-    nameOf: (i, s) => (i === pk.me ? '나' : s.name),
+    nameOf: (i, s) => (i === pk.me ? pk.meName : s.name),
     noteOf: (i, s) => (s.kind === 'bot' ? STYLE_LABEL[s.style] || '' : ''),
     onEnd: null, // (summary) => void, after the default banner
     labels: { ...ACT_LABEL }, // what each move is called on a seat's tag; drivers may rename them
@@ -258,7 +260,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     pk.oval.classList.add('is-duel');
     [a, b].forEach(i => seatEls[i]?.node.classList.add('is-duelist'));
     if (!announce) return;
-    const nameOf = i => (i === pk.me ? '나' : pk.nameOf(i, current?.seats?.[i] || {}));
+    const nameOf = i => (i === pk.me ? pk.meName : pk.nameOf(i, current?.seats?.[i] || {}));
     const flash = el('div', 'pk-duel', `<b>HEADS-UP</b><small>${nameOf(a)} vs ${nameOf(b)}</small>`);
     flash.setAttribute('role', 'status');
     pk.oval.append(flash);
@@ -448,7 +450,7 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         leaveDuel();
         ev.stacks.forEach((s, i) => setStack(i, s));
         const net = handStart === null ? 0 : ev.stacks[me] - handStart;
-        const names = [...new Set(winners)].map(i => (i === me ? '나' : pk.nameOf(i, current?.seats?.[i] || {})));
+        const names = [...new Set(winners)].map(i => (i === me ? pk.meName : pk.nameOf(i, current?.seats?.[i] || {})));
         const label = lastStanding ? (net > 0 ? 'Last standing' : `${names.join(', ')} · Last standing`) : net > 0 ? 'You win' : names.length ? `${names.join(', ')} wins` : '';
         if (label || net) t.banner(label, net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
         if (net > 0) voice.say('you-win');

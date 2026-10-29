@@ -984,7 +984,9 @@ function renderFriendPane() {
     frame: (id, n) => nameFrame(state, id, n),
     toast,
     // 옆자리: sit at a friend's room the way their invite link would.
-    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); }
+    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); },
+    // 관전: the same screen, from the friend's chair (js/games/room-client.js, holdem-room.js).
+    onWatch: (where, f) => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier, watch: f.id })) openInvite(); }
   });
   box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
   box.querySelector('[data-friend-play]')?.addEventListener('click', () => showSurface('games', { focus: true }));

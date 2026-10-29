@@ -176,7 +176,7 @@ export const api = {
   nightlyUnregister: () => request('/api/nightly/unregister', { method: 'POST', body: {} }),
   // Friends' rooms. cursor { hand, from } asks for the events after what this screen has played.
   holdemRooms: (game = 'holdem') => request(game === 'holdem' ? '/api/holdem/rooms' : `/api/holdem/rooms?game=${encodeURIComponent(game)}`),
-  holdemRoom: (code, cursor) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),
+  holdemRoom: (code, cursor, watch) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}`),
   holdemRoomCreate: (buyIn, floor, size, mode = 'cash', bots = true, game = 'holdem') => request('/api/holdem/rooms', { method: 'POST', body: { buyIn, floor, size, mode, bots, game } }),
   holdemRoomJoin: code => request('/api/holdem/rooms/join', { method: 'POST', body: { code } }),
   holdemRoomStart: (code, cursor) => request('/api/holdem/rooms/start', { method: 'POST', body: { code, cursor } }),
@@ -187,7 +187,7 @@ export const api = {
   holdemRoomBack: (code, cursor) => request('/api/holdem/rooms/back', { method: 'POST', body: { code, cursor } }),
   // Friends' rooms for 섯다, 고스톱 and 맞고: the same shape, one route set for all three.
   rooms: game => request(`/api/rooms${game ? `?game=${game}` : ''}`),
-  room: (code, cursor) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}`),
+  room: (code, cursor, watch) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}`),
   roomCreate: (game, stake, floor, size) => request('/api/rooms', { method: 'POST', body: { game, stake, floor, size } }),
   roomJoin: code => request('/api/rooms/join', { method: 'POST', body: { code } }),
   roomStart: (code, cursor) => request('/api/rooms/start', { method: 'POST', body: { code, cursor } }),
@@ -266,6 +266,9 @@ const MESSAGES = {
   SESSION_CLOSED: '이미 끝난 테이블이에요.',
   ROOM_NOT_FOUND: '그 코드의 방을 찾지 못했어요. 코드를 다시 확인해 주세요.',
   ROOM_FULL: '방이 꽉 찼어요. 다른 방을 골라 주세요.',
+  WATCH_GONE: '친구가 그 방에서 나갔어요.',
+  WATCH_NOT_FRIEND: '그 친구가 나를 친구로 두어야 관전할 수 있어요.',
+  WATCH_CONFLICT: '그 테이블엔 내 다른 친구도 앉아 있어서 관전할 수 없어요.',
   FRIEND_NOT_FOUND: '그 닉네임의 플레이어를 찾지 못했어요.',
   FRIEND_IS_ME: '나는 친구로 추가할 수 없어요.',
   FRIEND_LIST_FULL: '친구는 50명까지 추가할 수 있어요.',

@@ -1253,3 +1253,13 @@
 .chip.is-airborne{filter:drop-shadow(0 10px 8px #0007)}
 .chip{transition:filter .22s var(--ease-out,ease-out)}
 @media (prefers-reduced-motion:reduce){.card-face,.card-back,.chip{transition:none}}
+/* Upright phones (Fold cover screen): the dice dome takes whatever height is left after the bets,
+   so the multi-spot rows (Small/Big, 숫자 1–6, 합 4–17) always stay on the felt. */
+@media (max-width:599px) and (orientation:portrait){
+  .table-screen--dice .felt-body{height:100%;padding-bottom:12px}
+  .table-screen--dice .felt-body>.sb{flex:1 1 0;min-height:0}
+  .sb{min-height:0;grid-template-rows:minmax(0,1fr) auto auto auto;gap:8px}
+  .sb .dome{width:auto;height:100%;max-height:min(62vw,250px);aspect-ratio:1;min-height:0;container-type:inline-size}
+  .sb .die{--d:min(50px,19cqw)}
+  .sb-main{margin-top:4px}
+}

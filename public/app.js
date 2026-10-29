@@ -4,6 +4,8 @@ import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { renderAccountTools, forgetShownCode } from './js/account.js';
 import { formatCH, rollNumber, isMuted, setMuted, sound, preloadSounds, el } from './js/fx.js';
+import { moneyOf } from './js/money.js';
+import { buyInSheet, cashOutQuiet } from './js/cashier.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { TIERS, FIRST_TIER, createChip } from './js/chips.js';
@@ -154,7 +156,8 @@ function setTierHeader(game) {
 
 // Tables this player can sit at right now, by the tier picker's rules.
 function sittableTiers(game, st = state) {
-  const available = st?.user?.account?.available ?? 0;
+  // At a table, its chips; in the lobby, everything a buy-in can be paid from.
+  const available = document.body.classList.contains('game-mode') && st?.cashier?.on ? st?.user?.account?.available ?? 0 : moneyOf(st);
   if (game.event) { const e = eventEntry(eventOf(game)); return e?.open ? [e.tier.slug] : []; }
   return Object.values(TIERS).filter(t => {
     const f = st?.floors?.find(x => x.slug === t.floor);
@@ -248,6 +251,12 @@ let tableSeq = 0;
 async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!selectedGame) return;
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
+  // 캐셔 (js/cashier.js): short of this table's smallest bet in hand, buy chips with money first.
+  if (!seated && state?.cashier?.on && TIERS[tier] && state.user.account.available < TIERS[tier].min) {
+    const bought = await buyInSheet(state, TIERS[tier]);
+    if (!bought) return;
+    applyState(bought);
+  }
   rememberTable(selectedGame.id, tier);
   activeTier = tier;
   // Moving between tables replaces the table entry, so ← still goes back where the player came from.
@@ -299,7 +308,11 @@ function closeTable() {
   const closing = activeTable.destroy();
   activeTable = null;
   tableMount.replaceChildren();
-  Promise.resolve(closing).finally(refresh);
+  // Getting up from the table (not moving to another one) cashes the chips in hand back in.
+  Promise.resolve(closing).finally(async () => {
+    if (!document.body.classList.contains('game-mode')) { const next = await cashOutQuiet(state); if (next) applyState(next); }
+    refresh();
+  });
 }
 
 function restoreTrigger() { lastLobbyTrigger?.focus({ preventScroll: true }); }
@@ -311,6 +324,13 @@ function leaveTable({ useHistory = true } = {}) {
 }
 
 document.querySelector('[data-tier-back]').addEventListener('click', () => leaveTable());
+// "바이인" on a 칩이 모자라요 notice (js/notice.js): buy more chips for the table I'm at.
+document.addEventListener('vegas:buyin', async () => {
+  const tier = TIERS[activeTier];
+  if (!tier || !state) return;
+  const next = await buyInSheet(state, tier);
+  if (next) { applyState(next); activeTable?.setServerState?.(next); }
+});
 window.addEventListener('popstate', event => {
   if (event.state?.vegasSurface === 'tiers') { if (selectedGame) { setTierHeader(selectedGame); renderTiers(); } showSurface('tiers', { focus: true }); return; }
   if (event.state?.vegasSurface === 'table') { showSurface('tiers'); return; }
@@ -370,7 +390,8 @@ function paintNavDots(st) {
 function applyState(next) {
   state = next;
   setBragName(state.user?.nickname);
-  const available = state.user.account.available;
+  // The top bar is all the player's money (chips in hand and the wallet, lib/cashier.mjs).
+  const available = moneyOf(state);
   // Show the balance as is on first load; only later changes roll.
   if (shownWallet === null || shownWallet === available) walletEl.textContent = formatCH(available);
   else rollNumber(walletEl, shownWallet, available, { format: formatCH });
@@ -608,7 +629,7 @@ function renderFirstDay() {
   slot.hidden = !on;
   if (!on) { slot.replaceChildren(); return; }
   const bj = GAMES.find(g => g.id === 'blackjack');
-  const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier) && state.user.account.available >= TIERS[x.tier].min);
+  const recent = recentTables().map(x => ({ ...x, game: GAMES.find(g => g.id === x.game) })).find(x => tableStillThere(x.game, x.tier) && !outgrownTier(x.tier) && moneyOf(state) >= TIERS[x.tier].min);
   slot.replaceChildren(firstDayCard(state, {
     again: recent?.game.name,
     onPlay: (b, { first }) => (first || !recent ? sitAt(bj, FIRST_TIER.slug, b, { firstBet: first }) : sitAt(recent.game, recent.tier, b)),
@@ -731,7 +752,7 @@ function renderToday() {
   if (!state?.user) { slot.replaceChildren(); return; }
   const chips = [];
   const eng = state.engagement || {}, sup = eng.support || {}, r = state.recharge;
-  const available = state.user.account.available;
+  const available = moneyOf(state);
   const broke = Boolean(state.bank && available < state.bank.base);
   // Free money first: pay, then 구제금융·정부 지원금 and the recharge. Short of every table with
   // nothing free left, the bank.
@@ -746,7 +767,7 @@ function renderToday() {
     if (ready) chips.push(todayChip({ mark: MARK.pay, title: `${name} +${formatCH(s.amount)}`, sub: '갚지 않아도 돼요', hot: true, onClick: b => claimSupport(kind, b, applyState) }));
   }
   if (r?.eligible) chips.push(todayChip({ mark: MARK.pay, title: `칩 충전 +${formatCH(r.amount)}`, sub: '무료', hot: broke, onClick: rechargeClaim }));
-  if (broke && !chips.length) chips.push(todayChip({ mark: MARK.bank, title: '은행에서 빌리기', sub: '칩이 모자라요', hot: true, onClick: () => showSurface('bank', { focus: true }) }));
+  if (broke && !chips.length && !state.bank?.closed) chips.push(todayChip({ mark: MARK.bank, title: '은행에서 빌리기', sub: '칩이 모자라요', hot: true, onClick: () => showSurface('bank', { focus: true }) }));
   // 오늘의 손익 (lib/loss-tally.mjs): won and lost at the tables since midnight, losses in red,
   // first in the strip (한서 2026-10-27: "얼마 잃었는지 보여주는 게 많았으면").
   const day = state.user.today;
@@ -797,7 +818,7 @@ function eventCard(ev, { now = false } = {}) {
     // Entry not met: show what it takes, disabled, rather than a way into an empty tier page.
     const e = eventEntry(ev);
     const locked = Boolean(e && !e.open);
-    const go = el('button', `event-cta${locked ? ' is-locked' : ''}`, locked ? `보유 ${formatCH(state?.user?.account?.available ?? 0)} / ${formatCH(e.entry)} 필요` : '테이블에 앉기');
+    const go = el('button', `event-cta${locked ? ' is-locked' : ''}`, locked ? `보유 ${formatCH(moneyOf(state))} / ${formatCH(e.entry)} 필요` : '테이블에 앉기');
     go.type = 'button';
     go.dataset.game = g.id;
     if (locked) { go.disabled = true; go.setAttribute('aria-label', `입장하려면 보유 칩 ${formatCH(e.entry)} 이상이 필요해요`); }
@@ -812,7 +833,7 @@ function eventCard(ev, { now = false } = {}) {
 function eventEntry(ev) {
   const e = ev?.floor && ev?.entry ? { floor: ev.floor, entry: ev.entry } : state?.eventEntry;
   const tier = e && Object.values(TIERS).find(t => t.floor === e.floor);
-  return e && tier ? { ...e, tier, open: (state?.user?.account?.available ?? 0) >= e.entry } : null;
+  return e && tier ? { ...e, tier, open: moneyOf(state) >= e.entry } : null;
 }
 function entryLine(ev) {
   const e = eventEntry(ev);
@@ -841,7 +862,7 @@ function renderBankFloor() {
 function renderTiers() {
   const grid = document.querySelector('[data-tier-grid]');
   const floors = state?.floors || [];
-  const available = state?.user?.account?.available ?? 0;
+  const available = moneyOf(state);
   // Floors a player has outgrown fold away behind one line; the next locked floor shows what it takes.
   const entry = selectedGame?.event && eventEntry(eventOf(selectedGame));
   if (entry) return renderEventTier(grid, entry);
@@ -863,7 +884,8 @@ function renderTiers() {
     b.disabled = locked || (broke && !needsPass);
     const chips = el('span', 'tier-chips');
     tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
-    const status = locked ? `순자산 ${formatCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)` : needsPass ? `이번 달 입장권이 필요해요 · 이 층 꾸미기를 사거나 갱신 · ${formatCH(floor.minBet)}원부터` : broke ? '칩이 부족해요 · 은행에서 빌릴 수 있어요' : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
+    const rpMode = floor?.rpNeed != null;
+    const status = locked ? (rpMode ? `RP ${floor.rpNeed}이면 열려요 · ${floor.rpRemaining} 남음` : `순자산 ${formatCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)`) : needsPass ? `이번 달 입장권이 필요해요 · 이 층 꾸미기를 사거나 갱신 · ${formatCH(floor.minBet)}원부터` : broke ? (state?.bank?.closed ? '돈이 부족해요 · 일급·구제금융으로 채워요' : '칩이 부족해요 · 은행에서 빌릴 수 있어요') : rpMode ? (floor.rpNeed ? `RP ${floor.rpNeed} 층` : '모두에게 열린 층') : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
     const stars = `<em class="tier-stars" aria-label="난이도 ${tier.stars}/5">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>`;
     b.innerHTML = `<strong>${tier.name}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
@@ -999,8 +1021,12 @@ function renderFriendPane() {
 function renderBoards() {
   const season = state?.rankings?.season;
   if (!season) rankPeriod = 'allTime';
+  // From the RP season (2026-10-29) the month's tier is the RP, so the 베타 board folds into 이번 달.
+  const rpMode = state?.rankSeason?.mode === 'rp';
+  if (rpMode && rankPeriod === 'rp') rankPeriod = 'tier';
   const period = document.querySelector('[data-rank-period]');
-  period.replaceChildren(...[['tier', '이번 달'], ['rp', 'RP 베타'], ['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
+  period.classList.toggle('segmented--four', !rpMode);
+  period.replaceChildren(...[['tier', '이번 달'], ['rp', 'RP 베타'], ['season', '이번 주'], ['allTime', '전체']].filter(([key]) => !(rpMode && key === 'rp')).map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';
     b.setAttribute('role', 'radio');
@@ -1019,7 +1045,7 @@ function renderBoards() {
   const rs = state?.rankSeason;
   if (rankPeriod === 'tier' && rs) {
     // The ladder and past months live on the 티어 view; here just the month and its clock.
-    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · 1일 0시에 모두 초기화 <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>`;
+    head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · ${rpMode ? '1일 0시에 3티어 내려가요' : '1일 0시에 모두 초기화'} <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${rpMode ? `${rs.rp} RP` : tierName(rs.tier)}</b></span></div>`;
     head.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
   }
   if (rankPeriod === 'rp' && state?.rp) {
@@ -1028,7 +1054,7 @@ function renderBoards() {
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
   tabs.replaceChildren(...RANK_TABS[rankPeriod].map(([key, label]) => {
-    const b = el('button', `tab${key === rankTab ? ' is-active' : ''}`, label);
+    const b = el('button', `tab${key === rankTab ? ' is-active' : ''}`, rpMode && key === 'tier' ? '이번 달 RP' : label);
     b.type = 'button';
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(key === rankTab));
@@ -1039,7 +1065,8 @@ function renderBoards() {
   // On the tier board every name carries its tier.
   const emblem = r => ((rankPeriod === 'tier' || rankPeriod === 'rp') && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
   const me = state?.user?.id;
-  const value = r => rankTab === 'wins' ? `${r.value}승` : rankPeriod === 'rp' ? `${r.value} RP` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
+  const rpBoard = rankPeriod === 'rp' || (rankPeriod === 'tier' && rpMode);
+  const value = r => rankTab === 'wins' ? `${r.value}승` : rpBoard ? `${r.value} RP` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
   const board = rankPeriod === 'tier' ? `tier:${state?.rankSeason?.season.id}` : rankPeriod === 'rp' ? `rp:${state?.rp?.season}` : rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
   const move = rankMoves(board, rows);
   const moveTag = r => {
@@ -1074,7 +1101,7 @@ function renderBoards() {
   if (mine) {
     const above = rows.find(r => r.rank === mine.rank - 1);
     const below = rows.find(r => r.rank === mine.rank + 1);
-    const gap = (a, b) => rankTab === 'wins' ? `${a.value - b.value}승` : rankPeriod === 'rp' ? `${a.value - b.value} RP` : formatCH(a.value - b.value);
+    const gap = (a, b) => rankTab === 'wins' ? `${a.value - b.value}승` : rpBoard ? `${a.value - b.value} RP` : formatCH(a.value - b.value);
     const line = mine.rank === 1
       ? (below ? `1위 지키는 중 · 2위 ${below.nickname}보다 ${gap(mine, below)} 앞서요` : '1위예요')
       : above ? `${above.nickname}(${above.rank}위)까지 ${gap(above, mine)} 남았어요` : '';
@@ -1121,7 +1148,7 @@ function renderProfile() {
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(a.available)}원${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
+      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(moneyOf(state))}원${state.bank?.debt ? ` · 빚 ${formatCH(state.bank.debt)}원 · 신용 ${state.bank.credit.grade}등급` : ''}</small></div>
     </div>
     ${u.guest ? guestCard(state) : ''}
     <dl class="stat-grid">

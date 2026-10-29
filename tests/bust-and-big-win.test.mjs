@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // 파산·큰 승리 연출 (2026-10-27): the day's loss tally behind the bust receipt, and the big-win bar
 // measured in the table's minimum bet.
 import test from 'node:test';

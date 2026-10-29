@@ -35,6 +35,8 @@ export function toast(text, { action = '', onAction = null, duration = action ? 
 // A failed request. Only a dropped connection offers 다시 시도, and only where the caller passes a
 // retry that is safe to repeat (a claim the server pays once, a round sent under the same key).
 export function errorToast(err, retry = null) {
+  // Out of table chips with money left (lib/cashier.mjs): offer the buy-in right there.
+  if (err?.code === 'BUY_IN_REQUIRED') return toast(errorMessage(err), { action: '바이인', onAction: () => document.dispatchEvent(new CustomEvent('vegas:buyin')) });
   const network = err?.code === 'NETWORK';
   return toast(errorMessage(err), network && retry ? { action: '다시 시도', onAction: retry } : {});
 }

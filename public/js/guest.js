@@ -3,6 +3,7 @@
 // the toast when an invite reward lands.
 import { api, errorMessage, saveSession } from './api.js';
 import { el, formatCH } from './fx.js';
+import { moneyOf } from './money.js';
 import { toast } from './notice.js';
 import { pendingRef, dropPendingRef, setMyInviteCode, shareFriendInvite } from './invite.js';
 
@@ -29,7 +30,7 @@ export function onGuestState(st, applyState) {
   // the table (closing a table fetches a fresh state, which lands here).
   if (nudgeDue && st.user.guest && !document.body.classList.contains('game-mode')) {
     nudgeDue = false;
-    setTimeout(() => toast(`이겼어요! ${formatCH(st.user.account.available + st.user.account.locked)}원, 이 칩 지키려면 이름 정하기`, { action: '이름 정하기', onAction: () => openNameSheet(applyState), duration: 9000 }), 900);
+    setTimeout(() => toast(`이겼어요! ${formatCH(moneyOf(st) + st.user.account.locked)}원, 이 칩 지키려면 이름 정하기`, { action: '이름 정하기', onAction: () => openNameSheet(applyState), duration: 9000 }), 900);
   }
   if (!st.user.guest) nudgeDue = false;
   const inv = st.invite;
@@ -98,7 +99,7 @@ export function openNameSheet(applyState) {
 // Profile: a guest's card in place of the account row.
 export function guestCard(st) {
   return `<div class="guest-card">
-    <div><b>게스트로 플레이 중</b><small>칩 ${formatCH(st.user.account.available + st.user.account.locked)}원이 이 기기에만 있어요. 이름을 정하면 계정에 저장되고 랭킹에 올라가요.</small></div>
+    <div><b>게스트로 플레이 중</b><small>칩 ${formatCH(moneyOf(st) + st.user.account.locked)}원이 이 기기에만 있어요. 이름을 정하면 계정에 저장되고 랭킹에 올라가요.</small></div>
     <button type="button" class="pill-button pill-button--solid" data-name-guest>이름 정하기</button>
   </div>`;
 }

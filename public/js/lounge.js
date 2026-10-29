@@ -319,6 +319,14 @@ export function floorBlock(state, onPass) {
   const top = [...floors].reverse().find(f => f.entered || f === floors[0]);
   const open = floors.filter(f => f.open).map(f => f.name).join(' · ');
   if (!next) { box.innerHTML = `<header class="lounge-head"><h2>${top?.name}</h2><small>가장 높은 층에 있어요</small></header>`; return box; }
+  if (next.rpNeed != null) {
+    // The RP era (lib/economy.mjs floorsFor): RP opens the floors, nothing else is asked.
+    const pct = Math.round(next.progress * 100);
+    box.innerHTML = `<header class="lounge-head"><h2><small class="lounge-kicker">다음 층</small>${next.name}</h2><small>${pct}%</small></header>
+    <span class="mission-bar mission-bar--floor"><i style="width:${pct}%"></i></span>
+    <p class="lounge-note">RP ${next.rpRemaining} 더 모아 RP ${next.rpNeed}이 되면 열려요. 지금 앉을 수 있는 곳은 ${open}이에요.</p>`;
+    return box;
+  }
   const progress = next.unlocked ? 1 : next.progress;
   const todo = [
     next.unlocked ? '' : `순자산(보유 칩 − 빚)이 ${formatCH(next.remaining)} 더 모이고`,

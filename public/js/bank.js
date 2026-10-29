@@ -2,6 +2,7 @@
 // loans, the four lenders as one-line rows, bankruptcy, and past loans folded away. Every number comes from the server (lib/bank.mjs).
 import { api, errorMessage } from './api.js';
 import { el, formatCH, formatMoney, sound } from './fx.js';
+import { moneyOf } from './money.js';
 import { chipsToWallet, claimDaily } from './lounge.js';
 import { errorToast } from './notice.js';
 
@@ -135,7 +136,7 @@ function borrowSheet(state, offer, onChanged) {
 }
 
 function repaySheet(state, loan, onChanged) {
-  const available = state.user.account.available;
+  const available = moneyOf(state);
   const max = available >= loan.balance ? loan.balance : Math.floor(available / UNIT) * UNIT;
   let amount = max;
   openSheet({
@@ -198,7 +199,7 @@ function creditBlock(state) {
       <div><dt>순자산</dt><dd>${won(b.netWorth)}</dd></div>
     </dl>
     ${heldLine(state)}
-    <div class="bank-grade"><span>신용 <b>${b.credit.grade}등급</b></span><span class="bank-score" aria-label="신용 점수 ${score}점, 1000점 만점"><i style="width:${score / 10}%"></i></span><small>${score} / 1000</small></div>${ban}`;
+    ${b.closed ? `<p class="bank-flag bank-flag--note">10월 29일부터 대출·신용·파산이 없어졌어요. 층은 RP 티어로 열리고, 테이블 칩은 앉을 때 가진 돈으로 사요.${b.debt > 0 ? ' 남은 빚은 갚을 수 있고, 이번 시즌이 끝나면 정리돼요.' : ''}</p>` : `<div class="bank-grade"><span>신용 <b>${b.credit.grade}등급</b></span><span class="bank-score" aria-label="신용 점수 ${score}점, 1000점 만점"><i style="width:${score / 10}%"></i></span><small>${score} / 1000</small></div>${ban}`}`;
   const go = box.querySelector('[data-held-go]');
   if (go) go.addEventListener('click', () => resumeTable(go));
   return box;
@@ -274,7 +275,7 @@ export function supportButtons(state, onChanged) {
   if (!sup) return [];
   const free = [];
   if (sup.welfare?.qualified && !sup.welfare.claimed) free.push(['welfare', `구제금융 +${formatCH(sup.welfare.amount)}`]);
-  if (sup.grant && !sup.grant.claimed) free.push(['grant', `정부 지원금 +${formatCH(sup.grant.amount)}`]);
+  if (sup.grant && !sup.grant.claimed && !sup.grant.closed) free.push(['grant', `정부 지원금 +${formatCH(sup.grant.amount)}`]);
   return free.map(([kind, label]) => {
     const b = el('button', 'pill-button pill-button--solid', label);
     b.type = 'button';
@@ -304,12 +305,12 @@ function payBlock(state, onChanged) {
   row('정부 지원금', '일주일에 한 번 · 월요일에 새로', sup.grant.claimed ? '받음' : `+${formatCH(sup.grant.amount)}`, !sup.grant.claimed, claim('grant'));
   const w = sup.welfare, left = w.perDay - w.taken;
   // Say why it can't be taken, in the player's terms: chips still on a table, or chips in the wallet.
-  if (w.claimed) row('구제금융', `오늘 ${w.perDay}번 다 받았어요 · 내일 다시 받을 수 있어요`, '오늘 다 받음', false, () => {});
-  else if (w.qualified) row('구제금융', `칩 ${won(w.below)} 미만일 때 · 오늘 ${left}번 남음`, `+${formatCH(w.amount)}`, true, claim('welfare'));
+  if (w.claimed) row('구제금융', w.perDay === 1 ? '오늘 받았어요 · 내일 다시 받을 수 있어요' : `오늘 ${w.perDay}번 다 받았어요 · 내일 다시 받을 수 있어요`, '오늘 다 받음', false, () => {});
+  else if (w.qualified) row('구제금융', `칩 ${won(w.below)} 미만일 때 · ${w.perDay === 1 ? '하루 한 번' : `오늘 ${left}번 남음`}`, `+${formatCH(w.amount)}`, true, claim('welfare'));
   else if (w.reason === 'TABLE') {
     const r = resumable(state);
     row('구제금융', `테이블에 ${won(w.onTable)}이 걸려 있어요 · 판이 끝난 뒤 칩이 ${won(w.below)} 밑이면 받아요`, r ? '테이블로 가기' : '판 끝나면', Boolean(r), resumeTable);
-  } else row('구제금융', `칩이 ${won(w.below)} 미만일 때 받아요 · 지금 지갑에 ${won(state.user.account.available)}`, '대상 아님', false, () => {});
+  } else row('구제금융', `칩이 ${won(w.below)} 미만일 때 받아요 · 지금 가진 돈 ${won(moneyOf(state))}`, '대상 아님', false, () => {});
   box.append(list);
   return box;
 }
@@ -348,8 +349,8 @@ export function renderBank(root, state, onChanged) {
     creditBlock(state),
     payBlock(state, onChanged),
     state.bank.loans.length ? loansBlock(state, onChanged) : null,
-    lendersBlock(state, onChanged),
-    bankruptcyBlock(state, onChanged),
+    state.bank.closed ? null : lendersBlock(state, onChanged),
+    state.bank.closed ? null : bankruptcyBlock(state, onChanged),
     historyBlock(state)
   ].filter(Boolean));
 }

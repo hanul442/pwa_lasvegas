@@ -1,3 +1,5 @@
+// The economy before the RP season (2026-10-29): see tests/legacy-economy.mjs.
+import './legacy-economy.mjs';
 // 2026-10-24 full game review: rule and money fixes, one test each.
 import test from 'node:test';
 import assert from 'node:assert/strict';

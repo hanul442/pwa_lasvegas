@@ -28,6 +28,13 @@ export function tierEmblem(id, { size = 40, label = true } = {}) {
   return `<svg class="tier-emblem tier-emblem--${t}" width="${size}" height="${size}" viewBox="0 0 48 48" ${label ? `role="img" aria-label="${tierName(t)}"` : 'aria-hidden="true"'}><path class="tier-face" d="M24 3 42.2 13.5v21L24 45 5.8 34.5v-21z"/>${cut}<path class="tier-shine" d="M24 3 42.2 13.5 24 24 5.8 13.5z"/>${star}</svg>`;
 }
 
+// From 2026-10-29 the tier is the month's RP (lib/rank-season.mjs mode 'rp'); before, the month's
+// best net worth. `carry`: the month ends by dropping RP three tiers instead of resetting chips.
+export const rpMode = r => r?.mode === 'rp';
+export const scoreLine = r => (rpMode(r) ? `이번 달 RP ${r.rp}` : `이번 달 최고 순자산 ${formatCH(r.peak)}`);
+export const needText = (r, need) => (rpMode(r) ? `${need} RP` : formatCH(need));
+const resetNote = r => (r.carry ? '매달 1일 0시에 RP가 3티어 내려간 채로 새 시즌이 시작돼요. 칩·꾸미기·명패·배지·업적은 그대로예요.' : '매달 1일 0시에 칩·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.');
+
 const daysLeft = iso => Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 86_400_000));
 
 // The lobby card: my tier, the climb to the next one, and when the month resets.
@@ -36,16 +43,16 @@ export function rankBlock(state, onOpen) {
   if (!r) return null;
   const box = el('section', 'lounge-block rank-block');
   const days = daysLeft(r.season.endsAt);
-  const nextLine = r.next ? `${tierName(r.next.id)}까지 ${formatCH(r.next.need)}` : '최고 티어예요';
+  const nextLine = r.next ? `${tierName(r.next.id)}까지 ${needText(r, r.next.need)}` : '최고 티어예요';
   box.innerHTML = `
     <header class="lounge-head"><h2>${r.season.name}</h2><small>${days ? `${days}일 남음` : '오늘 끝나요'}</small></header>
     <button type="button" class="rank-card rank-card--${r.tier}">
       ${tierEmblem(r.tier, { size: 52 })}
-      <span class="rank-card-text"><b>${tierName(r.tier)}</b><small>이번 달 최고 순자산 ${formatCH(r.peak)} · ${nextLine}</small>
+      <span class="rank-card-text"><b>${tierName(r.tier)}</b><small>${scoreLine(r)} · ${nextLine}</small>
         <span class="rank-bar" aria-hidden="true"><i style="width:${Math.round(r.progress * 100)}%"></i></span></span>
       <span class="rank-card-go" aria-hidden="true">→</span>
     </button>
-    <p class="lounge-note rank-note">매달 1일 0시에 칩·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.${r.best ? ` 내 최고 기록 ${tierName(r.best.tier)} (${r.best.name}).` : ''}</p>`;
+    <p class="lounge-note rank-note">${resetNote(r)}${r.best ? ` 내 최고 기록 ${tierName(r.best.tier)} (${r.best.name}).` : ''}</p>`;
   box.querySelector('.rank-card').addEventListener('click', () => { sound.tick(); onOpen?.(); });
   return box;
 }
@@ -53,7 +60,7 @@ export function rankBlock(state, onOpen) {
 // Profile: one badge per month played, plus the 챌린저 podium.
 export function rankBadges(history = []) {
   if (!history.length) return '';
-  return `<ul class="rank-history">${history.map(h => `<li>${tierEmblem(h.tier, { size: 34 })}<span><b>${tierName(h.tier)}${h.rank && h.rank <= 3 ? ` · 챌린저 ${h.rank}위` : ''}</b><small>${h.name} · ${h.rank}위 / ${h.of}명 · 최고 ${formatCH(h.peak)}</small></span></li>`).join('')}</ul>`;
+  return `<ul class="rank-history">${history.map(h => `<li>${tierEmblem(h.tier, { size: 34 })}<span><b>${tierName(h.tier)}${h.rank && h.rank <= 3 ? ` · 챌린저 ${h.rank}위` : ''}</b><small>${h.name} · ${h.rank}위 / ${h.of}명 · ${h.rp != null ? `RP ${h.rp}` : `최고 ${formatCH(h.peak)}`}</small></span></li>`).join('')}</ul>`;
 }
 
 // ---------- the month's end ----------
@@ -84,18 +91,23 @@ export function seasonEndBlock(state, { onShop, onBoard, onWrapped } = {}) {
   const r = state.rankSeason;
   if (!r) return null;
   const box = el('section', 'season-end');
-  const nextLine = r.next ? `${tierName(r.next.id)}까지 ${formatCH(r.next.need)}` : '최고 티어예요';
+  const nextLine = r.next ? `${tierName(r.next.id)}까지 ${needText(r, r.next.need)}` : '최고 티어예요';
+  const resets = r.carry ? ['RP (3티어 아래에서 다시 시작)', '남은 빚'] : RESETS;
+  const keeps = r.carry ? ['칩', ...KEEPS] : KEEPS;
+  const tip = r.carry ? '티어는 이번 달 RP로 정해져요. 지면 RP가 깎이니 마지막까지 신중하게. 칩은 그대로 남아요.'
+    : rpMode(r) ? '티어는 이번 달 RP로 정해져요. 지면 RP가 깎이니 마지막까지 신중하게. 칩은 사라지지만 꾸미기는 남아요.'
+    : '티어는 이번 달에 찍은 최고 순자산으로 정해져서, 마지막에 잃어도 내려가지 않아요. 칩은 사라지지만 꾸미기는 남아요.';
   box.innerHTML = `
     <span class="season-end-kicker">${seasonShort(r.season.name)} 마감${r.season.preseason ? ' · 첫 초기화' : ''}</span>
-    <h2>시즌 초기화까지</h2>
+    <h2>${r.carry ? '시즌 마감까지' : '시즌 초기화까지'}</h2>
     <p class="season-end-clock" data-season-clock data-ends="${r.season.endsAt}" role="timer">${seasonClock(seasonLeft(r))}</p>
     <p class="season-end-when">${endDay(r.season.endsAt)} 0시 (한국 시간)</p>
-    <button type="button" class="season-end-me" data-board>${tierEmblem(r.tier, { size: 44 })}<span><b>지금 ${tierName(r.tier)}</b><small>이번 달 최고 순자산 ${formatCH(r.peak)} · ${nextLine}</small></span></button>
+    <button type="button" class="season-end-me" data-board>${tierEmblem(r.tier, { size: 44 })}<span><b>지금 ${tierName(r.tier)}</b><small>${scoreLine(r)} · ${nextLine}</small></span></button>
     <div class="season-end-lists">
-      <div><h3>초기화돼요</h3><ul>${RESETS.map(x => `<li>${x}</li>`).join('')}</ul></div>
-      <div><h3>그대로 남아요</h3><ul class="is-keep">${KEEPS.map(x => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h3>${r.carry ? '바뀌어요' : '초기화돼요'}</h3><ul>${resets.map(x => `<li>${x}</li>`).join('')}</ul></div>
+      <div><h3>그대로 남아요</h3><ul class="is-keep">${keeps.map(x => `<li>${x}</li>`).join('')}</ul></div>
     </div>
-    <p class="season-end-tip">티어는 이번 달에 찍은 최고 순자산으로 정해져서, 마지막에 잃어도 내려가지 않아요. 칩은 사라지지만 꾸미기는 남아요.</p>
+    <p class="season-end-tip">${tip}</p>
     <div class="season-end-actions">${state.wrapped?.live && onWrapped ? '<button type="button" class="pill-button pill-button--solid" data-wrapped>이번 달 결산 미리 보기</button>' : ''}<button type="button" class="pill-button" data-shop>상점 보기</button></div>`;
   box.querySelector('[data-wrapped]')?.addEventListener('click', () => { sound.tick(); onWrapped(state.wrapped.live); });
   box.querySelector('[data-shop]').addEventListener('click', () => { sound.tick(); onShop?.(); });
@@ -145,15 +157,16 @@ export function maybeSeasonMoment(state, { force = false, onWrapped } = {}) {
   node.setAttribute('aria-label', `${seasonShort(last.name)} 결과`);
   // VEGAS 랩드 for the month just closed (js/wrapped.js), when this player played it.
   const wrapped = onWrapped ? (state.wrapped?.history || []).find(h => h.season === last.id && h.rounds) : null;
-  const podium = (last.podium || []).map(p => `<li${p.userId === state.user.id ? ' class="is-me"' : ''}><span class="rank-moment-place">${p.rank}</span>${tierEmblem(p.tier, { size: 24, label: false })}<b>${p.nickname}</b><small>${formatCH(p.peak)}</small></li>`).join('');
+  const podium = (last.podium || []).map(p => `<li${p.userId === state.user.id ? ' class="is-me"' : ''}><span class="rank-moment-place">${p.rank}</span>${tierEmblem(p.tier, { size: 24, label: false })}<b>${p.nickname}</b><small>${p.rp != null ? `${p.rp} RP` : formatCH(p.peak)}</small></li>`).join('');
   const cleared = reset ? [reset.chips ? `칩 ${formatCH(reset.chips)}` : '', reset.loans ? `대출 ${reset.loans}건` : ''].filter(Boolean).join(' · ') : '';
+  const carried = reset?.mode === 'rp';
   node.innerHTML = `<div class="floor-moment-inner">
     ${mine ? tierEmblem(mine.tier, { size: 84 }) : ''}
     <p>${seasonShort(last.name)} 결과</p>
     <h2>${mine ? tierName(mine.tier) : '새 시즌'}</h2>${mine && mine.rank <= 3 ? `<span class="rank-moment-champ">챌린저 ${mine.rank}위</span>` : ''}
-    ${mine ? `<small>${mine.of}명 중 ${mine.rank}위 · 최고 순자산 ${formatCH(mine.peak)}</small>` : ''}
+    ${mine ? `<small>${mine.of}명 중 ${mine.rank}위 · ${mine.rp != null ? `RP ${mine.rp}` : `최고 순자산 ${formatCH(mine.peak)}`}</small>` : ''}
     ${podium ? `<ol class="rank-moment-podium" aria-label="챌린저">${podium}</ol>` : ''}
-    <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}꾸미기·명패·배지·업적은 그대로예요. Gold Room부터 다시 올라가요.</p>
+    <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}${carried ? `칩·꾸미기·명패·배지·업적은 그대로예요. RP ${reset.carry || 0}에서 다시 시작해요.` : '꾸미기·명패·배지·업적은 그대로예요. Gold Room부터 다시 올라가요.'}</p>
     <div class="rank-moment-actions moment-actions">${wrapped ? `<button type="button" class="pill-button pill-button--solid" data-wrapped>${seasonShort(last.name)} 결산 카드 보기</button>` : ''}
     <button type="button" class="pill-button${wrapped ? '' : ' pill-button--solid'}" data-close>${force ? '닫기' : '새 시즌 시작'}</button></div></div>`;
   document.body.append(node);
@@ -187,7 +200,7 @@ export function celebrateTier(state) {
   node.setAttribute('role', 'dialog');
   node.setAttribute('aria-label', `${tierName(r.tier)} 승급`);
   node.innerHTML = `<div class="floor-moment-inner">${tierEmblem(r.tier, { size: 96 })}<p>티어 승급</p><h2>${tierName(r.tier)}</h2>
-    <small>이번 달 최고 순자산 ${formatCH(r.peak)}${r.next ? ` · 다음 ${tierName(r.next.id)}까지 ${formatCH(r.next.need)}` : ' · 최고 티어'}</small>
+    <small>${scoreLine(r)}${r.next ? ` · 다음 ${tierName(r.next.id)}까지 ${needText(r, r.next.need)}` : ' · 최고 티어'}</small>
     <div class="moment-actions"><button type="button" class="pill-button" data-close>계속</button></div></div>`;
   document.body.append(node);
   sound.win(); haptic([30, 50, 30, 50, 120]);

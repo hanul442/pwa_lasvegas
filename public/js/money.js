@@ -37,3 +37,7 @@ export function formatMoney(value, unit = '원') {
 // "7억 2천만원 벌었어요" / "3만원 잃었어요" under a result.
 export const moneyResult = net => (net > 0 ? `${formatMoney(net)} 벌었어요` : net < 0 ? `${formatMoney(net)} 잃었어요` : '');
 
+
+// Everything a player can spend away from a table: chips in hand plus the wallet (lib/cashier.mjs,
+// since the RP season of 2026-10-29). At a table the chips in hand are what can be bet.
+export const moneyOf = st => Math.max(0, st?.user?.account?.available ?? 0) + Math.max(0, st?.user?.account?.wallet ?? 0);

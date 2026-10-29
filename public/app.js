@@ -334,7 +334,8 @@ function leaveTable({ useHistory = true } = {}) {
 document.querySelector('[data-tier-back]').addEventListener('click', () => leaveTable());
 // "바이인" on a 칩이 모자라요 notice (js/notice.js): buy more chips for the table I'm at.
 // The table's + and the rebuy after a round use it too: chips are bought right at the seat.
-async function buyMore(mode, st = state) {
+// The table keeps the newest state from its rounds (table.js setServerState); the menus' copy can lag.
+async function buyMore(mode, st = activeTable?.serverState || state) {
   const tier = TIERS[activeTier];
   if (!tier || !st) return;
   if (!mode) mode = st.user.account.available < tier.min ? 'rebuy' : 'topup';

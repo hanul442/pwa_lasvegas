@@ -13,7 +13,7 @@ export const inTableUnits = () => tableUnits;
 export function chipCount(value) {
   const c = (Number(value) || 0) / CHIP_WON;
   const sign = c < 0 ? '-' : '', a = Math.abs(c);
-  if (a < 100_000) return sign + (Math.round(a * 10) / 10).toLocaleString('ko-KR');
+  if (a < 100_000) return sign + (a < 10 ? Math.round(a * 10) / 10 : Math.round(a)).toLocaleString('ko-KR');
   return sign + wonCH(a);
 }
 // The unit word after an amount: 원, or 칩 at a table. formatUnit(5e8) → "5억원" / "500칩".

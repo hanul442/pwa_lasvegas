@@ -63,7 +63,8 @@ test('맞고 enforces turns and hides the opponent hand', () => {
   assert.throws(() => matgoAct(r, 0, { type: 'PLAY', card: r.hands[1][0] }), /CARD_NOT_IN_HAND/);
   const view = matgoPublic(r, 0);
   assert.equal(view.opponentHand, 10);
-  assert.equal(JSON.stringify(view).includes(r.hands[1][0]), false);
+  // Quoted: a bare card id like 07-4 can turn up inside the round's random id.
+  assert.equal(JSON.stringify(view).includes(`"${r.hands[1][0]}"`), false);
   const events = matgoAct(r, 0, matgoAiDecision(r, 0));
   // A bomb or a shake is announced first ('call'), so the play is not always the first event.
   assert.equal(events.find(e => e.type !== 'call').type, 'play');
@@ -280,7 +281,8 @@ test('섯다 구사 calls a 재경기 among the seats still in; the pot carries 
   assert.equal(r.pot, 300);
   assert.deepEqual(r.hands.map(h => h.length), [1, 1, 0], 'only live seats are dealt back in');
   assert.equal(r.street, 1);
-  for (let i = 0; i < 20 && r.status === 'PLAYING'; i++) seotdaAct(r, r.turn, 'CHECK');
+  // The new cards are random: another 구사 asks seat 2 again, and it keeps passing.
+  for (let i = 0; i < 40 && r.status === 'PLAYING'; i++) seotdaAct(r, r.turn, r.phase === 'REJOIN' ? 'PASS' : 'CHECK');
   assert.equal(r.status, 'READY_TO_SETTLE');
   assert.equal(seotdaNet(r, 2), -100);
   assert.equal([0, 1, 2].reduce((a, s) => a + seotdaNet(r, s), 0), 0);
@@ -405,6 +407,12 @@ test('섯다 API seats the chosen number of players and settles a fold at the lo
   assert.ok(res.data.round.players.slice(1).every(p => p.kind === 'ai' && p.name));
   if (res.data.round.status === 'PLAYING') res = await call(store, 'POST', '/api/seotda/action', { roundId: res.data.round.id, action: 'DIE' });
   assert.equal(res.status, 200, JSON.stringify(res.data));
+  // A 구사 among the AI seats calls a 재경기 and asks the folded human to buy back in: pass every time.
+  for (let i = 0; i < 10 && res.data.round.status === 'PLAYING'; i++) {
+    assert.ok(res.data.round.options.some(o => o.action === 'PASS'), JSON.stringify(res.data.round.options));
+    res = await call(store, 'POST', '/api/seotda/action', { roundId: res.data.round.id, action: 'PASS' });
+    assert.equal(res.status, 200, JSON.stringify(res.data));
+  }
   const v = res.data.round;
   assert.equal(v.status, 'SETTLED', 'the AI seats play the hand out after the human folds');
   assert.equal(res.data.netPnl, -v.contrib[0]);

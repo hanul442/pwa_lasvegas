@@ -241,7 +241,9 @@ test('lightning slots spin through the API: strikes on the round, a retry replay
   assert.ok(r.lightning.length >= 1 && r.lightning.length <= 3);
   const boosted = r.lineMult > 0 && r.line !== 'JACKPOT';
   assert.equal(r.mult, r.lineMult * (boosted ? lightningBoost(r.lightning) : 1));
-  assert.equal(r.netPnl, 10_000_000 * r.mult + r.jackpot - 10_000_000);
+  // About 1 spin in 360 also lands three coins: those free spins pay inside the same round.
+  const free = (r.freeSpins?.spins || []).reduce((x, s) => x + s.mult, 0);
+  assert.equal(r.netPnl, 10_000_000 * (r.mult + free) + r.jackpot - 10_000_000);
   assert.equal(res.data.state.user.account.available, before + r.netPnl);
   assert.deepEqual(state().rounds.find(x => x.id === r.id).lightning, r.lightning);
   const replay = await call(body, 'slot-lit-key-01');

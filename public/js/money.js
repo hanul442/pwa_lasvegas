@@ -34,6 +34,16 @@ export function formatMoney(value, unit = '원') {
     .map(([v, name]) => `${v >= 1000 && v % 1000 === 0 && v < 1e4 ? `${v / 1000}천` : v}${name}`);
   return `${parts.join(' ')}${unit}`;
 }
+// The slot jackpot written out in full down to 만, so every spin that feeds it shows:
+// 50억 100만원, 5조 10억 2500만원, 3억 2천만원. Below 만 it does not move.
+export function formatJackpot(value) {
+  const n = Math.max(0, Math.floor(Number(value) || 0));
+  if (n < 10_000) return formatMoney(n);
+  const parts = [[Math.floor(n / 1e12), '조'], [Math.floor(n / 1e8) % 1e4, '억'], [Math.floor(n / 1e4) % 1e4, '만']]
+    .filter(([v]) => v > 0)
+    .map(([v, name]) => `${v >= 1000 && v % 1000 === 0 && v < 1e4 ? `${v / 1000}천` : v}${name}`);
+  return `${parts.join(' ')}원`;
+}
 // "7억 2천만원 벌었어요" / "3만원 잃었어요" under a result.
 export const moneyResult = net => (net > 0 ? `${formatMoney(net)} 벌었어요` : net < 0 ? `${formatMoney(net)} 잃었어요` : '');
 

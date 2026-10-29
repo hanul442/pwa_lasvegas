@@ -8,7 +8,9 @@ import { music } from './music.js';
 import { settings, onSettings } from './settings.js';
 
 const silent = () => isMuted() || !settings.get('voice');
-const level = () => Math.min(1, ((settings.get('voiceVolume') ?? 80) / 100) * 1.2); // 80 (default) ≈ 0.96
+// 80 (default) ≈ 0.5. At full level the dealer measured ~10 dB over a dealt card and ~19 dB over a
+// chip, so he sounded like a loudspeaker over the table; now he sits a few dB above the cards.
+const level = () => Math.min(1, ((settings.get('voiceVolume') ?? 80) / 100) * 0.62);
 const STALE_MS = 2500; // a call-out that would land this late is dropped; the table has moved on
 const MAX_QUEUE = 2;
 

@@ -33,7 +33,7 @@ import { startShine } from './js/shine.js';
 import { setBragName, bragButton } from './js/share.js';
 import { handBookBlock, watchHandBook } from './js/hand-book.js';
 import { bragRank, bragTier } from './js/brags.js';
-import { tierHeroHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
+import { tierHeroHtml, rpCardHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
 import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
 watchErrors();
@@ -875,6 +875,7 @@ function renderEventTier(grid, { tier, entry, open }) {
 // "이번 주" is the weekly season (resets Monday 00:00 KST, top three get prizes); "전체" is all time.
 const RANK_TABS = {
   tier: [['tier', '이번 달 최고 순자산']],
+  rp: [['rp', 'RP 베타']],
   season: [['profit', '수익'], ['wins', '승리'], ['highRoller', '베팅량']],
   allTime: [['wealth', '순자산'], ['profit', '수익'], ['highRoller', '베팅량']]
 };
@@ -949,6 +950,7 @@ function renderTierPane() {
     brag.classList.add('tier-hero-brag');
     hero.querySelector('.tier-hero-actions')?.prepend(brag);
   }
+  document.querySelector('[data-rp-card]').innerHTML = rpCardHtml(state);
   document.querySelector('[data-tier-steps]').innerHTML = tierStepsHtml(state);
   const past = document.querySelector('[data-tier-past]');
   past.innerHTML = tierPastHtml(state);
@@ -964,8 +966,7 @@ function renderBoards() {
   const season = state?.rankings?.season;
   if (!season) rankPeriod = 'allTime';
   const period = document.querySelector('[data-rank-period]');
-  period.classList.add('segmented--three');
-  period.replaceChildren(...[['tier', '이번 달'], ['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
+  period.replaceChildren(...[['tier', '이번 달'], ['rp', 'RP 베타'], ['season', '이번 주'], ['allTime', '전체']].map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';
     b.setAttribute('role', 'radio');
@@ -987,6 +988,9 @@ function renderBoards() {
     head.innerHTML = `<div class="season-card"><div><strong>${rs.season.name}</strong><small>${seasonEnding(rs) ? `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(seasonLeft(rs))}</span>` : `${timeLeft(rs.season.endsAt)}`} 남음 · 1일 0시에 모두 초기화 <button type="button" class="link-button" data-season-rules>자세히</button></small></div><span class="season-mytier">${tierEmblem(rs.tier, { size: 34 })}<b>${tierName(rs.tier)}</b></span></div>`;
     head.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
   }
+  if (rankPeriod === 'rp' && state?.rp) {
+    head.innerHTML = `<div class="season-card"><div><strong>RP 베타</strong><small>건 돈 대비 번 만큼 쌓이는 점수 · 12월 시즌부터 티어가 돼요</small></div><span class="season-mytier">${tierEmblem(state.rp.tier, { size: 34 })}<b>${state.rp.points} RP</b></span></div>`;
+  }
   if (!RANK_TABS[rankPeriod].some(([k]) => k === rankTab)) rankTab = RANK_TABS[rankPeriod][0][0];
   const tabs = document.querySelector('[data-rank-tabs]');
   tabs.replaceChildren(...RANK_TABS[rankPeriod].map(([key, label]) => {
@@ -997,12 +1001,12 @@ function renderBoards() {
     b.addEventListener('click', () => { rankTab = key; renderRanking(); });
     return b;
   }));
-  const rows = (rankPeriod === 'tier' ? state?.rankings?.tier : rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
+  const rows = (rankPeriod === 'tier' ? state?.rankings?.tier : rankPeriod === 'rp' ? state?.rankings?.rp : rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
   // On the tier board every name carries its tier.
-  const emblem = r => (rankPeriod === 'tier' && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
+  const emblem = r => ((rankPeriod === 'tier' || rankPeriod === 'rp') && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
   const me = state?.user?.id;
-  const value = r => rankTab === 'wins' ? `${r.value}승` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
-  const board = rankPeriod === 'tier' ? `tier:${state?.rankSeason?.season.id}` : rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
+  const value = r => rankTab === 'wins' ? `${r.value}승` : rankPeriod === 'rp' ? `${r.value} RP` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;
+  const board = rankPeriod === 'tier' ? `tier:${state?.rankSeason?.season.id}` : rankPeriod === 'rp' ? `rp:${state?.rp?.season}` : rankPeriod === 'season' ? `season:${season.id}:${rankTab}` : `allTime:${rankTab}`;
   const move = rankMoves(board, rows);
   const moveTag = r => {
     const m = move.get(r.id);
@@ -1036,15 +1040,15 @@ function renderBoards() {
   if (mine) {
     const above = rows.find(r => r.rank === mine.rank - 1);
     const below = rows.find(r => r.rank === mine.rank + 1);
-    const gap = (a, b) => rankTab === 'wins' ? `${a.value - b.value}승` : formatCH(a.value - b.value);
+    const gap = (a, b) => rankTab === 'wins' ? `${a.value - b.value}승` : rankPeriod === 'rp' ? `${a.value - b.value} RP` : formatCH(a.value - b.value);
     const line = mine.rank === 1
       ? (below ? `1위 지키는 중 · 2위 ${below.nickname}보다 ${gap(mine, below)} 앞서요` : '1위예요')
       : above ? `${above.nickname}(${above.rank}위)까지 ${gap(above, mine)} 남았어요` : '';
     meBox.innerHTML = `<span class="rank-me-no">${mine.rank}<small>위</small></span><span class="rank-me-text"><b>나 ${moveTag(mine)}</b><small>${line}</small></span><span class="rank-me-value">${value(mine)}</span>`;
     // 동네방네: my place on this board as a card.
     const tabLabel = RANK_TABS[rankPeriod].find(([k]) => k === rankTab)?.[1] || '';
-    const boardName = rankPeriod === 'tier' ? '월간 티어' : `${rankPeriod === 'season' ? '이번 주' : '전체'} ${tabLabel}`.trim();
-    const brag = bragButton(() => bragRank({ rank: mine.rank, board: boardName, value: value(mine), tier: rankPeriod === 'tier' ? mine.tier : null }), '자랑');
+    const boardName = rankPeriod === 'tier' ? '월간 티어' : rankPeriod === 'rp' ? 'RP 베타' : `${rankPeriod === 'season' ? '이번 주' : '전체'} ${tabLabel}`.trim();
+    const brag = bragButton(() => bragRank({ rank: mine.rank, board: boardName, value: value(mine), tier: rankPeriod === 'tier' || rankPeriod === 'rp' ? mine.tier : null }), '자랑');
     brag.classList.remove('pill-button--solid');
     brag.classList.add('rank-me-brag');
     meBox.append(brag);

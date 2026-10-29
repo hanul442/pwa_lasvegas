@@ -166,7 +166,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
   chipEl.type = 'button';
   chipEl.hidden = true;
   oval.append(chipEl);
-  chipEl.addEventListener('click', () => shareInvite({ game, label, code, tier: room?.tier, toast: m => t.toast(m) }));
+  chipEl.addEventListener('click', () => shareInvite({ game, label, code, tier: room?.floor || room?.tier, toast: m => t.toast(m) }));
   const chat = createRoomChat(t, { send: line => api.holdemRoomChat(code, line), onView: v => chat.sync(v.chat) });
   chat.button.classList.add('chat-open--corner');
   oval.append(chat.button);

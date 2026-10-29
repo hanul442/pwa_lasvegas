@@ -100,7 +100,7 @@ function paint(data) {
   on('[data-join]', b => { const f = find(b.dataset.join); if (f?.where) opts.onJoin(f.where); });
   on('[data-watch]', b => { const f = find(b.dataset.watch); if (f?.where) opts.onWatch(f.where, f); });
   on('[data-call]', b => callFriend(find(b.dataset.call)));
-  on('[data-accept]', b => { const c = duels.find(x => x.code === b.dataset.accept); if (c) opts.onJoin({ code: c.code, game: c.game, tier: c.tier }); });
+  on('[data-accept]', b => { const c = duels.find(x => x.code === b.dataset.accept); if (c) opts.onJoin({ code: c.code, game: c.game, tier: c.tier, floor: c.floor }); });
   on('[data-send]', async b => {
     b.disabled = true;
     try {

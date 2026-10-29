@@ -123,7 +123,7 @@ export const api = {
   recharge: () => request('/api/recharge/auto', { method: 'POST' }),
   dailyClaim: () => request('/api/daily/claim', { method: 'POST' }),
   rankPromo: () => request('/api/rank/promo', { method: 'POST' }),
-  buyIn: (floor, amount, event = null) => request('/api/cashier/buyin', { method: 'POST', body: { floor, amount, ...(event ? { event } : {}) } }),
+  buyIn: (floor, amount, event = null, room = null) => request('/api/cashier/buyin', { method: 'POST', body: { floor, amount, ...(event ? { event } : {}), ...(room ? { room } : {}) } }),
   cashOut: () => request('/api/cashier/cashout', { method: 'POST' }),
   missionClaim: missionId => request('/api/missions/claim', { method: 'POST', body: { missionId } }),
   challenge: (opponentId, metric) => request('/api/social/challenges', { method: 'POST', body: { opponentId, metric } }),

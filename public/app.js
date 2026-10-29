@@ -340,7 +340,9 @@ async function buyMore(mode, st = activeTable?.serverState || state) {
   const tier = TIERS[activeTier];
   if (!tier || !st) return;
   if (!mode) mode = st.user.account.available < tier.min ? 'rebuy' : 'topup';
-  const next = await buyInSheet(st, tier, { mode, event: selectedGame?.event || null, onLeave: () => leaveTable() });
+  // At a friend's room opened from an invite: its floor's chips whatever the RP tier.
+  const room = inviteRoom?.tier === activeTier ? inviteRoom.code : null;
+  const next = await buyInSheet(st, tier, { mode, event: selectedGame?.event || null, room, onLeave: () => leaveTable() });
   if (!next) return;
   applyState(next);
   const t = activeTable;
@@ -1053,10 +1055,11 @@ function renderFriendPane() {
     frame: (id, n) => nameFrame(state, id, n),
     toast,
     // 옆자리: sit at a friend's room the way their invite link would.
-    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); },
+    // A room opens on its floor's table (a stake above the floor's minimum is still that floor).
+    onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.floor || where.tier })) openInvite(); },
     // 관전: the same screen, from the friend's chair (js/games/room-client.js, holdem-room.js).
     onState: next => { if (next) applyState(next); },
-    onWatch: (where, f) => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier, watch: f.id })) openInvite(); }
+    onWatch: (where, f) => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.floor || where.tier, watch: f.id })) openInvite(); }
   });
   box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
   box.querySelector('[data-friend-play]')?.addEventListener('click', () => showSurface('games', { focus: true }));
@@ -1303,7 +1306,7 @@ function takeDailyLink() {
   return true;
 }
 // 받기 on a friend's 도전 banner (js/news.js): sit at their table like an invite link would.
-document.addEventListener('vegas:join-room', e => { if (setPendingJoin(e.detail || {})) openInvite(); });
+document.addEventListener('vegas:join-room', e => { const d = e.detail || {}; if (setPendingJoin({ ...d, tier: d.floor || d.tier })) openInvite(); });
 // ./?rank=friends from a "친구가 들어왔어요" push: open the friends list.
 let friendsWanted = (() => {
   const params = new URLSearchParams(location.search);
@@ -1318,12 +1321,24 @@ function openDailyLink() { if (dailyWanted && state) { dailyWanted = false; show
 
 // ---------- account ----------
 // A friend's invite link: once signed in, open that game; its room screen then takes the seat.
-function openInvite() {
+// Short of chips, the friend buys them first, at the room's floor even above their RP tier
+// (lib/cashier.mjs roomFloor); the room screen then takes the seat.
+let inviteBuying = false, inviteRoom = null;
+async function openInvite() {
   const invite = pendingJoin();
-  if (!invite || !state) return;
+  if (!invite || !state || inviteBuying) return;
   const game = GAMES.find(g => g.id === invite.screen && !g.event);
   if (!game) { dropPendingJoin(); return; }
   const tier = TIERS[invite.tier] ? invite.tier : (lastTier(game.id) || FIRST_TIER.slug);
+  inviteRoom = { code: invite.code, tier };
+  // Chips held without a seat go back to the wallet on the next move, so they don't count.
+  if (!invite.watch && state.cashier?.on && (!state.cashier.seat || state.user.account.available < TIERS[tier].min)) {
+    inviteBuying = true;
+    let bought = null;
+    try { bought = await buyInSheet(state, TIERS[tier], { room: invite.code }); } finally { inviteBuying = false; }
+    if (!bought) { dropPendingJoin(); return; }
+    applyState(bought);
+  }
   sitAt(game, tier, null, { seated: true });
 }
 function signedIn(next) {

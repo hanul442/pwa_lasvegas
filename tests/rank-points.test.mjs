@@ -34,7 +34,7 @@ test('a day of gains stops at the cap, points never go below 0, and a new month 
   const DEC = Date.parse('2026-12-02T03:00:00Z');
   assert.equal(rpView(u, DEC).points, 0);
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, DEC);
-  assert.equal(u.rp.prev.season, 'rank-2026-11');
+  assert.equal(u.rp.prev.season, 'rank-2026-10', 'October and November are one season');
 });
 
 test('every settled round notes RP, and the API shows my RP and the board', async () => {

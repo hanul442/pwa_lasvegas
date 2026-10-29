@@ -1,6 +1,7 @@
 // 이용약관: what the chips are (and are not), who may play, and where to get help.
 // New accounts agree on the sign-up form; existing players agree once per version after signing in.
 import { el } from './fx.js';
+import { remember } from './seen.js';
 
 export const TERMS_VERSION = '2026-10-13';
 const KEY = 'vegas:terms';
@@ -11,7 +12,7 @@ export function termsAgreed() {
   try { return localStorage.getItem(KEY) === TERMS_VERSION; } catch { return false; }
 }
 export function markAgreed() {
-  try { localStorage.setItem(KEY, TERMS_VERSION); } catch {}
+  remember(KEY, TERMS_VERSION);
 }
 
 const SECTIONS = [

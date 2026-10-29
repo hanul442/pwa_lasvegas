@@ -8,11 +8,11 @@ import { errorToast, toast } from './notice.js';
 import { gameName } from './names.js';
 import { bragButton } from './share.js';
 import { bragFloor } from './brags.js';
+import { remember } from './seen.js';
 
 export { gameName };
 
 function storageGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
-function storageSet(key, value) { try { localStorage.setItem(key, value); } catch {} }
 
 // Chips spill from `from` into the wallet in the top bar.
 export async function chipsToWallet(from, amount) {
@@ -362,7 +362,8 @@ export function celebrateFloors(state) {
   const unlocked = state.floors.filter(f => f.entered || f === state.floors[0]).map(f => f.slug);
   const key = `vegas:seen-floors:${playerId()}`;
   const seen = storageGet(key);
-  storageSet(key, JSON.stringify(unlocked));
+  const now = JSON.stringify(unlocked);
+  if (seen !== now) remember(key, now);
   if (seen === null) return; // first visit on this device: nothing to celebrate yet
   let before = [];
   try { before = JSON.parse(seen) || []; } catch {}

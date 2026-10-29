@@ -1,5 +1,6 @@
 // Thin client for the server-authoritative game API.
 import { API_BASE } from './config.js';
+import { absorb } from './seen.js';
 
 const PLAYER_KEY = 'vegas:player';
 const SESSION_KEY = 'vegas:session';
@@ -85,7 +86,8 @@ async function request(path, { method = 'GET', body, key = null } = {}) {
   }
   // Anyone who keeps an eye on the player's state between screens (the 족보 도감, js/hand-book.js).
   const st = data.state?.user ? data.state : data.user && data.handBook ? data : null;
-  if (st) dispatchEvent(new CustomEvent('vegas:state', { detail: st }));
+  // What this account was already shown goes into this phone first (js/seen.js).
+  if (st) { absorb(st); dispatchEvent(new CustomEvent('vegas:state', { detail: st })); }
   return data;
 }
 
@@ -107,6 +109,7 @@ export const api = {
   adminErrorsClear: () => request('/api/admin/errors/clear', { method: 'POST' }),
   adminUsage: () => request('/api/admin/usage'),
   state: () => request('/api/state'),
+  seen: flags => request('/api/seen', { method: 'POST', body: { flags } }),
   feedReact: (id, kind) => request('/api/feed/react', { method: 'POST', body: { id, kind } }),
   news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   friends: () => request('/api/friends'),

@@ -31,6 +31,7 @@ import { capturePendingJoin, pendingJoin, dropPendingJoin, setPendingJoin } from
 import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
 import { isNewcomer, isSettlingIn, firstDayCard } from './js/first-day.js';
+import { noteRpChange } from './js/rp-pop.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -444,6 +445,7 @@ function paintState(next) {
   if (isActive('shop')) renderShop(document.querySelector('[data-shop]'), state, applyState);
   if (isActive('tiers')) renderTiers();
   document.body.classList.toggle('is-settling', isSettlingIn(state));
+  noteRpChange(state, { quiet: isSettlingIn(state) });
   if (isActive('lobby') && !isSettlingIn(state)) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }

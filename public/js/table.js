@@ -7,6 +7,8 @@ import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 const OUCH_MIN = 20;
 import { errorMessage, newKey } from './api.js';
 import { maybeBust } from './bust.js';
+import { noteRpChange } from './rp-pop.js';
+import { isSettlingIn } from './first-day.js';
 import { readFelt, recordReplay, updateReplay, isBigLoss } from './replay.js';
 import { buzz } from './haptics.js';
 import { toast as noticeToast } from './notice.js';
@@ -697,6 +699,8 @@ export class Table {
     this.root.classList.remove('is-playing');
     this.refreshBet();
     maybeBust(this.serverState);
+    // RP 팝업 once the round on the felt is over (js/rp-pop.js).
+    noteRpChange(this.serverState, { quiet: isSettlingIn(this.serverState) });
     this.idleDue = true;
     setTimeout(() => this.maybeIdle(), 0);
   }
@@ -729,7 +733,7 @@ export class Table {
     if (state?.user?.account) this.available = state.user.account.available;
     // A bust or a 구제금융 shows once the round on the felt is over, not while its cards are dealt.
     this.serverState = state;
-    if (!this.locked) maybeBust(state);
+    if (!this.locked) { maybeBust(state); noteRpChange(state, { quiet: isSettlingIn(state) }); }
     this.watchHot(state);
   }
 

@@ -549,6 +549,8 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .pop-card.is-hot{box-shadow:0 0 0 2px var(--go)}
 .lounge-sheet--block{max-height:86dvh;overflow-y:auto}
 .lounge-sheet--block .sheet-close{position:absolute;top:14px;right:16px;z-index:1}
+.lounge-sheet--block .lounge-block>.lounge-head:first-child{padding-right:76px}
+.lounge-sheet--block .lounge-block>.lounge-head:first-child small{flex-basis:100%;margin-left:0;text-align:left}
 .lounge-sheet--block .lounge-block{border:0;padding:0;margin:0}
 
 /* the 내 정보 and 지갑 pages: tabs first, then a smaller title */

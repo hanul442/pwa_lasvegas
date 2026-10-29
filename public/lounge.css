@@ -954,3 +954,16 @@ body.daily-open{overflow:hidden}
 .friend-add{display:flex;gap:8px;margin-top:12px}
 .friend-add input{flex:1;min-width:0;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--hair-strong);background:var(--ink-2);color:var(--white);font:15px var(--sans)}
 .friend-add .pill-button{flex:none}
+/* 미션 연속 달성: a row of seven stamps, the paying days marked with their bonus */
+.mstreak{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
+.mstreak-head{margin:0 0 10px;display:grid;gap:2px}
+.mstreak-head b{font-size:15px;font-weight:650}
+.mstreak-head small{color:var(--smoke);font-size:13px}
+.mstreak-days{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.mstreak-day{display:grid;justify-items:center;gap:4px}
+.mstreak-day i{font-style:normal;width:100%;max-width:38px;aspect-ratio:1;border-radius:50%;border:1px solid var(--hair-strong);display:grid;place-items:center;font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.mstreak-day.is-pay i{border-color:#f7f2e8a0;color:var(--ivory)}
+.mstreak-day.is-today i{border-style:dashed;border-color:var(--white);color:var(--white)}
+.mstreak-day.is-on i{background:var(--white);border-color:var(--white);color:var(--ink);font-weight:700}
+.mstreak-day small{font-size:11px;color:var(--star);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mstreak-note{margin:10px 0 0;color:var(--smoke);font-size:12px}

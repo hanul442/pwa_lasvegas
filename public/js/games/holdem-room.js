@@ -19,8 +19,11 @@ const LIST_MS = 4000;
 const sleep = value => new Promise(resolve => setTimeout(resolve, value)); // real time, not paced by motion settings
 const tierName = slug => TIERS[slug]?.name || slug;
 
-export function createFriends(t, pk, bar, hooks) {
+// opts.game 'sevenpoker' runs the same rooms for 7포커 (cash only): the 7포커 screen passes a bar
+// that paints its own bet buttons, and hooks for its stakes (the ante) and the minimum buy-in.
+export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀덤' } = {}) {
   const oval = pk.oval;
+  const seven = game === 'sevenpoker';
   let room = null; // last server view of the room
   let code = null;
   let cursor = null; // { hand, from }: what this screen has played
@@ -55,7 +58,7 @@ export function createFriends(t, pk, bar, hooks) {
         <li>상금은 사람들 바이인 합계예요 (AI 몫은 없어요)</li>
         <li>2–3명은 1위 독식 · 4명부터 70%/30%</li>
       </ul>
-      <div class="pk-opponents" role="radiogroup" aria-label="자리 수"><span>자리</span>${[2, 3, 4, 5, 6].map(n => `<button type="button" role="radio" data-size="${n}" aria-checked="${n === 6}"${n === 2 ? ' hidden' : ''}>${n}</button>`).join('')}</div>
+      <div class="pk-opponents" role="radiogroup" aria-label="자리 수"><span>자리</span>${[2, 3, 4, 5, 6].map(n => `<button type="button" role="radio" data-size="${n}" aria-checked="${n === (seven ? 5 : 6)}"${n === 2 && !seven ? ' hidden' : ''}>${n}</button>`).join('')}</div>
       <label class="pk-toggle" data-bots-row hidden><input type="checkbox" data-bots checked><span><b>AI로 채우기</b><small>시작할 때 빈 자리에 AI가 앉아요. AI는 상금을 받지 않아요</small></span></label>
       <button type="button" class="pk-lobby-primary" data-create></button>
     </section>
@@ -71,6 +74,7 @@ export function createFriends(t, pk, bar, hooks) {
       <ul class="pk-rooms" data-rooms aria-live="polite"></ul>
     </section>`;
   oval.append(panel);
+  if (seven) { size = 5; panel.querySelector('.pk-mode').remove(); } // 7포커 rooms are cash tables only
   const createBtn = panel.querySelector('[data-create]'), createNote = panel.querySelector('[data-create-note]');
   const codeInput = panel.querySelector('[data-code]'), list = panel.querySelector('[data-rooms]');
   panel.querySelectorAll('[data-size]').forEach(b => b.addEventListener('click', () => {
@@ -109,12 +113,13 @@ export function createFriends(t, pk, bar, hooks) {
     panel.querySelector('[data-bots-row]').hidden = !tourney;
     createNote.textContent = !ready ? `아래 칩으로 바이인을 먼저 올려 주세요 (${formatCH(t.tier.min)} 이상).`
       : tourney ? '바이인은 끝날 때까지 잠겨 있다가 순위대로 정산돼요. 시작하면 늦은 등록은 막혀요.'
+      : seven ? '방을 만들면 4자리 코드가 나와요. 친구들은 같은 바이인으로 앉고, 빈 자리는 AI가 채워요.'
       : '방을 만들면 4자리 코드가 나와요. 친구들은 같은 바이인으로 앉아요.';
   }
 
   async function loadList() {
     let res;
-    try { res = await api.holdemRooms(); } catch { return; }
+    try { res = await api.holdemRooms(game); } catch { return; }
     if (panel.hidden) return;
     const rooms = res.rooms || [];
     if (!rooms.length) {
@@ -159,7 +164,7 @@ export function createFriends(t, pk, bar, hooks) {
   chipEl.type = 'button';
   chipEl.hidden = true;
   oval.append(chipEl);
-  chipEl.addEventListener('click', () => shareInvite({ game: 'holdem', label: '홀덤', code, tier: room?.tier, toast: m => t.toast(m) }));
+  chipEl.addEventListener('click', () => shareInvite({ game, label, code, tier: room?.tier, toast: m => t.toast(m) }));
   const chat = createRoomChat(t, { send: line => api.holdemRoomChat(code, line), onView: v => chat.sync(v.chat) });
   chat.button.classList.add('chat-open--corner');
   oval.append(chat.button);
@@ -171,14 +176,15 @@ export function createFriends(t, pk, bar, hooks) {
   const tableSubHtml = tableSub?.innerHTML;
   const setRoomName = (title, blinds) => {
     tableName.textContent = title;
-    if (tableSub) tableSub.innerHTML = `<i>블라인드 ${blinds}</i>`;
+    if (tableSub) tableSub.innerHTML = `<i>${seven ? '앤티' : '블라인드'} ${blinds}</i>`;
   };
 
   async function create() {
     if (!t.betReady) return;
-    if (mode !== 'tourney' && t.total < pk.bb * 5) { t.toast(`바이인은 최소 ${formatCH(pk.bb * 5)}이에요 (블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)})`); return; }
+    if (seven) { const min = hooks.minBuyIn(); if (t.total < min) { t.toast(`바이인은 최소 ${formatCH(min)}이에요`); return; } }
+    else if (mode !== 'tourney' && t.total < pk.bb * 5) { t.toast(`바이인은 최소 ${formatCH(pk.bb * 5)}이에요 (블라인드 ${formatCH(pk.bb / 2)}/${formatCH(pk.bb)})`); return; }
     let res;
-    try { res = await api.holdemRoomCreate(t.total, t.tier.floor, mode === 'tourney' ? size : Math.max(3, size), mode, bots); }
+    try { res = await api.holdemRoomCreate(t.total, t.tier.floor, mode === 'tourney' || seven ? size : Math.max(3, size), seven ? 'cash' : mode, bots, game); }
     catch (e) { if (!blocked(e, create)) t.toast(errorMessage(e)); return; }
     t.lock();
     t.setServerState(res.state);
@@ -196,7 +202,7 @@ export function createFriends(t, pk, bar, hooks) {
   }
 
   // Still sitting at another room: offer to go back there, or to leave it and try again here.
-  const blocked = (e, retry) => seatedElsewhere(t, e, retry, e.where?.game === 'holdem' ? rejoin : null);
+  const blocked = (e, retry) => seatedElsewhere(t, e, retry, e.where?.game === game ? rejoin : null);
 
   async function rejoin(roomCode) {
     let res;
@@ -208,8 +214,8 @@ export function createFriends(t, pk, bar, hooks) {
   async function resume() {
     // Opened from a friend's invite link: sit at that room.
     // (Already sitting in it, e.g. the host opening their own link: just go back to it.)
-    const invited = takePendingJoin('holdem');
-    const res = await api.holdemRooms();
+    const invited = takePendingJoin(game);
+    const res = await api.holdemRooms(game);
     if (invited && invited.toUpperCase() !== res.mine) { await join(invited); return; }
     if (!res.mine) return;
     const view = await api.holdemRoom(res.mine);
@@ -226,6 +232,7 @@ export function createFriends(t, pk, bar, hooks) {
     news = null;
     resultShown = false;
     pk.setStakes(view.tier);
+    hooks.useStakes?.(view.table);
     if (view.tourney) useBlinds(view.table, view.tier);
     pk.me = view.me;
     pk.clear();
@@ -233,7 +240,7 @@ export function createFriends(t, pk, bar, hooks) {
     t.locked = true;
     t.root.classList.add('is-room');
     if (view.tourney) setRoomName(...tourneyName(view.table, view));
-    else setRoomName('친구 방', `${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`);
+    else setRoomName('친구 방', seven ? formatCH(view.table.ante) : `${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`);
     chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
     chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
     chipEl.hidden = Boolean(view.nightly); // the nightly tournament seats whoever registered, nobody by invite
@@ -438,7 +445,8 @@ export function createFriends(t, pk, bar, hooks) {
   }
 
   // ---------- controls ----------
-  const legal = () => (room && room.me >= 0 && !room.table.handOver && room.table.toAct === room.me && !pk.animating ? room.table.legal : null);
+  // 7포커's open-card pick is everyone's at once, so it needs no turn of mine.
+  const legal = () => (room && room.me >= 0 && !room.table.handOver && (room.table.toAct === room.me || room.table.legal?.phase === 'CHOOSE') && !pk.animating ? room.table.legal : null);
 
   async function act(action, amount) {
     if (!room || pk.animating) return;
@@ -507,14 +515,14 @@ export function createFriends(t, pk, bar, hooks) {
         return;
       }
       pre = null;
-      t.hint('내 차례예요');
+      t.hint(l.phase === 'CHOOSE' ? '오픈할 카드 한 장을 눌러 주세요' : '내 차례예요');
       if (prompted !== turn) { prompted = turn; voice.say('your-action', { next: true }); }
       return;
     }
     sizer.hidden = true;
     const tb = room?.table;
     const turnSeat = tb && tb.toAct >= 0 ? tb.seats[tb.toAct] : null;
-    t.hint(!room ? '' : turnSeat ? (tb.toAct === room.me ? '내 차례예요' : `${turnSeat.name} 차례`) : room.started ? '다음 핸드를 곧 돌려요' : '');
+    t.hint(!room ? '' : tb.phase === 'CHOOSE' && !tb.handOver ? '다른 사람들이 오픈할 카드를 고르고 있어요' : turnSeat ? (tb.toAct === room.me ? '내 차례예요' : `${turnSeat.name} 차례`) : room.started ? '다음 핸드를 곧 돌려요' : '');
     const wait = waitingTurn();
     const street = tb && !tb.handOver ? `${tb.handNo}:${tb.street}` : null;
     if (pre && (pre.street !== street || (wait && ((pre.kind === 'check' && wait.toCall > 0) || (pre.kind === 'call' && wait.toCall > pre.amount))))) pre = null;
@@ -675,7 +683,7 @@ export function createFriends(t, pk, bar, hooks) {
 
   return {
     get active() { return active; },
-    legal, refreshActions, open, resume, street: () => room?.table.street,
+    legal, refreshActions, open, resume, act, view: () => room, street: () => room?.table.street,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },
     stop: () => { stop(); active = false; chat.destroy(); document.removeEventListener('visibilitychange', onVisible); }
   };

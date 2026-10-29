@@ -13,7 +13,7 @@ import { createRoomClient } from './room-client.js';
 import { createBanter } from '../banter.js';
 
 const ME = 0;
-const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', DDADANG: '따당', HALF: '하프', CALL: '콜' };
+const LABEL = { DIE: '다이', CHECK: '체크', BBING: '삥', DDADANG: '따당', HALF: '하프', CALL: '콜', ALLIN: '올인' };
 const LINE = { DIE: 'die', CHECK: 'check', HALF: 'half', CALL: 'call' };
 const NAMES = ['박사장', '김여사', '타짜 정', '막내']; // the server's roster, for the empty table
 const COUNT_KEY = 'vegas.seotda.players';
@@ -121,7 +121,7 @@ export async function mountSeotda(ctx) {
     node.innerHTML = `<b>${LABEL[action]}</b>${cost ? ` ${formatCH(cost)}` : ''}`;
     voice.say(LINE[action]);
     node.classList.add('is-shown');
-    node.classList.toggle('is-raise', action === 'HALF' || action === 'BBING' || action === 'DDADANG');
+    node.classList.toggle('is-raise', action === 'HALF' || action === 'BBING' || action === 'DDADANG' || action === 'ALLIN');
     animate(node, [{ opacity: 0, transform: 'translateY(4px) scale(.85)' }, { opacity: 1, transform: 'none' }], { duration: 220, fill: 'none' });
   }
   const hush = () => t.body.querySelectorAll('[data-said]').forEach(n => { n.textContent = ''; n.classList.remove('is-shown', 'is-raise'); });
@@ -358,7 +358,7 @@ export async function mountSeotda(ctx) {
     t.setActions([...(room.active ? [room.leaveAction()] : []), ...opts.map(o => ({
       label: `${LABEL[o.action]}${o.cost ? ` ${formatCH(o.cost)}` : ''}`,
       ghost: o.action === 'DIE',
-      primary: o.action === 'CALL' || (o.action === 'CHECK' && !opts.some(x => x.action === 'CALL')),
+      primary: o.action === 'CALL' || (o.action === 'CHECK' && !opts.some(x => x.action === 'CALL')) || (o.action === 'ALLIN' && !opts.some(x => x.action === 'CALL' || x.action === 'CHECK')),
       disabled: o.cost > t.available,
       onClick: () => act(o.action)
     }))]);

@@ -128,6 +128,43 @@ test('섯다 따당 calls and doubles what was bet in front, and counts as a rai
   assert.equal(seotdaOptions(r, 0).find(o => o.action === 'CALL').cost, 100);
 });
 
+test('섯다 올인: short of the call, the last chips go in and the rest is a side pot', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(3) }), [['03-1', '03-3'], ['01-1', '02-1'], ['05-1', '06-1']]);
+  r.stacks = [150, null, null];
+  assert.ok(!seotdaOptions(r, 0).some(o => o.action === 'ALLIN'), 'nothing to go all in for yet');
+  seotdaAct(r, 0, 'CHECK');
+  seotdaAct(r, 1, 'BBING');
+  seotdaAct(r, 2, 'DDADANG');
+  assert.deepEqual(seotdaOptions(r, 0), [{ action: 'DIE', cost: 0 }, { action: 'ALLIN', cost: 150 }], 'only 다이 or 올인 when the call is out of reach');
+  seotdaAct(r, 0, 'ALLIN');
+  assert.equal(r.allin[0], true);
+  assert.equal(r.stacks[0], 0);
+  assert.equal(r.turn, 1, 'an all-in short of the bet reopens nothing');
+  seotdaAct(r, 1, 'CALL');
+  assert.equal(r.street, 2);
+  assert.notEqual(r.turn, 0, 'the all-in seat is skipped');
+  seotdaAct(r, 1, 'CHECK');
+  seotdaAct(r, 2, 'CHECK');
+  assert.equal(r.status, 'READY_TO_SETTLE');
+  assert.equal(r.pot, 850);
+  assert.deepEqual(r.result.winners, [0], '3땡 takes the main pot');
+  assert.deepEqual(r.result.payouts, [750, 100, 0], 'main 250×3 to 3땡, side 50×2 to 알리');
+  assert.equal(seotdaNet(r, 0), 500);
+  assert.equal([0, 1, 2].reduce((a, s) => a + seotdaNet(r, s), 0), 0);
+});
+
+test('섯다 올인 also covers a raise past the wallet, and everyone all in runs the cards out', () => {
+  const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(2) }), [['05-1', '06-1'], ['01-1', '02-1']]);
+  r.stacks = [80, 500];
+  assert.deepEqual(seotdaOptions(r, 0), [{ action: 'DIE', cost: 0 }, { action: 'CHECK', cost: 0 }, { action: 'ALLIN', cost: 80 }], '삥 100 is past 80, so 올인 80 instead');
+  seotdaAct(r, 0, 'ALLIN');
+  assert.deepEqual(seotdaOptions(r, 1).map(o => o.action), ['DIE', 'CALL'], 'no raising against a seat that cannot answer');
+  seotdaAct(r, 1, 'CALL');
+  assert.equal(r.status, 'READY_TO_SETTLE', 'nobody left to bet: the cards run out to the showdown');
+  assert.equal(r.hands[0].length, 2);
+  assert.deepEqual(r.result.payouts, [0, 360]);
+});
+
 test('섯다 선: the last winner leads the next hand', () => {
   const r = rig(startSeotda({ stake: 100, first: 0, seats: humans(3) }), [['01-1', '02-1'], ['03-1', '03-3'], ['05-1', '06-1']]);
   for (const s of [0, 1, 2, 0, 1, 2]) seotdaAct(r, s, 'CHECK');

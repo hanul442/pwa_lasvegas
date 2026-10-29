@@ -147,6 +147,9 @@ async function main() {
       await page.locator('[data-guest]').first().click();
       await page.waitForFunction(() => document.body.classList.contains('signed-in') || localStorage.getItem('vegas:session'), null, { timeout: 15000 });
       await wait(800);
+      // The cashier (lib/cashier.mjs): sit down with a table stack, as the buy-in sheet would.
+      const bought = await page.evaluate(async t => { try { const { api } = await import('./js/api.js'); const s = await api.state(); const r = s.cashier?.floors?.[t]; if (!s.cashier?.on || !r?.max) return 'off'; await api.buyIn(t, r.max); return 'ok'; } catch (e) { return e.code || String(e); } }, tier);
+      if (bought === 'ok') { await page.reload(); await wait(1500); }
       for (const game of games) {
         await closeOverlays(page);
         await page.evaluate(([g, t]) => dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game: g, tier: t } })), [game, tier]);

@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser, floorRefusal, tableBase, netWorth } from '../lib/state.mjs';
-import { addLedger, floorsFor } from '../lib/economy.mjs';
+import { addLedger, floorsFor, settleHouseGame } from '../lib/economy.mjs';
 import { rankView, rankStandings, settleFinishedRankSeason, monthBoundary } from '../lib/rank-season.mjs';
 import { noteRp, rpView, rpPointsNow } from '../lib/rank-points.mjs';
 import { dailyStatus, claimDaily, supportStatus, claimSupport, WELFARE_STEPS, WELFARE_BELOW, PAY_MIN } from '../lib/engagement.mjs';
@@ -164,6 +164,35 @@ test('October and November are one season: 11/1 closes nothing, 12/1 closes it b
   assert.equal(at(DEC1, () => rpPointsNow(a)), 0);
   assert.equal(monthBoundary(DEC1).id, 'rank-2026-12', 'from December, one month a season again');
   assert.equal(monthBoundary(Date.parse('2027-01-01T00:30:00+09:00') - 86_400_000).endsAt, '2026-12-31T15:00:00.000Z');
+});
+
+test('losing the table stack with money in the wallet is not a bust; a top-up fills the seat back up', () => {
+  const state = defaultState();
+  const u = player(state, 'u', 'UUU');
+  at(OCT, () => {
+    addLedger(state, u, { type: 'ADMIN_GRANT', amount: 5e9 });
+    // Chips held without a seat count as wallet money for the next buy-in.
+    assert.deepEqual([buyInRange(u, FLOORS[0]).wallet, buyInRange(u, FLOORS[0]).inHand], [5e9, 0]);
+    sweepChips(state);
+    buyIn(state, u, { floor: 'gold-room', amount: 2e8 });
+    settleHouseGame(state, u, { game: 'Baccarat', stake: 2e8, netPnl: -2e8, roundId: 'r1' });
+    assert.equal(u.account.available, 0);
+    assert.equal(u.bankruptcies.length, 0, 'the wallet still holds 48억');
+    // A top-up from the seat: from one smallest bet up to a 100-bet stack.
+    buyIn(state, u, { floor: 'gold-room', amount: 3e8 });
+    let r = buyInRange(u, FLOORS[0]);
+    assert.deepEqual([r.inHand, r.min, r.max], [3e8, 1e7, 7e8]);
+    buyIn(state, u, { floor: 'gold-room', amount: 1e7 });
+    assert.equal(u.account.available, 31e7);
+    buyIn(state, u, { floor: 'gold-room', amount: 69e7 });
+    assert.throws(() => buyIn(state, u, { floor: 'gold-room', amount: 1e7 }), /BUY_IN_STACK_FULL/);
+    // Everything gone, wallet included: that is a bust.
+    cashOut(state, u);
+    u.account.wallet = 1e7; u.account.seat = null;
+    buyIn(state, u, { floor: 'gold-room', amount: 1e7 });
+    settleHouseGame(state, u, { game: 'Baccarat', stake: 1e7, netPnl: -1e7, roundId: 'r2' });
+    assert.equal(u.bankruptcies.length, 1);
+  });
 });
 
 test('the RP season over the API: buy in, play, a locked floor, cash out, the closed bank', async () => {

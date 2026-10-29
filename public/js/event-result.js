@@ -34,7 +34,7 @@ export function eventResult({ event, win, title, place = null, amount = 0, detai
         ${win ? '<span class="event-result-star" aria-hidden="true"></span>' : '<span class="event-result-rule" aria-hidden="true"></span>'}
         <h2 class="event-result-mark" style="--chars:${Math.max(...mark.split(' ').map(w => w.length))}">${mark}</h2>
         ${headline ? `<p class="event-result-place">${headline}</p>` : ''}
-        ${amount ? `<strong class="event-result-amount"><span data-amount>${win ? '+' : '−'}0원</span></strong>` : ''}
+        ${amount ? `<strong class="event-result-amount"><span data-amount>${win ? '+' : '−'}${formatMoney(0)}</span></strong>` : ''}
         ${detail ? `<p class="event-result-detail">${detail}</p>` : ''}
         ${line ? `<p class="event-result-line">${line}</p>` : ''}
         ${rows.length ? '<ol class="event-result-rows" aria-label="최종 순위"></ol>' : ''}

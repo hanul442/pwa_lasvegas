@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord } from './fx.js';
 import { createChip, breakdown, holding, TIERS } from './chips.js';
 import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 
@@ -90,11 +90,11 @@ export class Table {
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="${backLabel}" title="${backLabel}"><span aria-hidden="true">←</span></button>
-        <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatCH(this.tier.max)}원</i></span></div>
+        <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatUnit(this.tier.max)}</i></span></div>
         <div class="table-tools">
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
         </div>
-        <div class="table-balance table-wallet"><span class="sr-only">보유 칩</span><strong data-balance>${balanceText(this.available)}</strong><small>원</small><button class="wallet-plus" type="button" data-wallet-go aria-label="지갑 열기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button></div>
+        <div class="table-balance table-wallet"><span class="sr-only">보유 칩</span><strong data-balance>${balanceText(this.available)}</strong><small>${unitWord()}</small><button class="wallet-plus" type="button" data-wallet-go aria-label="칩 더 사기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button></div>
       </header>
       <div class="felt ${feltClass}${feltSkin(state, skin)}" data-felt>
         <div class="felt-print" aria-hidden="true"></div>
@@ -122,7 +122,7 @@ export class Table {
     this.tray = root.querySelector('[data-tray]');
     this.actions = root.querySelector('[data-actions]');
     this.balanceEl = root.querySelector('[data-balance]');
-    // The wallet pill's + goes to 지갑, the same as on the home screen.
+    // The chip pill's + buys more chips from the seat (app.js, js/cashier.js).
     root.querySelector('[data-wallet-go]').addEventListener('click', () => dispatchEvent(new CustomEvent('vegas:open-wallet')));
     this.betEl = root.querySelector('[data-bet]');
     this.hintEl = root.querySelector('[data-hint]');

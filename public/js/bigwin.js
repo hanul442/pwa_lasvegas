@@ -55,7 +55,7 @@ export function bigWin({ title, amount, game = '', subtitle = '', nickname = '',
         <span class="bigwin-star" aria-hidden="true"></span>
         <p class="bigwin-sub"><b data-level>${shown.label}</b>${subtitle ? ` · ${subtitle}` : ''}</p>
         <h2 class="bigwin-title">${title}</h2>
-        <strong class="bigwin-amount"><span data-amount>0원</span> <small>벌었어요</small></strong>
+        <strong class="bigwin-amount"><span data-amount>${formatMoney(0)}</span> <small>벌었어요</small></strong>
         ${multiple >= 2 ? `<p class="bigwin-multiple">판돈의 ${multiple}배</p>` : ''}
         ${badges.length ? `<p class="bigwin-badges">${badges.map(b => `<span>${b}</span>`).join('')}</p>` : ''}
         <div class="bigwin-actions">

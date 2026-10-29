@@ -1,0 +1,12 @@
+/* The app's fonts, from this site (public/fonts, made by scripts/fonts/build.py): no trip to another server, and they
+   work offline. index.html adds this file once the page has loaded, so ~280 KB of fonts never hold up the app's own
+   code on a slow phone network; until then text shows in the phone's font. Each Korean weight is one ~80 KB file with every character the app's own text uses.
+   The "-ext" face, declared first so it is tried last, holds the rest of the everyday Hangul syllables for names and
+   chat; the browser downloads it only when one of those is on screen. */
+@font-face{font-family:"Noto Sans KR";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/noto-kr-400-ext.woff2) format("woff2");unicode-range:U+AC00-D7A3}
+@font-face{font-family:"Noto Sans KR";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/noto-kr-500-ext.woff2) format("woff2");unicode-range:U+AC00-D7A3}
+@font-face{font-family:"Noto Sans KR";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/noto-kr-700-ext.woff2) format("woff2");unicode-range:U+AC00-D7A3}
+@font-face{font-family:"Noto Sans KR";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/noto-kr-400.woff2) format("woff2")}
+@font-face{font-family:"Noto Sans KR";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/noto-kr-500.woff2) format("woff2")}
+@font-face{font-family:"Noto Sans KR";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/noto-kr-700.woff2) format("woff2")}
+@font-face{font-family:Archivo;font-style:normal;font-weight:400 800;font-stretch:100% 125%;font-display:swap;src:url(fonts/archivo.woff2) format("woff2");unicode-range:U+0000-2FFF}

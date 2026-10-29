@@ -144,8 +144,9 @@ export const api = {
   // bets: [{ betType, target?, stake }], one per spot on the layout.
   rouletteSpin: (bets, floor, lightning = false, event = null, key) => request('/api/roulette/spin', { method: 'POST', key, body: { bets, floor, ...(lightning ? { lightning: true } : {}), ...(event ? { event } : {}) } }),
   roulette: (stake, floor, betType, target) => request('/api/roulette/play', { method: 'POST', body: { stake, floor, betType, target } }),
+  sicboRoll: (bets, floor, event = null, key) => request('/api/sicbo/roll', { method: 'POST', key, body: { bets, floor, ...(event ? { event } : {}) } }),
   sicbo: (stake, floor, betType, target, event = null, key) => request('/api/sicbo/play', { method: 'POST', key, body: { stake, floor, betType, target, ...(event ? { event } : {}) } }),
-  slots: (stake, floor, lightning = false, key) => request('/api/slots/spin', { method: 'POST', key, body: { stake, floor, ...(lightning ? { lightning: true } : {}) } }),
+  slots: (stake, floor, lightning = false, key, lines = 1) => request('/api/slots/spin', { method: 'POST', key, body: { stake, floor, ...(lightning ? { lightning: true } : {}), ...(lines > 1 ? { lines } : {}) } }),
   horsesCard: () => request('/api/horses/card'),
   horsesRace: (stake, floor, cardId, betType, pick) => request('/api/horses/race', { method: 'POST', body: { stake, floor, cardId, betType, pick } }),
   matgoOpen: () => request('/api/matgo/open'),

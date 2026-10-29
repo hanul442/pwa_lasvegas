@@ -13,6 +13,12 @@ const FAST = 4;
 const PULL_UP = 0.0168; // m per ms, about a winning sprinter's pace
 const STYLE_KO = { FRONT: '선행', STALK: '선입', CLOSE: '추입' };
 const COATS = ['#2a1b13', '#4e2f1c', '#171514', '#6b4528', '#3a2a20', '#7d7a74'];
+// 단승·연승 on the card's two columns, or a pair of horses for 복승 / 쌍승 (remembered per device).
+const KINDS = { single: '단승·연승', QUINELLA: '복승', EXACTA: '쌍승' };
+const BET_KO = { WIN: '단승', PLACE: '연승', QUINELLA: '복승', EXACTA: '쌍승' };
+const KIND_KEY = 'vegas:horses:kind';
+const readKind = () => { try { const k = localStorage.getItem(KIND_KEY); return k in KINDS ? k : 'single'; } catch { return 'single'; } };
+const saveKind = k => { try { localStorage.setItem(KIND_KEY, k); } catch {} };
 const odds = x => (x / 100).toFixed(x % 10 ? 2 : 1);
 const raceTime = msec => `${Math.floor(msec / 60000)}:${(msec % 60000 / 1000).toFixed(1).padStart(4, '0')}`;
 // Korean particles after a name: 은하수가 / 한라산이.
@@ -60,8 +66,13 @@ export async function mountHorses(ctx) {
       <ol class="hr-result" data-result aria-live="polite"></ol>
       <div class="hr-ticket" data-ticket></div>
       <section class="hr-card" aria-label="출전표">
-        <header class="hr-head"><span data-race-title>출전표</span><span class="hr-col">단승</span><span class="hr-col">연승</span></header>
+        <header class="hr-head"><span class="hr-head-left"><span class="sr-only" data-race-title>출전표</span><span class="hr-kinds" role="group" aria-label="베팅 종류">${Object.entries(KINDS).map(([k, label]) => `<button type="button" data-kind="${k}">${label}</button>`).join('')}</span></span><span class="hr-col">단승</span><span class="hr-col">연승</span><span class="hr-col hr-col--pair" data-pair-head></span></header>
         <ul class="hr-runners" data-runners></ul>
+        <div class="hr-slip" data-slip>
+          <span class="hr-slip-picks" data-slip-picks></span>
+          <span class="hr-slip-text" data-slip-text></span>
+          <button type="button" class="zone hr-odds hr-pair-zone" data-zone="PAIR"><strong data-pair-odds>—</strong></button>
+        </div>
       </section>
     </div>`;
   const root = t.body.querySelector('.hr');
@@ -75,6 +86,16 @@ export async function mountHorses(ctx) {
   const titleEl = root.querySelector('[data-race-title]');
   const fastBtn = root.querySelector('[data-fast]');
   const skipBtn = root.querySelector('[data-skip]');
+  const kindButtons = [...root.querySelectorAll('[data-kind]')];
+  const pairHead = root.querySelector('[data-pair-head]');
+  const pairZone = root.querySelector('[data-zone="PAIR"]');
+  const pairOdds = root.querySelector('[data-pair-odds]');
+  const slipPicks = root.querySelector('[data-slip-picks]');
+  const slipText = root.querySelector('[data-slip-text]');
+  t.addZone(pairZone);
+  let kind = readKind();
+  // The two horses of a 복승 / 쌍승 ticket, in the order tapped (first, second for 쌍승).
+  let picks = [];
 
   let card = null;
   // What the canvas shows: each runner's distance, stride phase and the camera.
@@ -96,10 +117,14 @@ export async function mountHorses(ctx) {
           <span class="hr-tag"><i>${STYLE_KO[r.style] || ''}</i>${r.tag}</span>
         </span>
         <button type="button" class="zone hr-odds" data-zone="W${r.gate}" aria-label="${r.gate}번 ${r.name} 단승 ${odds(r.win)}배${r.win === fav ? ', 인기 1위' : ''}"><strong>${odds(r.win)}</strong>${r.win === fav ? '<small>인기 1위</small>' : ''}</button>
-        <button type="button" class="zone hr-odds" data-zone="P${r.gate}" aria-label="${r.gate}번 ${r.name} 연승 ${odds(r.place)}배"><strong>${odds(r.place)}</strong></button>`;
+        <button type="button" class="zone hr-odds" data-zone="P${r.gate}" aria-label="${r.gate}번 ${r.name} 연승 ${odds(r.place)}배"><strong>${odds(r.place)}</strong></button>
+        <button type="button" class="hr-pick" data-pick="${r.gate}" aria-pressed="false" aria-label="${r.gate}번 ${r.name} 고르기"><span></span></button>`;
       li.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
+      li.querySelector('[data-pick]').addEventListener('click', () => togglePick(r.gate));
       return li;
     }));
+    picks = [];
+    showPicks();
     view.horses = card.runners.map((r, i) => ({ ...r, d: 0, phase: i * 0.37, coat: COATS[[...r.id].reduce((a, c) => a + c.charCodeAt(0), 0) % COATS.length] }));
     view.camX = -6; view.span = 34; view.gray = 0; view.finish = false; view.mine = 0; view.goal = null; view.running = false;
     draw();
@@ -110,8 +135,64 @@ export async function mountHorses(ctx) {
     catch (e) { t.toast(errorMessage(e)); }
   }
 
-  const betOf = () => { const z = t.bet.zone; return z ? { betType: z[0] === 'W' ? 'WIN' : 'PLACE', pick: Number(z.slice(1)) } : null; };
+  const betOf = () => {
+    const z = t.bet.zone;
+    if (!z) return null;
+    if (z === 'PAIR') return { betType: kind, pick: [...picks], pair: true };
+    return { betType: z[0] === 'W' ? 'WIN' : 'PLACE', pick: Number(z.slice(1)) };
+  };
   const runner = gate => card.runners.find(r => r.gate === gate);
+  // The board price for a pair: 복승 lists the lower gate first, 쌍승 keeps the order.
+  const pairPrice = (k, two) => {
+    if (!card || two.length !== 2) return null;
+    const [a, b] = k === 'QUINELLA' ? [...two].sort((x, y) => x - y) : two;
+    return (k === 'QUINELLA' ? card.quinella : card.exacta)?.[`${a}-${b}`] ?? null;
+  };
+
+  // ---------- 복승 · 쌍승 ----------
+  function showPicks() {
+    const pair = kind !== 'single';
+    root.classList.toggle('hr--pair', pair);
+    kindButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === kind)));
+    pairHead.textContent = kind === 'EXACTA' ? '1착 → 2착' : '두 마리';
+    runnersEl.querySelectorAll('[data-pick]').forEach(b => {
+      const k = picks.indexOf(Number(b.dataset.pick));
+      b.setAttribute('aria-pressed', String(k >= 0));
+      b.firstElementChild.textContent = k < 0 ? '' : kind === 'EXACTA' ? `${k + 1}착` : '✓';
+      b.closest('.hr-runner').classList.toggle('is-picked', pair && k >= 0);
+    });
+    const price = pairPrice(kind, picks);
+    pairOdds.textContent = price ? odds(price) : '—';
+    pairZone.setAttribute('aria-label', price ? `${picks.join('번, ')}번 ${KINDS[kind]} ${odds(price)}배에 걸기` : `${KINDS[kind]}: 말 두 마리를 고르세요`);
+    slipPicks.replaceChildren(...picks.map(g => { const r = card && runner(g); const n = el('span', 'hr-gate'); n.textContent = g; if (r) n.style.cssText = `--silk:${r.silk};--silk-ink:${ink(r.silk)}`; return n; }));
+    slipText.textContent = picks.length === 2
+      ? (kind === 'EXACTA' ? `${runner(picks[0]).name} 1착, ${runner(picks[1]).name} 2착` : `${runner(picks[0]).name} · ${runner(picks[1]).name} 1·2착`)
+      : kind === 'EXACTA' ? (picks.length ? '2착 할 말을 고르세요' : '1착 할 말부터 고르세요') : (picks.length ? '한 마리 더 고르세요' : '1·2착 할 두 마리를 고르세요');
+    view.mine = pair ? picks[0] || 0 : view.mine;
+    draw();
+  }
+  function togglePick(gate) {
+    if (t.locked || t.busy || kind === 'single') return;
+    const k = picks.indexOf(gate);
+    if (k >= 0) picks.splice(k, 1);
+    else if (picks.length < 2) picks.push(gate);
+    else picks = [picks[0], gate];
+    sound.chip(); haptic(6);
+    showPicks();
+    refreshActions();
+  }
+  kindButtons.forEach(b => b.addEventListener('click', async () => {
+    const next = b.dataset.kind;
+    if (t.locked || t.busy || next === kind) return;
+    const held = t.bet.zone;
+    const was = kind;
+    kind = next; saveKind(kind);
+    // Chips follow the ticket: a 단승 / 연승 horse becomes the first pick, a pair's first pick its 단승.
+    if (was === 'single' && held) { picks = [Number(held.slice(1))]; await t.moveBet(held, 'PAIR'); }
+    else if (next === 'single' && held === 'PAIR') { if (picks[0]) await t.moveBet('PAIR', `W${picks[0]}`); else await t.clearBet(); picks = []; }
+    showPicks();
+    t.onBetChange();
+  }));
 
   // ---------- canvas ----------
   let W = 0, H = 0;
@@ -380,7 +461,8 @@ export async function mountHorses(ctx) {
     const names = Object.fromEntries(round.card.runners.map(r => [r.gate, r]));
     resultEl.replaceChildren(...round.order.slice(0, 3).map((gate, k) => {
       const r = names[gate];
-      const li = el('li', `hr-place${gate === round.pick ? ' is-mine' : ''}`);
+      const mine = Array.isArray(round.pick) ? round.pick.includes(gate) : gate === round.pick;
+      const li = el('li', `hr-place${mine ? ' is-mine' : ''}`);
       li.innerHTML = `<span class="hr-place-n">${k + 1}착</span><span class="hr-gate" style="--silk:${r.silk};--silk-ink:${ink(r.silk)}">${gate}</span><b>${r.name}</b><span class="hr-time">${raceTime(round.times[gate - 1])}</span>`;
       return li;
     }));
@@ -392,19 +474,24 @@ export async function mountHorses(ctx) {
   t.refreshActions = refreshActions;
   t.onBetChange = () => {
     const b = betOf();
-    runnersEl.querySelectorAll('.hr-runner').forEach(li => li.classList.toggle('is-picked', Number(li.dataset.gate) === b?.pick));
-    view.mine = b?.pick || 0; draw();
+    if (kind === 'single') {
+      runnersEl.querySelectorAll('.hr-runner').forEach(li => li.classList.toggle('is-picked', Number(li.dataset.gate) === b?.pick));
+      view.mine = b?.pick || 0; draw();
+    } else showPicks();
     refreshActions();
   };
 
   async function go() {
     const bet = betOf();
     if (!t.betReady || !bet || !card) return;
-    const r = runner(bet.pick);
-    const price = bet.betType === 'WIN' ? r.win : r.place;
+    if (bet.pair && bet.pick.length !== 2) { t.toast(kind === 'EXACTA' ? '1착과 2착 할 말을 차례로 골라 주세요' : '1·2착 할 말 두 마리를 골라 주세요'); return; }
+    const horses = bet.pair ? bet.pick.map(runner) : [runner(bet.pick)];
+    const r = horses[0];
+    const price = bet.pair ? pairPrice(bet.betType, bet.pick) : bet.betType === 'WIN' ? r.win : r.place;
     t.lock();
-    view.mine = bet.pick;
-    ticketEl.innerHTML = `<span class="hr-gate" style="--silk:${r.silk};--silk-ink:${ink(r.silk)}">${r.gate}</span><span class="hr-ticket-text"><b>${r.name}</b><span>${bet.betType === 'WIN' ? '단승' : '연승'} ${odds(price)}배 · ${formatCH(t.total)}</span></span>`;
+    view.mine = r.gate;
+    const gates = horses.map(h => `<span class="hr-gate" style="--silk:${h.silk};--silk-ink:${ink(h.silk)}">${h.gate}</span>`).join('');
+    ticketEl.innerHTML = `${gates}<span class="hr-ticket-text"><b>${horses.map(h => h.name).join(bet.betType === 'EXACTA' ? ' → ' : ' · ')}</b><span>${BET_KO[bet.betType]} ${odds(price)}배 · ${formatCH(t.total)}</span></span>`;
     // The chips ride on the ticket: the odds button that holds them moves there for the race.
     const zoneNode = t.zones.get(t.bet.zone);
     const home = zoneNode.parentElement, before = zoneNode.nextSibling;
@@ -432,12 +519,15 @@ export async function mountHorses(ctx) {
     root.dataset.phase = 'result';
     await wait(900);
     const winner = round.card.runners.find(x => x.gate === round.order[0]);
-    const label = round.won ? `${round.pick}번 ${r.name} ${round.betType === 'WIN' ? '단승' : '연승'} 적중 · ${odds(round.odds)}배` : `${winner.gate}번 ${winner.name} 우승`;
-    const big = round.won && round.odds >= 1000 ? { title: `${odds(round.odds)}배 적중`, subtitle: `${r.name} ${round.betType === 'WIN' ? '단승' : '연승'}` } : undefined;
+    const who = bet.pair ? `${bet.pick.join(bet.betType === 'EXACTA' ? '→' : '·')}번` : `${round.pick}번 ${r.name}`;
+    const label = round.won ? `${who} ${BET_KO[round.betType]} 적중 · ${odds(round.odds)}배` : `${winner.gate}번 ${winner.name} 우승`;
+    const big = round.won && round.odds >= 1000 ? { title: `${odds(round.odds)}배 적중`, subtitle: `${bet.pair ? horses.map(h => h.name).join(' · ') : r.name} ${BET_KO[round.betType]}` } : undefined;
     await t.settle(round.netPnl, { label, big, kind: round.won && round.netPnl === 0 ? 'push' : undefined });
     await t.syncBalance();
     if (!alive) return;
     resultEl.classList.remove('is-shown');
+    // The ticket's bet spot goes back where it came from (the 복승·쌍승 slip keeps its one spot).
+    home.insertBefore(zoneNode, before);
     ticketEl.replaceChildren();
     call('');
     root.dataset.phase = 'card';
@@ -449,6 +539,7 @@ export async function mountHorses(ctx) {
   t.destroy = () => { alive = false; cancelAnimationFrame(raf); ro?.disconnect(); destroy(); };
   t.onKey(e => { const a = !t.busy && e.key === 'Enter' && !e.target.closest('button') && t.enterAction(); if (a) { e.preventDefault(); t.run(a.onClick); } });
   refreshActions();
+  showPicks();
   await loadCard();
   fit();
   t.onBetChange();

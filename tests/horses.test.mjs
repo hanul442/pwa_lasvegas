@@ -4,7 +4,8 @@ import { defaultState } from '../lib/state.mjs';
 import { handleApi } from '../lib/api.mjs';
 import {
   HORSE_GAME, RUNNERS, SEGMENTS, HOUSE_MARGIN, STABLE, createCard, publicCard, racingBook, runRace, drawOrder,
-  winProbabilities, placeProbabilities, quoteOdds, horsePayout, betWins, playHorseRace
+  winProbabilities, placeProbabilities, quoteOdds, horsePayout, betWins, playHorseRace,
+  exactaProbability, pairOdds, PAIR_ODDS_CAP
 } from '../lib/horses.mjs';
 
 // A seeded generator so the long simulations are repeatable.
@@ -120,7 +121,7 @@ test('a bet runs the card it was placed on, updates the form and draws the next 
   assert.ok(pub.runners.every(r => r.strength === undefined && r.name && r.tag && r.win && r.place));
   assert.throws(() => playHorseRace(user, { stake: 1_000_000, betType: 'WIN', pick: 1, cardId: 'race_old' }, rng), /RACE_CARD_STALE/);
   assert.throws(() => playHorseRace(user, { stake: 1_000_000, betType: 'WIN', pick: 7, cardId: card.id }, rng), /INVALID_TARGET/);
-  assert.throws(() => playHorseRace(user, { stake: 1_000_000, betType: 'QUINELLA', pick: 1, cardId: card.id }, rng), /INVALID_BET_TYPE/);
+  assert.throws(() => playHorseRace(user, { stake: 1_000_000, betType: 'TRIFECTA', pick: 1, cardId: card.id }, rng), /INVALID_BET_TYPE/);
   const pick = card.runners[2];
   const round = playHorseRace(user, { stake: 10_000_000, betType: 'WIN', pick: pick.gate, cardId: card.id }, rng);
   assert.equal(round.game, HORSE_GAME);
@@ -181,6 +182,52 @@ test('a race settles through the API as one idempotent instant round', async () 
   assert.equal(h.state.users.hanseo.account.available, res.data.state.user.account.available);
 });
 
+test('복승 and 쌍승 are quoted from the same Harville chances with the same margin', () => {
+  const rng = mulberry(11);
+  for (let i = 0; i < 500; i++) {
+    const card = createCard(null, 1, rng);
+    const st = card.runners.map(r => r.strength);
+    const { quinella, exacta } = pairOdds(card);
+    assert.equal(Object.keys(quinella).length, 15);
+    assert.equal(Object.keys(exacta).length, 30);
+    let sumX = 0;
+    card.runners.forEach((a, x) => card.runners.forEach((b, y) => {
+      if (x === y) return;
+      const p = exactaProbability(st, x, y); sumX += p;
+      const back = p * exacta[`${a.gate}-${b.gate}`] / 100;
+      if (exacta[`${a.gate}-${b.gate}`] < PAIR_ODDS_CAP) assert.ok(back <= 1 - HOUSE_MARGIN + 1e-9 && back >= 0.9, `exacta returns ${back}`);
+      if (a.gate < b.gate) {
+        const q = p + exactaProbability(st, y, x);
+        const qb = q * quinella[`${a.gate}-${b.gate}`] / 100;
+        assert.ok(qb <= 1 - HOUSE_MARGIN + 1e-9 && qb >= 0.9, `quinella returns ${qb}`);
+        assert.ok(quinella[`${a.gate}-${b.gate}`] <= Math.min(exacta[`${a.gate}-${b.gate}`], exacta[`${b.gate}-${a.gate}`]), 'either way round is never dearer');
+      }
+    }));
+    assert.ok(Math.abs(sumX - 1) < 1e-9, 'every first-second order adds up to one');
+  }
+  assert.equal(betWins('EXACTA', [3, 5], [3, 5, 1]), true);
+  assert.equal(betWins('EXACTA', [5, 3], [3, 5, 1]), false);
+  assert.equal(betWins('QUINELLA', [3, 5], [5, 3, 1]), true);
+  assert.equal(betWins('QUINELLA', [3, 1], [5, 3, 1]), false);
+});
+
+test('a 쌍승 simulation returns what the board promised', () => {
+  const rng = mulberry(5);
+  const user = { id: 'u', racing: null };
+  let staked = 0, back = 0, wins = 0;
+  for (let i = 0; i < 6000; i++) {
+    const card = racingBook(user, rng).card;
+    const pick = [card.runners[i % 6].gate, card.runners[(i + 1 + (i % 5)) % 6].gate];
+    const betType = i % 2 ? 'EXACTA' : 'QUINELLA';
+    const r = playHorseRace(user, { stake: 1_000_000, betType, pick, cardId: card.id }, rng);
+    staked += 1_000_000; back += r.netPnl + 1_000_000; if (r.won) wins++;
+    assert.equal(r.won, betWins(betType, betType === 'QUINELLA' ? [...pick].sort((a, b) => a - b) : pick, r.order));
+  }
+  const rtp = back / staked;
+  assert.ok(wins > 200, `wins ${wins}`);
+  assert.ok(rtp > 0.8 && rtp < 1.05, `returns ${rtp}`);
+});
+
 test('race bets keep the floor’s limits', async () => {
   const s = defaultState();
   s.users.hanseo.account.available = 300_000_000;
@@ -191,10 +238,20 @@ test('race bets keep the floor’s limits', async () => {
   assert.equal((await bet({ stake: 200_000_000 })).data.error, 'BET_OUTSIDE_TABLE_LIMIT');
   assert.equal((await bet({ stake: 10_500_000 })).data.error, 'BET_NOT_IN_UNITS');
   assert.equal((await bet({ pick: 9 })).data.error, 'INVALID_TARGET');
-  assert.equal((await bet({ betType: 'EXACTA' })).data.error, 'INVALID_BET_TYPE');
-  const ok = await bet({});
-  assert.equal(ok.status, 200);
-  assert.equal(ok.data.state.user.stats[HORSE_GAME].rounds, 1);
+  assert.equal((await bet({ betType: 'TRIFECTA' })).data.error, 'INVALID_BET_TYPE');
+  assert.equal((await bet({ betType: 'EXACTA', pick: [2, 2] })).data.error, 'INVALID_TARGET');
+  assert.equal((await bet({ betType: 'QUINELLA', pick: 2 })).data.error, 'INVALID_TARGET');
+  assert.ok(card.quinella['1-2'] >= 105 && card.exacta['2-1'] >= 105, 'the card carries both pair boards');
+  const pair = await bet({ betType: 'QUINELLA', pick: [4, 1] });
+  assert.equal(pair.status, 200, JSON.stringify(pair.data));
+  assert.deepEqual(pair.data.round.pick, [1, 4]);
+  assert.equal(pair.data.round.odds, card.quinella['1-4']);
+  assert.equal(pair.data.round.won, [pair.data.round.order[0], pair.data.round.order[1]].sort().join() === '1,4');
+  const next = pair.data.next;
+  const ok = await call('POST', '/api/horses/race', { stake: 10_000_000, floor: 'high-limit', betType: 'EXACTA', pick: [3, 6], cardId: next.id });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  assert.equal(ok.data.round.odds, next.exacta['3-6']);
+  assert.equal(ok.data.state.user.stats[HORSE_GAME].rounds, 2);
 });
 
 test('the 경마 table is wired into the lobby, the guide, the music and the offline shell', async () => {

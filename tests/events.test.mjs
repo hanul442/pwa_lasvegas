@@ -91,7 +91,8 @@ test('Monte Carlo baccarat tracks the run and pays the gala bonus', during('mont
   const store = memoryStore();
   await call(store, 'GET', '/api/state');
   let paid = false;
-  for (let i = 0; i < 80 && !paid; i++) {
+  // Three banker wins in a row is missing from 80 hands about 1 time in 70; 400 hands make that ~1 in a billion.
+  for (let i = 0; i < 400 && !paid; i++) {
     holdings(store, 50_000_000_000);
     const res = await call(store, 'POST', '/api/baccarat/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BANKER', event: 'montecarlo' });
     assert.equal(res.status, 200, JSON.stringify(res.data));
@@ -99,7 +100,7 @@ test('Monte Carlo baccarat tracks the run and pays the gala bonus', during('mont
     assert.equal(s.need, 3);
     if (s.bonus) { paid = true; assert.equal(s.bonus, 10_000_000_000); }
   }
-  assert.ok(paid, 'three banker wins in a row within 80 hands');
+  assert.ok(paid, 'three banker wins in a row within 400 hands');
 }));
 
 test('타짜 나이트 starts every 고스톱 hand at ×2 against 아귀 and 고광렬', during('tazza', async () => {

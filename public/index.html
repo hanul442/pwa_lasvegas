@@ -25,11 +25,9 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Fonts load beside the page instead of holding up its first paint (text shows in the system font for a moment on a cold start). -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=Noto+Sans+KR:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=Noto+Sans+KR:wght@400;500;700&display=swap"></noscript>
+  <!-- Fonts after the page has loaded (see fonts.css). -->
+  <script>addEventListener('load', () => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'fonts.css'; document.head.append(l); }, { once: true });</script>
+  <noscript><link rel="stylesheet" href="fonts.css"></noscript>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="table.css">
   <link rel="stylesheet" href="hwatu.css">

@@ -56,10 +56,10 @@ test('instant rounds reuse their idempotency key on retry and slots auto-spin st
   const table = await read('js/table.js');
   assert.match(table, /roundKey\(/);
   assert.match(table, /if \(this\.pendingRound\?\.fp !== fp\)/);
-  for (const [f, call] of [['js/games/slots.js', 'api.slots'], ['js/games/dice.js', 'api.sicbo'], ['js/games/roulette.js', 'api.rouletteSpin'], ['js/games/baccarat.js', 'api.baccarat']]) {
+  for (const [f, call] of [['js/games/slots.js', 'api.slots'], ['js/games/dice.js', 'api.sicboRoll'], ['js/games/roulette.js', 'api.rouletteSpin'], ['js/games/baccarat.js', 'api.baccarat']]) {
     const src = await read(f);
     assert.match(src, /t\.roundKey\(/, f);
-    assert.match(src, new RegExp(`${call.replace('.', '\\.')}\\([^;]*key\\)`), f);
+    assert.match(src, new RegExp(`${call.replace('.', '\\.')}\\([^;]*key[,)]`), f);
   }
   const slots = await read('js/games/slots.js');
   for (const stop of ['isBigWin', "addEventListener('pointerdown'", 'visibilitychange', 't.available < stake']) assert.ok(slots.includes(stop), stop);

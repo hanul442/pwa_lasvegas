@@ -5,7 +5,7 @@ import './legacy-economy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { formatMoney, formatCH } from '../public/js/money.js';
+import { formatMoney, formatCH, formatJackpot } from '../public/js/money.js';
 import { formatWon } from '../lib/notifications.mjs';
 import { newsFor, bigLossText } from '../lib/news.mjs';
 import { defaultState, newUser } from '../lib/state.mjs';
@@ -73,4 +73,13 @@ test('money is never spelled out by hand in the app or server text', () => {
     const code = src.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
     assert.doesNotMatch(code, /[0-9만억조천] 원(?![가-힣])/, `${f}: write 100만원, not 100만 원`);
   }
+});
+
+// 한서: the jackpot read "50억" while it grew; it is written down to 만 so each spin shows.
+test('slot jackpot is written out to 만', () => {
+  assert.equal(formatJackpot(5_000_000_000), '50억원');
+  assert.equal(formatJackpot(5_001_050_000), '50억 105만원');
+  assert.equal(formatJackpot(320_000_000), '3억 2천만원');
+  assert.equal(formatJackpot(5_001_000_000_000), '5조 10억원');
+  assert.equal(formatJackpot(12_345_678_901_234), '12조 3456억 7890만원');
 });

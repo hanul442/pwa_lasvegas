@@ -220,7 +220,7 @@ export function createRoomClient(t, game, hooks) {
     t.root.classList.add('is-room');
     t.root.classList.toggle('is-watching', Boolean(watching));
     tableName.textContent = watching ? `${watchName}님 관전 · ${word} ${formatCH(view.stake)}` : `${tierName(view.tier)} · 친구 방 · ${word} ${formatCH(view.stake)}`;
-    chipEl.hidden = Boolean(watching); // the rail doesn't hand out seats
+    chipEl.hidden = Boolean(watching || view.challenge); // the rail doesn't hand out seats, nor does a 1:1 도전
     chipEl.innerHTML = `<span>초대</span><b>${view.code}</b>`;
     chipEl.setAttribute('aria-label', `방 코드 ${view.code}, 친구에게 초대 링크 보내기`);
     bar.hidden = false;
@@ -342,13 +342,30 @@ export function createRoomClient(t, game, hooks) {
     paintStatus();
   }
 
+  // 1:1 도전 (lib/challenge.mjs): waiting for the friend, under way, or the result.
+  let duelShown = null;
+  function challengeLine(v) {
+    const c = v.challenge;
+    if (!c) return '';
+    const meId = v.players.find(p => p.me)?.userId;
+    const other = c.from.id === meId ? c.to : c.from;
+    if (!c.accepted && !c.done) return `${other.nickname}님을 기다려요 · ${Math.max(1, Math.ceil((c.expiresAt - v.serverNow) / 60_000))}분 안에 안 오면 취소돼요`;
+    if (!c.done) return `1:1 도전 · ${other.nickname}님과 ${c.hands > 1 ? `${Math.min(c.played + 1, c.hands)}/${c.hands}판` : '한 판 승부'}`;
+    const mine = c.nets?.[meId] || 0;
+    const text = c.winner === meId ? `도전 승리 · ${mine > 0 ? `+${formatCH(mine)}` : ''}` : c.winner ? `도전 패배 · ${other.nickname}님 승` : '도전 무승부';
+    if (duelShown !== v.code && !watching) { duelShown = v.code; t.toast(c.forfeit ? `${c.forfeit === meId ? '자리를 떠서' : `${other.nickname}님이 자리를 떠서`} 도전이 끝났어요` : `도전 끝! ${text}`); }
+    return `${text} · 나가기를 누르면 정리돼요`;
+  }
+
   function paintStatus() {
     const v = room;
     if (!v) return;
     const people = v.players.length;
     let line = '';
     const rail = (v.watchers || []).filter(w => w.userId !== v.watching?.userId);
+    const duel = challengeLine(v);
     if (watching) line = v.waiting || !v.playing ? '다음 판을 기다려요' : '👀 관전 중';
+    else if (duel) line = duel;
     else if (!v.started) line = v.isHost ? `초대를 눌러 친구에게 링크를 보내 주세요 · ${people}명` : `방장이 시작하길 기다려요 · ${people}명`;
     else if (v.waiting) line = '다음 판부터 AI 자리에 앉아요';
     else if (v.round?.status === 'SETTLED') line = '다음 판을 곧 돌려요';
@@ -390,6 +407,7 @@ export function createRoomClient(t, game, hooks) {
   const leaveAction = () => ({ label: '나가기', ghost: true, anytime: true, onClick: leave });
   function idleActions() {
     const list = [leaveAction()];
+    if (room?.challenge) { list.push({ label: room.challenge.done ? '도전 끝' : '친구를 기다려요', disabled: true }); return list; }
     if (room?.isHost && !room.started) list.push({ label: '시작', key: '↵', primary: true, onClick: deal });
     else list.push({ label: room?.started ? '다음 판 대기 중' : '방장이 시작해요', disabled: true });
     return list;

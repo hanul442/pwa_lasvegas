@@ -243,7 +243,9 @@ test('lightning slots spin through the API: strikes on the round, a retry replay
   assert.ok(r.lightning.length >= 1 && r.lightning.length <= 3);
   const boosted = r.lineMult > 0 && r.line !== 'JACKPOT';
   assert.equal(r.mult, r.lineMult * (boosted ? lightningBoost(r.lightning) : 1));
-  assert.equal(r.netPnl, 10_000_000 * r.mult + r.jackpot - 10_000_000);
+  // About 1 spin in 360 also lands three coins: those free spins pay inside the same round.
+  const free = (r.freeSpins?.spins || []).reduce((x, s) => x + s.mult, 0);
+  assert.equal(r.netPnl, 10_000_000 * (r.mult + free) + r.jackpot - 10_000_000);
   assert.equal(res.data.state.user.account.available, before + r.netPnl);
   assert.deepEqual(state().rounds.find(x => x.id === r.id).lightning, r.lightning);
   const replay = await call(body, 'slot-lit-key-01');
@@ -360,4 +362,65 @@ test('free spins settle through the API as one round', async () => {
     }
   }
   assert.fail('no free spins in 4000 spins');
+});
+
+// ---------- 5줄 ----------
+import { SLOT_LINES, windowOf, lineBoost } from '../lib/slots.mjs';
+
+test('5줄 returns exactly what 1줄 returns on both tables, over every stop', () => {
+  // Every line is three independent stops, so its average line pay is the payline's.
+  for (const lightning of [false, true]) {
+    let one = 0, five = 0;
+    for (let a = 0; a < STOPS; a++) for (let b = 0; b < STOPS; b++) for (let c = 0; c < STOPS; c++) {
+      const w = windowOf([a, b, c]);
+      one += slotLine([STRIP[a], STRIP[b], STRIP[c]], { lightning }).mult;
+      five += SLOT_LINES.reduce((t, rows) => t + slotLine(rows.map((r, k) => w[r][k]), { lightning }).mult, 0) / 5;
+    }
+    assert.ok(Math.abs(one - five) < 1e-6, `${lightning ? 'lightning' : 'plain'}: ${one} vs ${five}`);
+  }
+  assert.deepEqual(windowOf([5, 5, 5])[1], [STRIP[5], STRIP[5], STRIP[5]], 'row 1 is the payline');
+  assert.equal(lineBoost([{ reel: 0, row: 0, multiplier: 2 }, { reel: 1, row: 1, multiplier: 5 }, { reel: 2, row: 1, multiplier: 3 }], [0, 1, 2]), 7);
+  assert.equal(lineBoost([{ reel: 0, row: 0, multiplier: 2 }], [1, 1, 1]), 1);
+});
+
+test('a 5줄 spin pays each line a fifth of the bet, in whole units, and the pot only on the payline', () => {
+  const at = s => STRIP.indexOf(s);
+  // Three sevens on the payline: the line above and below are whatever sits next to them.
+  const state = defaultState();
+  const stake = 5_000_000;
+  const r = spinSlots(state, { stake, maxBet: 10_000_000, stopsOverride: [at('SEVEN'), at('SEVEN'), at('SEVEN')], lines: 5 });
+  assert.equal(r.lines, 5);
+  const seven = r.wins.find(w => w.line === 0);
+  assert.equal(seven.name, 'SEVEN');
+  assert.equal(seven.mult, 100);
+  assert.equal(r.line, 'SEVEN');
+  const sum = r.wins.reduce((a, w) => a + w.mult, 0);
+  assert.equal(r.mult, sum / 5);
+  assert.equal(r.netPnl % 1_000_000, 0, 'whole 100만s');
+  assert.ok(Math.abs(r.netPnl + stake - stake * sum / 5) < 1_000_000 || r.freeSpins);
+  // A losing window pays nothing.
+  const lose = spinSlots(defaultState(), { stake, maxBet: 10_000_000, stopsOverride: [at('C'), at('H'), at('BAR1')], lines: 5 });
+  if (!lose.wins.length && !lose.freeSpins) assert.equal(lose.netPnl, -stake);
+  assert.throws(() => spinSlots(defaultState(), { stake, maxBet: 10_000_000, lines: 3 }), /INVALID_LINES/);
+  // Stars across the top row: 500× on that line, but the pot stays put.
+  const below = STRIP.findIndex((x, i) => STRIP[(i + STOPS - 1) % STOPS] === 'STAR' && x !== 'STAR');
+  const st = defaultState();
+  const pool = spinSlots(st, { stake: 1_000_000, maxBet: 10_000_000, stopsOverride: [at('C'), at('C'), at('H')] }).pool;
+  const stars = spinSlots(st, { stake: 1_000_000, maxBet: 10_000_000, stopsOverride: [below, below, below], lines: 5 });
+  assert.equal(stars.wins.find(w => w.line === 1)?.name, 'JACKPOT');
+  assert.equal(stars.jackpot, 0, 'no pot off the payline');
+  assert.ok(stars.pool >= pool);
+});
+
+test('the 5줄 machine returns about what the 1줄 machine does over many spins', () => {
+  for (const lines of [1, 5]) {
+    const state = defaultState();
+    let staked = 0, back = 0;
+    for (let i = 0; i < 60000; i++) {
+      const r = spinSlots(state, { stake: 1_000_000, maxBet: 10_000_000, lines });
+      staked += 1_000_000; back += r.netPnl + 1_000_000 - r.jackpot;
+    }
+    const rtp = back / staked;
+    assert.ok(rtp > 0.85 && rtp < 1.1, `${lines} lines: ${rtp}`);
+  }
 });

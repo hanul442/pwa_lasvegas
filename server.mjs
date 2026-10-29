@@ -24,7 +24,7 @@ async function api(req,res,url){
   res.end(JSON.stringify(data));
 }
 
-const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.mp3':'audio/mpeg','.m4a':'audio/mp4'};
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.mp3':'audio/mpeg','.m4a':'audio/mp4','.woff2':'font/woff2'};
 async function serveStatic(req,res,url){
   let rel=url.pathname==='/'?'index.html':url.pathname.slice(1);
   rel=path.normalize(rel).replace(/^\.\.(\/|\\|$)/,'');

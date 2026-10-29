@@ -25,6 +25,9 @@ export function toast(text, { action = '', onAction = null, duration = action ? 
     b.addEventListener('click', () => { hide(); onAction(); });
     node.append(b);
   }
+  // At a table the toast takes the table's own toast spot, the felt's top edge.
+  const felt = document.body.classList.contains('game-mode') && document.querySelector('.table-screen [data-felt]');
+  if (felt) node.style.setProperty('--toast-top', `${Math.max(8, felt.getBoundingClientRect().top + 12)}px`);
   document.body.append(node);
   toastNode = node;
   requestAnimationFrame(() => node.classList.add('is-shown'));

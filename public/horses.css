@@ -71,6 +71,29 @@
 .zone.hr-odds strong{font:700 16px var(--display);font-stretch:105%;font-variant-numeric:tabular-nums}
 .zone.hr-odds>.bet-stack{right:-7px;top:-8px;bottom:auto}
 
+
+/* 단승·연승 / 복승 / 쌍승 */
+.hr-head-left{min-width:0}
+.hr-kinds{display:inline-grid;grid-auto-flow:column;margin:0;padding:2px;border-radius:999px;background:#0a0b0d99;border:1px solid #efe7d933}
+.hr-kinds button{min-height:30px;padding:0 10px;border:0;border-radius:999px;background:none;color:#efe7d9b3;font:700 13px/1 var(--sans);letter-spacing:-.01em;white-space:nowrap;cursor:pointer}
+.hr-kinds button[aria-pressed="true"]{background:var(--white);color:var(--ink)}
+.hr-kinds button:focus-visible,.hr-pick:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.hr-col--pair,.hr-pick,.hr-slip{display:none}
+.hr--pair .hr-head .hr-col:not(.hr-col--pair),.hr--pair .hr-runner .zone.hr-odds{display:none}
+.hr--pair .hr-head{grid-template-columns:minmax(0,1fr) auto}
+.hr--pair .hr-runner{grid-template-columns:26px minmax(0,1fr) 84px}
+.hr--pair .hr-col--pair{display:block;text-align:right;padding-right:8px}
+.hr--pair .hr-pick{display:grid;place-items:center;min-height:42px;padding:0;border-radius:9px;border:1px solid #efe7d955;background:#0a0b0d40;color:var(--white);cursor:pointer}
+.hr-pick span{display:grid;place-items:center;min-width:44px;height:26px;padding:0 8px;border-radius:999px;border:1.5px dashed #efe7d966;font:800 13px/1 var(--sans)}
+.hr-pick[aria-pressed="true"]{background:#f4f5f71f;border-color:var(--white)}
+.hr-pick[aria-pressed="true"] span{border:0;background:var(--white);color:var(--ink)}
+.hr--pair .hr-slip{display:flex;align-items:center;gap:8px;margin-top:6px;padding:6px 6px 6px 10px;border-radius:12px;background:#0a0b0dad;box-shadow:inset 0 0 0 1px #ffffff26}
+.hr-slip-picks{flex:none;display:flex;gap:4px}
+.hr-slip-text{flex:1;min-width:0;font:600 13px/1.3 var(--sans);color:#efe7d9d9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr-slip .hr-pair-zone{flex:none;width:72px;min-height:44px}
+.hr[data-phase="race"] .hr-slip{display:none}
+.hr-ticket .hr-gate+.hr-gate{margin-left:-6px}
+
 @media (min-width:640px){
   .hr-head{grid-template-columns:minmax(0,1fr) 76px 76px}
   .hr-runner{padding:8px 2px}
@@ -83,13 +106,15 @@
 }
 /* Phones up to the Fold's cover screen: the rack folds away (chips still fly from its spot), the
    track preview gets shorter and the runners' rows tighten, so all six fit above the chips. */
-@media (max-width:599px) and (orientation:portrait) and (max-height:820px){
+@media (max-width:599px) and (orientation:portrait) and (max-height:900px){
   .table-screen--horses .felt-body{padding-top:14px}
   .table-screen--horses .dealer-rack{visibility:hidden}
   .hr{gap:6px}
   .hr-track{flex:1 1 72px;height:auto;min-height:72px;max-height:220px}
   .hr-runner{padding:2px}
   .zone.hr-odds{min-height:36px;padding:2px}
+  .hr--pair .hr-pick{min-height:36px}
+  .hr-kinds button{min-height:28px;padding:0 9px}
 }
 /* during the race the track takes whatever the ticket and the call leave */
 @media (max-height:820px){
@@ -99,9 +124,10 @@
 @media (max-width:599px) and (orientation:portrait) and (max-height:700px){
   .hr-tag{display:none}
   .zone.hr-odds{min-height:32px}
+  .hr--pair .hr-pick{min-height:32px}
 }
 /* the Fold's inner screen and tablets that aren't tall: a shorter track so the card fits */
-@media (min-width:600px) and (min-height:521px) and (max-height:820px){
+@media (min-width:600px) and (min-height:521px) and (max-height:900px){
   .table-screen--horses .felt-body{padding-top:14px}
   .table-screen--horses .dealer-rack{visibility:hidden}
   .hr-track{flex:1 1 110px;height:auto;min-height:110px;max-height:260px}
@@ -122,6 +148,8 @@
   .hr-runner{padding:1px 2px}
   .hr-tag{display:none}
   .zone.hr-odds{min-height:32px;padding:1px 2px}
+  .hr--pair .hr-pick{min-height:32px}
+  .hr-kinds button{min-height:26px}
 }
 /* phones under 400px tall on their side: one slim line per runner */
 @media (orientation:landscape) and (max-height:400px){
@@ -134,3 +162,25 @@
   .hr-track,.hr-result,.hr-photo{transition:none}
   .hr-call.is-new,.hr-track.is-flash .hr-flash{animation:none}
 }
+@media (min-width:640px){.hr--pair .hr-runner{grid-template-columns:30px minmax(0,1fr) 120px}}
+@media (orientation:landscape) and (max-height:520px){.hr--pair .hr-runner{grid-template-columns:26px minmax(0,1fr) 84px}}
+/* 복승·쌍승 on phones: the slip under the card takes the room of each runner's second line */
+@media (max-width:599px) and (orientation:portrait) and (max-height:900px){
+  .hr--pair .hr-tag{display:none}
+  .hr-slip{margin-top:4px;padding-block:4px}
+}
+/* Phones on their side: every runner on one slim line, and the 복승·쌍승 slip sits over the foot
+   of the track, so all six runners stay on the card. */
+@media (orientation:landscape) and (max-height:520px){
+  .zone.hr-odds{min-height:28px;padding:0 2px}
+  .zone.hr-odds small{display:none}
+  .hr-runner{padding:0 2px}
+  .hr--pair .hr-pick{min-height:28px}
+  .hr-pick span{height:22px}
+  .hr{position:relative}
+  .hr--pair .hr-slip{position:absolute;left:0;bottom:0;z-index:3;width:calc((100% - 12px) * .9 / 2.2);margin:0;padding:4px 4px 4px 8px;box-sizing:border-box}
+  .hr--pair .hr-slip-text{font-size:12px}
+  .hr--pair .hr-slip .hr-pair-zone{width:70px;min-height:36px}
+}
+/* 360px phones: the last three races only, so four-syllable horse names fit without "…" */
+@media (max-width:380px){.hr-form span:nth-child(n+4){display:none}}

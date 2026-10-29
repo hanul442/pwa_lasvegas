@@ -163,7 +163,7 @@
 .slot{display:grid;justify-items:center;align-content:center;gap:14px;padding-bottom:8px}
 .slot-jackpot{display:grid;justify-items:center;gap:2px;padding:10px 22px 12px;border-radius:14px;background:#050607;box-shadow:inset 0 0 0 1px #fff6dc40,0 10px 30px #000a}
 .slot-jackpot span{color:var(--smoke);font:500 13px var(--sans);letter-spacing:.18em}
-.slot-jackpot strong{color:var(--star);font:600 clamp(24px,7.4vw,36px)/1.1 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.slot-jackpot strong{white-space:nowrap;color:var(--star);font:600 clamp(20px,6.2vw,32px)/1.1 var(--display);font-stretch:112%;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .slot-cabinet{display:flex;align-items:center;gap:10px}
 .slot-window{--sym:clamp(58px,17vw,92px);position:relative;display:grid;grid-template-columns:repeat(3,var(--sym));gap:8px;padding:10px;border-radius:18px;background:linear-gradient(#111317,#050607);box-shadow:inset 0 0 0 1px #ffffff26,0 18px 40px #000b}
 .slot-reel{position:relative;height:calc(var(--sym) * 3);overflow:hidden;border-radius:10px;background:linear-gradient(#c9ced6,#f4f5f7 22%,#fff 50%,#f4f5f7 78%,#c9ced6)}

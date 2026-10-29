@@ -7,6 +7,7 @@ import { animate, sound, haptic, formatCH, rollNumber, wait, ms, reducedMotion, 
 import { Table } from '../table.js';
 import { isBigWin } from '../bigwin.js';
 import { gameName } from '../names.js';
+import { formatJackpot } from '../money.js';
 
 const AUTO_COUNTS = [10, 25, 50];
 // Spins a set of coins awards, as FREE_SPINS in lib/slots.mjs.
@@ -172,7 +173,7 @@ export async function mountSlots(ctx) {
   }
   const floorPool = st => st?.jackpot?.floors?.[t.tier.floor] ?? st?.jackpot?.pool ?? 0;
   let pool = floorPool(ctx.state);
-  poolEl.textContent = formatCH(pool);
+  poolEl.textContent = formatJackpot(pool);
 
   // Each reel shows three symbols: above, on and below the payline.
   const shown = reels.map(() => [randomSymbol(), randomSymbol(), randomSymbol()]);
@@ -180,7 +181,7 @@ export async function mountSlots(ctx) {
 
   function setPool(next) {
     if (next === pool) return;
-    rollNumber(poolEl, pool, next, { duration: 900, format: formatCH });
+    rollNumber(poolEl, pool, next, { duration: 900, format: formatJackpot });
     pool = next;
   }
 

@@ -182,3 +182,5 @@
   .hr--pair .hr-slip-text{font-size:12px}
   .hr--pair .hr-slip .hr-pair-zone{width:70px;min-height:36px}
 }
+/* 360px phones: the last three races only, so four-syllable horse names fit without "…" */
+@media (max-width:380px){.hr-form span:nth-child(n+4){display:none}}

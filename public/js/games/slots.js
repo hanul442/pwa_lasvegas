@@ -42,6 +42,15 @@ const PAY_NOTE = {
 const MODE_KEY = 'vegas:slots:mode';
 const readMode = () => { try { return localStorage.getItem(MODE_KEY) === 'lightning' ? 'lightning' : 'normal'; } catch { return 'normal'; } };
 const saveMode = mode => { try { localStorage.setItem(MODE_KEY, mode); } catch {} };
+// 1줄 or 5줄, remembered per device. Five lines split the bet over the payline, the rows above
+// and below it and both diagonals (rows per reel, as SLOT_LINES in lib/slots.mjs).
+const LINES_KEY = 'vegas:slots:lines';
+const readLines = () => { try { return localStorage.getItem(LINES_KEY) === '5' ? 5 : 1; } catch { return 1; } };
+const saveLines = n => { try { localStorage.setItem(LINES_KEY, String(n)); } catch {} };
+const SLOT_LINES = [[1, 1, 1], [0, 0, 0], [2, 2, 2], [0, 1, 2], [2, 1, 0]];
+const LINE_NOTE = '5줄은 베팅을 가로 세 줄과 대각선 두 줄에 똑같이 나눠 걸어요. 줄마다 따로 맞고, 맞은 줄이 여럿이면 다 더해요. 자주 맞는 대신 한 줄 당첨은 베팅의 5분의 1 기준이에요. 잭팟은 가운데 줄에서만 터져요.';
+// The five lines over the window, in a 6×6 box: cell centres sit at 1, 3 and 5.
+const linesSvg = () => `<svg class="slot-lines-art" viewBox="0 0 6 6" preserveAspectRatio="none" aria-hidden="true">${SLOT_LINES.map((rows, k) => `<polyline data-line="${k}" points="0,${rows[0] * 2 + 1} ${rows.map((r, i) => `${i * 2 + 1},${r * 2 + 1}`).join(' ')} 6,${rows[2] * 2 + 1}"/>`).join('')}</svg>`;
 const BOLT = '<svg class="slot-bolt" viewBox="0 0 24 64" aria-hidden="true"><path d="M15 0 4 34h8L7 64 21 24h-8L18 0z"/></svg>';
 const payRows = mode => PAYS[mode].map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
 
@@ -66,6 +75,7 @@ export async function mountSlots(ctx) {
         <div class="slot-window" data-window>
           ${[0, 1, 2].map(i => `<div class="slot-reel" data-reel="${i}"><div class="slot-strip"></div></div>`).join('')}
           <i class="slot-payline" aria-hidden="true"></i>
+          ${linesSvg()}
           <div class="slot-strikes" aria-hidden="true">${Array.from({ length: 9 }, (_, c) => `<span data-cell="${c}"></span>`).join('')}</div>
           <b class="slot-boost" data-boost aria-hidden="true"></b>
           <div class="slot-free" data-free aria-live="polite" hidden><span data-free-count></span><strong data-free-win></strong></div>
@@ -74,6 +84,7 @@ export async function mountSlots(ctx) {
       </div>
       <div class="slot-controls">
         <div class="slot-mode" role="group" aria-label="슬롯 모드"><button type="button" data-mode="normal">일반</button><button type="button" data-mode="lightning">라이트닝</button></div>
+        <div class="slot-mode slot-linepick" role="group" aria-label="당첨 줄 수"><button type="button" data-lines="1">1줄</button><button type="button" data-lines="5">5줄</button></div>
         <div class="slot-auto" role="group" aria-label="자동 스핀"><span>자동</span>${AUTO_COUNTS.map(n => `<button type="button" data-auto="${n}" aria-label="자동 ${n}번 스핀">${n}</button>`).join('')}</div>
       </div>
       <div class="slot-result" data-result aria-live="polite"></div>
@@ -94,13 +105,28 @@ export async function mountSlots(ctx) {
   const freeCount = t.body.querySelector('[data-free-count]');
   const freeWin = t.body.querySelector('[data-free-win]');
   let mode = readMode();
+  let lines = readLines();
+  const lineButtons = [...t.body.querySelectorAll('[data-lines]')];
+  const lineArt = [...t.body.querySelectorAll('[data-line]')];
   function showMode() {
     slot.classList.toggle('slot--lightning', mode === 'lightning');
+    slot.classList.toggle('slot--lines', lines > 1);
+    lineButtons.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.lines) === lines)));
     modeButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
     t.body.querySelector('[data-pays]').innerHTML = payRows(mode);
     t.body.querySelector('[data-pays-title]').textContent = mode === 'lightning' ? '배당표 · 라이트닝' : '배당표';
-    t.body.querySelector('[data-pays-note]').textContent = PAY_NOTE[mode];
+    t.body.querySelector('[data-pays-note]').textContent = `${PAY_NOTE[mode]} ${LINE_NOTE}`;
   }
+  lineButtons.forEach(b => b.addEventListener('click', () => {
+    const n = Number(b.dataset.lines);
+    if (auto || t.locked || t.busy || t.pendingRound || n === lines) return;
+    lines = n;
+    saveLines(lines);
+    clearStrikes();
+    showMode();
+    sound.chip(); haptic(8);
+    t.toast(lines > 1 ? '5줄: 베팅을 다섯 줄에 나눠 걸어요. 자주 맞고, 한 방은 작아요' : '1줄: 가운데 줄 하나에 다 걸어요');
+  }));
   // The mode cannot change mid-spin, during an auto run, or while a failed spin waits for 다시 시도.
   modeButtons.forEach(b => b.addEventListener('click', () => {
     if (auto || t.locked || t.busy || t.pendingRound || b.dataset.mode === mode) return;
@@ -117,6 +143,7 @@ export async function mountSlots(ctx) {
   // white multiplier tag over the window until the next spin. Cells are numbered row × 3 + reel.
   function clearStrikes() {
     cells.forEach(c => { c.replaceChildren(); c.className = ''; });
+    lineArt.forEach(l => l.classList.remove('is-win'));
     boostEl.textContent = '';
     windowEl.classList.remove('is-boosted');
   }
@@ -134,7 +161,7 @@ export async function mountSlots(ctx) {
         await wait(150);
       }
       cell.classList.add('is-struck');
-      if (s.row === 1) cell.classList.add('is-on-line');
+      if (s.row === 1 || lines > 1) cell.classList.add('is-on-line');
       const tag = el('span', 'slot-mult');
       tag.textContent = `${s.multiplier}×`;
       cell.append(tag);
@@ -199,7 +226,7 @@ export async function mountSlots(ctx) {
       t.actions.querySelectorAll('button').forEach(b => { b.disabled = false; });
     } else t.setActions(t.idleActions('스핀', go));
     lever.disabled = Boolean(auto) || t.locked || !(t.betReady || (!t.total && t.lastBet));
-    modeButtons.forEach(b => { b.disabled = Boolean(auto) || t.locked || t.busy || Boolean(t.pendingRound); });
+    [...modeButtons, ...lineButtons].forEach(b => { b.disabled = Boolean(auto) || t.locked || t.busy || Boolean(t.pendingRound); });
     const canAuto = !auto && !t.locked && !t.busy && (t.betReady || (!t.total && t.lastBet));
     autoButtons.forEach(b => { b.disabled = !canAuto; b.setAttribute('aria-pressed', String(Boolean(auto && auto.total === Number(b.dataset.auto)))); });
   }
@@ -226,7 +253,7 @@ export async function mountSlots(ctx) {
     if (!t.betReady) { t.toast('먼저 칩을 놓아 주세요'); return; }
     const stake = t.total;
     // The run keeps the mode it started with; the switch stays locked until it ends.
-    const run = { total, done: 0, onTap: null, onHide: null, mode };
+    const run = { total, done: 0, onTap: null, onHide: null, mode, lines };
     // Any tap stops it, the stop button included; armed after this tap has finished.
     run.onTap = () => stopAuto('자동 스핀을 멈췄어요');
     run.onHide = () => { if (document.hidden) stopAuto(); };
@@ -240,7 +267,7 @@ export async function mountSlots(ctx) {
       if (t.available < stake || !t.betReady) { stopAuto('칩이 베팅보다 적어서 자동 스핀을 멈췄어요'); break; }
       run.done += 1;
       refreshActions();
-      const out = await go(run.mode);
+      const out = await go(run.mode, run.lines);
       if (auto !== run) break;
       if (!out) { stopAuto(); break; }
       if (out.big) { stopAuto(out.jackpot ? '잭팟! 자동 스핀을 멈췄어요' : '큰 승리! 자동 스핀을 멈췄어요'); break; }
@@ -253,14 +280,19 @@ export async function mountSlots(ctx) {
   // Runs one spin's reels (and bolts) to a stop and lights its line. Returns the line's label.
   // `fast` is a free spin: shorter reels, and its pay already carries the free-spin multiplier.
   async function play(spin, { fast = false, freeMult = 1 } = {}) {
-    const { stops, reels: faces, line, lightning: strikes, boost } = spin;
+    const { stops, reels: faces, line, lightning: strikes } = spin;
+    // A 5-line spin lists its paying lines; the biggest bolt total on them is the one to show.
+    const wins = spin.wins || null;
+    const boost = wins ? Math.max(0, ...wins.map(w => w.boost || 0)) || 0 : spin.boost;
     const ticker = setInterval(() => sound.tick(), ms(110));
     // Two stars on the first reels: the last one takes its time.
     const tease = !fast && faces[0] === 'STAR' && faces[1] === 'STAR';
     // The bolts land while the reels are still running (the first reel stops after 1.3 s).
     await Promise.all([...stops.map((s, i) => spinReel(i, s, { tease: i === 2 && tease, fast })), strikes ? strike(strikes) : null]);
     clearInterval(ticker);
-    const label = line ? `${LINE_LABEL[line] || line}${boost ? ` · ${boost}×` : ''}${freeMult > 1 ? ` · ×${freeMult}` : ''}` : '';
+    const name = wins && wins.length > 1 ? `${wins.length}줄 · ${LINE_LABEL[line] || line}` : LINE_LABEL[line] || line;
+    const label = line ? `${name}${boost ? ` · ${boost}×` : ''}${freeMult > 1 ? ` · ×${freeMult}` : ''}` : '';
+    wins?.forEach(w => lineArt[w.line]?.classList.add('is-win'));
     if (line) {
       resultEl.textContent = label;
       resultEl.classList.add('is-shown');
@@ -271,7 +303,8 @@ export async function mountSlots(ctx) {
     if (boost) {
       boostEl.textContent = `${boost}×`;
       windowEl.classList.add('is-boosted');
-      cells.filter(c => c.classList.contains('is-on-line')).forEach(c => c.classList.add('is-lit-hit'));
+      const lit = wins ? wins.filter(w => w.boost).map(w => SLOT_LINES[w.line]) : [[1, 1, 1]];
+      lit.forEach(rows => rows.forEach((row, reel) => { const c = cells[row * 3 + reel]; if (c.classList.contains('is-struck')) c.classList.add('is-lit-hit'); }));
       sound.strike();
     }
     return label;
@@ -309,7 +342,7 @@ export async function mountSlots(ctx) {
         } else {
           await play(spin, { fast: true, freeMult: free.multiplier });
         }
-        const win = stake * spin.mult + spin.jackpot;
+        const win = (spin.win ?? stake * spin.mult) + spin.jackpot;
         if (win > 0) {
           total += win;
           freeWin.textContent = `+${formatCH(total)}`;
@@ -334,10 +367,10 @@ export async function mountSlots(ctx) {
 
   // One spin. Resolves to { big, jackpot } once settled, or null if the request failed.
   // `spinMode` pins the mode for an auto run and for 다시 시도, which resends the same key.
-  async function go(spinMode = mode) {
+  async function go(spinMode = mode, spinLines = lines) {
     if (!t.betReady) return null;
     const lightning = spinMode === 'lightning';
-    const key = t.roundKey(lightning ? 'lightning' : '');
+    const key = t.roundKey(`${lightning ? 'lightning' : ''}${spinLines > 1 ? `|${spinLines}` : ''}`);
     const stake = t.total;
     t.lock();
     refreshActions();
@@ -347,11 +380,12 @@ export async function mountSlots(ctx) {
     slot.classList.remove('slot--free');
     pull();
     let res;
-    try { res = await api.slots(stake, t.tier.floor, lightning, key); }
-    catch (e) { t.roundFailed(e, () => go(spinMode)); refreshActions(); return null; }
+    try { res = await api.slots(stake, t.tier.floor, lightning, key, spinLines); }
+    catch (e) { t.roundFailed(e, () => go(spinMode, spinLines)); refreshActions(); return null; }
     t.roundDone();
     t.setServerState(res.state);
-    const { line, netPnl: net, jackpot, boost, freeSpins } = res.round;
+    const { line, netPnl: net, jackpot, freeSpins } = res.round;
+    const boost = res.round.wins ? Math.max(0, ...res.round.wins.map(w => w.boost || 0)) || 0 : res.round.boost;
     const label = await play(res.round);
     setPool(floorPool(res.state));
     await wait(200);

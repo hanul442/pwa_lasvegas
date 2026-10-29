@@ -414,6 +414,12 @@
 .zone--total{--size:26px;min-height:50px;padding:4px 2px;border-radius:10px}
 .zone--total strong{font-size:18px}
 .zone--total small{font-size:13px}
+.sb-singles{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding-bottom:16px}
+.zone--single{--size:24px;min-height:44px;padding:4px;border-radius:10px}
+.sb-pips{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:min(30px,72%);aspect-ratio:1;padding:3px;border-radius:22%;background:linear-gradient(145deg,#fffdf8,#e9e1cf);box-shadow:inset 0 -2px 3px #0002}
+.sb-pips i{display:block;margin:auto;width:70%;height:70%;border-radius:50%}
+.sb-pips i.on{background:#141414}
+.sb-singles-pay{position:absolute;left:0;right:0;bottom:0;text-align:center;font:500 11px var(--sans);color:#ffffffa6;letter-spacing:.02em;pointer-events:none}
 
 /* ================= responsive ================= */
 @media (min-width:600px){
@@ -426,8 +432,8 @@
   .bet-tools{justify-content:flex-end}
   .felt{width:min(1100px,calc(100% - 28px));margin:6px auto 10px}
   .rl{grid-template-columns:minmax(220px,300px) 1fr;align-items:center}
-  .sb{grid-template-columns:minmax(220px,280px) 1fr;grid-template-rows:auto auto;align-items:center}
-  .sb .dome{grid-row:span 2}
+  .sb{grid-template-columns:minmax(220px,280px) 1fr;grid-template-rows:auto auto auto;align-items:center}
+  .sb .dome{grid-row:span 3}
 }
 /* small phones on their side: the one control line tightens so it fits 640px */
 @media (orientation:landscape) and (max-height:520px) and (max-width:819px){
@@ -516,6 +522,7 @@
   .sb{gap:8px}
   .sb-main .zone{min-height:60px}
   .zone--total{min-height:44px}
+  .zone--single{min-height:38px}
   .wheel{width:min(58vw,240px,26dvh)}
 }
 /* Landscape phones: baccarat hands on the left, the three bets stacked on the right. */

@@ -55,7 +55,7 @@ function crowdPlan(npc, t) {
 // `event: 'godofgamblers'` seats God of Gamblers (lib/events.mjs): 도신's bonus after four wins in a row.
 export async function mountDice(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
-  const t = new Table({ ...ctx, game: 'dice', title: ev ? ev.title : gameName('dice'), feltClass: 'felt--red', multi: true, zoneMin: false, zoneWord: '한 곳당', hot: !ev });
+  const t = new Table({ ...ctx, game: 'dice', title: ev ? ev.title : gameName('dice'), feltClass: 'felt--red', multi: true, zoneMin: false, zoneWord: '한 곳당', hot: !ev, toke: true });
   const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
   if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
   const totals = Object.entries(TOTAL_PAY).map(([n, p]) => `<button type="button" class="zone zone--total" data-zone="T${n}"><strong>${n}</strong><small>${p}:1</small></button>`).join('');

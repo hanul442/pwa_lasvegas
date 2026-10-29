@@ -81,3 +81,9 @@ NUMBER_WORDS = ONES[1:] + ['twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seven
 for word in NUMBER_WORDS:
     PIECES[f'n-{word}'] = f'{word},'
     PIECES[f'n-{word}-end'] = f'{word}.'
+
+# The dealer's thanks for a tip (뽀찌, public/js/toke.js), one picked at random.
+LINES['tip-1'] = 'Thank you, sir.'
+LINES['tip-2'] = 'Much appreciated.'
+LINES['tip-3'] = 'Thank you kindly.'
+LINES['tip-4'] = 'For the dealers. Thank you.'

@@ -11,6 +11,7 @@ import { readFelt, recordReplay, updateReplay, isBigLoss } from './replay.js';
 import { buzz } from './haptics.js';
 import { toast as noticeToast } from './notice.js';
 import { rake, pushPay } from './dealer.js';
+import { Toke } from './toke.js';
 
 // The tallest stack drawn under a tray chip; past it a count says how many there are.
 const STACK_CAP = 10;
@@ -54,7 +55,7 @@ export class Table {
   // and the event felts, so a table that turns into an event mid-visit changes back.
   // backLabel: where the ← goes (the screen this table was opened from). onSwitch: the table name
   // opens the quick switcher (other games, other tables of this one).
-  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true }) {
+  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true, toke = false }) {
     this.pushDouble = pushDouble;
     this.tier = TIERS[tier] || TIERS.mid;
     this.game = game;
@@ -144,6 +145,8 @@ export class Table {
     root.querySelector('[data-tool="max"]').addEventListener('click', () => this.max());
     this.renderTray();
     this.renderRack();
+    // 뽀찌: tables with a dealer get a toke box on the top rail (public/js/toke.js).
+    this.toke = toke ? new Toke(this) : null;
     this.hotEl = root.querySelector('[data-hot]');
     this.hotOn = hot;
     this.hotWindows = [];
@@ -235,6 +238,7 @@ export class Table {
         ghost.style.top = `${e.clientY}px`;
         const zone = this.zoneAt(e.clientX, e.clientY) || this.flingTarget(e.clientX, e.clientY, flingVelocity(trail));
         this.zones.forEach(z => z.classList.toggle('is-hover', z === zone));
+        this.toke?.box.classList.toggle('is-hover', !zone && this.toke.hit(e.clientX, e.clientY));
       }
     });
     const end = e => {
@@ -247,7 +251,11 @@ export class Table {
         const rect = ghost.getBoundingClientRect();
         ghost.remove(); ghost = null;
         this.zones.forEach(z => z.classList.remove('is-hover'));
-        if (zone && e.type === 'pointerup') this.addChip(zone.dataset.zone, value, rect, dropped ? undefined : { thrown: Math.hypot(v.x, v.y) });
+        this.toke?.box.classList.remove('is-hover');
+        // Dropped on the toke box, or flicked up at it with no spot in the way: a tip.
+        const tipped = this.toke && e.type === 'pointerup' && !dropped && (this.toke.hit(e.clientX, e.clientY) || (!zone && this.toke.aimedAt(e.clientX, e.clientY, v)));
+        if (tipped) this.toke.give(rect);
+        else if (zone && e.type === 'pointerup') this.addChip(zone.dataset.zone, value, rect, dropped ? undefined : { thrown: Math.hypot(v.x, v.y) });
       }
       start = null; trail = [];
       if (!dragged && e.type === 'pointerup') this.tapChip(value, chip);
@@ -653,7 +661,7 @@ export class Table {
     const day = this.dayNews(net);
     if (label || net) this.banner(label || '', kind || (net > 0 ? 'win' : net < 0 ? (ouch ? 'lose banner--ouch' : 'lose') : 'push'), net, hot?.bonus > 0 ? `핫 테이블 +${Math.round(hot.rate * 100)}% · +${formatMoney(hot.bonus)}` : '', net < 0 ? day : '');
     this.keepReplay(net, { label, staked });
-    if (net > 0) { sound.win(); buzz('win'); this.glow(); }
+    if (net > 0) { sound.win(); buzz('win'); this.glow(); this.toke?.noteWin(net); }
     else if (net < 0) { sound.lose(); buzz(ouch ? 'ouch' : 'lose'); if (ouch) this.ouch(); }
     else { sound.push(); buzz('push'); }
     if (big !== false && net > 0) {
@@ -953,6 +961,7 @@ export class Table {
   }
 
   destroy() {
+    this.toke?.destroy();
     this.listeners.forEach(([t, fn]) => (t === 'hot-timer' ? clearInterval(fn) : window.removeEventListener(t, fn))); this.listeners = []; this.hotTimer = null;
     this.seatRecap();
   }

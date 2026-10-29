@@ -215,7 +215,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
   // Back to a room this person is still sitting in (reload, came back later).
   async function resume() {
     // 관전 from the friends list.
-    const watch = takePendingWatch('holdem');
+    const watch = takePendingWatch(game);
     if (watch) { await watchRoom(watch.code, watch.watch); return; }
     // Opened from a friend's invite link: sit at that room.
     // (Already sitting in it, e.g. the host opening their own link: just go back to it.)

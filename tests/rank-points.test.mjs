@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser } from '../lib/state.mjs';
 import { addLedger, lockBet, settleLockedHouseGame } from '../lib/economy.mjs';
-import { rpForRound, noteRp, rpView, rpStandings, rpTierFor, RP_DAY_CAP, RP_ROUND_CAP } from '../lib/rank-points.mjs';
+import { rpForRound, noteRp, rpView, rpStandings, rpTierFor } from '../lib/rank-points.mjs';
 import { handleApi } from '../lib/api.mjs';
 
 const 억 = 100_000_000;
@@ -13,7 +13,8 @@ test('RP follows the result against the bet, not the size of the bet', () => {
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: -1_000_000 }), -7.5, 'lose it: −7.5');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_500_000 }), 15, 'blackjack 3:2');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 0 }), 0, 'a push moves nothing');
-  assert.equal(rpForRound({ stake: 1_000_000, netPnl: 35_000_000 }), RP_ROUND_CAP, 'a straight-up hit is capped');
+  assert.equal(rpForRound({ stake: 1_000_000, netPnl: 35_000_000 }), 350, 'a straight-up hit: no cap on a round');
+  assert.equal(rpForRound({ stake: 1_000_000, netPnl: -5_000_000 }), -37.5, 'nor on a loss');
   // The same even-money win on a higher floor than the player's tier counts 1.5×, a lower one 0.5×.
   // A bet past the Gold Room's 1억 top can only be made upstairs; the Gold Room's own top bet can't.
   assert.equal(rpForRound({ stake: 200_000_000, netPnl: 200_000_000, points: 0 }), 15);
@@ -21,18 +22,19 @@ test('RP follows the result against the bet, not the size of the bet', () => {
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_000_000, points: 450 }), 5);
 });
 
-test('a day of gains stops at the cap, points never go below 0, and a new month starts from 0', () => {
+test('no cap on a day, points never go below 0, and a new season starts three tiers lower', () => {
   const u = { rp: null };
   assert.equal(noteRp(u, { stake: 1e6, netPnl: -1e6 }, NOV), 0, 'nothing to lose yet');
-  for (let i = 0; i < 40; i++) noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).today, RP_DAY_CAP);
-  assert.equal(rpView(u, NOV).points, RP_DAY_CAP);
-  assert.equal(rpView(u, NOV).tier, rpTierFor(RP_DAY_CAP).id);
-  noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV + 86_400_000);
-  assert.equal(rpView(u, NOV + 86_400_000).today, RP_ROUND_CAP, 'next day: a fresh cap');
+  noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
+  assert.equal(rpView(u, NOV).points, 300);
+  noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
+  assert.equal(rpView(u, NOV).today, 450, 'the second win: the Gold Room is below a gold player, 0.5×');
+  assert.equal(rpView(u, NOV).tier, 'platinum');
+  noteRp(u, { stake: 1e6, netPnl: 1e6 }, NOV + 86_400_000);
+  assert.equal(rpView(u, NOV + 86_400_000).today, 5, 'next day counts from 0');
   assert.equal(rpForRound({ stake: 1e6, netPnl: 1e6, points: 300 }), 5, 'the Gold Room is below a gold-tier player: 0.5×');
   const DEC = Date.parse('2026-12-02T03:00:00Z');
-  assert.equal(rpView(u, DEC).points, 0);
+  assert.equal(rpView(u, DEC).points, 100, '플래티넘 455 → 브론즈 100');
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, DEC);
   assert.equal(u.rp.prev.season, 'rank-2026-10', 'October and November are one season');
 });

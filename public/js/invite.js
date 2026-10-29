@@ -81,10 +81,19 @@ export function pendingJoin() {
 }
 
 // A seat next to a friend from the friends list: the same path as opening their invite link.
-export function setPendingJoin({ code, game, tier = null }) {
+// watch: a friend's id to only watch their chair (lib/watch.mjs) instead of sitting down.
+export function setPendingJoin({ code, game, tier = null, watch = null }) {
   if (!ROOM_GAMES[game]) return null;
-  try { sessionStorage.setItem(KEY, JSON.stringify({ code, game, tier })); } catch {}
+  try { sessionStorage.setItem(KEY, JSON.stringify({ code, game, tier, watch })); } catch {}
   return pendingJoin();
+}
+
+// The game screen takes a 관전 meant for it (once): { code, watch } or null.
+export function takePendingWatch(game) {
+  const v = pendingJoin();
+  if (!v || v.game !== game || !v.watch) return null;
+  try { sessionStorage.removeItem(KEY); } catch {}
+  return { code: v.code, watch: v.watch };
 }
 
 // The game screen takes the invite meant for it (once).

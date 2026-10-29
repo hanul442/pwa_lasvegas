@@ -1,6 +1,6 @@
 // 친구 목록 on 랭킹 → 친구 (lib/friends.mjs): who is here right now and where they sit, a seat
 // next to them when their room has one free, a nudge link for friends who aren't around, and
-// adding a friend by name. The list refreshes every 20 s while it is on screen.
+// 관전 over a friend's shoulder (lib/watch.mjs), and adding a friend by name. The list refreshes every 20 s while it is on screen.
 import { api, errorMessage } from './api.js';
 import { formatCH } from './fx.js';
 import { friendInviteUrl } from './invite.js';
@@ -27,12 +27,13 @@ function whereText(f) {
 function rowHtml(f) {
   const w = f.where;
   const join = f.online && w?.kind === 'room' && w.open ? `<button type="button" class="pill-button pill-button--solid friend-act" data-join="${esc(f.id)}">옆자리</button>` : '';
+  const watch = f.online && w?.kind === 'room' && w.watchable && w.started ? `<button type="button" class="pill-button friend-act" data-watch="${esc(f.id)}">관전</button>` : '';
   const call = !f.online ? `<button type="button" class="pill-button friend-act" data-call="${esc(f.id)}">부르기</button>` : '';
   const record = f.won + f.lost ? ` · ${f.won}승 ${f.lost}패` : '';
   return `<li class="friend-row friend-live${f.online ? ' is-online' : ''}">
     <span class="friend-mono" aria-hidden="true">${esc([...(f.nickname || '?')][0])}<i class="friend-dot"></i></span>
     <span class="friend-main"><b>${opts.frame(f.id, esc(f.nickname))}</b><small>${f.online ? '<em>접속 중</em> · ' : ''}${esc(whereText(f))}${record}</small></span>
-    <span class="friend-acts">${join}${call}${f.why === 'added' ? `<button type="button" class="friend-x" data-remove="${esc(f.id)}" aria-label="${esc(f.nickname)} 친구 삭제">×</button>` : ''}</span>
+    <span class="friend-acts">${watch}${join}${call}${f.why === 'added' ? `<button type="button" class="friend-x" data-remove="${esc(f.id)}" aria-label="${esc(f.nickname)} 친구 삭제">×</button>` : ''}</span>
   </li>`;
 }
 
@@ -51,6 +52,10 @@ function paint(data) {
   box.querySelectorAll('[data-join]').forEach(b => b.addEventListener('click', () => {
     const f = list.find(x => x.id === b.dataset.join);
     if (f?.where) opts.onJoin(f.where);
+  }));
+  box.querySelectorAll('[data-watch]').forEach(b => b.addEventListener('click', () => {
+    const f = list.find(x => x.id === b.dataset.watch);
+    if (f?.where) opts.onWatch(f.where, f);
   }));
   box.querySelectorAll('[data-call]').forEach(b => b.addEventListener('click', () => callFriend(list.find(x => x.id === b.dataset.call))));
   box.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', async () => {
@@ -88,7 +93,7 @@ async function load() {
 }
 
 // Draws the list into `target` and keeps it fresh until stopFriends().
-// o: { frame(id, name) → html, onJoin(where), toast(msg) }
+// o: { frame(id, name) → html, onJoin(where), onWatch(where, friend), toast(msg) }
 export function showFriends(target, o) {
   box = target;
   opts = o;

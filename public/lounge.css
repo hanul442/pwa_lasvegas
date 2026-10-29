@@ -286,6 +286,8 @@
 .news-banner.is-open{transform:translate(-50%,0);opacity:1}
 .news-star{flex:none;width:14px;height:14px;margin-top:4px;background:var(--star);clip-path:var(--star-shape)}
 .news-text{display:grid;gap:3px;min-width:0}
+.news-text{flex:1}
+.news-join{flex:none;align-self:center;min-height:36px;padding:0 16px;border-radius:999px;border:0;background:var(--white);color:var(--ink);font:600 14px var(--sans)}
 .news-text b{font-weight:650;font-size:16px;line-height:1.3;color:var(--white)}
 .news-text span{font-size:14px;line-height:1.45;color:var(--smoke)}
 .news-banner--bankruptcy .news-star,.news-banner--big-loss .news-star{background:#ff4f4f}
@@ -1007,3 +1009,17 @@ body.daily-open{overflow:hidden}
 .mstreak-day.is-on i{background:var(--white);border-color:var(--white);color:var(--ink);font-weight:700}
 .mstreak-day small{font-size:11px;color:var(--star);white-space:nowrap;font-variant-numeric:tabular-nums}
 .mstreak-note{margin:10px 0 0;color:var(--smoke);font-size:12px}
+/* 1:1 도전 (js/friends.js): a friend's row opens into the challenge picker. */
+.friend-live{flex-wrap:wrap}
+.friend-toggle{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.friend-panel{flex-basis:100%;display:grid;gap:10px;padding:4px 0 6px 50px}
+.friend-seg,.friend-tiers{display:flex;flex-wrap:wrap;gap:6px}
+.friend-seg button,.friend-tiers button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--hair-strong);background:none;color:var(--smoke);font:500 14px var(--sans)}
+.friend-seg button[aria-checked="true"],.friend-tiers button[aria-checked="true"]{background:var(--white);border-color:var(--white);color:var(--ink);font-weight:600}
+.friend-panel .friend-note{margin:0}
+.friend-send{justify-self:start}
+.friend-more{display:flex;flex-wrap:wrap;gap:16px;font-size:14px}
+.friend-more .link-button{color:var(--smoke)}
+.friend-duel.is-in b{color:var(--white)}
+.friend-duel .friend-main{padding-left:2px}
+@media (max-width:380px){.friend-panel{padding-left:0}}

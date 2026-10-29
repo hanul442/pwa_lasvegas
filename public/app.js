@@ -991,6 +991,7 @@ function renderFriendPane() {
     // 옆자리: sit at a friend's room the way their invite link would.
     onJoin: where => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier })) openInvite(); },
     // 관전: the same screen, from the friend's chair (js/games/room-client.js, holdem-room.js).
+    onState: next => { if (next) applyState(next); },
     onWatch: (where, f) => { if (setPendingJoin({ code: where.code, game: where.game, tier: where.tier, watch: f.id })) openInvite(); }
   });
   box.innerHTML = friendRecordHtml(state, (id, n) => nameFrame(state, id, n));
@@ -1231,6 +1232,8 @@ function takeDailyLink() {
   history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
   return true;
 }
+// 받기 on a friend's 도전 banner (js/news.js): sit at their table like an invite link would.
+document.addEventListener('vegas:join-room', e => { if (setPendingJoin(e.detail || {})) openInvite(); });
 // ./?rank=friends from a "친구가 들어왔어요" push: open the friends list.
 let friendsWanted = (() => {
   const params = new URLSearchParams(location.search);

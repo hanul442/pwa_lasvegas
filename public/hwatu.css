@@ -371,3 +371,11 @@
 .sd-ring:not([data-count="1"]) .sd-seat--opp:first-child .talk{left:0;translate:none;border-radius:4px 14px 14px 14px;transform-origin:0 0}
 .sd-ring:not([data-count="1"]) .sd-seat--opp:last-child .talk{left:auto;right:0;translate:none;border-radius:14px 4px 14px 14px;transform-origin:100% 0}
 @media (prefers-reduced-motion:reduce){.talk{transition:opacity .01ms}}
+/* 섯다 with five or more bets on a phone (다이 · 콜 · 따당 · 쿼터 · 하프): the amount goes under the name so all fit one row */
+.action-amt{font-size:inherit;font-weight:inherit}
+@media (max-width:519px){
+  .table-screen--seotda .action-row:has(>:nth-child(5)){gap:6px}
+  .table-screen--seotda .action-row:has(>:nth-child(5)) .action{padding:0 4px;min-width:0;font-size:15px}
+  .table-screen--seotda .action-row:has(>:nth-child(5)) .action>span{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+  .table-screen--seotda .action-row:has(>:nth-child(5)) .action-amt{font-size:12px;font-weight:500;opacity:.8}
+}

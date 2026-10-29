@@ -765,6 +765,7 @@
 .wr-kicker{font:600 13px/1 var(--display);font-stretch:118%;letter-spacing:.14em;text-transform:uppercase;color:var(--smoke)}
 .wr-huge{margin:0;display:flex;align-items:baseline;justify-content:center;gap:6px;font:560 clamp(84px,28vw,148px)/.95 var(--display);font-stretch:125%;letter-spacing:-.04em}
 .wr-huge small{font-size:.32em;font-weight:600;letter-spacing:0;color:var(--smoke)}
+.wr-big small{font-size:.4em;font-weight:600;letter-spacing:0;color:var(--smoke)}
 .wr-big{margin:0;max-width:100%;font:600 clamp(44px,14vw,82px)/1.02 var(--display);font-stretch:118%;letter-spacing:-.03em;overflow-wrap:anywhere}
 .wr-lead{margin:0;font-size:18px;line-height:1.5;color:var(--white)}
 .wr-foot{color:var(--smoke);font-size:14px}
@@ -1072,3 +1073,16 @@ body.daily-open{overflow:hidden}
 .rp-pop.is-big .rp-pop-tier{font-size:15px}
 body.game-mode .rp-pop{top:calc(10px + env(safe-area-inset-top))}
 @media (prefers-reduced-motion:reduce){.rp-pop{transition:opacity .2s;transform:translate(-50%,0)}}
+
+/* 지갑 (2026-10-29): all my money, then wallet vs table chips. */
+.wallet-hero{display:grid;gap:14px;padding:6px 0 24px;border-bottom:1px solid var(--hair)}
+.wallet-hero-kicker{margin:0;color:var(--smoke);font-size:13px}
+.wallet-hero-total{font:560 clamp(40px,12vw,72px)/1 var(--display);font-stretch:125%;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.wallet-hero-total span{margin-left:6px;font:500 18px var(--sans);letter-spacing:0;color:var(--smoke)}
+.wallet-split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;margin:0;border:1px solid var(--hair);border-radius:14px;background:var(--hair);overflow:hidden}
+.wallet-split div{display:grid;gap:3px;align-content:start;min-width:0;padding:12px 14px;background:var(--ink-2)}
+.wallet-split dt{color:var(--smoke);font-size:13px}
+.wallet-split dd{margin:0;font:600 18px var(--sans);font-variant-numeric:tabular-nums;letter-spacing:-.01em;overflow-wrap:anywhere}
+.wallet-split small{color:var(--smoke);font-size:12px;line-height:1.4}
+.wallet-hero .bank-held{margin:0}
+.wallet-history .sub-head{margin-top:0}

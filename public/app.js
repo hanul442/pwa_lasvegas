@@ -771,7 +771,8 @@ function renderToday() {
   if (ms?.items?.length) {
     const ready = ms.items.filter(i => i.done && !i.claimed).length;
     const done = ms.items.filter(i => i.done).length;
-    const sub = ready ? `보상 ${ready}개 받기` : ms.swept || done === ms.items.length ? '오늘은 모두 끝냈어요' : `모두 하면 보너스 +${formatCH(ms.sweepBonus)}`;
+    const run = ms.streak?.count ? ` · ${ms.streak.count}일 연속` : '';
+    const sub = ready ? `보상 ${ready}개 받기` : ms.swept || done === ms.items.length ? `오늘은 모두 끝냈어요${run}` : `모두 하면 보너스 +${formatCH(ms.sweepBonus + (ms.streak?.next?.inDays === 0 ? ms.streak.next.bonus : 0))}${run}`;
     chips.push(todayChip({ mark: MARK.mission, title: `오늘의 미션 ${done}/${ms.items.length}`, sub, hot: ready > 0, onClick: () => openBlockSheet(() => state?.engagement?.missions && missionsBlock(state, applyState)) }));
   }
   const rs = state.rankSeason;

@@ -27,7 +27,7 @@ test('the RP season starts 2026-10-29: tier, board, floors, pay and the bank all
   const a = player(state, 'a', 'AAA'), b = player(state, 'b', 'BBB');
   at(OCT, () => {
     addLedger(state, a, { type: 'ADMIN_GRANT', amount: 500e9 }); // rich but no RP
-    giveRp(b, 420, OCT);
+    giveRp(b, 520, OCT);
   });
   const rows = at(OCT, () => rankStandings(state));
   assert.deepEqual(rows.map(r => r.id), ['b'], 'only players with RP rank, by RP');
@@ -35,8 +35,8 @@ test('the RP season starts 2026-10-29: tier, board, floors, pay and the bank all
   const view = at(OCT, () => rankView(state, b));
   assert.equal(view.mode, 'rp');
   assert.equal(view.carry, true, 'October ends by dropping RP, not by a chip reset');
-  assert.equal(view.rp, 420);
-  assert.deepEqual(view.next, { id: 'platinum', division: 'III', need: 5 }, 'next step is the next division');
+  assert.equal(view.rp, 520);
+  assert.deepEqual(view.next, { id: 'platinum', division: 'III', need: 30 }, 'next step is the next division');
   assert.equal(view.division, 'IV');
   at(OCT, () => {
     assert.equal(floorRefusal(a, FLOORS[1]), 'FLOOR_RP_LOCKED', 'chips no longer open floors');
@@ -61,12 +61,14 @@ test('November: RP opens the floors, with no pass and nothing outgrown', () => {
     assert.equal(tableBase(u), FLOORS[1].minBet);
     const floors = floorsFor(u);
     assert.deepEqual(floors.slice(0, 3).map(f => f.open), [true, true, false]);
-    assert.equal(floors[2].rpNeed, 300);
-    assert.equal(floors[2].rpRemaining, 90);
+    assert.equal(floors[2].rpNeed, 350);
+    assert.equal(floors[2].rpRemaining, 140);
     assert.ok(floors.every(f => !f.outgrown && f.passed));
     assert.equal(shopView(u).era, true);
-    giveRp(u, 990, NOV);
-    assert.equal(floorRefusal(u, FLOORS.at(-1)), null, '레전드 opens the top floor');
+    giveRp(u, 1490, NOV);
+    assert.equal(floorRefusal(u, FLOORS.at(-1)), 'FLOOR_RP_LOCKED');
+    giveRp(u, 1500, NOV);
+    assert.equal(floorRefusal(u, FLOORS.at(-1)), null, '그랜드마스터 opens the top floor');
   });
 });
 
@@ -137,7 +139,7 @@ test('October and November are one season: 11/1 closes nothing, 12/1 closes it b
     settleFinishedRankSeason(state);
     addLedger(state, a, { type: 'ADMIN_GRANT', amount: 900e9 });
     giveRp(a, 120, OCT);
-    giveRp(b, 650, OCT);
+    giveRp(b, 950, OCT);
     a.loans = [{ id: 'l1', balance: 5e8 }];
   });
   assert.equal(at(NOV1, () => settleFinishedRankSeason(state)), null, '11/1 is mid-season');
@@ -145,21 +147,21 @@ test('October and November are one season: 11/1 closes nothing, 12/1 closes it b
   assert.equal(season.id, 'rank-2026-10');
   assert.equal(season.name, '10~11월 시즌');
   assert.equal(season.endsAt, new Date(DEC1 - 30 * 60_000).toISOString(), 'closes 12/1 00:00 KST');
-  assert.equal(at(NOV, () => rpPointsNow(b)), 650, 'RP carries on through November');
+  assert.equal(at(NOV, () => rpPointsNow(b)), 950, 'RP carries on through November');
   noteRp(b, { game: 'Baccarat', stake: 1e7, netPnl: 1e7 }, NOV);
-  assert.ok(b.rp.points > 650 && b.rp.season === 'rank-2026-10');
-  b.rp.points = 650;
+  assert.ok(b.rp.points > 950 && b.rp.season === 'rank-2026-10');
+  b.rp.points = 950;
   const closed = at(DEC1, () => settleFinishedRankSeason(state));
   assert.equal(closed.id, 'rank-2026-10');
   assert.equal(closed.mode, 'rp');
-  assert.deepEqual(closed.podium.map(p => [p.userId, p.tier, p.rp]), [['b', 'diamond', 650], ['a', 'bronze', 120]]);
+  assert.deepEqual(closed.podium.map(p => [p.userId, p.tier, p.rp]), [['b', 'diamond', 950], ['a', 'bronze', 120]]);
   assert.equal(b.badges[0].tier, 'diamond');
-  assert.equal(b.rankHistory[0].rp, 650);
+  assert.equal(b.rankHistory[0].rp, 950);
   assert.equal(a.account.available, 900e9, 'no chip reset');
   assert.deepEqual(a.loans, [], 'old loans are written off');
   assert.equal(b.rank.reset.mode, 'rp');
-  assert.equal(b.rank.reset.carry, 300);
-  assert.equal(at(DEC1, () => rpPointsNow(b)), 300, '다이아몬드 650 → 골드 300');
+  assert.equal(b.rank.reset.carry, 350);
+  assert.equal(at(DEC1, () => rpPointsNow(b)), 350, '다이아몬드 950 → 골드 350');
   assert.equal(at(DEC1, () => rankView(state, b)).tier, 'gold');
   assert.equal(at(DEC1, () => rpPointsNow(a)), 0);
   assert.equal(monthBoundary(DEC1).id, 'rank-2026-12', 'from December, one month a season again');

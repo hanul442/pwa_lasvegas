@@ -2,7 +2,7 @@
 // A link looks like /?join=ABCD&g=seotda&t=gold-room. The app keeps it until the friend has signed
 // in and the game screen asks for it (takePendingJoin), so signing up first still works.
 const KEY = 'vegas:pending-join';
-const ROOM_GAMES = { holdem: 'poker', seotda: 'seotda', gostop: 'gostop', matgo: 'matgo', blackjack: 'blackjack', baccarat: 'baccarat' };
+const ROOM_GAMES = { holdem: 'poker', seotda: 'seotda', gostop: 'gostop', matgo: 'matgo', blackjack: 'blackjack', baccarat: 'baccarat', sevenpoker: 'sevenpoker' };
 
 // Invite links go to /j: the server gives that page a 카카오톡 preview naming who invited the friend
 // to which game (lib/link-preview.mjs). `r` is my invite code, so the friend's first round pays us

@@ -41,7 +41,7 @@ export function seatedElsewhere(t, e, retry, goHere = null) {
   leaveBtn.addEventListener('click', async () => {
     if (leaveBtn.disabled) return;
     leaveBtn.disabled = true;
-    try { await (where.game === 'holdem' ? api.holdemRoomLeave(where.code) : api.roomLeave(where.code)); }
+    try { await (where.game === 'holdem' || where.game === 'sevenpoker' ? api.holdemRoomLeave(where.code) : api.roomLeave(where.code)); }
     catch (err) { if (err.code !== 'NOT_IN_ROOM' && err.code !== 'ROOM_NOT_FOUND') { leaveBtn.disabled = false; t.toast(errorMessage(err)); return; } }
     close();
     sound.tick();

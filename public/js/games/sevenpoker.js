@@ -2,6 +2,7 @@
 // take three cards and turn one up, then 4th, 5th and 6th street open and the 히든 face down,
 // with a round of 체크 · 삥 · 따당 · 쿼터 · 하프 · 콜 · 다이 after each. The server deals and plays
 // the bots (lib/sevenpoker-session.mjs); this screen replays its events one by one.
+// "친구와 함께" seats friends at the same felt (the Hold'em rooms, holdem-room.js, run 7포커 too).
 import { api, errorMessage } from '../api.js';
 import { wait, formatCH, flyFrom, flyTo, animate, sound, haptic, el } from '../fx.js';
 import { createCard, flipCard } from '../cards.js';
@@ -11,6 +12,7 @@ import { gameName } from '../names.js';
 import { voice } from '../voice.js';
 import { handCategory, HAND_NAMES } from '../poker-hand.js';
 import { createPokerFelt, BLINDS } from './holdem-view.js';
+import { createFriends } from './holdem-room.js';
 
 const BET_LABEL = { BBING: '삥', DDADANG: '따당', QUARTER: '쿼터', HALF: '하프' };
 const MIN_ANTES = 10; // lib/sevenpoker-session.mjs
@@ -39,7 +41,8 @@ export async function mountSevenPoker(ctx) {
     <button type="button" class="zone pk-buyin" data-zone="buyin"><strong>Buy-in</strong><small data-antes></small></button>
     <div class="pk-opponents" role="radiogroup" aria-label="상대 수">
       <span>상대</span>${[2, 3, 4].map(n => `<button type="button" role="radio" data-opp="${n}" aria-checked="${n === 3}">${n}</button>`).join('')}
-    </div>` });
+    </div>
+    <button type="button" class="pk-friends-open" data-friends-open>친구와 함께</button>` });
   pk.labels.FOLD = '다이';
   pk.gameLabel = '7포커';
   let session = null; // last server view
@@ -105,8 +108,9 @@ export async function mountSevenPoker(ctx) {
     if (!e || !s) return;
     [...e.cards.children].forEach((node, k) => node.classList.toggle('is-hole', !s.up?.[k]));
   }
+  const baseRender = pk.render;
   function render(tb) {
-    pk.render(tb);
+    baseRender(tb);
     markHoles(tb);
     pk.paintHands();
     if (tb.lead >= 0 && !tb.handOver && tb.phase === 'BET') leadMark(tb.lead);
@@ -174,6 +178,7 @@ export async function mountSevenPoker(ctx) {
     refreshActions();
     try {
       for (const ev of events) {
+        if (pk.halted) return;
         if (ev.t === 'deal3') await dealThree(ev, tb);
         else if (ev.t === 'open') await openCards(ev);
         else if (ev.t === 'street') await street(ev, tb);
@@ -187,6 +192,10 @@ export async function mountSevenPoker(ctx) {
     } finally { pk.animating = false; }
     if (snap && tb) render(tb);
   }
+
+  // A friends' room replays its events with the 7포커 moves (the open, the streets, the 히든).
+  pk.render = render;
+  pk.playEvents = playEvents;
 
   // ---------- server calls ----------
   function apply(res) { t.setServerState(res.state); session = res.session; if (session?.table?.ante) useAnte(session.table.ante); }
@@ -224,6 +233,7 @@ export async function mountSevenPoker(ctx) {
   }
 
   async function act(action, index) {
+    if (friends.active) return friends.act(action, index);
     if (!session || pk.animating) return;
     const tb = session.table;
     let res;
@@ -307,7 +317,7 @@ export async function mountSevenPoker(ctx) {
     if (on) { t.locked = true; t.root.classList.add('is-playing'); }
   }
 
-  const legal = () => (session && session.status === 'SEATED' && !session.table.handOver ? session.table.legal : null);
+  const legal = () => (friends.active ? friends.legal() : session && session.status === 'SEATED' && !session.table.handOver ? session.table.legal : null);
   // While choosing, my three cards are the buttons: tap the one to turn up.
   t.body.addEventListener('click', e => {
     const l = legal();
@@ -332,9 +342,31 @@ export async function mountSevenPoker(ctx) {
     t.run(() => act(b.dataset.bet));
   });
 
+  // The friends' room asks for my moves through this bar: the open pick, or the bet row with 다이 / 체크·콜.
+  const bar = {
+    sizer: bets,
+    actions(l, send) {
+      if (l.phase === 'CHOOSE') {
+        paintBets(null);
+        seatEls[pk.me]?.cards.classList.add('is-picking');
+        const mine = friendsCards();
+        return mine.slice(0, 3).map((c, k) => ({ label: `${c} 오픈`, key: String(k + 1), onClick: () => send('OPEN', k) }));
+      }
+      paintBets(l);
+      pk.markTurn(pk.me);
+      const call = l.options.find(o => o.action === 'CALL');
+      return [
+        { label: '다이', key: 'D', ghost: true, onClick: () => send('FOLD') },
+        l.canCheck ? { label: '체크', key: 'C', primary: true, onClick: () => send('CHECK') } : { label: `콜 ${formatCH(call.cost)}${call.allIn ? ' 올인' : ''}`, key: 'C', primary: true, onClick: () => send('CALL') }
+      ];
+    }
+  };
+  let friendsCards = () => [];
+
   function refreshActions() {
     const hero = seatEls[pk.me]?.cards;
     hero?.classList.remove('is-picking');
+    if (friends.active) return friends.refreshActions();
     if (busted) {
       paintBets(null);
       t.hint('칩을 모두 잃었어요');
@@ -387,7 +419,15 @@ export async function mountSevenPoker(ctx) {
     ]);
   }
   t.refreshActions = refreshActions;
-  t.onBetChange = () => { paintAntes(); refreshActions(); };
+  t.onBetChange = () => { paintAntes(); refreshActions(); friends.onBetChange(); };
+
+  const friends = createFriends(t, pk, bar, {
+    showSeated, cashOut, refreshActions, soloOpen: () => Boolean(session || busted),
+    useStakes: tb => { if (tb?.ante) useAnte(tb.ante); },
+    minBuyIn: () => ante * MIN_ANTES
+  }, { game: 'sevenpoker', label: '7포커' });
+  friendsCards = () => friends.view()?.table.seats[pk.me]?.cards || [];
+  t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); friends.open(); });
 
   // D 다이, C 체크·콜, 1–3 the card to open (or the bet sizes), Enter for the primary button.
   t.onKey(e => {
@@ -421,13 +461,14 @@ export async function mountSevenPoker(ctx) {
       showSeated(true);
       render(session.table);
       t.toast('앉아 있던 테이블로 돌아왔어요');
-    }
+    } else await friends.resume();
     await t.syncBalance();
   } catch {}
   refreshActions();
   // Walking away cashes the stack out, a hand in progress given up first (as at the Hold'em table).
   const destroy = t.destroy.bind(t);
   t.destroy = () => {
+    friends.stop(); // a friends' room seat is kept: reopening 7포커 puts you back in it
     const openId = session && session.status === 'SEATED' ? session.id : null;
     destroy();
     if (!openId) return null;

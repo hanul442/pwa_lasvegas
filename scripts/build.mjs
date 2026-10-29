@@ -4,6 +4,7 @@
 // - index.html gets <link rel="modulepreload"> for everything app.js imports up front, so the browser fetches
 //   the home screen's modules at once instead of discovering them one import level at a time.
 // - sw.js's cache name gets a hash of the files, so any change at all reaches players as a new version.
+// - Last, scripts/predeploy.mjs checks the result; a problem fails the build and so stops the deploy.
 // The local dev server (server.mjs) keeps serving public/ untouched.
 import { cpSync, rmSync, readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -79,3 +80,13 @@ writeFileSync(swPath, stamped);
 
 const kb = n => `${Math.round(n / 1024)} KB`;
 console.log(`build: dist/ ready, version ${version}${esbuild ? `, js+css ${kb(before)} -> ${kb(after)}` : ''}, ${preloads.split('\n').length} modulepreloads`);
+
+// Last gate before Cloudflare puts this live: missing shell files, broken imports or links, an API that can't
+// start a guest. Any problem fails the build, so the deploy stops and the live version stays up.
+const { predeploy } = await import('./predeploy.mjs');
+const { problems, shell } = await predeploy(out);
+if (problems.length) {
+  console.error(`predeploy: ${problems.length} problem(s), not deploying\n- ${problems.join('\n- ')}`);
+  process.exit(1);
+}
+console.log(`predeploy: ok (${shell} shell files, imports, links, API)`);

@@ -37,5 +37,8 @@ jobs:
       - name: Run backend/core tests
         run: npm test
 
+      - name: Build and check like the deploy does
+        run: npm run build
+
       - name: Verify ledger invariants
         run: npm run verify

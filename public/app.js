@@ -801,8 +801,8 @@ function renderToday() {
   // The season's last week: the countdown sits up front, next to the money.
   if (rs && seasonEnding(rs)) {
     const left = seasonLeft(rs), d = Math.ceil(left / 86_400_000);
-    chips.splice(Math.min(chips.length, 1), 0, todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: left <= 86_400_000 ? '오늘 자정 시즌 초기화' : `시즌 초기화 D-${d}`, sub: `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(left)}</span> · 지금 ${tierName(rs.tier)}`, hot: true, label: `시즌 초기화까지 ${seasonClock(left)}, 지금 ${tierName(rs.tier)}`, onClick: openSeasonEnd }));
-  } else if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier)}`, sub: rs.next ? `${tierName(rs.next.id)}까지 ${formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
+    chips.splice(Math.min(chips.length, 1), 0, todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: left <= 86_400_000 ? '오늘 자정 시즌 초기화' : `시즌 초기화 D-${d}`, sub: `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(left)}</span> · 지금 ${tierName(rs.tier, rs.division)}`, hot: true, label: `시즌 초기화까지 ${seasonClock(left)}, 지금 ${tierName(rs.tier, rs.division)}`, onClick: openSeasonEnd }));
+  } else if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier, rs.division)}`, sub: rs.next ? `${tierName(rs.next.id, rs.next.division)}까지 ${rs.mode === 'rp' ? `${rs.next.need} RP` : formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
   if (!live && next) chips.push(todayChip({ mark: MARK.hot, title: `${startTime(next)} 핫 테이블`, sub: `${next.label} · <span data-hot-next>${clock(Date.parse(next.startsAt) - now)}</span> 뒤`, onClick: hotGo(next.game) }));
   const watching = watchBlock(state);
   if (watching) chips.push(todayChip({ mark: MARK.watch, title: '지금 플레이 중', sub: `${watching.querySelectorAll('li').length}개 테이블 구경하기`, onClick: () => openBlockSheet(() => watchBlock(state)) }));
@@ -1065,7 +1065,7 @@ function renderBoards() {
   }));
   const rows = (rankPeriod === 'tier' ? state?.rankings?.tier : rankPeriod === 'rp' ? state?.rankings?.rp : rankPeriod === 'season' ? season?.[rankTab] : state?.rankings?.allTime?.[rankTab]) || [];
   // On the tier board every name carries its tier.
-  const emblem = r => ((rankPeriod === 'tier' || rankPeriod === 'rp') && r.tier ? tierEmblem(r.tier, { size: 22 }) : '');
+  const emblem = r => ((rankPeriod === 'tier' || rankPeriod === 'rp') && r.tier ? `${tierEmblem(r.tier, { size: 22 })}${r.division ? `<small class="rank-division">${r.division}</small>` : ''}` : '');
   const me = state?.user?.id;
   const rpBoard = rankPeriod === 'rp' || (rankPeriod === 'tier' && rpMode);
   const value = r => rankTab === 'wins' ? `${r.value}승` : rpBoard ? `${r.value} RP` : `${rankPeriod === 'season' && rankTab === 'profit' && r.value > 0 ? '+' : ''}${formatCH(r.value)}`;

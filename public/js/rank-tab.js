@@ -31,13 +31,13 @@ export function tierHeroHtml(state) {
   const pct = Math.round((rs.progress || 0) * 100);
   const place = myMonthRank(state);
   const next = rs.next
-    ? `<span>${tierName(rs.next.id)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`
+    ? `<span>${tierName(rs.next.id, rs.next.division)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`
     : '<span><b>최고 티어</b>에 올랐어요</span>';
   return `
     <div class="tier-hero-top"><span class="tier-hero-season">${rs.season.name}</span><span class="tier-hero-clock">${leftText(rs.season.endsAt)} 남음</span></div>
     <div class="tier-hero-main">
       <span class="tier-hero-emblem">${tierEmblem(rs.tier, { size: 84 })}</span>
-      <div class="tier-hero-name"><small>이번 달 티어</small><strong>${tierName(rs.tier)}</strong></div>
+      <div class="tier-hero-name"><small>이번 달 티어</small><strong>${tierName(rs.tier, rs.division)}</strong></div>
     </div>
     <div class="tier-hero-climb">
       <div class="tier-hero-bar" role="progressbar" aria-label="다음 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
@@ -57,7 +57,7 @@ export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
   // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
-  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
+  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 IV부터 I까지 25 RP씩 네 단계예요. 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배, 낮은 층은 0.5배.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];
@@ -66,11 +66,11 @@ export function rpCardHtml(state) {
     <div class="rp-card-head"><span class="rp-badge">RP 베타</span><small>12월 시즌부터 이 점수가 티어가 돼요</small></div>
     <div class="rp-card-main">
       ${tierEmblem(rp.tier, { size: 44 })}
-      <div class="rp-card-name"><strong>${tierName(rp.tier)}</strong><span><b>${rp.points}</b> RP ${last}</span></div>
+      <div class="rp-card-name"><strong>${tierName(rp.tier, rp.division)}</strong><span><b>${rp.points}</b> RP ${last}</span></div>
       <span class="rp-card-rank">${mine ? `${mine.rank}<small>위</small>` : '<small>순위 없음</small>'}</span>
     </div>
     <div class="tier-hero-bar" role="progressbar" aria-label="다음 RP 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-    <p class="rp-card-foot"><span>${rp.next ? `${tierName(rp.next)}까지 ${rp.toNext} RP` : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
+    <p class="rp-card-foot"><span>${rp.next ? `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP` : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
     <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요. 내 티어보다 높은 층에서 이기면 1.5배.</p>`;
 }
 

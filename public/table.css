@@ -90,17 +90,6 @@
   background:repeating-linear-gradient(45deg,#ffffff10 0 1px,transparent 1px 5px),repeating-linear-gradient(-45deg,#ffffff10 0 1px,transparent 1px 5px),linear-gradient(160deg,#1e2126,#0a0b0d);
   box-shadow:inset 0 0 0 calc(var(--card-w) * .045) #f4f5f7,inset 0 0 0 calc(var(--card-w) * .052) #0a0b0d,inset 0 0 0 calc(var(--card-w) * .062) #ffffff40,0 1px 1px #0004,0 8px 18px #0006}
 .card-back::after{content:"V";position:absolute;left:50%;top:50%;width:1.9em;height:1.9em;transform:translate(-50%,-50%);display:grid;place-items:center;border-radius:50%;background:#0a0b0d;box-shadow:0 0 0 1px #ffffff55;color:#f4f5f7;font:700 1.05em var(--display);font-stretch:125%}
-.card-corner{position:absolute;top:5%;left:7%;display:flex;flex-direction:column;align-items:center;line-height:.95;font-family:var(--display)}
-.card-corner b{font-size:1em;font-weight:650;letter-spacing:-.06em}
-.card-corner i{font-style:normal;font-size:.8em}
-.card-corner--end{top:auto;left:auto;bottom:5%;right:7%;transform:rotate(180deg)}
-.card-pips{position:absolute;inset:16% 24%}
-.card-pips i{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);transform:translate(-50%,-50%);font-style:normal;font-size:.95em;line-height:1}
-.card-pips i.flip{transform:translate(-50%,-50%) rotate(180deg)}
-.card-ace{position:absolute;inset:0;display:grid;place-items:center;font-size:2.6em}
-.card-court{position:absolute;inset:16% 18%;display:grid;place-items:center;align-content:center;border:1px solid currentColor;border-radius:4%;background:#f1f2f4;font-family:var(--display)}
-.card-court b{font-size:2em;line-height:1;font-weight:700;font-stretch:118%}
-.card-court i{font-style:normal;font-size:1em}
 .card-mark{display:none}
 /* Large-index faces (Hold'em): small cards on a phone read by a big rank and suit, as on a poker app,
    instead of a corner index squeezed against the pips. */
@@ -982,15 +971,6 @@
 .chip-serial{bottom:19%;font:500 calc(var(--size) * .055)/1 var(--sans);font-variant-numeric:tabular-nums;letter-spacing:.18em;opacity:.45}
 .pk-pot-stack .chip-label,.pk-bet-stack .chip-label,.rack-col .chip-label,.bj-seat-chips .chip-label,.chip-flyer .chip-label,.pk-flying .chip-label{display:none}
 
-.card-face{background:
-    repeating-linear-gradient(0deg,#00000005 0 1px,transparent 1px 3px),
-    repeating-linear-gradient(90deg,#00000004 0 1px,transparent 1px 3px),
-    linear-gradient(165deg,#fffdf8,#f3eee3);
-  box-shadow:inset 0 0 0 1px #00000024,inset 0 0 0 calc(var(--card-w) * .02) #fffdf8,0 1px 1px #0005,0 10px 22px #0007}
-.card-face::before{content:"";position:absolute;inset:3.2%;border:1px solid #1a171414;border-radius:6%/4.4%;pointer-events:none}
-.card-court{inset:17% 19%;border:1px solid currentColor;border-radius:5%;outline:1px solid color-mix(in srgb,currentColor 35%,transparent);outline-offset:calc(var(--card-w) * -.04);
-  background:repeating-linear-gradient(45deg,color-mix(in srgb,currentColor 7%,transparent) 0 1px,transparent 1px 4px),repeating-linear-gradient(-45deg,color-mix(in srgb,currentColor 7%,transparent) 0 1px,transparent 1px 4px),#f7f4ee}
-.card-ace::before{content:"";position:absolute;left:50%;top:50%;width:1.45em;height:1.45em;transform:translate(-50%,-50%);border:1px solid color-mix(in srgb,currentColor 30%,transparent);border-radius:50%;font-size:1em}
 .card-back{
   background:
     radial-gradient(circle at 50% 50%,#0a0b0d 0 14%,transparent 14.5%),
@@ -1142,32 +1122,6 @@
 .table-moved small{font-size:13px;color:#ffffffb3;line-height:1.35}
 @media (prefers-reduced-motion:reduce){.table-moved{transition:opacity .01ms}}
 
-/* ---------- court cards: line-art figures on the card stock ----------
-   J·Q·K draw a double-ended figure in fine line (js/cards.js COURT_HALF). The ink is the suit
-   colour; `.p` areas are paper so lines behind a face stay hidden. */
-.card-face{--paper:#fbf8f1}
-.card-court{inset:17% 19%;display:block;border-radius:4%;
-  background:linear-gradient(180deg,#00000006,transparent 30% 70%,#00000006),var(--paper)}
-.court-art{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
-.court-art *{vector-effect:non-scaling-stroke}
-.court-art .s{fill:none;stroke:currentColor;stroke-width:max(.9px,calc(var(--card-w) * .0125));stroke-linecap:round;stroke-linejoin:round}
-.court-art .s.t{stroke-width:max(.75px,calc(var(--card-w) * .01))}
-.court-art .p{fill:var(--paper)}
-.court-art .f{fill:currentColor}
-.court-art .st{stroke:var(--paper);stroke-width:max(.6px,calc(var(--card-w) * .007))}
-.court-art .ps{fill:none;stroke:var(--paper);stroke-width:max(.6px,calc(var(--card-w) * .008))}
-.court-art .pe{fill:none;stroke:var(--paper);stroke-width:max(1.2px,calc(var(--card-w) * .022));stroke-linecap:round}
-.court-art .pe.d{stroke:currentColor;stroke-width:max(1px,calc(var(--card-w) * .018))}
-.court-art .tone{fill:currentColor;opacity:.07}
-.court-art .hatch{stroke-width:max(.5px,calc(var(--card-w) * .006));opacity:.55}
-.court-art .rule{stroke-width:max(.6px,calc(var(--card-w) * .006));opacity:.45}
-/* Paper grain: a fine fibre noise over the whole face, so the stock reads as card, not plastic. */
-.card-face{background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(0deg,#00000005 0 1px,transparent 1px 3px),
-    repeating-linear-gradient(90deg,#00000004 0 1px,transparent 1px 3px),
-    linear-gradient(165deg,#fffdf8,#f3eee3);
-  background-size:96px 96px,auto,auto,auto}
 
 /* ---------- tilt-to-shine (js/shine.js) ----------
    Tilting the phone moves a light across cards, chips and plaques. js/shine.js writes
@@ -1211,3 +1165,51 @@
 .pk-burn .card{position:absolute;inset:0}
 .table-screen--sevenpoker .pk-burn{top:0;left:calc(50% + 26px)}
 .table-screen--holdem:not(.is-seated) .pk-burn{visibility:hidden}
+
+/* ---------- playing cards, casino-deck layout (js/cards.js) ----------
+   Proportions follow a poker-size casino deck (Copag 1546 / KEM): the corner index sits in its own
+   strip on the edge and the pips in two columns at 32.5% and 67.5%, so they never touch. Suits are SVG
+   (.suit) so they look the same on every phone. */
+.card-face{--paper:#fbf9f4;--line:#17181b;--slate:#34495f;--skin:#f1e3cc;--red:#b3241d;--robe:var(--slate);--trim:var(--red);color:var(--line);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E") 0 0/96px 96px,
+    linear-gradient(170deg,#fffefb,#f5f1e8)}
+.card-face.is-red{--robe:var(--red);--trim:var(--slate);color:var(--red)}
+.suit{display:block;width:1em;height:1em;fill:currentColor}
+.card-corner{position:absolute;top:4.6%;left:4.2%;width:.74em;display:flex;flex-direction:column;align-items:center;line-height:.9;font-family:var(--display)}
+.card-corner b{font-size:.94em;font-weight:650;letter-spacing:-.04em;white-space:nowrap}
+.card-corner b.is-ten{letter-spacing:-.13em;text-indent:-.1em;transform:scaleX(.86)}
+.card-corner i{display:block;width:.62em;height:.62em;margin-top:.12em;font-size:1em}
+.card-corner i .suit{width:100%;height:100%}
+.card-corner--end{top:auto;left:auto;bottom:4.6%;right:4.6%;transform:rotate(180deg)}
+.card-pips{position:absolute;top:19.5%;bottom:19.5%;left:32.5%;right:32.5%}
+.card-pips i{position:absolute;left:calc(var(--x) * 1%);top:calc(var(--y) * 1%);width:calc(var(--card-w) * .162);height:calc(var(--card-w) * .162);transform:translate(-50%,-50%)}
+.card-pips i .suit{width:100%;height:100%}
+.card-pips i.flip{transform:translate(-50%,-50%) rotate(180deg)}
+.card-ace{position:absolute;inset:0;display:grid;place-items:center}
+.card-ace .suit{width:calc(var(--card-w) * .3);height:calc(var(--card-w) * .3)}
+.card-ace.is-house .suit{width:calc(var(--card-w) * .5);height:calc(var(--card-w) * .5)}
+.ace-star{position:absolute;left:50%;top:48%;width:calc(var(--card-w) * .13);height:calc(var(--card-w) * .13);transform:translate(-50%,-50%);background:var(--paper);clip-path:var(--star-shape)}
+/* court panel: framed between the two index strips, the figure filling it edge to edge */
+.card-court{position:absolute;top:6.5%;bottom:6.5%;left:20%;right:20%;display:block}
+.court-art{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.court-art *{vector-effect:non-scaling-stroke}
+.court-art .ln{stroke:var(--line);stroke-width:max(.55px,calc(var(--card-w) * .0085));stroke-linejoin:round;stroke-linecap:round}
+.court-art .nf,.court-art .hl{fill:none}
+.court-art .hl{stroke:var(--line);stroke-width:max(.4px,calc(var(--card-w) * .005));stroke-linecap:round;opacity:.6}
+.court-art .k{fill:var(--line)}
+.court-art .pa{fill:var(--paper)}
+.court-art .sk{fill:var(--skin)}
+.court-art .robe{fill:var(--robe)}
+.court-art .trim{fill:var(--trim)}
+.court-art .red{fill:var(--red)}
+.court-art .ink{fill:currentColor}
+.court-art .pe{fill:none;stroke:var(--paper);stroke-width:max(1px,calc(var(--card-w) * .018));stroke-linecap:round}
+.court-art .mid{opacity:.55}
+.court-art .frame{fill:none;stroke:currentColor;stroke-width:max(.6px,calc(var(--card-w) * .009))}
+/* Hold'em's large-index faces keep their big rank; only the suit is the drawn one now */
+.pk .card-corner{width:auto}
+.pk .card-corner b,.pk .card-corner b.is-ten{transform:none;text-indent:0}
+.pk .card-corner i{width:1.55em;height:1.55em;font-size:1em}
+.pk .card-mark{width:2.9em;height:2.9em;font-size:1em}
+.card-mark .suit{width:100%;height:100%}

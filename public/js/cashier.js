@@ -22,7 +22,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
   if (open) return open;
   const range = state?.cashier?.floors?.[tier.slug];
   if (!range || range.max < tier.min) {
-    if (range && range.inHand > 0 && range.wallet >= tier.min) toast(`이미 ${tier.name} 최대 바이인(최소 베팅 100번어치)만큼 칩이 있어요.`);
+    if (range && range.inHand > 0 && range.wallet >= tier.min) toast(`이미 ${tier.name} 최대 바이인(최소 베팅 300번어치)만큼 칩이 있어요.`);
     else toast(`지갑에 돈이 모자라요. ${tier.name} 테이블은 최소 ${wonCH(tier.min)}원부터예요.`);
     return Promise.resolve(null);
   }
@@ -76,7 +76,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
     // (as a top-up: what brings the stack to that many).
     const options = [];
     if (remembered && fit(remembered) === remembered) options.push([remembered, '지난번', `지난번 금액 ${chipCount(remembered)}칩`]);
-    for (const k of [20, 50, 100]) {
+    for (const k of [20, 50, 100, 300]) {
       const v = fit(tier.min * k - inHand);
       options.push([v, inHand > 0 ? `${k}번어치로` : `${k}번어치`, `최소 베팅 ${k}번어치${inHand > 0 ? '가 되게' : ''}, ${chipCount(v)}칩`]);
     }

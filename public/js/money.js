@@ -13,11 +13,12 @@ export function setTableUnits(on, value = chipWon) { tableUnits = Boolean(on); i
 export const inTableUnits = () => tableUnits;
 export const tableChipWon = () => chipWon;
 // A count of chips: 15, 9.5, 500, 3,000, then 12만 and 1.5억 for huge stacks. Amounts come in
-// 100만s, so on a floor whose chip is worth more a count can have a tenth (2800만 at 300만 = 9.3).
+// 100만s, so on a floor whose chip is worth more a small count can have a tenth (2800만 at 300만
+// = 9.3); from 100 chips up it is rounded.
 export function chipCount(value, per = chipWon) {
   const c = (Number(value) || 0) / per;
   const sign = c < 0 ? '-' : '', a = Math.abs(c);
-  if (a < 1000) return sign + (Math.round(a * 10) / 10).toLocaleString('ko-KR');
+  if (a < 100) return sign + (Math.round(a * 10) / 10).toLocaleString('ko-KR');
   if (a < 100_000) return sign + Math.round(a).toLocaleString('ko-KR');
   return sign + wonCH(a);
 }

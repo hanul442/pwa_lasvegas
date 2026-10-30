@@ -110,7 +110,7 @@ test('the cashier: chips nobody sits with go to the wallet, a buy-in buys a tabl
     assert.equal(u.account.wallet, 5e9);
     assert.equal(netWorth(u), worth, 'moving money never changes what a player is worth');
     const range = buyInRange(u, FLOORS[0]);
-    assert.deepEqual([range.min, range.max, range.default], [2e8, 1e9, 5e8]);
+    assert.deepEqual([range.min, range.max, range.default], [2e8, 3e9, 5e8]);
     assert.throws(() => buyIn(state, u, { floor: 'gold-room', amount: 1e8 }), /BUY_IN_OUT_OF_RANGE/);
     assert.throws(() => buyIn(state, u, { floor: 'high-limit', amount: 1e9 }), /FLOOR_RP_LOCKED/);
     buyIn(state, u, { floor: 'gold-room', amount: 5e8 });
@@ -186,13 +186,13 @@ test('losing the table stack with money in the wallet is not a bust; a top-up fi
     settleHouseGame(state, u, { game: 'Baccarat', stake: 2e8, netPnl: -2e8, roundId: 'r1' });
     assert.equal(u.account.available, 0);
     assert.equal(u.bankruptcies.length, 0, 'the wallet still holds 48억');
-    // A top-up from the seat: from one smallest bet up to a 100-bet stack.
+    // A top-up from the seat: from one smallest bet up to a 300-bet stack.
     buyIn(state, u, { floor: 'gold-room', amount: 3e8 });
     let r = buyInRange(u, FLOORS[0]);
-    assert.deepEqual([r.inHand, r.min, r.max], [3e8, 1e7, 7e8]);
+    assert.deepEqual([r.inHand, r.min, r.max], [3e8, 1e7, 27e8]);
     buyIn(state, u, { floor: 'gold-room', amount: 1e7 });
     assert.equal(u.account.available, 31e7);
-    buyIn(state, u, { floor: 'gold-room', amount: 69e7 });
+    buyIn(state, u, { floor: 'gold-room', amount: 269e7 });
     assert.throws(() => buyIn(state, u, { floor: 'gold-room', amount: 1e7 }), /BUY_IN_STACK_FULL/);
     // Everything gone, wallet included: that is a bust.
     cashOut(state, u);

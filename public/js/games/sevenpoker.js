@@ -6,7 +6,7 @@
 import { api, errorMessage } from '../api.js';
 import { wait, formatCH, flyFrom, flyTo, animate, sound, haptic, el } from '../fx.js';
 import { createCard, flipCard } from '../cards.js';
-import { createChip, breakdown, TIERS } from '../chips.js';
+import { createChip, breakdown } from '../chips.js';
 import { Table } from '../table.js';
 import { gameName } from '../names.js';
 import { voice } from '../voice.js';
@@ -28,10 +28,9 @@ function readHand(cards) {
   return `${top} 하이`;
 }
 
-// The ante goes by the buy-in's own stake tier, as the server sets it (lib/sevenpoker-session.mjs):
-// the Hold'em small blind of that tier.
-const BY_MIN = Object.values(TIERS).sort((a, b) => b.min - a.min);
-const anteFor = (total, fallback) => BLINDS[(total > 0 && BY_MIN.find(x => total >= x.min)?.slug) || fallback] / 2;
+// The ante goes by the floor, as the server sets it (lib/sevenpoker-session.mjs): the Hold'em
+// small blind, 10칩 on every floor.
+const anteFor = (total, floor) => BLINDS[floor] / 2;
 
 export async function mountSevenPoker(ctx) {
   const t = new Table({ ...ctx, game: 'sevenpoker', title: gameName('sevenpoker'), feltClass: 'felt--poker felt--sevenpoker' });

@@ -5,6 +5,7 @@
 import { createCard, flipCard, setCardFace } from '../cards.js';
 import { el, wait, formatCH, flyFrom, flyTo, animate, sound, haptic } from '../fx.js';
 import { createChip, breakdown, holding, TIERS } from '../chips.js';
+import { holdemBlindsFor } from '../money.js';
 import { voice, handLine, betLine } from '../voice.js';
 import { handName } from '../poker-hand.js';
 import { riffle } from '../dealer.js';
@@ -15,8 +16,8 @@ export const STYLE_LABEL = { ROCK: '타이트', SHARK: '공격형', STATION: '�
 const ACT_LABEL = { FOLD: '폴드', CHECK: '체크', CALL: '콜', BET: '벳', RAISE: '레이즈', ALL_IN: '올인', SB: 'SB', BB: 'BB', ANTE: '앤티', BBING: '삥', DDADANG: '따당', QUARTER: '쿼터', HALF: '하프' };
 // Moves that put a new size on the table: the tag shows the amount and lights up.
 const SIZED = new Set(['BET', 'RAISE', 'ALL_IN', 'BBING', 'DDADANG', 'QUARTER', 'HALF']);
-// Big blind per table: a tenth of its smallest bet in 200만s, never under 200만 (lib/holdem-session.mjs).
-export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, Math.max(2_000_000, Math.round(t.min / 10 / 2_000_000) * 2_000_000)]));
+// Big blind per floor: 20칩 everywhere, the small blind 10칩 (lib/holdem-session.mjs blindsFor).
+export const BLINDS = Object.fromEntries(Object.values(TIERS).map(t => [t.slug, holdemBlindsFor(t.min).big]));
 const STACK_MAX = 6; // chips in the tower beside each player's plate
 const BIG_HANDS = new Set(['풀하우스', '포카드', '스트레이트 플러시']);
 // Each bot temperament has its own voice at the table; it speaks up now and then, not every move.

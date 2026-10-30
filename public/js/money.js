@@ -10,18 +10,26 @@
 export const CHIP_WON = 1_000_000;
 export const CHIPS_PER_MIN_BET = 100;
 export const chipValueFor = minBet => Math.max(1, Math.round((Number(minBet) || 0) / CHIPS_PER_MIN_BET)) || CHIP_WON;
+// The smallest amount a table moves: whole chips and whole 100만s (lib/constants.mjs tableUnitOf):
+// 10칩 on the two lowest floors, 1칩 from the Salon up.
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+export const tableUnitFor = minBet => { const c = chipValueFor(minBet); return (c / gcd(c, CHIP_WON)) * CHIP_WON; };
+// Hold'em blinds (and the 7포커 ante, the small one): 10/20칩 on every floor (lib/holdem-session.mjs).
+export const holdemBlindsFor = minBet => {
+  const u = tableUnitFor(minBet), small = Math.ceil((10 * chipValueFor(minBet)) / u) * u;
+  return { small, big: 2 * small };
+};
 let tableUnits = false, chipWon = CHIP_WON;
 export function setTableUnits(on, value = chipWon) { tableUnits = Boolean(on); if (value > 0) chipWon = value; }
 export const inTableUnits = () => tableUnits;
 export const tableChipWon = () => chipWon;
-// A count of chips: 15, 9.5, 500, 3,000, then 12만 and 1.5억 for huge stacks. Amounts come in
-// 100만s, so on a floor whose chip is worth more a small count can have a tenth (2800만 at 300만
-// = 9.3); from 100 chips up it is rounded.
+// A count of chips: 15, 500, 3,000, then 12만 and 1.5억 for huge stacks. Always whole chips
+// (한서 2026-10-31 "소숫점으로 거는거 하지말랫지"): every table amount is whole chips on the server
+// (lib/constants.mjs tableUnitOf), and anything else is rounded, never shown with a point.
 export function chipCount(value, per = chipWon) {
   const c = (Number(value) || 0) / per;
   const sign = c < 0 ? '-' : '', a = Math.abs(c);
-  if (a < 100) return sign + (Math.round(a * 10) / 10).toLocaleString('ko-KR');
-  if (a < 100_000) return sign + Math.round(a).toLocaleString('ko-KR');
+  if (a < 100_000) return (Math.round(a) ? sign : '') + Math.round(a).toLocaleString('ko-KR');
   return sign + wonCH(a);
 }
 // The unit word after an amount: 원, or 칩 at a table. formatUnit(5e8) → "5억원" / "500칩".

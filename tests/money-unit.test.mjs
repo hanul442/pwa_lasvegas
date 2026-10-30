@@ -48,7 +48,8 @@ test('payouts between 100만s go up or down a unit at random, fair on average', 
 test("Hold'em blinds are whole 100만s, and stacks stay in 100만s hand after hand", () => {
   assert.deepEqual(HOLDEM_BLINDS['gold-room'], { small: 1_000_000, big: 2_000_000 });
   assert.deepEqual(HOLDEM_BLINDS['high-limit'], { small: 1_000_000, big: 2_000_000 });
-  assert.deepEqual(HOLDEM_BLINDS['salon-prive'], { small: 5_000_000, big: 10_000_000 });
+  // 10/20 of the floor's chips (a hundredth of its smallest bet).
+  assert.deepEqual(HOLDEM_BLINDS['salon-prive'], { small: 10_000_000, big: 20_000_000 });
   for (const t of Object.values(HOLDEM_BLINDS)) assert.ok(units(t.small) && units(t.big));
   for (let seed = 1; seed <= 12; seed++) {
     const rand = seededRand(seed);

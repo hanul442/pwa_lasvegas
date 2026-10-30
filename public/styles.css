@@ -457,6 +457,20 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 /* ---------- home ---------- */
 [data-surface="lobby"].is-active{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;padding-top:16px}
 .home-top{display:grid;gap:12px}
+.home-tier:empty{display:none}
+.home-tier-card{display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px 12px 12px;border:1px solid var(--hair);border-radius:16px;background:linear-gradient(90deg,color-mix(in srgb,var(--t-b) 38%,transparent),transparent 70%),var(--ink-2);color:var(--white);text-align:left}
+.home-tier-card:active{transform:scale(.99)}
+.home-tier-main{display:grid;gap:6px;flex:1;min-width:0}
+.home-tier-line{display:flex;align-items:baseline;gap:10px;min-width:0}
+.home-tier-line strong{font:600 18px/1.1 var(--display);font-stretch:112%;letter-spacing:-.01em;white-space:nowrap}
+.home-tier-line span{font-size:14px;color:var(--smoke);font-variant-numeric:tabular-nums;white-space:nowrap}
+.home-tier-line b{color:var(--white);font-weight:650}
+.home-tier-bar{display:block;height:4px;border-radius:999px;background:#ffffff1a;overflow:hidden}
+.home-tier-bar i{display:block;height:100%;border-radius:inherit;background:var(--t-a)}
+.home-tier-main small{font-size:13px;color:var(--smoke);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-tier-rank{flex:none;font:600 20px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.home-tier-rank small{margin-left:2px;font:500 13px var(--sans);color:var(--smoke)}
+.home-tier-rank::after{content:"›";margin-left:8px;color:var(--dim);font:400 20px var(--sans)}
 .home-hero-card{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:220px;height:100%;padding:22px 20px 20px;border-radius:20px;overflow:hidden;isolation:isolate;
   background:linear-gradient(90deg,#0a0b0df0 0,#0a0b0d99 52%,#0a0b0d1a),var(--hero-art) 70% 70%/cover,#111}
 .home-hero-card::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffffff14}

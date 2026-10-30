@@ -650,6 +650,28 @@
 .rp-card-rank small{font:500 13px var(--sans);color:var(--smoke);margin-left:2px}
 .rp-card-foot{display:flex;justify-content:space-between;gap:12px;margin:0;font-size:14px;color:var(--smoke);font-variant-numeric:tabular-nums}
 .rp-card-rule{margin:0;font-size:13px;line-height:1.6;color:var(--smoke)}
+.rp-rules{display:grid;gap:12px;min-width:0}
+.rp-rules-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.rp-rules-head h3{margin:0;font:600 16px/1.2 var(--display);letter-spacing:-.01em}
+.rp-rules-head span{font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rp-rules-head b{color:var(--white);font-weight:650}
+.rp-rule-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+.rp-rule-tiles li{display:grid;gap:4px;align-content:start;padding:10px 12px;border:1px solid var(--hair);border-radius:12px;background:var(--ink-2)}
+.rp-rule-tiles b{font:600 22px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rp-rule-tiles b.pos{color:#5fd39a}
+.rp-rule-tiles b.neg{color:#ff8a82}
+.rp-rule-tiles small{font-size:13px;line-height:1.35;color:var(--smoke)}
+.rp-rule-tiers{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.rp-rule-tiers caption{text-align:left;padding:0 0 6px;font-size:13px;color:var(--smoke)}
+.rp-rule-tiers th,.rp-rule-tiers td{padding:8px 10px;border-top:1px solid var(--hair);text-align:right;white-space:nowrap}
+.rp-rule-tiers th:first-child{text-align:left;white-space:normal;font-weight:500}
+.rp-rule-tiers thead th{border-top:0;padding-top:0;font-size:13px;font-weight:500;color:var(--smoke)}
+.rp-rule-tiers tbody th em{margin-left:4px;padding:1px 7px;border-radius:999px;background:var(--white);color:var(--ink);font:600 11px/1.5 var(--sans);font-style:normal;vertical-align:1px}
+.rp-rule-tiers tr.is-me th,.rp-rule-tiers tr.is-me td{background:#ffffff0d;font-weight:650;color:var(--white)}
+.rp-rule-tiers tr.is-me th:first-child{border-radius:10px 0 0 10px}
+.rp-rule-tiers tr.is-me td:last-child{border-radius:0 10px 10px 0}
+.rp-rules-foot{margin:0;font-size:13px;line-height:1.5;color:var(--smoke)}
+@media (min-width:720px){.rp-rule-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .tier-emblem{flex:none;display:inline-block;vertical-align:middle;--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
 .tier-hero{--t-a:#b07a4f;--t-b:#5a3a24;--t-line:#f3d9c2}
 .tier-emblem .tier-face{fill:var(--t-b);stroke:var(--t-a);stroke-width:2}

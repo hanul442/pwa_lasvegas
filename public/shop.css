@@ -331,3 +331,5 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .season-shop .shop-note{margin:0 0 12px}
 .skin-tile .skin-limited{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;border:1px solid var(--hair-strong);font-size:10px;font-weight:700;letter-spacing:.04em;vertical-align:1px}
 
+.season-shop--past{border-color:var(--hair);background:none}
+.season-shop--past .season-shop-head{margin-bottom:12px}

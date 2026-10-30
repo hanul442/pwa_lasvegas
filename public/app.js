@@ -648,6 +648,7 @@ function renderHome() {
   renderFirstDay();
   renderHero();
   renderCats();
+  renderHomeTier();
   renderToday();
   if (isActive('events')) renderEventTab();
 }
@@ -704,6 +705,27 @@ function renderHero() {
   }
   card.append(actions);
   slot.replaceChildren(card);
+}
+
+// My tier and RP on home (2026-10-30): one slim card from the first visit on; it opens the 랭킹 tab.
+function renderHomeTier() {
+  const slot = document.querySelector('[data-home-tier]');
+  const rs = state?.rankSeason;
+  if (!rs || !state.user) { slot.replaceChildren(); return; }
+  const rp = rs.mode === 'rp', pct = Math.round(Math.max(0, Math.min(1, rs.progress || 0)) * 100);
+  const place = myMonthRank(state);
+  const score = rp ? `<b>${rs.rp}</b> RP` : `최고 <b>${formatCH(rs.peak)}</b>`;
+  const next = rs.next ? `${tierName(rs.next.id, rs.next.division)}까지 ${rp ? `${rs.next.need} RP` : formatCH(rs.next.need)}` : '최고 티어예요';
+  const b = el('button', `home-tier-card tier-hero--${rs.tier}`);
+  b.type = 'button';
+  b.setAttribute('aria-label', `내 티어 ${tierName(rs.tier, rs.division)}, ${rp ? `${rs.rp} RP` : ''}, ${next}. 랭킹 보기`);
+  b.innerHTML = `${tierEmblem(rs.tier, { size: 40, label: false })}
+    <span class="home-tier-main"><span class="home-tier-line"><strong>${tierName(rs.tier, rs.division)}</strong><span>${score}</span></span>
+    <span class="home-tier-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>
+    <small>${next}</small></span>
+    <span class="home-tier-rank">${place ? `${place.rank}<small>위</small>` : '<small>랭킹</small>'}</span>`;
+  b.addEventListener('click', () => openRankBoard());
+  slot.replaceChildren(b);
 }
 
 function renderCats() {
@@ -833,7 +855,8 @@ function renderToday() {
   if (rs && seasonEnding(rs)) {
     const left = seasonLeft(rs), d = Math.ceil(left / 86_400_000);
     chips.splice(Math.min(chips.length, 1), 0, todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: left <= 86_400_000 ? '오늘 자정 시즌 초기화' : `시즌 초기화 D-${d}`, sub: `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(left)}</span> · 지금 ${tierName(rs.tier, rs.division)}`, hot: true, label: `시즌 초기화까지 ${seasonClock(left)}, 지금 ${tierName(rs.tier, rs.division)}`, onClick: openSeasonEnd }));
-  } else if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier, rs.division)}`, sub: rs.next ? `${tierName(rs.next.id, rs.next.division)}까지 ${rs.mode === 'rp' ? `${rs.next.need} RP` : formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
+  }
+  // Otherwise my tier has its own card above the strip (renderHomeTier).
   if (!live && next) chips.push(todayChip({ mark: MARK.hot, title: `${startTime(next)} 핫 테이블`, sub: `${next.label} · <span data-hot-next>${clock(Date.parse(next.startsAt) - now)}</span> 뒤`, onClick: hotGo(next.game) }));
   const watching = watchBlock(state);
   if (watching) chips.push(todayChip({ mark: MARK.watch, title: '지금 플레이 중', sub: `${watching.querySelectorAll('li').length}개 테이블 구경하기`, onClick: () => openBlockSheet(() => watchBlock(state)) }));

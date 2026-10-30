@@ -36,8 +36,8 @@ test('the RP season starts 2026-10-29: tier, board, floors, pay and the bank all
   assert.equal(view.mode, 'rp');
   assert.equal(view.carry, true, 'October ends by dropping RP, not by a chip reset');
   assert.equal(view.rp, 520);
-  assert.deepEqual(view.next, { id: 'platinum', division: 'III', need: 30 }, 'next step is the next division');
-  assert.equal(view.division, 'IV');
+  assert.deepEqual(view.next, { id: 'platinum', division: 'IV', need: 20 }, 'next step is the next division');
+  assert.equal(view.division, 'V');
   at(OCT, () => {
     assert.equal(floorRefusal(a, FLOORS[1]), 'FLOOR_RP_LOCKED', 'chips no longer open floors');
     assert.equal(floorRefusal(b, FLOORS[3]), null);

@@ -233,7 +233,7 @@ test('a 쌍승 simulation returns what the board promised', () => {
 test('race bets keep the floor’s limits', async () => {
   const s = defaultState();
   s.users.hanseo.account.available = 300_000_000;
-  const { call } = api(s);
+  const h = api(s), { call } = h;
   const card = (await call('GET', '/api/horses/card')).data.card;
   const bet = over => call('POST', '/api/horses/race', { stake: 10_000_000, floor: 'high-limit', betType: 'WIN', pick: 1, cardId: card.id, ...over });
   assert.equal((await bet({ stake: 5_000_000 })).data.error, 'BET_OUTSIDE_TABLE_LIMIT');
@@ -250,6 +250,9 @@ test('race bets keep the floor’s limits', async () => {
   assert.equal(pair.data.round.odds, card.quinella['1-4']);
   assert.equal(pair.data.round.won, [pair.data.round.order[0], pair.data.round.order[1]].sort().join() === '1,4');
   const next = pair.data.next;
+  // A winning quinella pays 100×+ and can lift the balance past this floor (FLOOR_OUTGROWN); start
+  // the second race from the same balance so the test doesn't depend on the first race's luck.
+  h.state.users.hanseo.account.available = 300_000_000;
   const ok = await call('POST', '/api/horses/race', { stake: 10_000_000, floor: 'high-limit', betType: 'EXACTA', pick: [3, 6], cardId: next.id });
   assert.equal(ok.status, 200, JSON.stringify(ok.data));
   assert.equal(ok.data.round.odds, next.exacta['3-6']);

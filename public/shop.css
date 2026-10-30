@@ -73,6 +73,8 @@
 
 .skin-preview--frame{font:600 clamp(13px,3.6vw,17px) var(--sans);letter-spacing:-.02em;padding:0 4px}
 .skin-preview--frame .name-frame{max-width:100%}
+/* 360px phones: the two-column tile is narrower than a plate with its mark, so the sample plate shrinks as a whole */
+@media (max-width:380px){.skin-preview--frame{padding:0 2px}.skin-preview--frame .name-frame{zoom:.86}}
 .name-frame-plain{color:var(--smoke)}
 .podium-name .name-frame,.rank-name .name-frame{padding-top:0;padding-bottom:0}
 

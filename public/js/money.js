@@ -2,18 +2,23 @@
 // sentences (formatMoney: 7억 2천만원). Pure functions with no DOM, so the server imports this
 // same file for push notifications, banners and feed text; nothing shows a raw 1000000000.
 // At a table money is counted in chips (한서 2026-10-29: "바이인해서 들어갔으면 거기서는 또 다른
-// 액수 단위를 써야지"): one chip is 100만원, the smallest unit any amount comes in, the same on every
-// floor, so chips carry from table to table. The Gold Room's bets are 10–100칩, a 5억 buy-in is
-// 500칩. The client switches this on while a table is open (app.js); the server never does.
+// 액수 단위를 써야지"). One chip is a tenth of the table's smallest bet, so every table reads the
+// same: chips 10·20·50·100, bets 10–100칩, a 50-bet buy-in 500칩 (한서 2026-10-30: "칩이 30 60
+// ㅇㅈㄹ로 되있으면 베팅을 어캐하라는걸까" about 1칩 = 100만 on a 3천만 floor). The client switches
+// this on while a table is open (app.js, with that table's chip value); the server never does.
 export const CHIP_WON = 1_000_000;
-let tableUnits = false;
-export function setTableUnits(on) { tableUnits = Boolean(on); }
+export const chipValueFor = minBet => Math.max(CHIP_WON, Math.round((Number(minBet) || 0) / 10)) || CHIP_WON;
+let tableUnits = false, chipWon = CHIP_WON;
+export function setTableUnits(on, value = chipWon) { tableUnits = Boolean(on); if (value > 0) chipWon = value; }
 export const inTableUnits = () => tableUnits;
-// A count of chips: 15, 500, 3,000, then 12만 and 1.5억 for the very top floors.
-export function chipCount(value) {
-  const c = (Number(value) || 0) / CHIP_WON;
+export const tableChipWon = () => chipWon;
+// A count of chips: 15, 9.5, 500, 3,000, then 12만 and 1.5억 for huge stacks. Amounts come in
+// 100만s, so on a floor whose chip is worth more a count can have a tenth (2800만 at 300만 = 9.3).
+export function chipCount(value, per = chipWon) {
+  const c = (Number(value) || 0) / per;
   const sign = c < 0 ? '-' : '', a = Math.abs(c);
-  if (a < 100_000) return sign + (a < 10 ? Math.round(a * 10) / 10 : Math.round(a)).toLocaleString('ko-KR');
+  if (a < 1000) return sign + (Math.round(a * 10) / 10).toLocaleString('ko-KR');
+  if (a < 100_000) return sign + Math.round(a).toLocaleString('ko-KR');
   return sign + wonCH(a);
 }
 // The unit word after an amount: 원, or 칩 at a table. formatUnit(5e8) → "5억원" / "500칩".

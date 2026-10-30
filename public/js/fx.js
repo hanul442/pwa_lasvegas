@@ -331,7 +331,7 @@ export function haptic(pattern = 8) {
 
 // ---------- numbers ----------
 // One money format for the whole app, shared with the server's notification text (./money.js).
-export { formatCH, formatMoney, moneyResult, formatUnit, unitWord, wonCH, formatWon, chipCount, setTableUnits, inTableUnits } from './money.js';
+export { formatCH, formatMoney, moneyResult, formatUnit, unitWord, wonCH, formatWon, chipCount, chipValueFor, tableChipWon, setTableUnits, inTableUnits } from './money.js';
 import { formatCH } from './money.js';
 
 // Animated number roll for balances and payouts.

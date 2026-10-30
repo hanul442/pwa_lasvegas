@@ -31,6 +31,8 @@ import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
 import { isNewcomer, isSettlingIn, firstDayCard } from './js/first-day.js';
 import { noteRpChange } from './js/rp-pop.js';
+import { seasonMoment } from './js/season-finale.js';
+import { maybeLeagueMoment } from './js/league-moment.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -447,7 +449,7 @@ function paintState(next) {
   if (isActive('tiers')) renderTiers();
   document.body.classList.toggle('is-settling', isSettlingIn(state));
   noteRpChange(state, { quiet: isSettlingIn(state) });
-  if (isActive('lobby') && !isSettlingIn(state)) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
+  if (isActive('lobby') && !isSettlingIn(state)) { if (!seasonMoment(state, { onWrapped: showWrapped })) maybeLeagueMoment(state, { onLeague: openLeague }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -965,6 +967,8 @@ const RANK_VIEW_KEY = 'vegas:rank-view';
 let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
 function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
 // The lobby's season card opens my tier; the season-end sheet opens the month's board.
+// The league result card's button opens this week's group.
+function openLeague() { rankView = 'league'; showSurface('ranking', { focus: true }); }
 function openRankBoard({ board = false } = {}) { rankView = board ? 'board' : 'tier'; rankPeriod = 'tier'; rankTab = 'tier'; showSurface('ranking', { focus: true }); }
 // The season-end warning (js/rank.js): what resets at midnight and what stays.
 function openSeasonEnd() {
@@ -1013,7 +1017,11 @@ function renderRanking() {
   document.querySelectorAll('[data-rank-pane]').forEach(p => { p.hidden = p.dataset.rankPane !== rankView; });
   if (rankView === 'tier') renderTierPane();
   else if (rankView === 'friends') renderFriendPane();
-  else if (rankView === 'league') document.querySelector('[data-league]').innerHTML = leagueHtml(state, (id, n) => nameFrame(state, id, n));
+  else if (rankView === 'league') {
+    const pane = document.querySelector('[data-league]');
+    pane.innerHTML = leagueHtml(state, (id, n) => nameFrame(state, id, n));
+    pane.querySelector('[data-league-last]')?.addEventListener('click', () => { sound.tick(); maybeLeagueMoment(state, { force: true }); });
+  }
   else renderBoards();
 }
 // 승급전 참가비: what it costs, what it takes, then the fee from the wallet.
@@ -1046,7 +1054,7 @@ function renderTierPane() {
   document.querySelector('[data-tier-steps]').innerHTML = tierStepsHtml(state);
   const past = document.querySelector('[data-tier-past]');
   past.innerHTML = tierPastHtml(state);
-  past.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true, onWrapped: showWrapped }));
+  past.querySelector('[data-last-season]')?.addEventListener('click', () => seasonMoment(state, { force: true, onWrapped: showWrapped }));
 }
 function renderFriendPane() {
   const box = document.querySelector('[data-friend-record]');

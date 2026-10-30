@@ -4,6 +4,7 @@
 import { formatCH } from './fx.js';
 import { gameName } from './names.js';
 import { tierEmblem, tierName, rankBadges, TIERS, rpMode } from './rank.js';
+import { leagueCrest } from './league-moment.js';
 
 const signed = v => `${v > 0 ? '+' : ''}${formatCH(v)}`;
 const tone = v => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
@@ -97,8 +98,8 @@ export function rpCardHtml(state) {
 export function leagueHtml(state, frame = (id, n) => n) {
   const lg = state?.league;
   if (!lg) return '<p class="lounge-note">리그를 불러오는 중이에요.</p>';
-  const last = lg.last ? `<p class="league-last">지난주 ${lg.last.rank}위 / ${lg.last.of}명 · ${lg.last.move > 0 ? '승급했어요' : lg.last.move < 0 ? '강등됐어요' : '잔류'}</p>` : '';
-  const head = `<div class="league-head"><div><small>이번 주 리그</small><strong>${lg.name}</strong></div><span class="league-clock">${leftText(lg.endsAt)} 남음</span></div>
+  const last = lg.last ? `<button type="button" class="league-last ${lg.last.move > 0 ? 'is-up' : lg.last.move < 0 ? 'is-down' : ''}" data-league-last>지난주 ${lg.last.rank}위 / ${lg.last.of}명 · ${lg.last.move > 0 ? '승급했어요' : lg.last.move < 0 ? '강등됐어요' : '잔류'}<span aria-hidden="true">결과 보기 →</span></button>` : '';
+  const head = `<div class="league-head">${leagueCrest(lg.league, { size: 40 })}<div><small>이번 주 리그</small><strong>${lg.name}</strong></div><span class="league-clock">${leftText(lg.endsAt)} 남음</span></div>
     <p class="league-rule">이번 주에 얻은 RP로 30명이 겨뤄요. ${lg.top ? '' : `상위 ${lg.up}명은 승급, `}${lg.bottom ? '' : `하위 ${lg.down}명은 강등, `}1~3위는 배지를 받아요. 월요일 0시에 끝나요.</p>${last}`;
   if (!lg.joined) return `${head}<p class="league-empty">${state.user?.guest ? '이름을 정하고 계정을 만들면 리그에 들어갈 수 있어요.' : `이번 주 첫 판을 하면 ${lg.name} 30명 조에 들어가요.`}</p>`;
   const of = lg.rows.length;

@@ -543,8 +543,15 @@
   .bac .bac-foot{grid-column:1 / -1}
   .sb{gap:6px}
   .sb-main{margin-top:0}
-  .sb-main .zone{min-height:52px}
-  .zone--total{min-height:40px}
+  .sb-main .zone{min-height:46px}
+  .zone--total{min-height:36px}
+  .zone--single{min-height:38px}
+  /* 식보 on a phone on its side: the two 합 rows must end on the felt */
+  .table-screen--dice .felt-body{padding-top:34px;padding-bottom:6px}
+  .table-screen--dice .sb{gap:4px}
+  .table-screen--dice .zone--total{min-height:0;line-height:1.05}
+  .table-screen--dice .zone--total strong{font-size:15px}
+  .table-screen--dice .zone--total small{font-size:12px}
 }
 /* Short portrait phones (iPhone SE size): tighter chrome so the felt keeps its room. */
 @media (max-height:700px) and (orientation:portrait){

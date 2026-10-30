@@ -95,9 +95,11 @@
 /* ---------- nameplates (명패: the name as the ranking and profile show it) ---------- */
 .name-frame{display:inline-block;padding:1px 9px 2px;border-radius:7px;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:baseline}
 
-.skin-preview--frame{font:600 17px var(--sans);letter-spacing:-.01em;padding:0 10px;background:var(--spot),var(--cloth),radial-gradient(90% 90% at 50% 30%,#22201d,#121110 62%,#070706)}
+.skin-preview--frame{font:600 clamp(13px,3.6vw,17px) var(--sans);letter-spacing:-.02em;padding:0 4px;background:var(--spot),var(--cloth),radial-gradient(90% 90% at 50% 30%,#22201d,#121110 62%,#070706)}
 .skin-preview--frame .name-frame{filter:drop-shadow(0 6px 10px #000c)}
 .skin-preview--frame .name-frame{max-width:100%}
+/* 360px phones: the two-column tile is narrower than a plate with its mark, so the sample plate shrinks as a whole */
+@media (max-width:380px){.skin-preview--frame{padding:0 2px}.skin-preview--frame .name-frame{zoom:.86}}
 .name-frame-plain{color:var(--smoke)}
 .podium-name .name-frame,.rank-name .name-frame{padding-top:0;padding-bottom:0}
 
@@ -227,3 +229,12 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 
 .season-shop--past{border-color:var(--hair);background:none}
 .season-shop--past .season-shop-head{margin-bottom:12px}
+
+/* PC: the "착용 중" stage is a wide strip, so the pieces on it grow with it */
+@media (min-width:980px){
+  .skin-stage{min-height:220px}
+  .skin-stage-cards{--card-w:76px}
+  .skin-stage-cards .card+.card{margin-left:-40px}
+  .skin-stage-chips{--chip:60px;gap:10px}
+  .skin-stage-name{font-size:18px;padding:6px 16px}
+}

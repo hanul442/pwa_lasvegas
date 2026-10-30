@@ -68,20 +68,37 @@ const FIELDS = {
   grid: () => { const d = []; for (let k = 0; k < 140; k += 4) d.push(`M0 ${k}H100M${k} 0V140`); return `<path d="${d.join('')}" stroke-width=".25" stroke-opacity=".3"/>`; }
 };
 
-// A two-way back, 100x140: white card edge, lacquer panel, the floor's field, a guilloché rosette
-// round a medallion, the emblem in it and twice more, head to tail.
+// Hex colour mix, t = share of b.
+const hex = c => { let h = c.replace('#', ''); if (h.length < 6) h = [...h.slice(0, 3)].map(x => x + x).join(''); return h.slice(0, 6).match(/../g).map(x => parseInt(x, 16)); };
+const mix = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+const isLight = c => { const [r, g, b] = hex(c); return r * .3 + g * .59 + b * .11 > 150; };
+
+// A two-way back, 100x140: white card edge, lacquer panel with a gloss sweep, the floor's field
+// engraved in the ink, a guilloché rosette round a raised medallion, and the frame, corners and
+// emblems in a foil gradient (light catching metal) with an embossed shadow.
 function cardBack({ base, line, field, emblem, rosette = true }) {
   const [hi, lo] = base, cx = 50, cy = 70, E = EMBLEMS[emblem];
+  const light = isLight(lo), shade = light ? .35 : .8;
+  const fHi = light ? mix(line, '#000', .35) : mix(line, '#fff', .7), fLo = light ? mix(line, '#fff', .25) : mix(line, '#000', .45);
   const ros = rosette ? `<g stroke-width=".3" stroke-opacity=".62">${Array.from({ length: 48 }, (_, i) => `<ellipse cx="${cx}" cy="${cy}" rx="30" ry="10" transform="rotate(${f(i * 3.75)} ${cx} ${cy})"/>`).join('')}</g><g stroke-width=".28" stroke-opacity=".7">${Array.from({ length: 36 }, (_, i) => `<ellipse cx="${cx}" cy="${cy}" rx="18" ry="6" transform="rotate(${i * 5} ${cx} ${cy})"/>`).join('')}</g>` : '';
-  const corners = [[7, 7], [93, 7], [7, 133], [93, 133]].map(([x, y]) => `<path d="M${x} ${y - 2.6}L${x + 2.6} ${y}L${x} ${y + 2.6}L${x - 2.6} ${y}Z" fill="${lo}" stroke="${line}" stroke-width=".5"/>`).join('');
-  return svg('0 0 100 140', `<defs><linearGradient id="g" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient><radialGradient id="v" cx=".5" cy=".5" r=".72"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></radialGradient><clipPath id="p"><rect x="8.5" y="8.5" width="83" height="123" rx="3"/></clipPath></defs>`
-    + `<rect width="100" height="140" rx="7" fill="#f4f1ea"/><rect x="5" y="5" width="90" height="130" rx="4.5" fill="url(#g)"/>`
+  const corners = [[7, 7], [93, 7], [7, 133], [93, 133]].map(([x, y]) => `<path d="M${x} ${y - 3}L${x + 3} ${y}L${x} ${y + 3}L${x - 3} ${y}Z" fill="${lo}" stroke="url(#f)" stroke-width=".6"/><circle cx="${x}" cy="${y}" r=".8" fill="url(#f)"/>`).join('');
+  const emb = (t) => `<g transform="${t}" filter="url(#e)">${E('url(#f)', lo)}</g>`;
+  return svg('0 0 100 140', `<defs>`
+    + `<linearGradient id="g" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient>`
+    + `<linearGradient id="f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${fHi}"/><stop offset=".32" stop-color="${line}"/><stop offset=".5" stop-color="${fLo}"/><stop offset=".68" stop-color="${line}"/><stop offset="1" stop-color="${fHi}"/></linearGradient>`
+    + `<linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".44" stop-color="#fff" stop-opacity="${light ? .35 : .09}"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+    + `<radialGradient id="v" cx=".5" cy=".5" r=".72"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${light ? .14 : .5}"/></radialGradient>`
+    + `<radialGradient id="m" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="${mix(lo, light ? '#fff' : hi, .6)}"/><stop offset="1" stop-color="${lo}"/></radialGradient>`
+    + `<filter id="e" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy=".55" stdDeviation=".3" flood-color="#000" flood-opacity="${shade}"/><feDropShadow dx="0" dy="-.25" stdDeviation=".08" flood-color="#fff" flood-opacity="${light ? .6 : .22}"/></filter>`
+    + `<clipPath id="p"><rect x="8.5" y="8.5" width="83" height="123" rx="3"/></clipPath></defs>`
+    + `<rect width="100" height="140" rx="7" fill="${light ? '#fbf9f4' : '#f4f1ea'}"/><rect x="5" y="5" width="90" height="130" rx="4.5" fill="url(#g)"/>`
     + `<g clip-path="url(#p)" fill="none" stroke="${line}" color="${line}">${FIELDS[field]()}${rosette ? `<circle cx="${cx}" cy="${cy}" r="31" fill="${lo}" fill-opacity=".55" stroke="none"/>` : ''}${ros}</g>`
-    + `<rect x="5" y="5" width="90" height="130" rx="4.5" fill="url(#v)"/>`
-    + `<rect x="7" y="7" width="86" height="126" rx="3.6" fill="none" stroke="${line}" stroke-width=".7"/><rect x="8.5" y="8.5" width="83" height="123" rx="3" fill="none" stroke="${line}" stroke-width=".3" stroke-opacity=".55"/>${corners}`
-    + `<circle cx="${cx}" cy="${cy}" r="12.5" fill="${lo}" stroke="${line}" stroke-width=".7"/><circle cx="${cx}" cy="${cy}" r="10.8" fill="none" stroke="${line}" stroke-width=".3" stroke-opacity=".6"/>`
-    + `<g transform="translate(${cx} ${cy})">${E(line, lo)}</g>`
-    + (field === 'sky' || field === 'flutes' ? '' : `<g transform="translate(${cx} 21) scale(.55)">${E(line, lo)}</g><g transform="translate(${cx} 119) scale(.55) rotate(180)">${E(line, lo)}</g>`));
+    + `<rect x="5" y="5" width="90" height="130" rx="4.5" fill="url(#v)"/><rect x="5" y="5" width="90" height="130" rx="4.5" fill="url(#s)"/>`
+    + `<g filter="url(#e)"><rect x="7" y="7" width="86" height="126" rx="3.6" fill="none" stroke="url(#f)" stroke-width=".8"/><rect x="8.6" y="8.6" width="82.8" height="122.8" rx="3" fill="none" stroke="url(#f)" stroke-width=".3"/>${corners}`
+    + `<circle cx="${cx}" cy="${cy}" r="14.6" fill="none" stroke="url(#f)" stroke-width=".55" stroke-dasharray=".01 1.25" stroke-linecap="round"/>`
+    + `<circle cx="${cx}" cy="${cy}" r="12.5" fill="url(#m)" stroke="url(#f)" stroke-width=".8"/><circle cx="${cx}" cy="${cy}" r="10.8" fill="none" stroke="url(#f)" stroke-width=".3"/></g>`
+    + emb(`translate(${cx} ${cy})`)
+    + (field === 'sky' || field === 'flutes' ? '' : emb(`translate(${cx} 21) scale(.55)`) + emb(`translate(${cx} 119) scale(.55) rotate(180)`)));
 }
 
 // ---------- felt prints: a tile repeated over the cloth, white at a few percent ----------
@@ -105,13 +122,15 @@ const SILVER = '#dfe3e8', PEARL = '#efe8dc', CHAMPAGNE = '#e8dcc2', MARBLE = '#f
 export const THEMES = [
   { key: 'grid', back: { id: 'grid', base: ['#22262c', '#0a0b0d'], line: SILVER, field: 'grid', emblem: 'grid' } },
   { key: 'ivory', back: { id: 'ivory', base: ['#f7f3ea', '#e3ddd0'], line: '#1a1c20', field: 'lattice', emblem: 'star' } },
-  { key: 'club', floor: 'high-limit', line: SILVER, tile: 'argyle', emblem: 'spade', back: { id: 'oxblood', base: ['#5a1822', '#1c0609'], field: 'argyle' }, felt: { id: 'forest', a: '#1e6347', b: '#0f3b2b', c: '#041710' }, chips: { id: 'onyx', edge: 'quad', ring: 'dash', inlay: '#0a0b0dd9' }, plate: { id: 'silver', face: ['#262a30', '#101216'] } },
-  { key: 'salon', floor: 'salon-prive', line: PEARL, tile: 'scallop', emblem: 'fan', back: { id: 'navy', base: ['#1c3460', '#050c1a'], field: 'scallop' }, felt: { id: 'navy', a: '#1f3a63', b: '#10213f', c: '#050b18' }, chips: { id: 'double', edge: 'triple', ring: 'bead', inlay: PEARL }, plate: { id: 'pearl', face: ['#1e2a40', '#0b111c'] } },
-  { key: 'penthouse', floor: 'penthouse', line: '#dccfb5', tile: 'herring', emblem: 'key', back: { id: 'pinstripe', base: ['#34302c', '#12100e'], field: 'herring' }, felt: { id: 'oxblood', a: '#62202a', b: '#3b0e16', c: '#160407' }, chips: { id: 'marble', edge: 'wide', ring: 'line', inlay: '#dccfb5' }, plate: { id: 'onyx', face: ['#2a2724', '#0e0d0c'] } },
-  { key: 'sky', floor: 'sky-lounge', line: '#d6deef', tile: 'sky', emblem: 'moon', back: { id: 'skyline', base: ['#1d2a52', '#070a16'], field: 'sky' }, felt: { id: 'teal', a: '#1c6668', b: '#0d3d40', c: '#031618' }, chips: { id: 'platinum', edge: 'dash12', ring: 'dash', inlay: '#e9eef3' }, plate: { id: 'platinum', face: ['#1c2436', '#090c14'] } },
-  { key: 'vault', floor: 'vault', line: STEEL, tile: 'rays', emblem: 'dial', back: { id: 'vault', base: ['#3a3e45', '#0b0c0e'], field: 'rays' }, felt: { id: 'obsidian', a: '#37323f', b: '#17141d', c: '#050407' }, chips: { id: 'diamond', edge: 'ticks', ring: 'tick', inlay: '#ffffff' }, plate: { id: 'diamond', face: ['#2c2f35', '#0b0c0e'] } },
-  { key: 'crown', floor: 'crown', line: CHAMPAGNE, tile: 'crowns', emblem: 'crown', back: { id: 'crown', base: ['#2a1c36', '#0c0911'], field: 'lattice' }, felt: { id: 'royal', a: '#4a2c63', b: '#2a173c', c: '#0d0614' }, chips: { id: 'crown', edge: 'cane', ring: 'bead', inlay: CHAMPAGNE }, plate: { id: 'crown', face: ['#2c2034', '#140e19'] } },
-  { key: 'olympus', floor: 'olympus', line: MARBLE, tile: 'flutes', emblem: 'laurel', back: { id: 'olympus', base: ['#26386a', '#0a0e1c'], field: 'flutes' }, felt: { id: 'ultramarine', a: '#24387e', b: '#13204d', c: '#050a1c' }, chips: { id: 'olympus', edge: 'key', ring: 'line', inlay: MARBLE }, plate: { id: 'olympus', face: ['#1f2b4c', '#0a0f1e'] } },
+  { key: 'hall', floor: 'gold-room', line: SILVER, tile: 'emblem', emblem: 'star', back: { id: 'hall-classic', base: ['#1f5c46', '#06140f'], field: 'dots' }, felt: { id: 'hall-classic', a: '#1f6b4f', b: '#114030', c: '#051a12' }, chips: { id: 'hall-classic', edge: 'dash12', ring: 'dash', inlay: SILVER }, plate: { id: 'hall-classic', face: ['#1d3a30', '#0a1612'] },
+    ways: [{ way: 'noir', back: ['#2a2d33', '#08090b'], felt: ['#2c3138', '#181b20', '#08090b'], edge: 'wide', plate: 'metal' }, { way: 'ivory', back: ['#f6f3ec', '#e4dfd4'], ink: '#1d3a30', felt: ['#22508a', '#143360', '#08172d'], edge: 'quad', dark: true, plate: 'noir' }] },
+  { key: 'club', floor: 'high-limit', line: SILVER, tile: 'argyle', emblem: 'spade', back: { id: 'oxblood', base: ['#5a1822', '#1c0609'], field: 'argyle' }, felt: { id: 'forest', a: '#1e6347', b: '#0f3b2b', c: '#041710' }, chips: { id: 'onyx', edge: 'quad', ring: 'dash', inlay: '#0a0b0dd9' }, plate: { id: 'silver', face: ['#262a30', '#101216'] } , ways: [{ way: 'noir', back: ['#2b2e34', '#08090b'], felt: ['#2f3a35', '#1a211e', '#080a09'], edge: 'wide', plate: 'metal' }, { way: 'ivory', back: ['#f6f2e9', '#e4ddcf'], ink: '#5a1822', felt: ['#5c1c27', '#38101a', '#140407'], edge: 'triple', dark: true, plate: 'noir' }] },
+  { key: 'salon', floor: 'salon-prive', line: PEARL, tile: 'scallop', emblem: 'fan', back: { id: 'navy', base: ['#1c3460', '#050c1a'], field: 'scallop' }, felt: { id: 'navy', a: '#1f3a63', b: '#10213f', c: '#050b18' }, chips: { id: 'double', edge: 'triple', ring: 'bead', inlay: PEARL }, plate: { id: 'pearl', face: ['#1e2a40', '#0b111c'] } , ways: [{ way: 'noir', back: ['#262a33', '#07080b'], felt: ['#263047', '#141b2c', '#060910'], edge: 'quad', plate: 'metal' }, { way: 'ivory', back: ['#f7f3eb', '#e6e0d3'], ink: '#1c3460', felt: ['#3e4549', '#24292c', '#0c0e0f'], edge: 'dash12', dark: true, plate: 'noir' }] },
+  { key: 'penthouse', floor: 'penthouse', line: '#dccfb5', tile: 'herring', emblem: 'key', back: { id: 'pinstripe', base: ['#34302c', '#12100e'], field: 'herring' }, felt: { id: 'oxblood', a: '#62202a', b: '#3b0e16', c: '#160407' }, chips: { id: 'marble', edge: 'wide', ring: 'line', inlay: '#dccfb5' }, plate: { id: 'onyx', face: ['#2a2724', '#0e0d0c'] } , ways: [{ way: 'noir', back: ['#28272a', '#09090a'], felt: ['#43302a', '#281b17', '#0e0907'], edge: 'quad', plate: 'metal' }, { way: 'ivory', back: ['#f5f0e6', '#e3dbcb'], ink: '#4a3f33', felt: ['#414a33', '#272d1e', '#0d0f09'], edge: 'cane', dark: true, plate: 'noir' }] },
+  { key: 'sky', floor: 'sky-lounge', line: '#d6deef', tile: 'sky', emblem: 'moon', back: { id: 'skyline', base: ['#1d2a52', '#070a16'], field: 'sky' }, felt: { id: 'teal', a: '#1c6668', b: '#0d3d40', c: '#031618' }, chips: { id: 'platinum', edge: 'dash12', ring: 'dash', inlay: '#e9eef3' }, plate: { id: 'platinum', face: ['#1c2436', '#090c14'] } , ways: [{ way: 'noir', back: ['#22283a', '#06070c'], felt: ['#1d3152', '#101d33', '#050a13'], edge: 'ticks', plate: 'metal' }, { way: 'ivory', back: ['#f2f3f6', '#dfe2ea'], ink: '#1d2a52', felt: ['#3f3055', '#251c34', '#0d0913'], edge: 'triple', dark: true, plate: 'noir' }] },
+  { key: 'vault', floor: 'vault', line: STEEL, tile: 'rays', emblem: 'dial', back: { id: 'vault', base: ['#3a3e45', '#0b0c0e'], field: 'rays' }, felt: { id: 'obsidian', a: '#37323f', b: '#17141d', c: '#050407' }, chips: { id: 'diamond', edge: 'ticks', ring: 'tick', inlay: '#ffffff' }, plate: { id: 'diamond', face: ['#2c2f35', '#0b0c0e'] } , ways: [{ way: 'noir', back: ['#232528', '#070708'], felt: ['#3c4148', '#23262b', '#0b0c0e'], edge: 'quad', plate: 'metal' }, { way: 'ivory', back: ['#f1f1ef', '#dcdcd8'], ink: '#2c3036', felt: ['#21322c', '#131e1a', '#060a08'], edge: 'dash12', dark: true, plate: 'noir' }] },
+  { key: 'crown', floor: 'crown', line: CHAMPAGNE, tile: 'crowns', emblem: 'crown', back: { id: 'crown', base: ['#2a1c36', '#0c0911'], field: 'lattice' }, felt: { id: 'royal', a: '#4a2c63', b: '#2a173c', c: '#0d0614' }, chips: { id: 'crown', edge: 'cane', ring: 'bead', inlay: CHAMPAGNE }, plate: { id: 'crown', face: ['#2c2034', '#140e19'] } , ways: [{ way: 'noir', back: ['#29262c', '#080709'], felt: ['#2e2833', '#1a161e', '#08060a'], edge: 'triple', plate: 'metal' }, { way: 'ivory', back: ['#f7f2e8', '#e7dfcf'], ink: '#3a2650', felt: ['#5c1c33', '#38101f', '#14040a'], edge: 'quad', dark: true, plate: 'noir' }] },
+  { key: 'olympus', floor: 'olympus', line: MARBLE, tile: 'flutes', emblem: 'laurel', back: { id: 'olympus', base: ['#26386a', '#0a0e1c'], field: 'flutes' }, felt: { id: 'ultramarine', a: '#24387e', b: '#13204d', c: '#050a1c' }, chips: { id: 'olympus', edge: 'key', ring: 'line', inlay: MARBLE }, plate: { id: 'olympus', face: ['#1f2b4c', '#0a0f1e'] } , ways: [{ way: 'noir', back: ['#262a33', '#07080b'], felt: ['#4b4f57', '#2c2f35', '#0f1013'], edge: 'cane', plate: 'metal' }, { way: 'ivory', back: ['#f8f6f1', '#e6e2d9'], ink: '#26386a', felt: ['#1e5c70', '#113846', '#051419'], edge: 'triple', dark: true, plate: 'noir' }] },
   // 시즌 한정 (lib/cosmetics.mjs SEASON_COSMETICS)
   { key: 'ember', line: '#f2a86e', tile: 'emblem', emblem: 'flame', back: { id: 'ember', base: ['#5a220b', '#160703'], field: 'waves' }, felt: { id: 'ember', a: '#8a3a12', b: '#55200a', c: '#1c0903' }, chips: { id: 'ember', edge: 'cane', ring: 'dash', inlay: '#f08a46' }, plate: { id: 'ember', face: ['#3a1a0c', '#140803'] } },
   { key: 'frost', line: '#d6eef8', tile: 'emblem', emblem: 'snow', back: { id: 'frost', base: ['#22536a', '#061520'], field: 'hex' }, felt: { id: 'frost', a: '#2f6278', b: '#183d4e', c: '#071a24' }, chips: { id: 'frost', edge: 'dash12', ring: 'tick', inlay: '#d6eef8' }, plate: { id: 'frost', face: ['#16323f', '#071219'] } },
@@ -138,43 +157,73 @@ const RINGS = {
   tick: 'repeating-conic-gradient(var(--chip-inlay) 0 1deg,transparent 1deg 5deg)',
   line: 'linear-gradient(var(--chip-inlay),var(--chip-inlay))'
 };
+// The body over the edge: top-left sheen, the groove, the face, a rim bevel, and light falling
+// across the edge from the top left so the inserts read as set into the clay, not printed flat.
 const CHIP_BODY = `linear-gradient(155deg,#ffffff1f 0,transparent 34%,transparent 66%,#00000038 100%),
     radial-gradient(circle closest-side,transparent 0 76.5%,color-mix(in srgb,var(--rim) 45%,#000) 77.5% 79%,transparent 79.5%),
     radial-gradient(circle closest-side,var(--c) 0 70%,color-mix(in srgb,var(--c) 88%,#000) 77.5%,transparent 78%),
-    radial-gradient(circle closest-side,transparent 0 93%,#00000052 100%)`;
+    radial-gradient(circle closest-side,transparent 0 80%,#ffffff2e 81.5%,transparent 84%,transparent 93%,#00000059 100%),
+    conic-gradient(from 300deg,#ffffff30,transparent 22%,#00000038 45%,#0000004d 55%,transparent 78%,#ffffff30)`;
 
 // ---------- write ----------
 const css = [`/* Generated by scripts/draw-skins.mjs: edit the script, not this file. */`];
-const both = (sel) => `:root[data-chip-accent="${sel}"],.chip-accent--${sel}`;
+// A preview box (.chip-accent--x) must beat the look the player wears on the page (:root[data-chip-accent]).
+const both = (sel) => `:root[data-chip-accent="${sel}"],:root .chip-accent--${sel}.chip-accent--${sel}`;
 const feltSel = id => `.table-screen:not(.is-event) .felt.felt--skin:not(.felt--royale):not(.felt--tazza).felt--skin-${id},.skin-preview.felt--skin-${id},.skin-stage.felt--skin-${id}`;
+const written = new Set();
+const once = (name, body) => { if (!written.has(name)) { written.add(name); fs.writeFileSync(path.join(OUT, name), body); } };
+
+function back(id, base, line, field, emblem) {
+  once(`back-${id}.svg`, cardBack({ base, line, field, emblem }));
+  css.push(`.card-back.back--${id}{background:url(art/skins/back-${id}.svg) center/100% 100% no-repeat,${base[1]};box-shadow:0 1px 0 #d9d0c0,0 1.6px 0 #b9ae9b,0 2.4px 1px #0007,0 5px 9px #0005}`);
+  css.push(`.card-back.back--${id}::before,.card-back.back--${id}::after{display:none}`);
+}
+function felt(id, [a, b, c], tile, emblem, line) {
+  const [size, body] = TILES[tile](emblem);
+  once(`print-${tile}-${emblem}.svg`, svg(`0 0 ${size} ${size}`, body, ` width="${size}" height="${size}"`));
+  css.push(`${feltSel(id)}{--felt-a:${a};--felt-b:${b};--felt-c:${c};--felt-print:url(art/skins/print-${tile}-${emblem}.svg);--felt-print-size:${size}px;--felt-rail:linear-gradient(180deg,${mix(c, '#3a3f46', .4)},${mix(c, '#121316', .5)} 18%,#0a0b0c 70%,${mix(c, '#1d2025', .5)});--felt-piping:${line}6b}`);
+}
+function chips(id, edge, ring, inlay, line, edgeInk) {
+  css.push(`${both(id)}{--chip-inlay:${inlay};--chip-inlay-w:1.6;--chip-halo:1;--chip-line:${line};--plaque-inlay:${inlay};--plaque-outline:color-mix(in srgb,${inlay} 70%,transparent)}`);
+  css.push(`:root[data-chip-accent="${id}"] .chip:not(.chip--plaque),:root .chip-accent--${id}.chip-accent--${id} .chip:not(.chip--plaque){--chip-edge-ink:${edgeInk || 'color-mix(in srgb,var(--chip-line) 70%,var(--edge))'};background:${CHIP_BODY},\n    ${EDGES[edge]}}`);
+  const mask = ring === 'line' ? 'radial-gradient(circle closest-side,transparent 0 64.5%,#000 65% 66.4%,transparent 67%)' : 'radial-gradient(circle closest-side,transparent 0 64%,#000 64.5% 67.5%,transparent 68%)';
+  css.push(`:root[data-chip-accent="${id}"] .chip-ring,:root .chip-accent--${id}.chip-accent--${id} .chip-ring{background:${RINGS[ring]};opacity:.85;-webkit-mask:${mask};mask:${mask}}`);
+  css.push(`:root[data-chip-accent="${id}"] .chip--plaque .chip-mark,:root .chip-accent--${id}.chip-accent--${id} .chip--plaque .chip-mark{opacity:.8}`);
+}
+// Nameplates. lacquer: coloured lacquer in a metal bevel; metal: a brushed metal plate with the
+// name engraved (dark, a light lip under it); noir: black lacquer, a double metal bevel.
+function plate(id, type, face, line, key) {
+  const markBg = type === 'metal' ? mix(line, '#000', .72) : `linear-gradient(180deg,#fff,${line})`;
+  const bevel = `linear-gradient(160deg,#ffffff,${line} 22%,${mix(line, '#000', .45)} 48%,${line} 66%,${mix(line, '#000', .55)} 100%) border-box`;
+  const base = `.name-frame--${id}{position:relative;padding:2px 11px 3px 26px;border:1px solid transparent;border-radius:6px;animation:none;`;
+  if (type === 'metal') css.push(`${base}color:${mix(line, '#000', .82)};text-shadow:0 1px 0 #ffffff8c;
+  background:repeating-linear-gradient(90deg,#ffffff1a 0 1px,transparent 1px 3px) padding-box,linear-gradient(180deg,${mix(line, '#fff', .55)},${line} 46%,${mix(line, '#000', .22)}) padding-box,${bevel};
+  box-shadow:inset 0 1px 0 #ffffffb0,inset 0 -1px 0 #00000040,0 1px 0 #000,0 3px 8px #0009}`);
+  else if (type === 'noir') css.push(`${base}color:#f6f2ea;text-shadow:0 -1px 0 #000;
+  background:linear-gradient(180deg,#ffffff12,transparent 55%) padding-box,linear-gradient(180deg,#1a1b1e,#060607) padding-box,${bevel};
+  box-shadow:inset 0 0 0 2px #060607,inset 0 0 0 2.6px ${line}b0,0 1px 0 #000,0 3px 8px #0009}`);
+  else css.push(`${base}color:#f6f2ea;text-shadow:0 -1px 0 #000a;
+  background:linear-gradient(180deg,#ffffff14,transparent 55%) padding-box,linear-gradient(180deg,${face[0]},${face[1]}) padding-box,${bevel};
+  box-shadow:inset 0 0 0 1px #0008,inset 0 0 0 2px ${line}3d,0 1px 0 #000,0 3px 8px #0008}`);
+  css.push(`.name-frame--${id}::before{content:"";position:absolute;left:8px;top:50%;width:13px;height:13px;margin-top:-6.5px;border:0;clip-path:none;background:${markBg};-webkit-mask:url(art/skins/mark-${key}.svg) center/contain no-repeat;mask:url(art/skins/mark-${key}.svg) center/contain no-repeat}`);
+  css.push(`.name-frame--${id}::after{display:none}`);
+}
+
 for (const t of THEMES) {
   const line = t.line || t.back.line;
-  if (t.back) {
-    fs.writeFileSync(path.join(OUT, `back-${t.back.id}.svg`), cardBack({ ...t.back, line, emblem: t.back.emblem || t.emblem }));
-    css.push(`.card-back.back--${t.back.id}{background:url(art/skins/back-${t.back.id}.svg) center/100% 100% no-repeat,${t.back.base[1]};box-shadow:0 1px 0 #d9d0c0,0 1.6px 0 #b9ae9b,0 2.4px 1px #0007,0 5px 9px #0005}`);
-    css.push(`.card-back.back--${t.back.id}::before,.card-back.back--${t.back.id}::after{display:none}`);
-  }
-  if (t.felt) {
-    const [size, body] = TILES[t.tile](t.emblem);
-    fs.writeFileSync(path.join(OUT, `felt-${t.felt.id}.svg`), svg(`0 0 ${size} ${size}`, body, ` width="${size}" height="${size}"`));
-    css.push(`${feltSel(t.felt.id)}{--felt-a:${t.felt.a};--felt-b:${t.felt.b};--felt-c:${t.felt.c};--felt-print:url(art/skins/felt-${t.felt.id}.svg);--felt-print-size:${size}px;--felt-rail:linear-gradient(180deg,color-mix(in srgb,${t.felt.c} 60%,#3a3f46),color-mix(in srgb,${t.felt.c} 50%,#121316) 18%,#0a0b0c 70%,color-mix(in srgb,${t.felt.c} 50%,#1d2025));--felt-piping:color-mix(in srgb,${line} 42%,transparent)}`);
-  }
-  if (t.chips) {
-    const c = t.chips;
-    css.push(`${both(c.id)}{--chip-inlay:${c.inlay};--chip-inlay-w:1.6;--chip-halo:1;--chip-line:${line};--plaque-inlay:${c.inlay};--plaque-outline:color-mix(in srgb,${c.inlay} 70%,transparent)}`);
-    if (EDGES[c.edge]) css.push(`:root[data-chip-accent="${c.id}"] .chip:not(.chip--plaque),.chip-accent--${c.id} .chip:not(.chip--plaque){--chip-edge-ink:color-mix(in srgb,var(--chip-line) 70%,var(--edge));background:${CHIP_BODY},\n    ${EDGES[c.edge]}}`);
-    const mask = c.ring === 'line' ? 'radial-gradient(circle closest-side,transparent 0 64.5%,#000 65% 66.4%,transparent 67%)' : 'radial-gradient(circle closest-side,transparent 0 64%,#000 64.5% 67.5%,transparent 68%)';
-    css.push(`:root[data-chip-accent="${c.id}"] .chip-ring,.chip-accent--${c.id} .chip-ring{background:${RINGS[c.ring]};opacity:.85;-webkit-mask:${mask};mask:${mask}}`);
-    css.push(`:root[data-chip-accent="${c.id}"] .chip--plaque .chip-mark,.chip-accent--${c.id} .chip--plaque .chip-mark{opacity:.8}`);
-  }
-  if (t.plate) {
-    const p = t.plate;
-    fs.writeFileSync(path.join(OUT, `mark-${t.key}.svg`), svg('-10 -10 20 20', `<mask id="m"><rect x="-10" y="-10" width="20" height="20" fill="#000"/>${EMBLEMS[t.emblem]('#fff', '#000')}</mask><rect x="-10" y="-10" width="20" height="20" fill="#000" mask="url(#m)"/>`));
-    css.push(`.name-frame--${p.id}{position:relative;padding:2px 11px 3px 26px;border:1px solid transparent;border-radius:6px;color:#f6f2ea;text-shadow:0 -1px 0 #000a;animation:none;
-  background:linear-gradient(180deg,${p.face[0]},${p.face[1]}) padding-box,linear-gradient(160deg,#ffffff,${line} 22%,color-mix(in srgb,${line} 55%,#000) 48%,${line} 66%,color-mix(in srgb,${line} 45%,#000) 100%) border-box;
-  box-shadow:inset 0 0 0 1px #0008,inset 0 0 0 2px color-mix(in srgb,${line} 24%,transparent),0 1px 0 #000,0 3px 8px #0008}`);
-    css.push(`.name-frame--${p.id}::before{content:"";position:absolute;left:8px;top:50%;width:13px;height:13px;margin-top:-6.5px;border:0;clip-path:none;background:linear-gradient(180deg,#fff,${line});-webkit-mask:url(art/skins/mark-${t.key}.svg) center/contain no-repeat;mask:url(art/skins/mark-${t.key}.svg) center/contain no-repeat}`);
-    css.push(`.name-frame--${p.id}::after{display:none}`);
+  if (t.plate || t.ways) once(`mark-${t.key}.svg`, svg('-10 -10 20 20', `<mask id="m"><rect x="-10" y="-10" width="20" height="20" fill="#000"/>${EMBLEMS[t.emblem]('#fff', '#000')}</mask><rect x="-10" y="-10" width="20" height="20" fill="#000" mask="url(#m)"/>`));
+  if (t.back) back(t.back.id, t.back.base, line, t.back.field, t.back.emblem || t.emblem);
+  if (t.felt) felt(t.felt.id, [t.felt.a, t.felt.b, t.felt.c], t.tile, t.emblem, line);
+  if (t.chips) chips(t.chips.id, t.chips.edge, t.chips.ring, t.chips.inlay, line);
+  if (t.plate) plate(t.plate.id, 'lacquer', t.plate.face, line, t.key);
+  // Two more looks per floor in the same motif: 누아르 (black lacquer, the floor's metal) and
+  // 아이보리 (ivory stock printed in the floor's dark ink).
+  for (const w of t.ways || []) {
+    const id = `${t.key}-${w.way}`;
+    back(id, w.back, w.ink || line, t.back.field, t.emblem);
+    felt(id, w.felt, t.tile, t.emblem, line);
+    chips(id, w.edge, t.chips.ring, w.dark ? '#f6f1e6' : line, line, w.dark ? '#f6f1e6' : '#17181b');
+    plate(id, w.plate, null, line, t.key);
   }
 }
 fs.writeFileSync(path.join(ROOT, 'public/skins.css'), css.join('\n') + '\n');

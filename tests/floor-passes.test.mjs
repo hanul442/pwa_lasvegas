@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser, floorOpen, hasFloorPass, tableBase } from '../lib/state.mjs';
 import { buyItem, equipItem, shopView } from '../lib/shop.mjs';
-import { COSMETICS, PASS_ITEMS, SLOTS } from '../lib/cosmetics.mjs';
+import { COSMETICS, PASS_ITEMS, SLOTS, passFloorOf } from '../lib/cosmetics.mjs';
 import { addLedger, floorsFor } from '../lib/economy.mjs';
 import { validateStakeAgainstFloor } from '../lib/stakes.mjs';
 import { upgradeEconomy, economyCurrent } from '../lib/economy-upgrade.mjs';
@@ -20,16 +20,18 @@ function player(amount) {
   return { state, u };
 }
 
-test('every floor above the Gold Room has a skin in each slot, priced one to three of its smallest bets', () => {
+test('every floor has three looks in each slot, priced one to seven of its smallest bets', () => {
   assert.deepEqual(Object.keys(PASS_ITEMS), FLOORS.slice(1).map(f => f.slug));
-  for (const f of FLOORS.slice(1)) {
+  for (const f of FLOORS) {
     const items = COSMETICS.filter(x => x.floor === f.slug);
-    assert.deepEqual(items.map(x => x.slot).sort(), [...SLOTS].sort(), f.slug);
+    for (const slot of SLOTS) assert.equal(items.filter(x => x.slot === slot).length, 3, `${f.slug} ${slot}`);
     for (const x of items) {
       assert.ok(isMoney(x.price), x.id);
-      assert.ok(x.price >= f.minBet && x.price <= f.minBet * 3, x.id);
+      assert.ok(x.price >= f.minBet && x.price <= f.minBet * 7, x.id);
     }
   }
+  // The Gold Room is open to all: its looks are no pass.
+  assert.equal(passFloorOf('felt-hall-classic'), null);
   assert.equal(new Set(COSMETICS.map(x => x.id)).size, COSMETICS.length, 'ids are unique');
 });
 
@@ -93,4 +95,11 @@ test('floors players had reached before passes stay theirs; later players buy in
   assert.equal(floorOpen(fresh, floor('salon-prive')), true);
   assert.equal(floorOpen(fresh, floor('high-limit')), false);
   assert.equal(floorOpen(fresh, floor('gold-room')), true, 'the Gold Room stays open while High Limit is closed');
+});
+
+test('every bought look is drawn: scripts/draw-skins.mjs wrote a style for it', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../public/skins.css', import.meta.url), 'utf8');
+  const cls = { cardBack: id => `.back--${id.replace(/^back-/, '')}{`, felt: id => `felt--skin-${id.replace(/^felt-/, '')}{`, chips: id => `.chip-accent--${id.replace(/^chips-/, '')}{`, frame: id => `.name-frame--${id.replace(/^frame-/, '')}{` };
+  for (const x of COSMETICS.filter(x => x.price > 0)) assert.ok(css.includes(cls[x.slot](x.id)), x.id);
 });

@@ -49,7 +49,7 @@ test('승급전 wins and league promotions are counted for good', () => {
   const u = newUser(state, 'u', 'UUU');
   noteRp(u, { game: 'Baccarat', stake: 1e7, netPnl: 1e7 });
   u.rp.points = 95;
-  u.rp.promo = { active: true, target: 'bronze', wins: 1, losses: 0, minStake: 1e7, fee: 0 };
+  u.rp.promo = { active: true, target: 'bronze', wins: 2, losses: 0, minStake: 1e7, fee: 0 };
   noteRp(u, { game: 'Baccarat', stake: 1e7, netPnl: 1e7 });
   assert.equal(rpRecordOf(u).promoWins, 1);
   assert.equal(view(u)['promo-1'].done, true);

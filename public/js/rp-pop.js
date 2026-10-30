@@ -19,17 +19,27 @@ let seen = null, node = null, timer = 0;
 export function noteRpChange(state, { quiet = false } = {}) {
   const rp = state?.rp, last = rp?.last;
   if (!rp?.era || !state.user) return;
-  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress };
+  const pa = state.promo?.active, pl = state.promo?.last;
+  const promoSig = pa ? `a:${pa.target}:${pa.log ?? `${pa.wins}-${pa.losses}`}` : pl ? `e:${pl.target}:${pl.result}:${pl.at}` : '';
+  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress, promoSig };
   const prev = seen;
   seen = now;
   // The first state after a load only sets the mark; the same round never shows twice.
-  if (!prev || prev.key === now.key || !last?.delta || quiet) return;
+  if (!prev || prev.key === now.key || quiet) return;
   if (!prev.key.startsWith(`${state.user.id}:${rp.season}:`)) return;
+  // 승급전 (2026-10-30 한서 "승급전이면 승급전이라고 말하면서 몇번 이기면 승급된다고", "5판3선승제",
+  // "동그라미 안에 하얀색 채워넣는걸로"): a round that starts, moves or loses the series gets its
+  // own card with five circles; the winning round goes on to the promotion below with the circles.
+  const promoMoved = prev.promoSig !== promoSig;
+  const promoWon = promoMoved && !pa && pl?.result === 'won';
+  if (promoMoved && pa) return promoCard(pa, { started: !prev.promoSig.startsWith(`a:${pa.target}:`), delta: last?.delta || 0 });
+  if (promoMoved && pl?.result === 'lost') return promoCard(pl, { lost: true, delta: last?.delta || 0 });
+  if (!last?.delta && !promoWon) return;
   const up = rankOf(now) > rankOf(prev), down = rankOf(now) < rankOf(prev), tierUp = up && now.tier !== prev.tier;
   const promo = state.promo?.active;
   const from = Number.isFinite(prev.points) ? prev.points : tenthOf(rp.points - last.delta);
-  const nextLine = promo ? `승급전 ${promo.wins}승 ${promo.losses}패` : rp.next ? (rp.nextPromo ? `승급전 2승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어';
-  const label = tierUp ? '티어 승급!' : up ? '승급!' : down ? '강등 · ' : '';
+  const nextLine = promo ? `승급전 ${promo.wins}승 ${promo.losses}패` : rp.next ? (rp.nextPromo ? `승급전 3승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어';
+  const label = promoWon && tierUp ? '승급전 통과!' : tierUp ? '티어 승급!' : up ? '승급!' : down ? '강등 · ' : '';
   const motion = !reducedMotion();
   // A promotion opens on where I was, then turns over to where I am.
   const startTier = up && motion ? prev : now;
@@ -39,7 +49,7 @@ export function noteRpChange(state, { quiet = false } = {}) {
     <span class="rp-pop-text" aria-hidden="true">
       <b class="rp-pop-delta ${last.delta > 0 ? 'pos' : 'neg'}">${motion ? (last.delta > 0 ? '+0' : '-0') : signed(last.delta)} RP</b>
       <span class="rp-pop-tier"><em class="rp-pop-label">${up && motion ? '' : label}</em><span class="rp-pop-name">${tierName(startTier.tier, startTier.division)}</span></span>
-      <span class="rp-pop-bar" aria-hidden="true"><i style="width:${pct(motion ? prev.progress ?? rp.progress : rp.progress)}"></i></span>
+      ${promoWon ? `<span class="rp-pop-dots">${dotsHtml(pl.log, { fresh: motion })}</span>` : ''}<span class="rp-pop-bar" aria-hidden="true"><i style="width:${pct(motion ? prev.progress ?? rp.progress : rp.progress)}"></i></span>
       <small class="rp-pop-next"><b class="rp-pop-points">${tenthOf(motion ? from : rp.points)}</b> RP<span class="rp-pop-step"> · ${nextLine}</span></small>
     </span>`;
   const card = show(html, { big: up, down, tierUp, long: up ? 4200 : 2800 });
@@ -60,6 +70,35 @@ export function noteRpChange(state, { quiet = false } = {}) {
     requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = ''; bar.style.width = pct(rp.progress); }));
     promoted(card, { tierUp });
   }, ms(SWAP_AT));
+}
+
+// Five circles in the order the series went: a win fills white, a loss is a red ring with a slash,
+// rounds still to play stay empty. The newest one pops in.
+const PROMO_ROUNDS = 5;
+function dotsHtml(log = '', { fresh = false } = {}) {
+  return Array.from({ length: PROMO_ROUNDS }, (_, i) => {
+    const r = log[i];
+    return `<i class="${r === 'W' ? 'is-win' : r === 'L' ? 'is-loss' : ''}${fresh && i === log.length - 1 ? ' is-new' : ''}"></i>`;
+  }).join('');
+}
+
+function promoCard(p, { started = false, lost = false, delta = 0 }) {
+  const wins = p.wins || 0, losses = p.losses || 0, need = p.needWins || 3, out = p.needLosses || 3;
+  const target = tierName(p.target, 'V');
+  const matchPoint = !lost && wins === need - 1, edge = !lost && losses === out - 1;
+  const head = started ? '승급전 시작!' : lost ? '승급전 탈락' : matchPoint && edge ? '마지막 판!' : matchPoint ? "매치 포인트!" : edge ? "벼랑 끝" : `${wins}승 ${losses}패`;
+  const foot = started ? `5판 중 ${need}승이면 ${target}` : lost ? 'RP를 다시 채우면 또 도전해요' : matchPoint ? `1승만 더하면 ${target}` : edge ? `1패면 탈락 · ${need - wins}승 더 필요` : `${need - wins}승 더하면 ${target}`;
+  const said = `${tierName(p.target)} ${head} ${wins}승 ${losses}패. ${foot}`;
+  const html = `<span class="sr-only">${said}</span><span class="rp-pop-emblem" aria-hidden="true">${tierEmblem(p.target, { size: 30, label: false })}</span>
+    <span class="rp-pop-text" aria-hidden="true">
+      <span class="rp-pop-tier rp-pop-promo-head"><em class="rp-pop-label">${head}</em><span class="rp-pop-name">${tierName(p.target)} 승급전</span></span>
+      <span class="rp-pop-dots">${dotsHtml(p.log, { fresh: !started && !reducedMotion() })}</span>
+      <small class="rp-pop-next">${foot}${delta ? ` · ${signed(delta)} RP` : ''}</small>
+    </span>`;
+  const card = show(html, { big: started || matchPoint, down: lost, tierUp: false, long: started || lost ? 4200 : 3200 });
+  card.classList.add('is-promo');
+  if (started || matchPoint) { sound.levelUp?.(1); haptic?.([12, 30, 12]); }
+  else if (!lost && p.log?.endsWith('W')) haptic?.(12);
 }
 
 function promoted(card, { tierUp }) {

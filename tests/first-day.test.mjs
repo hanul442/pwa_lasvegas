@@ -52,7 +52,7 @@ test('the client rules match first-day.js and the lobby popups wait for them', a
   assert.match(src, /export const QUIET_HANDS = 3;/);
   assert.match(src, /!st\.user\.account\?\.totalWagered && handsPlayed\(st\) === 0/);
   const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
-  assert.match(app, /isActive\('lobby'\) && !isSettlingIn\(state\)\) \{ maybeSeasonMoment/);
+  assert.match(app, /isActive\('lobby'\) && !isSettlingIn\(state\)\) \{ if \(!seasonMoment/);
   assert.match(app, /name === 'lobby' && state && !isSettlingIn\(state\)\) \{ celebrateFloors/);
   const news = await readFile(new URL('../public/js/news.js', import.meta.url), 'utf8');
   assert.match(news, /is-settling/);

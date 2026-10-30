@@ -67,4 +67,8 @@ test('when the week ends the top five go up, the bottom five go down, the top th
   // The new week starts with no group until a round is played.
   assert.equal(leagueView(state, star, NEXT).joined, false);
   assert.equal(leagueView(state, star, NEXT).name, '프로 리그');
+  // The result card reads the move with its league names.
+  const up = leagueView(state, star, NEXT).last, down = leagueView(state, idle, NEXT).last;
+  assert.deepEqual([up.fromName, up.toName, up.toId, up.badge], ['루키 리그', '프로 리그', 'pro', true]);
+  assert.deepEqual([down.fromId, down.toId, down.move], ['elite', 'pro', -1]);
 });

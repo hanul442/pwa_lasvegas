@@ -13,6 +13,7 @@ const SYNCED = [
   'vegas:luxury-refund',   // the 사치품 refund toast
   'vegas:season-warn:',    // 시즌 3일/1일 전 경고
   'vegas:rank-moment:',    // the season result card
+  'vegas:league-moment:',  // the weekly league result card
   'vegas:tier-seen:',      // the tier-up card
   'vegas:seen-floors:',    // the "새 층이 열렸어요" moment
   'vegas:bust-seen:',      // the bust receipt
@@ -23,7 +24,7 @@ const COUNTS = new Set(['vegas:gesture-tip', 'vegas:push-nags']);
 export const isSynced = key => SYNCED.some(p => (p.endsWith(':') ? key.startsWith(p) : key === p));
 
 // Marks scoped to a player end with that player's id; another account's marks on this phone stay here.
-const SCOPED = /^vegas:(bust-seen|bailout-seen|seen-floors|season-warn|rank-moment|tier-seen):/;
+const SCOPED = /^vegas:(bust-seen|bailout-seen|seen-floors|season-warn|rank-moment|league-moment|tier-seen):/;
 const ownedBy = (key, me) => !SCOPED.test(key) || key.endsWith(`:${me}`);
 
 const read = key => { try { return localStorage.getItem(key); } catch { return null; } };

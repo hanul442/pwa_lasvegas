@@ -22,7 +22,7 @@ test('승급전: only in a tier\'s division I, the fee comes from the wallet, tw
   at(OCT, () => withPoints(u, 50, OCT));
   assert.equal(at(OCT, () => promoView(u)).offer, null, 'division II: no series yet');
   assert.throws(() => at(OCT, () => startPromo(state, u)), /PROMO_NOT_AVAILABLE/);
-  u.rp.points = 76;
+  u.rp.points = 85;
   const offer = at(OCT, () => promoView(u)).offer;
   assert.deepEqual(offer, { target: 'bronze', fee: 2 * 억, minStake: 10_000_000, wins: 2, losses: 2 });
   at(OCT, () => startPromo(state, u));
@@ -30,7 +30,7 @@ test('승급전: only in a tier\'s division I, the fee comes from the wallet, tw
   assert.equal(state.ledger.at(-1).type, 'PROMO_FEE');
   assert.equal(state.ledger.at(-1).amount, -2 * 억);
   assert.throws(() => at(OCT, () => startPromo(state, u)), /PROMO_ACTIVE/);
-  noteRp(u, { game: 'Baccarat', stake: 1_000_000, netPnl: 1_000_000 }, OCT);
+  noteRp(u, { game: 'Baccarat', stake: 1_000_000, netPnl: -1_000_000 }, OCT);
   assert.equal(u.rp.promo.wins, 0, 'a bet under the series minimum does not count');
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: 10_000_000 }, OCT);
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000 }, OCT);

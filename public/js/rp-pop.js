@@ -8,9 +8,9 @@
 import { el, sound, haptic, rollNumber, reducedMotion, ms } from './fx.js';
 import { tierName, tierEmblem, TIERS } from './rank.js';
 
-const ORDER = Object.keys(TIERS), DIVS = ['IV', 'III', 'II', 'I'];
+const ORDER = Object.keys(TIERS), DIVS = ['V', 'IV', 'III', 'II', 'I'];
 const rankOf = r => ORDER.indexOf(r.tier) * 10 + (r.division ? DIVS.indexOf(r.division) : 9);
-const tenthOf = x => Math.round(x * 10) / 10;
+const tenthOf = x => Math.round(x); // RP is whole points since 2026-10-30
 const signed = x => `${x > 0 ? '+' : ''}${tenthOf(x)}`;
 const pct = x => `${Math.round(Math.max(0, Math.min(1, x || 0)) * 100)}%`;
 const ROLL = 900, SWAP_AT = 1000;
@@ -46,8 +46,8 @@ export function noteRpChange(state, { quiet = false } = {}) {
   if (!motion) { if (up) promoted(card, { tierUp }); return; }
 
   const bar = card.querySelector('.rp-pop-bar i');
-  rollNumber(card.querySelector('.rp-pop-delta'), 0, Math.round(last.delta * 10), { duration: ROLL, format: v => `${signed(v / 10)} RP` });
-  rollNumber(card.querySelector('.rp-pop-points'), Math.round(from * 10), Math.round(rp.points * 10), { duration: ROLL, format: v => `${tenthOf(v / 10)}` });
+  rollNumber(card.querySelector('.rp-pop-delta'), 0, Math.round(last.delta), { duration: ROLL, format: v => `${signed(v)} RP` });
+  rollNumber(card.querySelector('.rp-pop-points'), Math.round(from), Math.round(rp.points), { duration: ROLL, format: v => `${v}` });
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = up ? '100%' : down ? '0%' : pct(rp.progress); }));
   if (down) setTimeout(() => { bar.style.transition = 'none'; bar.style.width = '100%'; requestAnimationFrame(() => { bar.style.transition = ''; bar.style.width = pct(rp.progress); }); }, ms(ROLL));
   if (!up) return;

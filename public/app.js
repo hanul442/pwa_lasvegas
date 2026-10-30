@@ -241,7 +241,7 @@ function tableAfterRound(st) {
   const up = Boolean(st.floors?.find(f => f.slug === cur.floor)?.outgrown);
   const to = up ? tiers.find(x => x.min > cur.min) || tiers.at(-1) : [...tiers].reverse().find(x => x.min < cur.min) || tiers[0];
   const reason = up
-    ? `자산이 커져서 ${cur.name}을 졸업하고 위층으로 올라왔어요.`
+    ? (st.rp?.floors ? `티어가 올라 ${cur.name}을 졸업하고 위층으로 올라왔어요.` : `자산이 커져서 ${cur.name}을 졸업하고 위층으로 올라왔어요.`)
     : `칩이 ${cur.name} 최소 베팅 ${formatMoney(cur.min)}보다 적어서 옮겼어요.`;
   applyState(st);
   openTable(to.slug).then(() => activeTable?.moved?.(`${to.name} · ${formatCH(to.min)}–${formatCH(to.max)}`, reason));
@@ -899,7 +899,7 @@ function renderTiers() {
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);
   const shown = all.filter((x, i) => !x.floor?.outgrown && (firstLocked < 0 || i <= firstLocked + 1));
-  const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. 순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.`)] : [];
+  const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. ${state?.rp?.floors ? '티어가 오르면 아래층은 잠겨요. 칩과 지갑을 합쳐 내 층 최소 베팅의 20배가 안 되면 다시 열려요.' : '순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.'}`)] : [];
   grid.replaceChildren(...note, ...shown.map(({ tier, floor }) => {
     const locked = floor ? !floor.unlocked : false;
     // Reached by net worth but its pass (one of the floor's skins, 상점 꾸미기) not bought yet.
@@ -916,7 +916,9 @@ function renderTiers() {
     const rpMode = floor?.rpNeed != null;
     const status = locked ? (rpMode ? `RP ${floor.rpNeed}이면 열려요 · ${floor.rpRemaining} 남음` : `순자산 ${formatCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)`) : needsPass ? `이번 달 입장권이 필요해요 · 이 층 꾸미기를 사거나 갱신 · ${formatCH(floor.minBet)}원부터` : broke ? (state?.bank?.closed ? '돈이 부족해요 · 일급·구제금융으로 채워요' : '칩이 부족해요 · 은행에서 빌릴 수 있어요') : rpMode ? (floor.rpNeed ? `RP ${floor.rpNeed} 층` : '모두에게 열린 층') : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
     const stars = `<em class="tier-stars" aria-label="난이도 ${tier.stars}/5">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>`;
-    b.innerHTML = `<strong>${tier.name}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${status}</small>`;
+    // 디비전별 베팅 상한: the floor my tier just opened shows the top bet my division allows now.
+    const cap = !locked && state?.rp?.betCaps?.[tier.slug] < tier.max ? state.rp.betCaps[tier.slug] : 0;
+    b.innerHTML = `<strong>${tier.name}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(cap || tier.max)}원${cap ? ` <em class="tier-cap">${tierName(state.rp.tier, state.rp.division)} 상한</em>` : ''}</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
     b.addEventListener('click', () => needsPass ? openPassShop(floor.slug) : openTable(tier.slug));

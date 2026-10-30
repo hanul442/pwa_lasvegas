@@ -23,7 +23,7 @@ const byMonth = (a, b) => (isBombCard(a) ? 99 : monthOf(a)) - (isBombCard(b) ? 9
 export async function mountGostop(ctx, { event = null } = {}) {
   const tazzaInfo = ctx.state?.events?.find(e => e.id === 'tazza') || null;
   let ev = event === 'tazza' ? tazzaInfo : null;
-  const t = new Table({ ...ctx, game: 'gostop', title: ev ? ev.title : '고스톱', feltClass: `felt--hwatu${ev ? ' felt--tazza' : ''}` });
+  const t = new Table({ ...ctx, event: !!ev, game: 'gostop', title: ev ? ev.title : '고스톱', feltClass: `felt--hwatu${ev ? ' felt--tazza' : ''}` });
   let baseNames = ev ? ['나', '아귀', '고광렬'] : ['나', '은하', '태오'];
   const shown = times => (ev ? Math.max(2, times) : times);
   const caps = (seat, extra = '') => `<div class="mg-caps ${extra}" data-caps="${seat}">${GROUPS.map(([g, label]) => `<div class="mg-cap mg-cap--${g}" data-group="${g}"><span>${label}<b data-count>0</b></span><div class="mg-cap-cards"></div></div>`).join('')}</div>`;

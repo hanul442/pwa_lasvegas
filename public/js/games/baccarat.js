@@ -50,7 +50,7 @@ function crowdPlan(last) {
 export async function mountBaccarat(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
   // Multi-zone for the pair side bets; the main bet still sits on exactly one of Player/Banker/Tie.
-  const t = new Table({ ...ctx, game: 'baccarat', title: ev ? ev.title : gameName('baccarat'), feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true, hot: !ev, toke: true });
+  const t = new Table({ ...ctx, event: !!ev, game: 'baccarat', title: ev ? ev.title : gameName('baccarat'), feltClass: 'felt--blue', multi: true, zoneMin: false, zoneWord: '한 곳당', pushDouble: true, hot: !ev, toke: true });
   const don = createDoubleOrNothing(t);
   const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
   if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);

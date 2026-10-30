@@ -57,9 +57,13 @@ export class Table {
   // and the event felts, so a table that turns into an event mid-visit changes back.
   // backLabel: where the ← goes (the screen this table was opened from). onSwitch: the table name
   // opens the quick switcher (other games, other tables of this one).
-  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true, toke = false }) {
+  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true, toke = false, event = false }) {
     this.pushDouble = pushDouble;
-    this.tier = TIERS[tier] || TIERS.mid;
+    // 디비전별 베팅 상한 (lib/rank-points.mjs rpBetCap): the floor my tier just opened takes less
+    // than its full limit until division I. Event tables keep the floor's own limit.
+    this.baseTier = TIERS[tier] || TIERS.mid;
+    this.eventTable = event;
+    this.tier = this.cappedTier(state);
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
     this.nickname = state?.user?.nickname ?? '';
@@ -729,8 +733,15 @@ export class Table {
     setTimeout(hide, 5200);
   }
 
+  cappedTier(state) {
+    const base = this.baseTier, cap = this.eventTable ? 0 : state?.rp?.betCaps?.[base.slug] || 0;
+    return cap && cap < base.max ? { ...base, max: cap, capped: true } : base;
+  }
+
   setServerState(state) {
     if (state?.user?.account) this.available = state.user.account.available;
+    // A new division raises the limit on the spot (the table header keeps the floor's own range).
+    if (state?.rp?.betCaps && this.tier.max !== this.cappedTier(state).max) this.tier = this.cappedTier(state);
     // A bust or a 구제금융 shows once the round on the felt is over, not while its cards are dealt.
     this.serverState = state;
     if (!this.locked) { maybeBust(state); noteRpChange(state, { quiet: isSettlingIn(state) }); }

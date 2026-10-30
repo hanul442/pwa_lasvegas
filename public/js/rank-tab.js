@@ -69,13 +69,47 @@ export function tierHeroHtml(state) {
     <div class="tier-hero-foot"><small>${rs.carry ? '시즌이 끝나면 RP가 3티어 내려가요' : '매달 1일 0시에 칩·빚이 초기화돼요'}</small><span class="tier-hero-actions"><button type="button" class="link-button" data-season-rules>자세히</button></span></div>`;
 }
 
+// The RP rules as a few numbers to scan (2026-10-30, was a seven-line paragraph): what a round is
+// worth at my tier, the tier multipliers with my row marked, then one line of small print.
+const times = x => `×${String(x).replace(/\.0+$/, '')}`;
+function rpRulesHtml(rp) {
+  const r = rp.rules, ids = Object.keys(TIERS), me = Math.max(0, ids.indexOf(rp.tier));
+  const whole = x => Math.round(x) || 0;
+  const win = whole(r.perStake * r.winBy[me]), loss = whole(-r.perStake * r.lossBy[me]);
+  const caps = Object.entries(r.betTimes || {});
+  const tiles = [
+    [`+${win}`, '건 만큼 따면', 'pos'],
+    [`${loss}`.replace('-', '−'), '건 만큼 잃으면', 'neg'],
+    [times(r.downFloor), '내 티어보다 낮은 층에서 이기면', ''],
+    ...(rp.floors && caps.length ? [[`${caps[0][1]}–${caps.at(-1)[1]}배`, `새로 열린 층 베팅 상한 (${caps[0][0]}→${caps.at(-1)[0]})`, '']] : [])
+  ].map(([n, t, c]) => `<li><b class="${c}">${n}</b><small>${t}</small></li>`).join('');
+  // Neighbouring tiers with the same multipliers share a row: 실버–마스터.
+  const groups = [];
+  ids.forEach((id, i) => {
+    const g = groups.at(-1);
+    if (g && g.win === r.winBy[i] && g.loss === r.lossBy[i]) g.to = i;
+    else groups.push({ from: i, to: i, win: r.winBy[i], loss: r.lossBy[i] });
+  });
+  const name = g => (g.from === g.to ? tierName(ids[g.from]) : `${tierName(ids[g.from])}${g.to - g.from === 1 ? '·' : '–'}${tierName(ids[g.to])}`);
+  const rows = groups.map(g => {
+    const mine = me >= g.from && me <= g.to;
+    return `<tr${mine ? ' class="is-me"' : ''}><th scope="row">${name(g)}${mine ? ' <em>나</em>' : ''}</th><td>${times(g.win)}</td><td>${times(g.loss)}</td></tr>`;
+  }).join('');
+  return `<div class="rp-rules">
+    <div class="rp-rules-head"><h3>RP 이렇게 움직여요</h3><span>오늘 <b>+${rp.today}</b></span></div>
+    <ul class="rp-rule-tiles">${tiles}</ul>
+    <table class="rp-rule-tiers"><caption>티어별 배율</caption><thead><tr><th scope="col">티어</th><th scope="col">이기면</th><th scope="col">지면</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="rp-rules-foot">티어마다 V→I 다섯 칸, 위 티어일수록 칸이 넓어요. ${r.payoutCap ? `한 판은 건 돈의 ${r.payoutCap}배(+${whole(r.perStake * r.payoutCap * r.winBy[me])} RP)까지만 쳐요.` : ''}${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'}</p>
+  </div>`;
+}
+
 // RP 베타 (lib/rank-points.mjs): the score that becomes the tier from the December season. It moves
 // with each round by what the round won against its own bet, so bigger bets don't buy it.
 export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
   // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
-  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 V부터 I까지 다섯 단계이고, 위 티어일수록 칸이 넓어요 (아이언 100 RP → 그랜드마스터 800 RP). 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 아이언·브론즈는 그 3/4만, 실버부터 그랜드마스터까지는 똑같이 내려가요. 그랜드마스터는 칸이 800 RP라 레전드 가기가 가장 길어요. 레전드는 이기면 0.5배, 지면 1.3배예요. 한 판에 건 돈의 3배(+30 RP)까지만 쳐요. 내 티어보다 낮은 층에서 이기면 0.5배. 새로 열린 층은 디비전마다 베팅 상한이 있어요 (V 2배 ~ I 10배).${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
+  if (rp.era) return rp.rules ? rpRulesHtml(rp) : `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 V부터 I까지 다섯 단계이고, 위 티어일수록 칸이 넓어요 (아이언 100 RP → 그랜드마스터 800 RP). 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 아이언·브론즈는 그 3/4만, 실버부터 그랜드마스터까지는 똑같이 내려가요. 그랜드마스터는 칸이 800 RP라 레전드 가기가 가장 길어요. 레전드는 이기면 0.5배, 지면 1.3배예요. 한 판에 건 돈의 3배(+30 RP)까지만 쳐요. 내 티어보다 낮은 층에서 이기면 0.5배. 새로 열린 층은 디비전마다 베팅 상한이 있어요 (V 2배 ~ I 10배).${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];

@@ -354,6 +354,16 @@ function cosmeticsTab(state, onChanged, rerender) {
       sec.append(grid);
       box.append(sec);
     }
+    // Sets from past seasons are no longer sold; the server sends them only to those who own them.
+    const past = all.filter(x => x.season && !x.onSale);
+    if (past.length) {
+      const sec = el('section', 'season-shop season-shop--past');
+      sec.append(el('div', 'season-shop-head', `<h3>지난 시즌 한정</h3><small>${past.length}개 보유</small>`));
+      const grid = el('ul', 'skin-grid');
+      for (const item of past) grid.append(skinTile(state, item, onChanged, null));
+      sec.append(grid);
+      box.append(sec);
+    }
     const auto = era ? (focusFloor || null) : floorToOpen(passes);
     let focus = null;
     for (const pass of passes) {
@@ -378,7 +388,7 @@ function cosmeticsTab(state, onChanged, rerender) {
       focusFloor = null;
       requestAnimationFrame(() => { focus.scrollIntoView({ block: 'start', behavior: 'smooth' }); focus.classList.add('is-focus'); });
     }
-    const free = all.filter(x => !x.floor);
+    const free = all.filter(x => !x.floor && !x.season);
     box.append(el('h2', 'sub-head', `기본 · 업적 <small>무료 ${free.filter(x => x.owned).length}/${free.length}</small>`));
     const grid = el('ul', 'skin-grid');
     for (const item of free) grid.append(skinTile(state, item, onChanged, null));

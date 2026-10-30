@@ -298,6 +298,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .admin-field>span{font-size:14px;font-weight:600}
 .admin-field small{color:var(--dim);font-weight:400}
 .admin-field select,.admin-field input,.admin-custom input{width:100%;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--hair-strong);background:var(--ink);color:var(--white);font:16px var(--sans)}
+.admin-rp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}.admin-rp select{flex:1 1 110px;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--hair-strong);background:var(--ink);color:var(--white);font:16px var(--sans)}.admin-rp .pill-button{flex:1 1 100%;min-height:44px}
 .admin-mode{grid-template-columns:repeat(2,1fr)}
 .admin-mode button{min-height:40px;border:0;border-radius:9px;background:none;color:var(--smoke)}
 .admin-mode button.is-active{background:var(--white);color:var(--ink);font-weight:600}

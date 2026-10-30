@@ -72,13 +72,13 @@ test('tiers widen as they climb and split into five divisions; 레전드 has non
 import { FLOORS } from '../lib/constants.mjs';
 import { rpFloorLevel } from '../lib/rank-points.mjs';
 
-test('실버 to 마스터 is 50:50; 그랜드마스터 and 레전드 win less and lose more on the same bet', () => {
+test('실버 to 그랜드마스터 is 50:50; 레전드 wins less and loses more on the same bet', () => {
   // Bets on the player's own floor, so only the tier scale moves the numbers.
   const own = points => ({ stake: FLOORS[Math.min(FLOORS.length - 1, rpFloorLevel(points))].maxBet, points });
   const win = points => rpForRound({ ...own(points), netPnl: own(points).stake });
   const loss = points => rpForRound({ ...own(points), netPnl: -own(points).stake });
-  assert.deepEqual([0, 150, 250, 950, 2000, 2400].map(win), [10, 10, 10, 10, 6, 5]);
-  assert.deepEqual([0, 250, 950, 2000, 2400].map(loss), [-7, -10, -10, -12, -13]);
+  assert.deepEqual([0, 150, 250, 950, 2000, 2400].map(win), [10, 10, 10, 10, 10, 5]);
+  assert.deepEqual([0, 250, 950, 2000, 2400].map(loss), [-7, -10, -10, -10, -13]);
 });
 
 test('디비전별 베팅 상한: the floor my tier just opened grows from 2× to 10× its minimum', async () => {

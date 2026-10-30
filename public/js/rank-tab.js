@@ -75,7 +75,7 @@ export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
   // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
-  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 V부터 I까지 다섯 단계이고, 위 티어일수록 칸이 넓어요 (아이언 100 RP → 그랜드마스터 800 RP). 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 아이언·브론즈는 그 3/4만, 실버부터 마스터까지는 똑같이 내려가요. 그랜드마스터부터는 이기면 0.6배, 지면 1.2배라 레전드 가기가 가장 어려워요. 한 판·하루 상한은 없어요. 내 티어보다 낮은 층에서 이기면 0.5배. 새로 열린 층은 디비전마다 베팅 상한이 있어요 (V 2배 ~ I 10배).${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
+  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 V부터 I까지 다섯 단계이고, 위 티어일수록 칸이 넓어요 (아이언 100 RP → 그랜드마스터 800 RP). 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 아이언·브론즈는 그 3/4만, 실버부터 그랜드마스터까지는 똑같이 내려가요. 그랜드마스터는 칸이 800 RP라 레전드 가기가 가장 길어요. 레전드는 이기면 0.5배, 지면 1.3배예요. 한 판·하루 상한은 없어요. 내 티어보다 낮은 층에서 이기면 0.5배. 새로 열린 층은 디비전마다 베팅 상한이 있어요 (V 2배 ~ I 10배).${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];

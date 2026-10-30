@@ -13,7 +13,8 @@ test('RP follows the result against the bet, not the size of the bet', () => {
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: -1_000_000 }), -7, 'lose it: −7.5, rounded to whole RP');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_500_000 }), 15, 'blackjack 3:2');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 0 }), 0, 'a push moves nothing');
-  assert.equal(rpForRound({ stake: 1_000_000, netPnl: 35_000_000 }), 30, 'a straight-up hit counts 3× its bet (배당 상한, 2026-10-30)');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 35_000_000 }), 30, 'a straight-up hit counts 3× its bet (배당 상한, roulette and slots)');
+  assert.equal(rpForRound({ stake: 1_000_000, netPnl: 35_000_000 }), 350, 'other games: no cap');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: -5_000_000 }), -37, 'nor on a loss');
   // A win counts for the most expensive floor its bet covers, never above the player's own floor;
   // a floor below it counts 0.5× (no 1.5× above it since 2026-10-30).
@@ -26,11 +27,9 @@ test('no cap on a day, points never go below 0, and a new season starts three ti
   const u = { rp: null };
   assert.equal(noteRp(u, { stake: 1e6, netPnl: -1e6 }, NOV), 0, 'nothing to lose yet');
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).points, 30, '30× counts as 3×');
-  for (let i = 0; i < 6; i++) noteRp(u, { stake: 1e6, netPnl: 3e6 }, NOV);
-  assert.equal(rpView(u, NOV).points, 210);
-  for (let i = 0; i < 16; i++) noteRp(u, { stake: 1e6, netPnl: 3e6 }, NOV);
-  assert.equal(rpView(u, NOV).today, 450, 'no cap on a day; from 실버 the Gold Room is below their floor, 0.5×');
+  assert.equal(rpView(u, NOV).points, 300);
+  noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
+  assert.equal(rpView(u, NOV).today, 450, 'the second win: a silver player below their floor, 0.5×');
   assert.equal(rpView(u, NOV).tier, 'gold');
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, NOV + 86_400_000);
   assert.equal(rpView(u, NOV + 86_400_000).today, 5, 'next day counts from 0');

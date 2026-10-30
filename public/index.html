@@ -72,6 +72,7 @@
       </section>
 
       <section class="surface" data-surface="games" aria-labelledby="games-title">
+        <div class="subtabs" role="tablist" aria-label="게임"><button class="subtab" type="button" data-nav="games">게임</button><button class="subtab" type="button" data-nav="events">이벤트</button></div>
         <h1 id="games-title">게임</h1>
         <p class="lede">게임을 누르면 바로 테이블에 앉아요. 칩은 구매·환전·출금할 수 없으며 현실 화폐 가치가 없습니다.</p>
         <div class="filter-tabs" role="radiogroup" aria-label="게임 종류" data-games-filter></div>
@@ -79,6 +80,7 @@
       </section>
 
       <section class="surface" data-surface="events" aria-labelledby="events-title">
+        <div class="subtabs" role="tablist" aria-label="게임"><button class="subtab" type="button" data-nav="games">게임</button><button class="subtab" type="button" data-nav="events">이벤트</button></div>
         <h1 id="events-title">이벤트</h1>
         <p class="lede">매주 월요일에 이벤트 테이블이 바뀌어요. 상시 이벤트는 언제나 열려 있어요.</p>
         <div class="event-week" data-event-now></div>
@@ -122,14 +124,12 @@
       </section>
 
       <section class="surface" data-surface="bank" aria-labelledby="bank-title">
-        <div class="subtabs" role="tablist" aria-label="지갑"><button class="subtab" type="button" data-nav="bank">지갑</button><button class="subtab" type="button" data-nav="shop">상점</button></div>
         <h1 id="bank-title">지갑</h1>
         <p class="lede">지갑의 돈으로 테이블에 앉아 칩을 사고, 일어나면 칩이 지갑으로 돌아와요. 모두 현실 가치가 없는 가상 칩이에요.</p>
         <div data-bank></div>
       </section>
 
       <section class="surface" data-surface="shop" aria-labelledby="shop-title">
-        <div class="subtabs" role="tablist" aria-label="지갑"><button class="subtab" type="button" data-nav="bank">지갑</button><button class="subtab" type="button" data-nav="shop">상점</button></div>
         <h1 id="shop-title">상점</h1>
         <p class="lede">꾸미기는 카드 뒷면·펠트·칩·명패 모양을 바꿔요. 층은 RP 티어로 열려요.</p>
         <div data-shop></div>
@@ -164,7 +164,7 @@
     <nav class="bottom-nav" aria-label="주요 메뉴">
       <button class="nav-item is-active" type="button" data-nav="lobby"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20h-5.5v-5h-5v5H4z"/></svg><b class="nav-label">홈</b><i class="nav-dot" data-dot="lobby" hidden></i></button>
       <button class="nav-item" type="button" data-nav="games"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="10" height="14" rx="1.6"/><path d="M15.5 5.2l4.3 1.1a1.4 1.4 0 0 1 1 1.7l-2.9 11.1a1.4 1.4 0 0 1-1.7 1"/></svg><b class="nav-label">게임</b><i class="nav-dot" data-dot="games" hidden></i></button>
-      <button class="nav-item" type="button" data-nav="events"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.8l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg><b class="nav-label">이벤트</b><i class="nav-dot" data-dot="events" hidden></i></button>
+      <button class="nav-item" type="button" data-nav="shop"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9.5h15l-1.2 10a1.4 1.4 0 0 1-1.4 1.2H7.1a1.4 1.4 0 0 1-1.4-1.2z"/><path d="M8.5 9.5V7.8a3.5 3.5 0 0 1 7 0v1.7"/></svg><b class="nav-label">상점</b><i class="nav-dot" data-dot="shop" hidden></i></button>
       <button class="nav-item" type="button" data-nav="ranking"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20h17M9 20V9.5h6V20M3.5 20v-6.5H9M15 20v-4.5h5.5V20"/><path d="M12 3.6l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 5.7l2-.3z"/></svg><b class="nav-label">랭킹</b><i class="nav-dot" data-dot="ranking" hidden></i></button>
       <button class="nav-item" type="button" data-nav="bank"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h14.5a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18V7.5zM4 7.5l11-3v3M15.5 13.5h4.5"/></svg><b class="nav-label">지갑</b><i class="nav-dot" data-dot="bank" hidden></i></button>
       <button class="nav-item" type="button" data-nav="profile"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.8 20c.9-3.6 3.7-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg><b class="nav-label">내 정보</b><i class="nav-dot" data-dot="profile" hidden></i></button>

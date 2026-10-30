@@ -1,10 +1,11 @@
 // Operator panel on the profile screen: hand chips to (or take them back from) any player.
 import { api, errorMessage } from './api.js';
 import { formatCH, el } from './fx.js';
+import { TIERS, tierName } from './rank.js';
 
 const PRESETS = [1e8, 5e8, 1e9, 1e10];
 // Survives the profile re-rendering after every state change.
-const ui = { mode: 'grant', amount: PRESETS[2], target: null, message: '', ok: false, temp: null, armed: false };
+const ui = { mode: 'grant', amount: PRESETS[2], target: null, message: '', ok: false, temp: null, armed: false, tier: 'silver', division: 'V' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
 export function renderAdmin(root, state, onChanged) {
@@ -34,6 +35,13 @@ export function renderAdmin(root, state, onChanged) {
         <p class="admin-msg${ok ? ' is-ok' : ''}" role="status">${esc(message)}</p>
         <button type="submit" class="pill-button pill-button--solid">${formatCH(amount)} ${mode === 'grant' ? '지급하기' : '회수하기'}</button>
       </form>
+      <h3 class="admin-log-head">RP 티어 설정</h3>
+      <p class="admin-note">위에서 고른 플레이어를 이번 시즌 그 티어·디비전 시작 RP로 옮겨요. 진행 중인 승급전은 없어져요.</p>
+      <div class="admin-rp">
+        <select name="rp-tier" aria-label="티어">${Object.entries(TIERS).map(([id, t]) => `<option value="${id}"${id === ui.tier ? ' selected' : ''}>${t.name}</option>`).join('')}</select>
+        <select name="rp-division" aria-label="디비전"${ui.tier === 'legend' ? ' disabled' : ''}>${['V', 'IV', 'III', 'II', 'I'].map(d => `<option${d === ui.division ? ' selected' : ''}>${d}</option>`).join('')}</select>
+        <button type="button" class="pill-button pill-button--solid" data-set-rp>${tierName(ui.tier, ui.tier === 'legend' ? null : ui.division)}로 설정</button>
+      </div>
       <h3 class="admin-log-head">비밀번호 초기화</h3>
       <p class="admin-note">위에서 고른 플레이어에게 임시 비밀번호를 만들어 줘요. 그 플레이어는 모든 기기에서 로그아웃되고, 받은 비밀번호로 들어와 프로필에서 바꾸면 돼요.</p>
       ${ui.temp ? `<p class="account-code"><span>${esc(ui.temp.username)}</span><code>${esc(ui.temp.password)}</code><small>지금만 보여요. 플레이어에게 전해 주세요.</small></p>` : ''}
@@ -49,6 +57,17 @@ export function renderAdmin(root, state, onChanged) {
       try { ui.temp = await api.adminResetPassword(ui.target); }
       catch (err) { ui.temp = null; Object.assign(ui, { message: errorMessage(err), ok: false }); }
       paint();
+    });
+    box.querySelector('[name=rp-tier]').addEventListener('change', e => { ui.tier = e.target.value; paint(); });
+    box.querySelector('[name=rp-division]').addEventListener('change', e => { ui.division = e.target.value; paint(); });
+    box.querySelector('[data-set-rp]').addEventListener('click', async e => {
+      e.target.disabled = true;
+      try {
+        const out = await api.adminSetRp(ui.target, ui.tier, ui.division);
+        const r = out.rp;
+        Object.assign(ui, { message: `${r.nickname}: ${tierName(r.tier, r.division)} (${r.points} RP)로 옮겼어요.`, ok: true });
+        onChanged(out.state);
+      } catch (err) { Object.assign(ui, { message: errorMessage(err), ok: false }); paint(); }
     });
     box.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { ui.mode = b.dataset.mode; paint(); }));
     box.querySelectorAll('[data-amount]').forEach(b => b.addEventListener('click', () => { ui.amount = Number(b.dataset.amount); paint(); }));

@@ -104,6 +104,7 @@ export const api = {
   makeRecoveryCode: () => request('/api/auth/recovery', { method: 'POST' }),
   resetPassword: (username, code, password) => request('/api/auth/reset', { method: 'POST', body: { username, code, password } }),
   adminResetPassword: userId => request('/api/admin/password', { method: 'POST', body: { userId } }),
+  adminSetRp: (userId, tier, division) => request('/api/admin/rp', { method: 'POST', body: { userId, tier, division } }),
   adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
   adminErrors: () => request('/api/admin/errors'),
   adminErrorsClear: () => request('/api/admin/errors/clear', { method: 'POST' }),

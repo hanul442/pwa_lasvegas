@@ -23,7 +23,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
   const range = state?.cashier?.floors?.[tier.slug];
   if (!range || range.max < tier.min) {
     if (range && range.inHand > 0 && range.wallet >= tier.min) toast(`이미 ${tier.name} 최대 바이인(최소 베팅 100번어치)만큼 칩이 있어요.`);
-    else toast(`지갑에 돈이 모자라요. ${tier.name}은 최소 ${wonCH(tier.min)}원부터예요.`);
+    else toast(`지갑에 돈이 모자라요. ${tier.name} 테이블은 최소 ${wonCH(tier.min)}원부터예요.`);
     return Promise.resolve(null);
   }
   open = new Promise(resolve => {

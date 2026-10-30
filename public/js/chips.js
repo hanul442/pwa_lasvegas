@@ -11,19 +11,21 @@ const COLORS = 'teal purple wine ivory pink gold black wine ivory teal gold pink
 // Higher floors play harder (lib/constants.mjs DIFFICULTY_STARS, H17_FROM_LEVEL): sharper AI, and
 // from the Penthouse up the blackjack dealer hits soft 17.
 const STARS = [1, 2, 3, 4, 5, 5, 5, 5];
-const tier = (slug, name, min, level) => ({ slug, name, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min), level, stars: STARS[level], h17: level >= 3 });
+// Floor names (lib/constants.mjs FLOOR_EN): a Korean word for sentences, an English sign with the floor number.
+export const FLOOR_EN = { 'gold-room': 'HALL', 'high-limit': 'CLUB', 'salon-prive': 'SALON', penthouse: 'PENTHOUSE', 'sky-lounge': 'SKY', vault: 'VAULT', crown: 'CROWN', olympus: 'OLYMPUS' };
+const tier = (slug, name, min, level) => ({ slug, name, en: FLOOR_EN[slug], no: level + 1, floor: slug, floorName: name, min, max: min * 10, chips: STEPS.map(k => k * min), level, stars: STARS[level], h17: level >= 3 });
 
 // Eight floors from 1천만 in the Gold Room to 300억 on Olympus, each about three times the last
 // (lib/constants.mjs FLOORS, since the RP season of 2026-10-29). The RP tier opens them.
 export const TIERS = Object.fromEntries([
-  ['gold-room', 'Gold Room', 10_000_000],
-  ['high-limit', 'High Limit', 30_000_000],
-  ['salon-prive', 'Salon Privé', 100_000_000],
-  ['penthouse', 'Penthouse', 300_000_000],
-  ['sky-lounge', 'Sky Lounge', 1_000_000_000],
-  ['vault', 'The Vault', 3_000_000_000],
-  ['crown', 'The Crown', 10_000_000_000],
-  ['olympus', 'Olympus', 30_000_000_000]
+  ['gold-room', '홀', 10_000_000],
+  ['high-limit', '클럽', 30_000_000],
+  ['salon-prive', '살롱', 100_000_000],
+  ['penthouse', '펜트하우스', 300_000_000],
+  ['sky-lounge', '스카이', 1_000_000_000],
+  ['vault', '볼트', 3_000_000_000],
+  ['crown', '크라운', 10_000_000_000],
+  ['olympus', '올림포스', 30_000_000_000]
 ].map(([slug, name, min], i) => [slug, tier(slug, name, min, i)]));
 
 // The cheapest table in the casino.

@@ -27,15 +27,16 @@ test('no cap on a day, points never go below 0, and a new season starts three ti
   const u = { rp: null };
   assert.equal(noteRp(u, { stake: 1e6, netPnl: -1e6 }, NOV), 0, 'nothing to lose yet');
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).points, 300);
+  assert.equal(rpView(u, NOV).points, 99, 'no cap on a round, but RP stops at the top of 아이언 I: the next tier takes a 승급전');
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).today, 450, 'the second win: a silver player below their floor, 0.5×');
-  assert.equal(rpView(u, NOV).tier, 'gold');
+  assert.equal(rpView(u, NOV).today, 99, 'nothing kept past the top');
+  assert.equal(rpView(u, NOV).tier, 'iron');
+  u.rp.points = 300; // as if two 승급전 were won
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, NOV + 86_400_000);
   assert.equal(rpView(u, NOV + 86_400_000).today, 5, 'next day counts from 0');
   assert.equal(rpForRound({ stake: 1e6, netPnl: 1e6, points: 300 }), 5, 'the Gold Room is below a silver player: 0.5×');
   const DEC = Date.parse('2026-12-02T03:00:00Z');
-  assert.equal(rpView(u, DEC).points, 0, '골드 450 → 아이언 0');
+  assert.equal(rpView(u, DEC).points, 0, '실버 305 → 아이언 0');
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, DEC);
   assert.equal(u.rp.prev.season, 'rank-2026-10', 'October and November are one season');
 });
@@ -65,8 +66,9 @@ test('tiers widen as they climb and split into five divisions; 레전드 has non
   assert.deepEqual(RP_TIER_STARTS, [0, 100, 200, 350, 500, 700, 900, 1200, 1500, 2300]);
   assert.deepEqual([0, 99, 100, 349, 350, 2299, 2300].map(p => rpTierFor(p).id), ['iron', 'iron', 'bronze', 'silver', 'gold', 'grandmaster', 'legend']);
   assert.deepEqual([0, 19, 20, 40, 60, 80, 99, 100, 229, 230, 2299, 2300, 5000].map(rpDivision), ['V', 'V', 'IV', 'III', 'II', 'I', 'I', 'V', 'V', 'IV', 'I', null, null]);
-  assert.deepEqual(rpNextStep(80).next, { id: 'bronze', division: 'V', need: 20 });
-  assert.deepEqual(rpNextStep(2250).next, { id: 'legend', division: null, need: 50 });
+  assert.deepEqual(rpNextStep(60).next, { id: 'iron', division: 'I', need: 20 });
+  assert.deepEqual(rpNextStep(80).next, { id: 'bronze', division: 'V', need: 0, promo: true }, 'from I only the 승급전 goes on');
+  assert.deepEqual(rpNextStep(2250).next, { id: 'legend', division: null, need: 0, promo: true });
   assert.equal(rpNextStep(2350).next, null);
 });
 

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { defaultState, newUser } from '../lib/state.mjs';
 import { addLedger } from '../lib/economy.mjs';
-import { noteRp, rpRecordOf, rpBestTier } from '../lib/rank-points.mjs';
+import { noteRp, rpOf, rpRecordOf, rpBestTier } from '../lib/rank-points.mjs';
 import { achievementsView, claimAchievement } from '../lib/achievements.mjs';
 import { joinLeagues, settleLeagues } from '../lib/rank-league.mjs';
 
@@ -55,6 +55,7 @@ test('승급전 wins and league promotions are counted for good', () => {
   assert.equal(view(u)['promo-1'].done, true);
 
   const MON = Date.parse('2026-11-02T01:00:00Z'), DAY = 86_400_000;
+  rpOf(u, MON).points = 2300; // 레전드: no ceiling, so the big week counts in full
   for (let i = 0; i < 40; i++) noteRp(u, { stake: 1e6, netPnl: 30e6 }, MON + (i % 7) * DAY); // a big week
   joinLeagues(state, MON + 6 * DAY);
   settleLeagues(state, MON + 7 * DAY + 1000);

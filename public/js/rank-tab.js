@@ -32,11 +32,11 @@ export function promoHtml(state) {
   if (p.active) {
     const a = p.active;
     const dots = (n, of, cls) => Array.from({ length: of }, (_, i) => `<i class="${i < n ? cls : ''}"></i>`).join('');
-    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 건 판만 세요 · 2승이면 ${tierName(a.target, 'IV')}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
+    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 걸고 건 만큼 딴 판만 1승 · 친구방 제외 · 2승이면 ${tierName(a.target, 'IV')}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
   }
   if (p.offer) {
     const o = p.offer;
-    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)}로 바로 올라가기</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 3판 중 2승</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
+    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)}로 바로 올라가기</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 3판 중 2승 · 건 만큼 따야 1승</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
   }
   if (p.last && Date.now() - Date.parse(p.last.at) < 6 * 3_600_000) return `<p class="promo-last ${p.last.result === 'won' ? 'pos' : 'neg'}">${tierName(p.last.target)} 승급전 ${p.last.result === 'won' ? '성공' : '실패'}</p>`;
   return '';
@@ -75,7 +75,7 @@ export function rpCardHtml(state) {
   const rp = state?.rp;
   if (!rp) return '';
   // Once RP is the tier, the hero above already shows it; this card keeps only the rules.
-  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 V부터 I까지 다섯 단계이고, 위 티어일수록 칸이 넓어요 (아이언 100 RP → 그랜드마스터 800 RP). 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 아이언·브론즈는 그 3/4만, 실버부터 마스터까지는 똑같이 내려가요. 그랜드마스터부터는 이기면 0.6배, 지면 1.2배라 레전드 가기가 가장 어려워요. 한 판·하루 상한은 없어요. 내 티어보다 낮은 층에서 이기면 0.5배. 새로 열린 층은 디비전마다 베팅 상한이 있어요 (V 2배 ~ I 10배).${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
+  if (rp.era) return `<p class="rp-card-rule">티어는 RP로 정해져요. 티어마다 V부터 I까지 다섯 단계이고, 위 티어일수록 칸이 넓어요 (아이언 100 RP → 그랜드마스터 800 RP). 이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 아이언·브론즈는 그 3/4만, 실버부터 마스터까지는 똑같이 내려가요. 그랜드마스터부터는 이기면 0.6배, 지면 1.2배라 레전드 가기가 가장 어려워요. 한 판에 건 돈의 3배(+30 RP)까지만 쳐요. 내 티어보다 낮은 층에서 이기면 0.5배. 새로 열린 층은 디비전마다 베팅 상한이 있어요 (V 2배 ~ I 10배).${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'} 오늘 +${rp.today}</p>`;
   const pct = Math.round(Math.max(0, Math.min(1, rp.progress || 0)) * 100);
   const last = rp.last && Date.now() - Date.parse(rp.last.at) < 6 * 3_600_000 ? `<span class="rp-last ${rp.last.delta > 0 ? 'pos' : rp.last.delta < 0 ? 'neg' : ''}">방금 ${rp.last.delta > 0 ? '+' : ''}${rp.last.delta}</span>` : '';
   const board = state?.rankings?.rp || [];
@@ -89,7 +89,7 @@ export function rpCardHtml(state) {
     </div>
     <div class="tier-hero-bar" role="progressbar" aria-label="다음 RP 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
     <p class="rp-card-foot"><span>${rp.next ? `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP` : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
-    <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판·하루 상한은 없어요.</p>`;
+    <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 한 판에 건 돈의 3배(+30 RP)까지만 쳐요.</p>`;
 }
 
 // 주간 리그 (lib/rank-league.mjs): my group of thirty, ranked by this week's RP. The top five move

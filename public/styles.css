@@ -573,14 +573,9 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
   .pop-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:visible}
   .pop-row>li{width:auto}
   .pop-row>li:nth-child(n+13){display:none}
-  /* PC: the shop's "착용 중" stage is a wide strip, so the pieces on it grow with it */
-  .skin-stage{min-height:210px}
-  .skin-stage-cards{--card-w:74px}
-  .skin-stage-cards .card+.card{margin-left:-38px}
-  .skin-stage-chips{--chip:58px;gap:10px}
-  .skin-stage-name{font-size:18px;padding:6px 16px}
   /* PC: achievements in two columns instead of one long list */
   [data-profile] .mission-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px}
+  [data-profile] .mission-list>.mission:nth-child(-n+2){border-top:0}
 }
 @media (orientation:landscape) and (max-height:520px){
   .home-hero-card{min-height:170px}

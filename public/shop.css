@@ -143,7 +143,7 @@
    every frame, and a ranking full of platinum plates kept the phone busy for nothing. */
 @keyframes plate-sheen{to{background-position:0 0,-220% 0}}
 @media (prefers-reduced-motion:reduce){.name-frame--platinum{animation:none}}
-.skin-preview--frame{font:600 clamp(13px,3.9vw,17px) var(--sans);letter-spacing:-.01em;padding:0 6px}
+.skin-preview--frame{font:600 clamp(13px,3.6vw,17px) var(--sans);letter-spacing:-.02em;padding:0 4px}
 .skin-preview--frame .name-frame{max-width:100%}
 .name-frame-plain{color:var(--smoke)}
 .podium-name .name-frame,.rank-name .name-frame{padding-top:0;padding-bottom:0}
@@ -331,3 +331,12 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .season-shop .shop-note{margin:0 0 12px}
 .skin-tile .skin-limited{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;border:1px solid var(--hair-strong);font-size:10px;font-weight:700;letter-spacing:.04em;vertical-align:1px}
 
+
+/* PC: the "착용 중" stage is a wide strip, so the pieces on it grow with it */
+@media (min-width:980px){
+  .skin-stage{min-height:220px}
+  .skin-stage-cards{--card-w:76px}
+  .skin-stage-cards .card+.card{margin-left:-40px}
+  .skin-stage-chips{--chip:60px;gap:10px}
+  .skin-stage-name{font-size:18px;padding:6px 16px}
+}

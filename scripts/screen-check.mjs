@@ -130,7 +130,9 @@ async function main() {
         await PAGES[name](page);
         await wait(1200);
         if (!SHEET_PAGES.has(name)) await closeOverlays(page);
-        await page.evaluate(() => scrollTo(0, 0));
+        // walk down once so lazy pictures load, then back to the top for the full-page shot
+        await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += innerHeight) { scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); } scrollTo(0, 0); });
+        await wait(300);
         const file = path.join(out, `${size}-${name}.png`);
         await page.screenshot({ path: file, fullPage: !SHEET_PAGES.has(name) });
         const found = await page.evaluate(inspect, Boolean(SIZES[size].pc));

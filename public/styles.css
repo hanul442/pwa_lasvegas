@@ -102,8 +102,11 @@ button:disabled{cursor:not-allowed}
 .tier-card{width:100%;display:grid;grid-template-columns:1fr auto;column-gap:16px;row-gap:2px;align-items:center;padding:20px 4px;border:0;border-bottom:1px solid var(--hair);background:none;text-align:left;transition:background .25s}
 .tier-card:not(:disabled):hover{background:#ffffff08}
 .tier-card>strong{grid-column:1;grid-row:1;font:560 min(30px,6.6vw)/1.1 var(--display);font-stretch:125%;letter-spacing:-.02em;min-width:0;overflow-wrap:normal}
+.tier-card>strong .tier-no{display:block;font:600 11px var(--display);letter-spacing:.24em;color:var(--smoke);margin-bottom:4px}
+.tier-card>strong .tier-ko{font:500 14px var(--sans);letter-spacing:0;color:var(--smoke);white-space:nowrap}
 .tier-card>span:not(.tier-chips){grid-column:1;grid-row:2;color:var(--ivory);font-size:16px;font-variant-numeric:tabular-nums}
 .tier-card>small{grid-column:1;grid-row:3;color:var(--taupe);font-size:14px;line-height:1.45}
+.tier-card .tier-cap{font-style:normal;font-size:12px;color:var(--taupe);margin-left:6px;padding:1px 6px;border:1px solid var(--hair-strong);border-radius:999px;white-space:nowrap}
 .tier-stars{margin-left:10px;font:500 14px/1 var(--sans);font-style:normal;letter-spacing:.08em;color:var(--ivory);vertical-align:middle;white-space:nowrap}
 .tier-card:disabled{opacity:.6}
 .tier-card:disabled>strong{color:var(--dim)}
@@ -297,6 +300,7 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .admin-field>span{font-size:14px;font-weight:600}
 .admin-field small{color:var(--dim);font-weight:400}
 .admin-field select,.admin-field input,.admin-custom input{width:100%;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--hair-strong);background:var(--ink);color:var(--white);font:16px var(--sans)}
+.admin-rp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}.admin-rp select{flex:1 1 110px;min-height:46px;padding:0 12px;border-radius:12px;border:1px solid var(--hair-strong);background:var(--ink);color:var(--white);font:16px var(--sans)}.admin-rp .pill-button{flex:1 1 100%;min-height:44px}
 .admin-mode{grid-template-columns:repeat(2,1fr)}
 .admin-mode button{min-height:40px;border:0;border-radius:9px;background:none;color:var(--smoke)}
 .admin-mode button.is-active{background:var(--white);color:var(--ink);font-weight:600}
@@ -456,6 +460,20 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 /* ---------- home ---------- */
 [data-surface="lobby"].is-active{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;padding-top:16px}
 .home-top{display:grid;gap:12px}
+.home-tier:empty{display:none}
+.home-tier-card{display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px 12px 12px;border:1px solid var(--hair);border-radius:16px;background:linear-gradient(90deg,color-mix(in srgb,var(--t-b) 38%,transparent),transparent 70%),var(--ink-2);color:var(--white);text-align:left}
+.home-tier-card:active{transform:scale(.99)}
+.home-tier-main{display:grid;gap:6px;flex:1;min-width:0}
+.home-tier-line{display:flex;align-items:baseline;gap:10px;min-width:0}
+.home-tier-line strong{font:600 18px/1.1 var(--display);font-stretch:112%;letter-spacing:-.01em;white-space:nowrap}
+.home-tier-line span{font-size:14px;color:var(--smoke);font-variant-numeric:tabular-nums;white-space:nowrap}
+.home-tier-line b{color:var(--white);font-weight:650}
+.home-tier-bar{display:block;height:4px;border-radius:999px;background:#ffffff1a;overflow:hidden}
+.home-tier-bar i{display:block;height:100%;border-radius:inherit;background:var(--t-a)}
+.home-tier-main small{font-size:13px;color:var(--smoke);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-tier-rank{flex:none;font:600 20px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.home-tier-rank small{margin-left:2px;font:500 13px var(--sans);color:var(--smoke)}
+.home-tier-rank::after{content:"›";margin-left:8px;color:var(--dim);font:400 20px var(--sans)}
 .home-hero-card{position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;min-height:220px;height:100%;padding:22px 20px 20px;border-radius:20px;overflow:hidden;isolation:isolate;
   background:linear-gradient(90deg,#0a0b0df0 0,#0a0b0d99 52%,#0a0b0d1a),var(--hero-art) 70% 70%/cover,#111}
 .home-hero-card::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffffff14}
@@ -643,7 +661,17 @@ html[data-pace="minimal"] *,html[data-pace="minimal"] *::before,html[data-pace="
 .first-day-go::after{content:" →"}
 .first-day-note{margin:-4px 0 0;color:var(--smoke);font-size:13px;text-align:center}
 .first-day-more{justify-self:center;min-height:40px;padding:0 14px;border:0;background:none;color:var(--white);font:600 14px/1 var(--sans);text-decoration:underline;text-underline-offset:4px;text-decoration-color:#ffffff40}
-@media (min-width:720px){.first-day{max-width:560px;padding:30px}}
+/* wide screens (Fold inner, tablets): the card spans the home width in two columns, money on the
+   left and the play button on the right, instead of a narrow card with empty space beside it */
+@media (min-width:720px){
+  .first-day{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-areas:"kick go" "money go" "money note" "money more";align-items:center;gap:10px 32px;padding:28px 30px}
+  .first-day-kicker{grid-area:kick;align-self:end}
+  .first-day-money{grid-area:money;align-self:start}
+  .first-day-go{grid-area:go;align-self:end;margin:0}
+  .first-day-note{grid-area:note;margin:0}
+  .first-day-more{grid-area:more}
+  .first-day:not(:has(.first-day-note)){grid-template-areas:"kick go" "money go" "money more"}
+}
 .is-first-day .nav-dot{display:none}
 .first-day-money .is-down{color:#ff8a82}
 .first-day-money .is-up{color:var(--white)}

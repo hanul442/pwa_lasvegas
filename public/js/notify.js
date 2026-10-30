@@ -7,10 +7,17 @@
 import { api } from './api.js';
 import { el } from './fx.js';
 import { isIOS, standalone, openInstallGuide } from './install.js';
+import { remember } from './seen.js';
 
 const NAG_EVERY = 3 * 60 * 1000;
 const NAG_GAP = 45 * 1000; // never twice in a row right after closing it
 const COUNT_KEY = 'vegas:push-nags';
+// When another phone of this account already gets push, this phone asks once on its own, not on
+// a loop (설정 → 알림 still turns it on here). Kept per phone, unlike the nag count.
+const ASKED_HERE_KEY = 'vegas:push-asked-here';
+let accountHasPush = false;
+if (typeof addEventListener === 'function') addEventListener('vegas:state', e => { accountHasPush = Number(e.detail?.pushDevices) > 0; });
+const askedHere = () => { try { return Boolean(localStorage.getItem(ASKED_HERE_KEY)); } catch { return false; } };
 
 const canPush = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
@@ -98,7 +105,7 @@ const LATER = ['나중에', '그래도 나중에', '다음에 진짜로', '조�
 let sheet = null, lastClosed = 0, timer = null, synced = false, isLobby = () => true, isReady = () => true;
 
 const nagCount = () => { try { return Number(localStorage.getItem(COUNT_KEY)) || 0; } catch { return 0; } };
-const bumpNag = () => { try { localStorage.setItem(COUNT_KEY, String(nagCount() + 1)); } catch {} };
+const bumpNag = () => remember(COUNT_KEY, nagCount() + 1);
 
 function content(state) {
   if (state === 'blocked') {
@@ -181,7 +188,9 @@ export function maybeAsk({ force = false, user = false } = {}) {
   if (state === 'none' || sheet || document.hidden || !isLobby()) return;
   if (!user && (state === 'blocked' || !isReady())) return;
   if (!force && Date.now() - lastClosed < NAG_GAP) return;
+  if (!user && accountHasPush && askedHere()) return;
   if (document.querySelector('.lounge-sheet, .auth-gate, .bigwin, dialog[open]')) { setTimeout(() => maybeAsk({ user }), 4000); return; }
+  if (!user) { try { localStorage.setItem(ASKED_HERE_KEY, '1'); } catch {} }
   open(state);
 }
 

@@ -17,12 +17,13 @@ const keepAmount = (slug, v) => { try { localStorage.setItem(lastKey(slug), Stri
 // stack ran under the table's smallest bet). With 'rebuy' the other button gets up from the table.
 // `event`: an event table, which asks the player to hold its entry (state.eventEntry) and sells its
 // chips whatever floor the event stands on.
-export function buyInSheet(state, tier, { mode = 'sit', event = null, onLeave = null } = {}) {
+// `room`: a friend's room code (an invite, 옆자리, 1:1 도전); its floor's chips are sold whatever the RP tier.
+export function buyInSheet(state, tier, { mode = 'sit', event = null, room = null, onLeave = null } = {}) {
   if (open) return open;
   const range = state?.cashier?.floors?.[tier.slug];
   if (!range || range.max < tier.min) {
     if (range && range.inHand > 0 && range.wallet >= tier.min) toast(`이미 ${tier.name} 최대 바이인(최소 베팅 100번어치)만큼 칩이 있어요.`);
-    else toast(`지갑에 돈이 모자라요. ${tier.name}은 최소 ${wonCH(tier.min)}원부터예요.`);
+    else toast(`지갑에 돈이 모자라요. ${tier.name} 테이블은 최소 ${wonCH(tier.min)}원부터예요.`);
     return Promise.resolve(null);
   }
   open = new Promise(resolve => {
@@ -112,7 +113,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, onLeave = 
     buy.addEventListener('click', async () => {
       buy.disabled = true;
       try {
-        const out = await api.buyIn(tier.slug, amount, event);
+        const out = await api.buyIn(tier.slug, amount, event, room);
         if (!event) keepAmount(tier.slug, amount);
         sound.chip?.(); haptic?.([12, 30, 12]);
         close(out.state);

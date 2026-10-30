@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser } from '../lib/state.mjs';
-import { noteRp } from '../lib/rank-points.mjs';
+import { noteRp, rpOf } from '../lib/rank-points.mjs';
 import { joinLeagues, settleLeagues, leagueView, leagueDue, groupBots, LEAGUE_SIZE } from '../lib/rank-league.mjs';
 
 const MON = Date.parse('2026-11-02T01:00:00Z'); // Monday 10:00 KST
@@ -49,6 +49,7 @@ test('when the week ends the top five go up, the bottom five go down, the top th
   const { state, people } = world(2);
   const [star, idle] = people;
   idle.league = { level: 2 };
+  rpOf(star, MON).points = 2300; // 레전드: no ceiling, so the big week counts in full
   for (let i = 0; i < 40; i++) noteRp(star, { stake: 1e6, netPnl: 30e6 }, MON + (i % 7) * DAY); // a big week
   noteRp(idle, { stake: 1e6, netPnl: -1e6 }, MON);
   joinLeagues(state, MON + 6 * DAY);
@@ -67,4 +68,8 @@ test('when the week ends the top five go up, the bottom five go down, the top th
   // The new week starts with no group until a round is played.
   assert.equal(leagueView(state, star, NEXT).joined, false);
   assert.equal(leagueView(state, star, NEXT).name, '프로 리그');
+  // The result card reads the move with its league names.
+  const up = leagueView(state, star, NEXT).last, down = leagueView(state, idle, NEXT).last;
+  assert.deepEqual([up.fromName, up.toName, up.toId, up.badge], ['루키 리그', '프로 리그', 'pro', true]);
+  assert.deepEqual([down.fromId, down.toId, down.move], ['elite', 'pro', -1]);
 });

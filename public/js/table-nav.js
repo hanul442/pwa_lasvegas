@@ -41,7 +41,7 @@ export function lastTier(game) {
 // tierFor(game) -> tier slug to go straight to, or null when the player has to pick.
 // tiersOf(game) -> [{ slug, name, min, max, open }] for the current game's table row.
 // onGame(game), onTier(slug), onAllTiers()
-export function openTableSwitcher({ games, current, currentTier, tierFor, tiersOf, onGame, onTier, onAllTiers }) {
+export function openTableSwitcher({ games, current, currentTier, tierFor, tiersOf, onGame, onTier, onAllTiers, maxOf = t => t.max }) {
   document.querySelector('.table-switcher')?.dispatchEvent(new Event('vegas:close'));
   const scrim = el('div', 'lounge-scrim');
   const sheet = el('section', 'lounge-sheet table-switcher');
@@ -66,7 +66,7 @@ export function openTableSwitcher({ games, current, currentTier, tierFor, tiersO
     for (const t of tiers) {
       const b = el('button', `switcher-tier${t.slug === currentTier ? ' is-current' : ''}`);
       b.type = 'button';
-      b.innerHTML = `<strong>${t.name}</strong><small>${formatCH(t.min)}–${formatCH(t.max)}</small>`;
+      b.innerHTML = `<strong>${t.name}</strong><small>${formatCH(t.min)}–${formatCH(maxOf(t))}</small>`;
       if (t.slug === currentTier) b.setAttribute('aria-current', 'true');
       b.disabled = !t.open || t.slug === currentTier;
       b.addEventListener('click', pick(() => onTier(t.slug)));
@@ -89,7 +89,7 @@ export function openTableSwitcher({ games, current, currentTier, tierFor, tiersO
     const b = el('button', `switcher-game${g.id === current.id ? ' is-current' : ''}`);
     b.type = 'button';
     const tier = TIERS[tierFor(g)];
-    b.innerHTML = `<strong>${g.name}</strong><small>${g.id === current.id ? '지금 앉은 게임' : tier ? `${tier.name} · ${formatCH(tier.min)}–${formatCH(tier.max)}` : '테이블 고르기'}</small>`;
+    b.innerHTML = `<strong>${g.name}</strong><small>${g.id === current.id ? '지금 앉은 게임' : tier ? `${tier.name} · ${formatCH(tier.min)}–${formatCH(maxOf(tier))}` : '테이블 고르기'}</small>`;
     if (g.id === current.id) { b.setAttribute('aria-current', 'true'); b.disabled = true; }
     b.addEventListener('click', pick(() => onGame(g)));
     li.append(b);

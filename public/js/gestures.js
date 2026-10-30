@@ -3,6 +3,7 @@
 // listens, so tapping a chip, a betting spot or a button does what it always did.
 import { animate, el } from './fx.js';
 import { settings } from './settings.js';
+import { remember } from './seen.js';
 
 const TIP_KEY = 'vegas:gesture-tip';
 const IGNORE = 'button,a,input,textarea,select,[data-zone],.chip,.table-moved,.toast,.dn-offer,[role="dialog"]';
@@ -62,7 +63,7 @@ export function feltGestures(felt, { live, onTap, onWave, tip }) {
     if (seen >= 3) return;
     // tip() returns false when something else is talking (the first-hand tips); try next turn.
     if (tip('펠트를 톡 치면 히트, 옆으로 쓸면 스탠드') === false) return;
-    try { localStorage.setItem(TIP_KEY, String(seen + 1)); } catch {}
+    remember(TIP_KEY, seen + 1);
   };
 
   return {

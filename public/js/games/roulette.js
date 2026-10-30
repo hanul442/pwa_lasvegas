@@ -123,7 +123,7 @@ function crowdPlan(npc, t) {
 export async function mountRoulette(ctx, { event = null } = {}) {
   const ev = event ? eventInfo(ctx.state, event) : null;
   // Chips go on as many spots as you like before the spin, like a real layout.
-  const t = new Table({ ...ctx, game: 'roulette', title: ev ? ev.title : gameName('roulette'), feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당', hot: !ev, toke: true });
+  const t = new Table({ ...ctx, event: !!ev, game: 'roulette', title: ev ? ev.title : gameName('roulette'), feltClass: 'felt--roulette', multi: true, zoneMin: false, zoneWord: '한 곳당', hot: !ev, toke: true });
   const meter = ev?.streak ? createStreakMeter(t, ev, ctx.state?.eventStreaks?.[ev.id] || 0) : null;
   if (ev) t.root.classList.add('is-event', `is-event--${ev.id}`);
   t.body.innerHTML = `

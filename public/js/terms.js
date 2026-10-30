@@ -1,6 +1,7 @@
 // 이용약관: what the chips are (and are not), who may play, and where to get help.
 // New accounts agree on the sign-up form; existing players agree once per version after signing in.
 import { el } from './fx.js';
+import { remember } from './seen.js';
 
 export const TERMS_VERSION = '2026-10-13';
 const KEY = 'vegas:terms';
@@ -11,7 +12,7 @@ export function termsAgreed() {
   try { return localStorage.getItem(KEY) === TERMS_VERSION; } catch { return false; }
 }
 export function markAgreed() {
-  try { localStorage.setItem(KEY, TERMS_VERSION); } catch {}
+  remember(KEY, TERMS_VERSION);
 }
 
 const SECTIONS = [
@@ -35,7 +36,7 @@ const SECTIONS = [
     '위반하면 운영자가 칩을 회수하거나 계정 이용을 제한할 수 있어요.'
   ]],
   ['제5조 칩과 기록', [
-    '칩·대출·랭킹 같은 게임 안 기록은 게임을 위한 데이터일 뿐 재산이 아니에요.',
+    '칩·RP·랭킹 같은 게임 안 기록은 게임을 위한 데이터일 뿐 재산이 아니에요.',
     '게임 균형이나 오류 수정을 위해 운영자가 칩과 기록을 조정하거나 초기화할 수 있고, 이에 대한 보상은 없어요.'
   ]],
   ['제6조 개인정보', [

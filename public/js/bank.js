@@ -1,10 +1,13 @@
-// The bank screen, simplest first: what I hold and owe, the free money I can take now, my
-// loans, the four lenders as one-line rows, bankruptcy, and past loans folded away. Every number comes from the server (lib/bank.mjs).
+// 지갑 (2026-10-29, after the bank closed): what I have, split into the wallet and the chips on a
+// table, the free money I can take now (일급·정부 지원금·구제금융), and the chip history. A loan
+// left from before the bank closed shows only while it is unpaid, so it can still be paid off.
+// Every number comes from the server (lib/cashier.mjs, lib/engagement.mjs).
 import { api, errorMessage } from './api.js';
 import { el, formatCH, formatMoney, sound } from './fx.js';
 import { moneyOf } from './money.js';
 import { chipsToWallet, claimDaily } from './lounge.js';
 import { errorToast } from './notice.js';
+import { renderLedger } from './ledger.js';
 
 const DAY = 86_400_000;
 const pct = rate => `${+(rate * 100).toFixed(2)}%`;
@@ -91,50 +94,6 @@ function amountField(max, start, onInput, exact = null) {
   return { node: wrap, update };
 }
 
-function borrowSheet(state, offer, onChanged) {
-  const bank = state.bank;
-  let days = 7, amount = offer.limit;
-  openSheet({
-    eyebrow: `${offer.name} · ${offer.house}`,
-    title: `최대 ${won(offer.limit)}까지 빌려줘요`,
-    build(body, setGo) {
-      const preview = el('p', 'bank-preview');
-      const field = amountField(offer.limit, amount, v => { amount = v; draw(); });
-      const termLabel = el('p', 'bank-label', '상환 기한');
-      const terms = el('div', 'segmented bank-terms');
-      terms.setAttribute('role', 'radiogroup');
-      terms.setAttribute('aria-label', '상환 기한');
-      const buttons = bank.terms.map(t => {
-        const b = el('button', 'segment', `${t.days}일`);
-        b.type = 'button';
-        b.setAttribute('role', 'radio');
-        b.addEventListener('click', () => { days = t.days; draw(); });
-        terms.append(b);
-        return [t, b];
-      });
-      body.append(field.node, termLabel, terms, preview);
-      function draw() {
-        const term = bank.terms.find(t => t.days === days);
-        const rate = Math.round(offer.dailyRate * term.rateFactor * 10_000) / 10_000;
-        buttons.forEach(([t, b]) => b.setAttribute('aria-checked', String(t.days === days)));
-        let owe = amount;
-        for (let k = 0; k < days; k++) owe = Math.ceil(owe * (1 + rate));
-        owe = Math.max(UNIT, Math.floor(owe / UNIT) * UNIT);
-        preview.innerHTML = `하루 <b>${pct(rate)}</b> 복리 · 자정마다 이자가 붙어요<br>${days}일 뒤 갚을 돈 약 <b>${won(owe)}</b>. 못 갚으면 들어오는 칩에서 자동으로 가져가고 신용이 떨어져요.`;
-        const bad = !inUnits(amount) || amount > offer.limit;
-        setGo({ text: bad ? (amount > offer.limit ? '한도를 넘었어요' : amount > 0 ? '100만원 단위로 넣어 주세요' : '금액을 넣어 주세요') : `${won(amount)} 빌리기`, disabled: bad });
-      }
-      return draw;
-    },
-    async confirm(go) {
-      const out = await api.borrow(offer.slug, amount, days);
-      sound.chips(5);
-      await chipsToWallet(go, amount);
-      onChanged(out.state);
-    }
-  });
-}
-
 function repaySheet(state, loan, onChanged) {
   const available = moneyOf(state);
   const max = available >= loan.balance ? loan.balance : Math.floor(available / UNIT) * UNIT;
@@ -161,50 +120,6 @@ function repaySheet(state, loan, onChanged) {
   });
 }
 
-function bankruptcySheet(state, onChanged) {
-  const bank = state.bank;
-  openSheet({
-    eyebrow: '개인 파산',
-    title: `빚 ${won(bank.debt)}을 없앨까요?`,
-    danger: true,
-    build(body, setGo) {
-      const welfare = state.engagement?.support?.welfare;
-      body.innerHTML = `<ul class="bank-terms-list">
-        <li>모든 대출이 사라져요.</li>
-        <li>지갑에 남은 ${won(state.user.account.available)}은 압류돼요.</li>
-        <li>신용이 10등급(0점)으로 떨어지고, 3일 동안 1·2·3금융권을 쓸 수 없어요. 사채는 빌려줘요.</li>
-        <li>파산은 7일에 한 번만 신청할 수 있어요.</li>
-        ${welfare && !welfare.claimed ? `<li>파산하면 구제금융 ${won(welfare.amount)}이 바로 들어와요 (하루 ${welfare.perDay}번까지).</li>` : ''}</ul>`;
-      setGo({ text: '파산 신청하기' });
-    },
-    async confirm(go) {
-      const out = await api.bankruptcy();
-      sound.lose?.();
-      if (out.result?.bailout) await chipsToWallet(go, out.result.bailout);
-      onChanged(out.state);
-    }
-  });
-}
-
-function creditBlock(state) {
-  const b = state.bank, a = state.user.account;
-  const box = el('section', 'bank-hero');
-  const score = Math.max(0, Math.min(1000, b.credit.score));
-  const ban = b.credit.bannedUntil && Date.parse(b.credit.bannedUntil) > Date.now()
-    ? `<p class="bank-flag">파산 후 ${Math.ceil((Date.parse(b.credit.bannedUntil) - Date.now()) / 3_600_000)}시간 동안 제도권 대출이 막혀 있어요</p>` : '';
-  box.innerHTML = `
-    <dl class="bank-sums">
-      <div><dt>지갑</dt><dd>${won(a.available)}</dd></div>
-      <div><dt>빚</dt><dd class="${b.debt > 0 ? 'neg' : ''}">${b.debt > 0 ? '-' : ''}${won(b.debt)}</dd></div>
-      <div><dt>순자산</dt><dd>${won(b.netWorth)}</dd></div>
-    </dl>
-    ${heldLine(state)}
-    ${b.closed ? `<p class="bank-flag bank-flag--note">10월 29일부터 대출·신용·파산이 없어졌어요. 층은 RP 티어로 열리고, 테이블 칩은 앉을 때 가진 돈으로 사요.${b.debt > 0 ? ' 남은 빚은 갚을 수 있고, 이번 시즌이 끝나면 정리돼요.' : ''}</p>` : `<div class="bank-grade"><span>신용 <b>${b.credit.grade}등급</b></span><span class="bank-score" aria-label="신용 점수 ${score}점, 1000점 만점"><i style="width:${score / 10}%"></i></span><small>${score} / 1000</small></div>${ban}`}`;
-  const go = box.querySelector('[data-held-go]');
-  if (go) go.addEventListener('click', () => resumeTable(go));
-  return box;
-}
-
 // Chips still on a table (a round not finished, a poker seat not left) are the player's but not in
 // the wallet: the top bar shows the wallet, so the bank says where the rest is and how it comes back.
 const GAME_NAMES = { blackjack: '블랙잭', matgo: '맞고', gostop: '고스톱', seotda: '섯다', poker: '홀덤', sevenpoker: '7포커', baccarat: '바카라' };
@@ -220,11 +135,40 @@ function heldLine(state) {
 // app.js owns the tables; it opens the open round when asked.
 function resumeTable(btn) { document.dispatchEvent(new CustomEvent('vegas:resume', { detail: { trigger: btn } })); }
 
+// The money on hand: the wallet (lib/cashier.mjs account.wallet, plus chips held without a seat,
+// which go back to it on the next change) and the chips at a table (in hand while seated, and
+// any still in a round).
+export function walletSplit(state) {
+  const a = state.user.account, c = state.cashier || {};
+  const seated = Boolean(c.on && c.seat);
+  const inHand = Math.max(0, a.available || 0), locked = Math.max(0, a.locked || 0);
+  const wallet = c.on ? Math.max(0, c.wallet || 0) + (seated ? 0 : inHand) : inHand;
+  const table = (seated ? inHand : 0) + locked;
+  return { wallet, table, total: wallet + table, seat: seated ? c.seat : null };
+}
+
+function walletHero(state) {
+  const { wallet, table, total, seat } = walletSplit(state);
+  const floor = seat ? (state.floors || []).find(f => f.slug === seat.floor) : null;
+  const box = el('section', 'wallet-hero');
+  box.innerHTML = `
+    <p class="wallet-hero-kicker">가진 돈</p>
+    <strong class="wallet-hero-total">${formatCH(total)}<span>원</span></strong>
+    <dl class="wallet-split">
+      <div><dt>지갑</dt><dd>${won(wallet)}</dd><small>테이블에 앉을 때 칩으로 바꿔요</small></div>
+      <div><dt>테이블 칩</dt><dd>${won(table)}</dd><small>${floor ? `${floor.name}에 앉아 있어요 · 일어나면 지갑으로` : table > 0 ? '판이 끝나면 지갑으로 돌아와요' : '앉아 있는 테이블이 없어요'}</small></div>
+    </dl>
+    ${heldLine(state)}`;
+  const go = box.querySelector('[data-held-go]');
+  if (go) go.addEventListener('click', () => resumeTable(go));
+  return box;
+}
+
+// Loans taken before the bank closed (2026-10-29): only to pay them off.
 function loansBlock(state, onChanged) {
   const b = state.bank;
   const box = el('section', 'bank-block');
-  box.innerHTML = `<header class="lounge-head"><h2>내 대출</h2><small>${b.loans.length} / ${b.maxLoans}건</small></header>`;
-  if (!b.loans.length) { box.append(el('p', 'lounge-note', '지금은 빚이 없어요.')); return box; }
+  box.innerHTML = `<header class="lounge-head"><h2>남은 대출</h2><small>${won(b.debt)}</small></header><p class="lounge-note">은행은 문을 닫았어요. 예전에 빌린 돈은 여기서 갚을 수 있어요.</p>`;
   const list = el('ul', 'loan-list');
   for (const loan of b.loans) {
     const li = el('li', `loan${loan.overdue ? ' is-overdue' : ''}`);
@@ -233,28 +177,6 @@ function loansBlock(state, onChanged) {
     pay.type = 'button';
     pay.addEventListener('click', () => repaySheet(state, loan, onChanged));
     li.append(pay);
-    list.append(li);
-  }
-  box.append(list);
-  return box;
-}
-
-function lendersBlock(state, onChanged) {
-  const b = state.bank;
-  const box = el('section', 'bank-block');
-  box.innerHTML = `<header class="lounge-head"><h2>빌리기</h2><small>제때 갚으면 신용이 올라요</small></header>`;
-  const list = el('ul', 'lender-list');
-  for (const offer of b.lenders) {
-    const li = el('li');
-    const card = el('button', `lender lender--${offer.slug}`);
-    card.type = 'button';
-    card.disabled = !offer.eligible;
-    card.innerHTML = `<span class="lender-main"><strong>${offer.house}</strong>
-      <span class="lender-terms"><b>하루 ${pct(offer.dailyRate)}</b><span>최대 ${won(offer.limit)}</span></span>
-      ${offer.eligible ? '' : `<small>${offer.reason}</small>`}</span><span class="lender-go" aria-hidden="true">${offer.eligible ? '빌리기' : `${offer.maxGrade}등급↑`}</span>`;
-    card.setAttribute('aria-label', `${offer.house}, 하루 ${pct(offer.dailyRate)}, 최대 ${won(offer.limit)}${offer.eligible ? ', 빌리기' : `, ${offer.reason}`}`);
-    card.addEventListener('click', () => borrowSheet(state, offer, onChanged));
-    li.append(card);
     list.append(li);
   }
   box.append(list);
@@ -287,7 +209,7 @@ export function supportButtons(state, onChanged) {
 function payBlock(state, onChanged) {
   const eng = state.engagement, daily = eng.daily, sup = eng.support;
   const box = el('section', 'bank-block');
-  box.innerHTML = `<header class="lounge-head"><h2>무료로 받기</h2><small>갚을 필요 없는 돈</small></header>`;
+  box.innerHTML = `<header class="lounge-head"><h2>받을 수 있는 돈</h2><small>갚을 필요 없어요</small></header>`;
   const list = el('ul', 'pay-list');
   const row = (title, sub, label, enabled, run) => {
     const li = el('li', `pay-row${enabled ? ' is-ready' : ''}`);
@@ -315,42 +237,14 @@ function payBlock(state, onChanged) {
   return box;
 }
 
-function bankruptcyBlock(state, onChanged) {
-  const b = state.bank;
-  if (!b.debt) return null;
-  const box = el('section', 'bank-block bank-block--bust');
-  box.innerHTML = `<header class="lounge-head"><h2>파산 신청</h2><small>빚이 가진 칩보다 많을 때</small></header><p class="lounge-note">${b.bankruptcy.eligible ? '빚을 모두 없애는 대신 지갑은 압류되고 신용이 바닥으로 떨어져요.' : b.bankruptcy.reason + '.'}</p>`;
-  const btn = el('button', 'pill-button pill-button--danger', '파산 신청');
-  btn.type = 'button';
-  btn.disabled = !b.bankruptcy.eligible;
-  btn.addEventListener('click', () => bankruptcySheet(state, onChanged));
-  box.append(btn);
-  return box;
-}
-
-const OUTCOME = { ON_TIME: '완납', LATE: '연체 후 완납', COLLECTED: '자동 회수', DISCHARGED: '파산 면책' };
-function historyBlock(state) {
-  const rows = state.bank.history || [];
-  if (!rows.length) return null;
-  const box = el('details', 'bank-block bank-history');
-  box.innerHTML = `<summary class="lounge-head"><h2>지난 대출</h2><small>${rows.length}건</small></summary>`;
-  const list = el('ul', 'ledger');
-  for (const h of rows) {
-    const lender = state.bank.lenders.find(l => l.slug === h.lender);
-    list.append(el('li', '', `<span>${lender?.house || h.lender} · ${OUTCOME[h.outcome] || h.outcome}</span><b>${won(h.principal)}${h.interest ? ` <small>이자 ${won(h.interest)}</small>` : ''}</b>`));
-  }
-  box.append(list);
-  return box;
-}
-
 export function renderBank(root, state, onChanged) {
-  if (!state?.bank) { root.textContent = '불러오는 중…'; return; }
+  if (!state?.user) { root.textContent = '불러오는 중…'; return; }
+  const history = el('section', 'bank-block wallet-history');
+  renderLedger(history, state);
   root.replaceChildren(...[
-    creditBlock(state),
-    payBlock(state, onChanged),
-    state.bank.loans.length ? loansBlock(state, onChanged) : null,
-    state.bank.closed ? null : lendersBlock(state, onChanged),
-    state.bank.closed ? null : bankruptcyBlock(state, onChanged),
-    historyBlock(state)
+    walletHero(state),
+    state.engagement ? payBlock(state, onChanged) : null,
+    state.bank?.loans?.length ? loansBlock(state, onChanged) : null,
+    history
   ].filter(Boolean));
 }

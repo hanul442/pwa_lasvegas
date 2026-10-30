@@ -1,5 +1,6 @@
 // Thin client for the server-authoritative game API.
 import { API_BASE } from './config.js';
+import { absorb } from './seen.js';
 
 const PLAYER_KEY = 'vegas:player';
 const SESSION_KEY = 'vegas:session';
@@ -85,7 +86,8 @@ async function request(path, { method = 'GET', body, key = null } = {}) {
   }
   // Anyone who keeps an eye on the player's state between screens (the 족보 도감, js/hand-book.js).
   const st = data.state?.user ? data.state : data.user && data.handBook ? data : null;
-  if (st) dispatchEvent(new CustomEvent('vegas:state', { detail: st }));
+  // What this account was already shown goes into this phone first (js/seen.js).
+  if (st) { absorb(st); dispatchEvent(new CustomEvent('vegas:state', { detail: st })); }
   return data;
 }
 
@@ -102,11 +104,13 @@ export const api = {
   makeRecoveryCode: () => request('/api/auth/recovery', { method: 'POST' }),
   resetPassword: (username, code, password) => request('/api/auth/reset', { method: 'POST', body: { username, code, password } }),
   adminResetPassword: userId => request('/api/admin/password', { method: 'POST', body: { userId } }),
+  adminSetRp: (userId, tier, division) => request('/api/admin/rp', { method: 'POST', body: { userId, tier, division } }),
   adminAdjust: (userId, amount, note) => request('/api/admin/adjust', { method: 'POST', body: { userId, amount, note } }),
   adminErrors: () => request('/api/admin/errors'),
   adminErrorsClear: () => request('/api/admin/errors/clear', { method: 'POST' }),
   adminUsage: () => request('/api/admin/usage'),
   state: () => request('/api/state'),
+  seen: flags => request('/api/seen', { method: 'POST', body: { flags } }),
   feedReact: (id, kind) => request('/api/feed/react', { method: 'POST', body: { id, kind } }),
   news: since => request(`/api/news?since=${encodeURIComponent(since)}`),
   friends: () => request('/api/friends'),
@@ -120,7 +124,7 @@ export const api = {
   recharge: () => request('/api/recharge/auto', { method: 'POST' }),
   dailyClaim: () => request('/api/daily/claim', { method: 'POST' }),
   rankPromo: () => request('/api/rank/promo', { method: 'POST' }),
-  buyIn: (floor, amount, event = null) => request('/api/cashier/buyin', { method: 'POST', body: { floor, amount, ...(event ? { event } : {}) } }),
+  buyIn: (floor, amount, event = null, room = null) => request('/api/cashier/buyin', { method: 'POST', body: { floor, amount, ...(event ? { event } : {}), ...(room ? { room } : {}) } }),
   cashOut: () => request('/api/cashier/cashout', { method: 'POST' }),
   missionClaim: missionId => request('/api/missions/claim', { method: 'POST', body: { missionId } }),
   challenge: (opponentId, metric) => request('/api/social/challenges', { method: 'POST', body: { opponentId, metric } }),
@@ -228,18 +232,18 @@ const MESSAGES = {
   INSUFFICIENT_BANKROLL: '칩이 부족해요. 베팅을 줄이거나 충전해 주세요.',
   TIP_TOO_FAST: '딜러가 아직 앞 칩을 챙기는 중이에요.',
   NO_DEALER_HERE: '이 테이블엔 팁 받을 딜러가 없어요.',
-  FLOOR_LOCKED: '아직 잠긴 층이에요. 순자산(보유 칩 − 빚)을 늘리면 열려요.',
-  FLOOR_OUTGROWN: '자산이 많아져서 이 층은 졸업했어요. 위층 테이블로 가 주세요.',
+  FLOOR_LOCKED: '아직 잠긴 층이에요. RP 티어를 올리면 열려요.',
+  FLOOR_OUTGROWN: '이 층은 졸업했어요. 내 티어 층 테이블로 가 주세요.',
   FLOOR_RP_LOCKED: '아직 RP 티어가 모자라요. 아래층에서 RP를 모으면 열려요.',
   BANK_CLOSED: 'RP 시즌부터 은행 대출과 파산이 없어졌어요.',
   BUY_IN_REQUIRED: '테이블 칩이 모자라요. 가진 돈으로 칩을 사 주세요.',
   BUY_IN_TOO_SMALL: '바이인은 이 테이블 최소 베팅 이상이어야 해요.',
   BUY_IN_OUT_OF_RANGE: '바이인은 최소 베팅 20~100번어치 사이로 골라 주세요.',
   BUY_IN_STACK_FULL: '이 테이블 칩이 이미 최소 베팅 100번어치 넘게 있어요.',
-  FLOOR_PASS_REQUIRED: '이 층에 앉으려면 이번 달 입장권이 필요해요. 상점 꾸미기에서 이 층 꾸미기를 사거나 갱신해 주세요.',
-  NEW_ACCOUNT_ROOM_LIMIT: '가입 7일이 안 된 계정은 친구방을 High Limit 층까지만 쓸 수 있어요.',
+  FLOOR_PASS_REQUIRED: '이 층은 아직 잠겨 있어요. RP 티어를 올리면 열려요.',
+  NEW_ACCOUNT_ROOM_LIMIT: '가입 7일이 안 된 계정은 친구방을 2층 클럽까지만 쓸 수 있어요.',
   EVENT_ENTRY_REQUIRED: '이벤트 테이블은 칩을 100억 이상 가진 사람만 앉을 수 있어요.',
-  EVENT_FLOOR_ONLY: '이벤트는 Penthouse 테이블에서만 열려요.',
+  EVENT_FLOOR_ONLY: '이벤트는 펜트하우스 테이블에서만 열려요.',
   EVENT_CLOSED: '이번 주에 열린 이벤트가 아니에요.',
   LOAN_REFUSED: '지금은 이 곳에서 빌릴 수 없어요.',
   LOAN_OVER_LIMIT: '대출 한도를 넘었어요.',
@@ -252,6 +256,7 @@ const MESSAGES = {
   ACHIEVEMENT_NOT_DONE: '아직 달성하지 않은 업적이에요.',
   ACHIEVEMENT_ALREADY_CLAIMED: '이미 받은 업적 보상이에요.',
   BET_OUTSIDE_TABLE_LIMIT: '이 테이블의 베팅 한도를 벗어났어요.',
+  BET_OVER_DIVISION_CAP: '지금 디비전에서는 이 층에 이만큼까지만 걸 수 있어요. 디비전이 오르면 한도도 올라가요.',
   BET_NOT_IN_UNITS: '베팅은 100만원 단위로만 할 수 있어요.',
   STAKE_TIER_NOT_ALLOWED: '이 테이블에서 쓸 수 없는 베팅 금액이에요.',
   OPEN_BLACKJACK_ROUND: '진행 중인 블랙잭 판이 있어요. 이어서 플레이해 주세요.',

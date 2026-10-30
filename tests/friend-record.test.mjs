@@ -88,11 +88,11 @@ test('a real 맞고 room between two friends writes both records', () => {
 test('랭킹 is its own tab in the bottom menu with 티어 · 순위 · 친구 전적 views', () => {
   const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
   const nav = html.slice(html.indexOf('<nav class="bottom-nav"'), html.indexOf('</nav>', html.indexOf('<nav class="bottom-nav"')));
-  assert.deepEqual([...nav.matchAll(/data-nav="([a-z]+)"/g)].map(m => m[1]), ['lobby', 'games', 'events', 'ranking', 'bank', 'profile']);
+  assert.deepEqual([...nav.matchAll(/data-nav="([a-z]+)"/g)].map(m => m[1]), ['lobby', 'games', 'shop', 'ranking', 'bank', 'profile']);
   assert.ok(!/data-nav="ranking">랭킹<\/button><button class="subtab"/.test(html) && !html.includes('class="subtab" type="button" data-nav="ranking"'), '내 정보 no longer holds 랭킹');
   for (const pane of ['tier', 'board', 'friends']) assert.match(html, new RegExp(`data-rank-pane="${pane}"`));
   const app = readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
-  assert.match(app, /const NAV_GROUP = \{ shop: 'bank', settings: 'profile' \}/);
+  assert.match(app, /const NAV_GROUP = \{ events: 'games', settings: 'profile' \}/);
   const sw = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(sw, /'js\/rank-tab\.js'/);
 });

@@ -42,7 +42,7 @@ import { replayBlock, loadReplays } from './js/replay.js';
 import { bragRank, bragTier } from './js/brags.js';
 import { remember } from './js/seen.js';
 import { tierHeroHtml, promoHtml, rpCardHtml, leagueHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
-import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
+import { tierEmblem, tierName, nextStepText, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
 watchErrors();
 startShine();
@@ -716,7 +716,7 @@ function renderHomeTier() {
   const rp = rs.mode === 'rp', pct = Math.round(Math.max(0, Math.min(1, rs.progress || 0)) * 100);
   const place = myMonthRank(state);
   const score = rp ? `<b>${rs.rp}</b> RP` : `최고 <b>${formatCH(rs.peak)}</b>`;
-  const next = rs.next ? `${tierName(rs.next.id, rs.next.division)}까지 ${rp ? `${rs.next.need} RP` : formatCH(rs.next.need)}` : '최고 티어예요';
+  const next = rs.next ? nextStepText(rs.next, rp ? `${rs.next.need} RP` : formatCH(rs.next.need)) : '최고 티어예요';
   const b = el('button', `home-tier-card tier-hero--${rs.tier}`);
   b.type = 'button';
   b.setAttribute('aria-label', `내 티어 ${tierName(rs.tier, rs.division)}, ${rp ? `${rs.rp} RP` : ''}, ${next}. 랭킹 보기`);
@@ -1055,7 +1055,7 @@ function openPromoSheet() {
   const short = moneyOf(state) < o.fee;
   openSheet({
     eyebrow: '승급전', title: `${tierName(o.target)} 승급전`,
-    body: `<p class="lounge-note">참가비 <b>${formatCH(o.fee)}원</b>을 내고 도전해요. ${formatCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 바로 ${tierName(o.target, 'IV')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. RP는 평소처럼 오르내려요.${short ? ` <b>${formatCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
+    body: `<p class="lounge-note">참가비 <b>${formatCH(o.fee)}원</b>을 내고 도전해요. ${formatCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 ${tierName(o.target, 'V')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. 다음 티어는 승급전으로만 올라가요. RP는 I 꼭대기에서 멈추고, 지면 평소처럼 내려가요.${short ? ` <b>${formatCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
     confirmText: short ? '' : `${formatCH(o.fee)}원 내고 도전`,
     confirm: short ? null : async () => { const out = await api.rankPromo(); applyState(out.state); toast(`${tierName(o.target)} 승급전 시작 · 2승이면 승급`); }
   });

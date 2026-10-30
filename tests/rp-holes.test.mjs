@@ -42,7 +42,7 @@ test('승급전: a roulette cover of 35 numbers is not a win; banker 0.95 and bl
 
 test('승급전: the covered wheel now fails the series instead of passing it 99%', () => {
   const u = newUser(defaultState(), 'p', 'P');
-  at(OCT, () => { rpOf(u, OCT); u.rp.points = 85; u.rp.promo = { active: true, target: 'bronze', wins: 0, losses: 0, minStake: 10_000_000 }; });
+  at(OCT, () => { rpOf(u, OCT); u.rp.points = 20; u.rp.promo = { active: true, target: 'bronze', wins: 0, losses: 0, minStake: 10_000_000 }; });
   const stake = 35 * 1_000_000;
   for (let i = 0; i < 5; i++) noteRp(u, { game: 'Roulette', stake, netPnl: 1_000_000 }, OCT);
   assert.equal(u.rp.promo.wins, 0);
@@ -57,7 +57,7 @@ test('친구방: a round settled with a room code moves RP but never the 승급�
   const u = newUser(state, 'p', 'P');
   u.account.available = 10_000_000_000;
   at(OCT, () => {
-    rpOf(u, OCT); u.rp.points = 85; u.rp.promo = { active: true, target: 'bronze', wins: 0, losses: 0, minStake: 10_000_000 };
+    rpOf(u, OCT); u.rp.points = 20; u.rp.promo = { active: true, target: 'bronze', wins: 0, losses: 0, minStake: 10_000_000 };
     lockBet(state, u, { stake: 10_000_000, game: "Hold'em", roundId: 'room-1' });
     settleLockedHouseGame(state, u, { game: "Hold'em", stake: 10_000_000, netPnl: 50_000_000, roundId: 'room-1', details: { room: 'ABCD' } });
   });

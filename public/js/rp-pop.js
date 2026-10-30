@@ -28,7 +28,7 @@ export function noteRpChange(state, { quiet = false } = {}) {
   const up = rankOf(now) > rankOf(prev), down = rankOf(now) < rankOf(prev), tierUp = up && now.tier !== prev.tier;
   const promo = state.promo?.active;
   const from = Number.isFinite(prev.points) ? prev.points : tenthOf(rp.points - last.delta);
-  const nextLine = promo ? `승급전 ${promo.wins}승 ${promo.losses}패` : rp.next ? `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP` : '최고 티어';
+  const nextLine = promo ? `승급전 ${promo.wins}승 ${promo.losses}패` : rp.next ? (rp.nextPromo ? `승급전 2승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어';
   const label = tierUp ? '티어 승급!' : up ? '승급!' : down ? '강등 · ' : '';
   const motion = !reducedMotion();
   // A promotion opens on where I was, then turns over to where I am.

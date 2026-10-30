@@ -2,12 +2,14 @@
 // sentences (formatMoney: 7억 2천만원). Pure functions with no DOM, so the server imports this
 // same file for push notifications, banners and feed text; nothing shows a raw 1000000000.
 // At a table money is counted in chips (한서 2026-10-29: "바이인해서 들어갔으면 거기서는 또 다른
-// 액수 단위를 써야지"). One chip is a tenth of the table's smallest bet, so every table reads the
-// same: chips 10·20·50·100, bets 10–100칩, a 50-bet buy-in 500칩 (한서 2026-10-30: "칩이 30 60
-// ㅇㅈㄹ로 되있으면 베팅을 어캐하라는걸까" about 1칩 = 100만 on a 3천만 floor). The client switches
-// this on while a table is open (app.js, with that table's chip value); the server never does.
+// 액수 단위를 써야지"). One chip is a hundredth of the table's smallest bet, so every table reads the
+// same: bets 100–1,000칩, chips 100·200·500·1,000 (한서 2026-10-30: "칩이 30 60 ㅇㅈㄹ로 되있으면
+// 베팅을 어캐하라는걸까" about a fixed 100만 chip, then "치는 느낌이 나게 칩단위를 훨씬 줄여 … 같은
+// 억이어도 칩이 더 많아지는거야" about the tenth it was). The client switches this on while a table
+// is open (app.js, with that table's chip value); the server never does.
 export const CHIP_WON = 1_000_000;
-export const chipValueFor = minBet => Math.max(CHIP_WON, Math.round((Number(minBet) || 0) / 10)) || CHIP_WON;
+export const CHIPS_PER_MIN_BET = 100;
+export const chipValueFor = minBet => Math.max(1, Math.round((Number(minBet) || 0) / CHIPS_PER_MIN_BET)) || CHIP_WON;
 let tableUnits = false, chipWon = CHIP_WON;
 export function setTableUnits(on, value = chipWon) { tableUnits = Boolean(on); if (value > 0) chipWon = value; }
 export const inTableUnits = () => tableUnits;

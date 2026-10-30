@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord, wonCH, inTableUnits } from './fx.js';
 import { createChip, breakdown, holding, TIERS, tableMax } from './chips.js';
 import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 
@@ -741,7 +741,10 @@ export class Table {
   }
   // The header's limit line: the floor's range, and the division's own top while it is lower.
   limitHtml() {
-    return `<i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatUnit(this.tier.max)}</i>${this.tier.capped && this.division ? ` <em class="table-cap">${this.division} 한도</em>` : ''}`;
+    // In chips every floor reads 100–1,000칩, so the top bet in 원 rides along for comparing floors
+    // (2026-10-30 한서 "왜캐 층별 베팅이 줄엇지").
+    const won = inTableUnits() ? ` <i class="table-won">최대 ${wonCH(this.tier.max)}원</i>` : '';
+    return `<i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatUnit(this.tier.max)}</i>${won}${this.tier.capped && this.division ? ` <em class="table-cap">${this.division} 한도</em>` : ''}`;
   }
   paintLimit() { const box = this.root?.querySelector('[data-limit]'); if (box) box.innerHTML = this.limitHtml(); }
 

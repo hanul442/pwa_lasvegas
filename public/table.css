@@ -23,6 +23,7 @@
 @media (max-width:519px){.table-name strong{font-size:clamp(16px,4.8vw,19px);font-stretch:108%}}
 .table-name>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
 .table-name>span i{font-style:normal;white-space:nowrap}
+.table-name>span .table-won{margin-left:6px;color:var(--ivory)}
 .table-name>span .table-cap{font-style:normal;font-size:11px;margin-left:6px;padding:0 6px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--ivory);white-space:nowrap}
 /* very narrow phones (360px): the subtitle breaks between room and range instead of being cut */
 @media (max-width:380px){.table-name>span{white-space:normal;line-height:1.25}}

@@ -33,7 +33,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
     sheet.setAttribute('aria-modal', 'true');
     sheet.setAttribute('aria-labelledby', 'buyin-title');
     const step = tier.min;
-    // Counted in this table's chips (js/money.js): a tenth of its smallest bet.
+    // Counted in this table's chips (js/money.js): a hundredth of its smallest bet.
     const per = chipValueFor(tier.min);
     const chipCount = v => countAt(v, per);
     const fit = v => Math.max(range.min, Math.min(v, range.max));

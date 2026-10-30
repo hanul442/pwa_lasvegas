@@ -10,8 +10,8 @@
 .discard-pile{position:absolute;left:8%;right:8%;bottom:6%;height:calc(var(--depth) * 82%);border-radius:3px;transition:height .4s cubic-bezier(.2,.8,.2,1);
   background:repeating-linear-gradient(0deg,#efe7d9 0 1px,#bdb3a2 1px 2px);box-shadow:inset 0 0 0 1px #0c0d1066,0 2px 4px #0007}
 
-/* Riffle shuffle: two half decks of card backs. */
-.riffle{position:fixed;z-index:150;width:0;height:0;transform:translate(-50%,-50%);pointer-events:none;--card-w:40px;perspective:600px}
+/* Riffle shuffle: two half decks of card backs. Under the sheets (lounge.css z 80+), so a buy-in sheet opened on arrival covers it. */
+.riffle{position:fixed;z-index:79;width:0;height:0;transform:translate(-50%,-50%);pointer-events:none;--card-w:40px;perspective:600px}
 .riffle-card{position:absolute;left:calc(var(--card-w) / -2);top:calc(var(--card-w) * -.7);width:var(--card-w);height:calc(var(--card-w) * 1.4);font-size:calc(var(--card-w) * .2)}
 .riffle-card.card-back{box-shadow:inset 0 0 0 calc(var(--card-w) * .045) #f4f5f7,inset 0 0 0 calc(var(--card-w) * .052) #0a0b0d,0 1px 1px #0005}
 .riffle-label{position:absolute;left:50%;top:calc(var(--card-w) * .95);transform:translateX(-50%);font:600 10px/1 var(--display);font-stretch:125%;letter-spacing:.24em;color:#f4f5f7b3;white-space:nowrap;animation:riffle-label 1.4s ease both}

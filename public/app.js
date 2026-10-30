@@ -1070,6 +1070,7 @@ function renderBoards() {
   if (rpMode && rankPeriod === 'rp') rankPeriod = 'tier';
   const period = document.querySelector('[data-rank-period]');
   period.classList.toggle('segmented--four', !rpMode);
+  period.classList.toggle('segmented--three', rpMode);
   period.replaceChildren(...[['tier', '이번 시즌'], ['rp', 'RP 베타'], ['season', '이번 주'], ['allTime', '전체']].filter(([key]) => !(rpMode && key === 'rp')).map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';

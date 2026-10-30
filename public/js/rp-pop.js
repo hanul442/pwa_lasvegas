@@ -135,6 +135,16 @@ function promoted(card, { tierUp }) {
   haptic?.(tierUp ? [20, 40, 20, 40, 80] : [14, 30, 30]);
 }
 
+// A table's one-line hint (js/guide.js .tip-line, e.g. "규칙과 따라 하기는 ? 버튼에 있어요") sits
+// near the top too: when the card would cover it, the card moves just below it.
+function clearHint(card) {
+  const hint = document.querySelector('.tip.is-on .tip-line');
+  if (!hint) return;
+  const h = hint.getBoundingClientRect(), c = card.getBoundingClientRect();
+  if (!h.height || h.top > c.bottom + 4 || h.bottom < c.top - 4) return;
+  card.style.top = `${Math.round(h.bottom + 8)}px`;
+}
+
 function show(html, { big, down, tierUp, long }) {
   clearTimeout(timer);
   node?.remove();
@@ -144,6 +154,7 @@ function show(html, { big, down, tierUp, long }) {
   node.innerHTML = html;
   document.body.append(node);
   const mine = node;
+  clearHint(mine);
   requestAnimationFrame(() => mine.classList.add('is-shown'));
   timer = setTimeout(() => { mine.classList.remove('is-shown'); setTimeout(() => mine.remove(), 300); if (node === mine) node = null; }, long);
   return mine;

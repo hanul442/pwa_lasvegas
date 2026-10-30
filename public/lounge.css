@@ -1061,18 +1061,48 @@ body.daily-open{overflow:hidden}
 .promo-last.pos{color:#7ee2a8}.promo-last.neg{color:#ff8a8a}
 
 /* RP 팝업 (js/rp-pop.js): under the top bar, never in the way of the table */
-.rp-pop{position:fixed;z-index:129;left:50%;top:calc(var(--top-h) + 10px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 32px);padding:8px 14px 8px 10px;border-radius:14px;background:#0a0b0df2;border:1px solid var(--hair-strong);color:var(--white);pointer-events:none;opacity:0;transform:translate(-50%,-10px);transition:opacity .22s,transform .22s var(--ease-out)}
+.rp-pop{position:fixed;z-index:129;left:50%;top:calc(var(--top-h) + 10px + env(safe-area-inset-top));display:flex;align-items:center;gap:12px;width:max-content;min-width:min(240px,calc(100vw - 32px));max-width:calc(100vw - 32px);padding:9px 14px 9px 10px;border-radius:14px;background:#0a0b0df2;border:1px solid var(--hair-strong);color:var(--white);pointer-events:none;opacity:0;transform:translate(-50%,-10px);transition:opacity .22s,transform .22s var(--ease-out);overflow:hidden}
 .rp-pop.is-shown{opacity:1;transform:translate(-50%,0)}
-.rp-pop.is-big{padding:10px 16px 10px 12px;border-color:#ffffffa0;box-shadow:0 10px 30px #000a}
-.rp-pop-text{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:baseline;min-width:0}
-.rp-pop-delta{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.rp-pop.is-big{padding:11px 16px 11px 12px;border-color:#ffffffa0;box-shadow:0 10px 30px #000a;overflow:visible}
+.rp-pop-emblem{position:relative;display:grid;place-items:center;flex:none}
+.rp-pop-text{display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:3px;align-items:baseline;min-width:0;flex:1}
+.rp-pop-delta{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;min-width:4.2em}
 .rp-pop-delta.pos{color:#7ee2a8}.rp-pop-delta.neg{color:#ff8a8a}
 .rp-pop-tier{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rp-pop-tier small{color:var(--dim);font-weight:500;margin-left:4px}
+.rp-pop-tier small{color:var(--dim);font-weight:500;margin-left:4px;font-variant-numeric:tabular-nums}
+.rp-pop-label{font-style:normal;color:#f2d38b}
+.rp-pop-label:not(:empty){margin-right:5px}
+.rp-pop.is-big:not(.is-promoted) .rp-pop-step{visibility:hidden}
+.rp-pop-points{color:var(--white);font-weight:700;font-variant-numeric:tabular-nums}
+.rp-pop-bar{grid-column:1/-1;height:3px;border-radius:2px;background:#ffffff1f;overflow:hidden;margin-top:2px}
+.rp-pop-bar i{display:block;height:100%;border-radius:inherit;background:#e9e9ec;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+.rp-pop.is-down .rp-pop-bar i{background:#ff8a8a}
+.rp-pop.is-big .rp-pop-bar i{background:linear-gradient(90deg,#d9b56a,#f6e3a8)}
 .rp-pop-next{grid-column:1/-1;color:var(--smoke);font-size:12px}
 .rp-pop.is-big .rp-pop-tier{font-size:15px}
+/* 승급: the emblem turns over, a ring and eight sparks go out, a gold light sweeps the card */
+.rp-pop-ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid #f2d38b;opacity:0;pointer-events:none}
+.rp-pop-sparks{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}
+.rp-pop-sparks b{position:absolute;left:-2px;top:-2px;width:4px;height:4px;border-radius:50%;background:#f6e3a8;opacity:0}
+.rp-pop::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 40%,#f6e3a855 50%,transparent 60%) no-repeat;background-size:300% 100%;background-position:100% 0;opacity:0}
+.rp-pop.is-promoted{border-color:#f2d38b;box-shadow:0 0 0 1px #f2d38b66,0 12px 34px #000b,0 0 28px #f2d38b40}
+.rp-pop.is-promoted::after{animation:rp-sweep .9s .05s ease-out both}
+.rp-pop.is-promoted .rp-pop-emblem svg{animation:rp-flip .6s cubic-bezier(.3,1.5,.5,1) both}
+.rp-pop.is-promoted .rp-pop-ring{animation:rp-ring .8s ease-out both}
+.rp-pop.is-promoted .rp-pop-sparks b{animation:rp-spark .75s ease-out both}
+.rp-pop.is-promoted .rp-pop-label{animation:rp-stamp .45s cubic-bezier(.3,1.6,.5,1) both;display:inline-block}
+.rp-pop.is-promoted.is-tier{transform:translate(-50%,0) scale(1.06)}
+.rp-pop.is-promoted.is-tier .rp-pop-ring{animation:rp-ring 1s ease-out both,rp-ring 1s .35s ease-out both}
+.rp-pop-sparks b:nth-child(1){--a:0deg}.rp-pop-sparks b:nth-child(2){--a:45deg}.rp-pop-sparks b:nth-child(3){--a:90deg}.rp-pop-sparks b:nth-child(4){--a:135deg}
+.rp-pop-sparks b:nth-child(5){--a:180deg}.rp-pop-sparks b:nth-child(6){--a:225deg}.rp-pop-sparks b:nth-child(7){--a:270deg}.rp-pop-sparks b:nth-child(8){--a:315deg}
+.rp-pop.is-tier .rp-pop-sparks b{width:5px;height:5px;--far:34px}
+@keyframes rp-flip{0%{transform:rotateY(90deg) scale(.6)}60%{transform:rotateY(0) scale(1.28)}100%{transform:none}}
+@keyframes rp-ring{0%{opacity:.9;transform:scale(.5)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes rp-spark{0%{opacity:1;transform:rotate(var(--a)) translateX(6px)}100%{opacity:0;transform:rotate(var(--a)) translateX(var(--far,26px)) scale(.4)}}
+@keyframes rp-sweep{0%{opacity:1;background-position:100% 0}100%{opacity:1;background-position:0 0}}
+@keyframes rp-stamp{0%{opacity:0;transform:scale(1.8)}100%{opacity:1;transform:none}}
 body.game-mode .rp-pop{top:calc(10px + env(safe-area-inset-top))}
-@media (prefers-reduced-motion:reduce){.rp-pop{transition:opacity .2s;transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){.rp-pop{transition:opacity .2s;transform:translate(-50%,0)}.rp-pop *,.rp-pop::after{animation:none!important;transition:none!important}.rp-pop.is-promoted.is-tier{transform:translate(-50%,0)}}
 
 /* 지갑 (2026-10-29): all my money, then wallet vs table chips. */
 .wallet-hero{display:grid;gap:14px;padding:6px 0 24px;border-bottom:1px solid var(--hair)}

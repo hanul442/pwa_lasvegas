@@ -113,13 +113,13 @@ let activeTable = null;
 let shownWallet = null;
 
 // ---------- navigation ----------
-const NAV_GROUP = { shop: 'bank', settings: 'profile' };
+const NAV_GROUP = { events: 'games', settings: 'profile' };
 function showSurface(name, { focus = false } = {}) {
   const target = surfaces.find(s => s.dataset.surface === name);
   if (!target) return;
   if (name !== 'table' && name !== 'tiers') setTimeout(offerUpdate, 800);
   surfaces.forEach(s => s.classList.toggle('is-active', s === target));
-  // The bottom menu has six places; 지갑 holds 지갑 and 상점, 내 정보 holds 프로필 and 설정,
+  // The bottom menu has six places; 게임 holds 게임 and 이벤트, 내 정보 holds 프로필 and 설정,
   // each switched by the small tabs at the top of the page.
   const group = NAV_GROUP[name] || name;
   navItems.forEach(item => {

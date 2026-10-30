@@ -91,15 +91,16 @@ test('디비전별 베팅 상한: the floor my tier just opened grows from the f
   const [gold, high] = FLOORS;
   assert.equal(rpBetCap(50, 0), gold.maxBet, '아이언 plays the Gold Room at its full limit');
   assert.equal(rpBetCap(150, 0), gold.maxBet, '브론즈 too');
-  assert.equal(rpBetCap(200, 1), gold.maxBet, '실버 V: the Gold Room top (1억), not less');
-  assert.equal(rpBetCap(230, 1), gold.maxBet * 1.5, '실버 IV: 1.5억');
+  assert.equal(rpBetCap(200, 1), high.minBet * 4, '실버 V: 4× (1.2억, 400칩), above the Gold Room top (1억)');
+  assert.ok(rpBetCap(200, 1) >= gold.maxBet);
+  assert.equal(rpBetCap(230, 1), high.minBet * 5, '실버 IV: 5× (500칩)');
   assert.equal(rpBetCap(330, 1), high.minBet * 10, '실버 I: the full 10×');
   assert.equal(rpBetCap(200, 0), gold.maxBet, 'a floor already passed keeps its limit');
   assert.equal(rpBetCap(2400, FLOORS.length - 1), FLOORS.at(-1).maxBet, '레전드: no division, no cap');
-  assert.equal(rpBetCaps(200)[high.slug], gold.maxBet);
+  assert.equal(rpBetCaps(200)[high.slug], high.minBet * 4);
   const u = { rp: { season: monthBoundary(Date.now()).id, points: 200 } };
-  assert.throws(() => checkBetCap(u, high, gold.maxBet + high.minBet), /BET_OVER_DIVISION_CAP/);
-  assert.doesNotThrow(() => checkBetCap(u, high, gold.maxBet));
+  assert.throws(() => checkBetCap(u, high, high.minBet * 4 + 1_000_000), /BET_OVER_DIVISION_CAP/);
+  assert.doesNotThrow(() => checkBetCap(u, high, high.minBet * 4));
   assert.doesNotThrow(() => checkBetCap(u, gold, gold.maxBet));
 });
 

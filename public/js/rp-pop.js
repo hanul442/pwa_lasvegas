@@ -21,7 +21,9 @@ export function noteRpChange(state, { quiet = false } = {}) {
   if (!rp?.era || !state.user) return;
   const pa = state.promo?.active, pl = state.promo?.last;
   const promoSig = pa ? `a:${pa.target}:${pa.log ?? `${pa.wins}-${pa.losses}`}` : pl ? `e:${pl.target}:${pl.result}:${pl.at}` : '';
-  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress, promoSig };
+  const da = state.defense?.active, dl = state.defense?.last;
+  const defenseSig = da ? `a:${da.tier}:${da.log}` : dl ? `e:${dl.tier}:${dl.result}:${dl.at}` : '';
+  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress, promoSig, defenseSig };
   const prev = seen;
   seen = now;
   // The first state after a load only sets the mark; the same round never shows twice.
@@ -30,6 +32,11 @@ export function noteRpChange(state, { quiet = false } = {}) {
   // 승급전 (2026-10-30 한서 "승급전이면 승급전이라고 말하면서 몇번 이기면 승급된다고", "5판3선승제",
   // "동그라미 안에 하얀색 채워넣는걸로"): a round that starts, moves or loses the series gets its
   // own card with five circles; the winning round goes on to the promotion below with the circles.
+  // 강등 방어전: the same five circles, from the other side.
+  if (prev.defenseSig !== defenseSig) {
+    if (da) return defenseCard(da, { started: !prev.defenseSig?.startsWith(`a:${da.tier}:`), delta: last?.delta || 0 });
+    if (dl && dl.result !== 'dropped') return defenseCard(dl, { ended: dl.result, delta: last?.delta || 0 });
+  }
   const promoMoved = prev.promoSig !== promoSig;
   const promoWon = promoMoved && !pa && pl?.result === 'won';
   if (promoMoved && pa) return promoCard(pa, { started: !prev.promoSig.startsWith(`a:${pa.target}:`), delta: last?.delta || 0 });
@@ -99,6 +106,27 @@ function promoCard(p, { started = false, lost = false, delta = 0 }) {
   card.classList.add('is-promo');
   if (started || matchPoint) { sound.levelUp?.(1); haptic?.([12, 30, 12]); }
   else if (!lost && p.log?.endsWith('W')) haptic?.(12);
+}
+
+function defenseCard(d, { started = false, ended = null, delta = 0 }) {
+  const wins = d.wins || 0, losses = d.losses || 0, need = d.needWins || 3, out = d.needLosses || 3;
+  const keep = tierName(d.tier, 'V'), drop = tierName(d.below, 'I');
+  const live = !ended, matchPoint = live && wins === need - 1, edge = live && losses === out - 1;
+  const head = started ? '강등 방어전!' : ended === 'kept' ? '방어 성공!' : ended === 'demoted' ? '강등' : matchPoint && edge ? '마지막 판!' : matchPoint ? '방어까지 1승' : edge ? '벼랑 끝' : `${wins}승 ${losses}패`;
+  const foot = started ? `${need}승이면 유지 · ${out}패면 ${drop}` : ended === 'kept' ? `${keep} 지켰어요` : ended === 'demoted' ? `${drop}로 내려갔어요` : edge ? `1패면 ${drop} · ${need - wins}승이면 유지` : `${need - wins}승 더하면 ${keep} 유지`;
+  const said = `${tierName(d.tier)} 강등 방어전 ${head} ${wins}승 ${losses}패. ${foot}`;
+  const html = `<span class="sr-only">${said}</span><span class="rp-pop-emblem" aria-hidden="true">${tierEmblem(ended === 'demoted' ? d.below : d.tier, { size: 30, label: false })}</span>
+    <span class="rp-pop-text" aria-hidden="true">
+      <span class="rp-pop-tier rp-pop-promo-head"><em class="rp-pop-label">${head}</em><span class="rp-pop-name">${tierName(d.tier)} 방어전</span></span>
+      <span class="rp-pop-dots">${dotsHtml(d.log, { fresh: !started && !reducedMotion() })}</span>
+      <small class="rp-pop-next">${foot}${delta ? ` · ${signed(delta)} RP` : ''}</small>
+    </span>`;
+  const danger = started || edge || ended === 'demoted';
+  const card = show(html, { big: ended === 'kept' || matchPoint, down: danger, tierUp: false, long: started || ended ? 4200 : 3200 });
+  card.classList.add('is-promo', 'is-defense');
+  if (ended === 'kept') promoted(card, { tierUp: false });
+  else if (started) haptic?.([30, 40, 30]);
+  else if (d.log?.endsWith('W')) haptic?.(12);
 }
 
 function promoted(card, { tierUp }) {

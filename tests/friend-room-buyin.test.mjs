@@ -83,7 +83,7 @@ test('RP-season floor news: a fat wallet is no news, an RP climb into a new floo
   rp.points = rp.peak = 199;
   rp.promo = { active: true, target: 'silver', wins: 1, losses: 0, minStake: 10_000_000 }; // the next tier takes a 승급전
   settleHouseGame(state, u, { game: 'Baccarat', stake: 100_000_000, netPnl: 100_000_000, roundId: 'r-news-1' });
-  assert.deepEqual(floorNews(), [`${u.nickname} unlocked High Limit.`]);
+  assert.deepEqual(floorNews(), [`${u.nickname} unlocked 클럽.`]);
   settleHouseGame(state, u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000, roundId: 'r-news-2' });
   assert.equal(floorNews().length, 1, 'no repeat while the floor stays open');
 });

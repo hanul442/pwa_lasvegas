@@ -37,7 +37,7 @@ export const scoreLine = r => (rpMode(r) ? `이번 시즌 RP ${r.rp}` : `이번 
 export const needText = (r, need) => (rpMode(r) ? `${need} RP` : formatCH(need));
 // From division I the next tier comes only through its 승급전 (lib/rank-points.mjs rpNextStep).
 export const nextStepText = (next, needLine) => (next?.promo ? `승급전 2승이면 ${tierName(next.id, next.division)}` : `${tierName(next.id, next.division)}까지 ${needLine}`);
-const resetNote = r => (r.carry ? '시즌이 끝나면 RP가 3티어 내려간 채로 새 시즌이 시작돼요. 칩·꾸미기·명패·배지·업적은 그대로예요.' : '매달 1일 0시에 칩·빚이 초기화되고 모두 Gold Room부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.');
+const resetNote = r => (r.carry ? '시즌이 끝나면 RP가 3티어 내려간 채로 새 시즌이 시작돼요. 칩·꾸미기·명패·배지·업적은 그대로예요.' : '매달 1일 0시에 칩·빚이 초기화되고 모두 1층 홀부터 다시 올라가요. 꾸미기·명패·배지·업적은 그대로예요.');
 
 const daysLeft = iso => Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 86_400_000));
 
@@ -171,7 +171,7 @@ export function maybeSeasonMoment(state, { force = false, onWrapped } = {}) {
     <h2>${mine ? tierName(mine.tier, mine.division) : '새 시즌'}</h2>${mine && mine.rank <= 3 ? `<span class="rank-moment-champ">챌린저 ${mine.rank}위</span>` : ''}
     ${mine ? `<small>${mine.of}명 중 ${mine.rank}위 · ${mine.rp != null ? `RP ${mine.rp}` : `최고 순자산 ${formatCH(mine.peak)}`}</small>` : ''}
     ${podium ? `<ol class="rank-moment-podium" aria-label="챌린저">${podium}</ol>` : ''}
-    <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}${carried ? `칩·꾸미기·명패·배지·업적은 그대로예요. RP ${reset.carry || 0}에서 다시 시작해요.` : '꾸미기·명패·배지·업적은 그대로예요. Gold Room부터 다시 올라가요.'}</p>
+    <p class="rank-moment-reset">${cleared ? `정리된 것 ${cleared}<br>` : ''}${carried ? `칩·꾸미기·명패·배지·업적은 그대로예요. RP ${reset.carry || 0}에서 다시 시작해요.` : '꾸미기·명패·배지·업적은 그대로예요. 1층 홀부터 다시 올라가요.'}</p>
     <div class="rank-moment-actions moment-actions">${wrapped ? `<button type="button" class="pill-button pill-button--solid" data-wrapped>${seasonShort(last.name)} 결산 카드 보기</button>` : ''}
     <button type="button" class="pill-button${wrapped ? '' : ' pill-button--solid'}" data-close>${force ? '닫기' : '새 시즌 시작'}</button></div></div>`;
   document.body.append(node);

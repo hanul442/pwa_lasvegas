@@ -6,6 +6,7 @@ import { renderAccountTools, forgetShownCode } from './js/account.js';
 import { formatCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits } from './js/fx.js';
 import { moneyOf } from './js/money.js';
 import { buyInSheet, cashOutQuiet } from './js/cashier.js';
+import { floorDoor } from './js/floor-door.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
 import { TIERS, FIRST_TIER, createChip, tableMax } from './js/chips.js';
@@ -244,7 +245,7 @@ function tableAfterRound(st) {
   const up = Boolean(st.floors?.find(f => f.slug === cur.floor)?.outgrown);
   const to = up ? tiers.find(x => x.min > cur.min) || tiers.at(-1) : [...tiers].reverse().find(x => x.min < cur.min) || tiers[0];
   const reason = up
-    ? (st.rp?.floors ? `티어가 올라 ${cur.name}을 졸업하고 위층으로 올라왔어요.` : `자산이 커져서 ${cur.name}을 졸업하고 위층으로 올라왔어요.`)
+    ? (st.rp?.floors ? `티어가 올라 ${cur.name}에서 졸업하고 위층으로 올라왔어요.` : `자산이 커져서 ${cur.name}에서 졸업하고 위층으로 올라왔어요.`)
     : `칩이 ${cur.name} 최소 베팅 ${formatMoney(cur.min)}보다 적어서 옮겼어요.`;
   applyState(st);
   openTable(to.slug).then(() => activeTable?.moved?.(`${to.name} · ${formatCH(to.min)}–${formatCH(tableMax(st, to))}`, reason));
@@ -263,10 +264,16 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
   // 캐셔 (js/cashier.js): not seated yet (chips held without a seat go back to the wallet), or
   // short of this table's smallest bet (an event: its entry) in hand: buy chips with money first.
-  const eventNeed = selectedGame.event ? [...(state?.events || []), ...(state?.eventsAlways || [])].find(e => e.id === selectedGame.event)?.entry || 0 : 0;
+  const eventInfo = selectedGame.event ? [...(state?.events || []), ...(state?.eventsAlways || [])].find(e => e.id === selectedGame.event) : null;
+  const eventNeed = eventInfo?.entry || 0;
+  // 층 입장 (js/floor-door.js): walking onto a floor (from the menus, or to another floor from a
+  // table) opens its door first; the game's code loads meanwhile. The buy-in comes after, over the room.
+  const enteringFloor = TIERS[tier] && TIERS[tier].floor !== (activeTable && TIERS[activeTier]?.floor);
+  const door = enteringFloor ? floorDoor(TIERS[tier], { game: selectedGame.name, event: eventInfo?.title || null }) : null;
+  if (door) { warmGame(selectedGame); await door.opened; }
   if (!seated && state?.cashier?.on && TIERS[tier] && (!state.cashier.seat || state.user.account.available < Math.max(TIERS[tier].min, eventNeed))) {
     const bought = await buyInSheet(state, TIERS[tier], { event: selectedGame.event || null });
-    if (!bought) return;
+    if (!bought) { door?.close(); return; }
     applyState(bought);
   }
   rememberTable(selectedGame.id, tier);
@@ -291,6 +298,7 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
   let guide;
   try { [, guide] = await game.mount.load(); } catch (err) {
     clearTimeout(slow);
+    door?.close();
     if (seq !== tableSeq) return;
     tableMount.replaceChildren();
     toast(navigator.onLine ? '테이블을 열지 못했어요. 다시 눌러 주세요.' : '연결이 끊겨 테이블을 열지 못했어요. 다시 눌러 주세요.');
@@ -298,9 +306,11 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
     return;
   }
   clearTimeout(slow);
+  if (seq !== tableSeq || !document.body.classList.contains('game-mode')) door?.close();
   if (seq !== tableSeq || !document.body.classList.contains('game-mode')) return;
   tableMount.replaceChildren();
   activeTable = await game.mount({ mount: tableMount, tier, state, backLabel, onSwitch: openSwitcher, onLeave: () => leaveTable() });
+  door?.close();
   // Also on sitting down: a table picked from 최근 테이블 may no longer fit the player's chips.
   activeTable.onIdle = st => tableAfterRound(st || state);
   if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
@@ -914,6 +924,8 @@ function renderEventTab() {
 }
 
 // ---------- tiers ----------
+// A floor's sign on its card: 6F VAULT 볼트.
+const floorTitle = tier => `<span class="tier-no">${tier.no}F</span>${tier.en} <span class="tier-ko">${tier.name}</span>`;
 function renderTiers() {
   const grid = document.querySelector('[data-tier-grid]');
   const floors = state?.floors || [];
@@ -925,7 +937,7 @@ function renderTiers() {
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);
   const shown = all.filter((x, i) => !x.floor?.outgrown && (firstLocked < 0 || i <= firstLocked + 1));
-  const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. ${state?.rp?.floors ? '티어가 오르면 아래층은 잠겨요. 칩과 지갑을 합쳐 내 층 최소 베팅의 20배가 안 되면 다시 열려요.' : '순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.'}`)] : [];
+  const note = outgrown.length ? [el('p', 'tier-outgrown', `졸업한 층: ${outgrown.map(x => x.tier.name).join(' · ')}. ${state?.rp?.floors ? '티어가 오르면 아래층은 잠겨요. 칩과 지갑을 합쳐 내 층 최소 베팅의 20배가 안 되면 다시 열려요.' : '순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.'}`)] : [];
   grid.replaceChildren(...note, ...shown.map(({ tier, floor }) => {
     const locked = floor ? !floor.unlocked : false;
     // Reached by net worth but its pass (one of the floor's skins, 상점 꾸미기) not bought yet.
@@ -944,7 +956,7 @@ function renderTiers() {
     const stars = `<em class="tier-stars" aria-label="난이도 ${tier.stars}/5">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>`;
     // 디비전별 베팅 상한: the floor my tier just opened shows the top bet my division allows now.
     const cap = !locked && tableMax(state, tier) < tier.max ? tableMax(state, tier) : 0;
-    b.innerHTML = `<strong>${tier.name}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(cap || tier.max)}원${cap ? ` <em class="tier-cap">${tierName(state.rp.tier, state.rp.division)} 상한</em>` : ''}</span><small>${status}</small>`;
+    b.innerHTML = `<strong>${floorTitle(tier)}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(cap || tier.max)}원${cap ? ` <em class="tier-cap">${tierName(state.rp.tier, state.rp.division)} 상한</em>` : ''}</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
     b.addEventListener('click', () => needsPass ? openPassShop(floor.slug) : openTable(tier.slug));
@@ -969,7 +981,7 @@ function renderEventTier(grid, { tier, entry, open }) {
   const chips = el('span', 'tier-chips');
   tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
   chips.setAttribute('aria-hidden', 'true');
-  b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
+  b.innerHTML = `<strong>${floorTitle(tier)}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
   b.append(chips);
   b.addEventListener('click', () => openTable(tier.slug));
   grid.replaceChildren(b);

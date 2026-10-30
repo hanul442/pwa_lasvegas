@@ -6,7 +6,7 @@ import { shareWin } from './bigwin.js';
 
 const WORDS = {
   royale: { win: 'CHAMPION', lose: 'ELIMINATED', winLine: '마지막 패까지 살아남은 단 한 사람.', loseLine: '르 시프르가 미소 지어요. 다음 판을 기약하세요.' },
-  whale: { win: 'THE BIGGEST WHALE', lose: 'SUNK', winLine: '스카이 라운지에서 가장 큰 고래가 됐어요.', loseLine: '이 바다에는 더 큰 고래가 있었어요.' },
+  whale: { win: 'THE BIGGEST WHALE', lose: 'SUNK', winLine: '스카이에서 가장 큰 고래가 됐어요.', loseLine: '이 바다에는 더 큰 고래가 있었어요.' },
   rounders: { win: 'BOSS DOWN', lose: 'BUSTED', winLine: '현상금을 챙겼어요. 다음 보스가 기다려요.', loseLine: '보스가 판을 가져갔어요. 같은 자리에서 다시 도전할 수 있어요.' },
   oceans: { win: 'VAULT OPEN', winLine: '크루의 작전이 성공했어요.' },
   montecarlo: { win: 'GALA NIGHT', winLine: '몬테카를로의 밤이 당신 편이었어요.' },

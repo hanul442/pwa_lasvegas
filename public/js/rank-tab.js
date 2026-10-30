@@ -33,11 +33,11 @@ export function promoHtml(state) {
   if (p.active) {
     const a = p.active;
     const dots = (n, of, cls) => Array.from({ length: of }, (_, i) => `<i class="${i < n ? cls : ''}"></i>`).join('');
-    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 걸고 건 만큼 딴 판만 1승 · 친구방 제외 · 2승이면 ${tierName(a.target, 'IV')}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
+    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 걸고 건 만큼 딴 판만 1승 · 친구방 제외 · 3승이면 ${tierName(a.target, "V")}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
   }
   if (p.offer) {
     const o = p.offer;
-    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)} 승급전</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 3판 중 2승 · 건 만큼 따야 1승 · RP가 다 차면 자동으로 시작</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
+    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)} 승급전</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 5판 중 3승 · 건 만큼 따야 1승 · RP가 다 차면 자동으로 시작</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
   }
   if (p.last && Date.now() - Date.parse(p.last.at) < 6 * 3_600_000) return `<p class="promo-last ${p.last.result === 'won' ? 'pos' : 'neg'}">${tierName(p.last.target)} 승급전 ${p.last.result === 'won' ? '성공' : '실패'}</p>`;
   return '';
@@ -50,7 +50,7 @@ export function tierHeroHtml(state) {
   const pct = Math.round((rs.progress || 0) * 100);
   const place = myMonthRank(state);
   const next = rs.next
-    ? (rs.next.promo ? `<span><b>승급전 2승</b>이면 ${tierName(rs.next.id, rs.next.division)}</span>` : `<span>${tierName(rs.next.id, rs.next.division)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`)
+    ? (rs.next.promo ? `<span><b>승급전 3승</b>이면 ${tierName(rs.next.id, rs.next.division)}</span>` : `<span>${tierName(rs.next.id, rs.next.division)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`)
     : '<span><b>최고 티어</b>에 올랐어요</span>';
   return `
     <div class="tier-hero-top"><span class="tier-hero-season">${rs.season.name}</span><span class="tier-hero-clock">${leftText(rs.season.endsAt)} 남음</span></div>
@@ -123,7 +123,7 @@ export function rpCardHtml(state) {
       <span class="rp-card-rank">${mine ? `${mine.rank}<small>위</small>` : '<small>순위 없음</small>'}</span>
     </div>
     <div class="tier-hero-bar" role="progressbar" aria-label="다음 RP 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-    <p class="rp-card-foot"><span>${rp.next ? (rp.nextPromo ? `승급전 2승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
+    <p class="rp-card-foot"><span>${rp.next ? (rp.nextPromo ? `승급전 3승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
     <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 룰렛·슬롯은 한 판에 건 돈의 3배(+30 RP)까지만 쳐요.</p>`;
 }
 

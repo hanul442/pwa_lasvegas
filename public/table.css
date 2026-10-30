@@ -26,7 +26,7 @@
 .table-name>span .table-won{margin-left:6px;color:var(--ivory)}
 .table-name>span .table-cap{font-style:normal;font-size:11px;margin-left:6px;padding:0 6px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--ivory);white-space:nowrap}
 /* very narrow phones (360px): the subtitle breaks between room and range instead of being cut */
-@media (max-width:380px){.table-name>span{white-space:normal;line-height:1.25}}
+.table-name>span{white-space:normal;line-height:1.25}
 /* my chips: the same wallet pill as the home top bar, with + to 지갑 */
 .table-balance{display:flex;align-items:center;gap:6px;min-height:40px;padding:4px 4px 4px 14px;border-radius:999px;background:var(--ink-3);transition:color .4s}
 .table-balance small{font-size:13px;color:var(--smoke)}

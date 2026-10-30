@@ -220,6 +220,7 @@ test('rooms over the API: create, list, join by code, poll with a cursor, act, l
   // A week-old account may use rooms on every floor; a newer one only up to the High Limit.
   assert.equal((await call(store, 'zero', 'POST', '/api/holdem/rooms', { buyIn: 2_000_000_000, floor: 'penthouse' })).data.error, 'NEW_ACCOUNT_ROOM_LIMIT');
   for (const u of Object.values(store.peek().users)) u.createdAt = '2026-01-01T00:00:00.000Z';
+  store.peek().users.min.account.available = 1_500_000_000; // short of the vip buy-in below, past five big blinds
   const total = availableTotal(store.peek());
   const made = await call(store, 'hanseo', 'POST', '/api/holdem/rooms', { buyIn: 50_000_000, floor: 'high-limit', size: 3 });
   assert.equal(made.status, 201, JSON.stringify(made.data));

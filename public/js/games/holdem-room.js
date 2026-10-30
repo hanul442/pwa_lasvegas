@@ -257,9 +257,9 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     cursor = null;
     news = null;
     resultShown = false;
-    pk.setStakes(view.tier);
+    pk.setStakes(view.floor || view.tier);
     hooks.useStakes?.(view.table);
-    if (view.tourney) useBlinds(view.table, view.tier);
+    if (view.tourney) useBlinds(view.table, view.floor || view.tier);
     pk.me = view.me;
     pk.clear();
     hooks.showSeated(true);
@@ -417,7 +417,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     if (view.cursor.hand === cursor?.hand && view.cursor.from < cursor.from) events = []; // an older reply
     const reseat = pk.me !== view.me;
     pk.me = view.me;
-    if (view.tourney) useBlinds(view.table, view.tier);
+    if (view.tourney) useBlinds(view.table, view.floor || view.tier);
     if (!events || !cursor || events.length > 40 || reseat) {
       pk.clock(-1);
       pk.render(view.table);

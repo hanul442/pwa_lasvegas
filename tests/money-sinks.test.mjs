@@ -67,15 +67,17 @@ test('이벤트 입장료: a tenth of the entry, once a week for a rotating even
   const state = defaultState();
   const u = player(state, 'e', 50 * 억);
   const oceans = eventById('oceans'), casablanca = eventById('casablanca'), whale = eventById('whale');
-  assert.equal(eventFee(oceans), 10 * 억);
+  // A tenth of 100억, in whole chips of the 펜트하우스 (300만 each): 333칩.
+  const FEE = 333 * 3_000_000;
+  assert.equal(eventFee(oceans), FEE);
   assert.equal(eventFee(whale), 100 * 억);
-  assert.equal(chargeEventFee(state, u, oceans, OCT), 10 * 억);
+  assert.equal(chargeEventFee(state, u, oceans, OCT), FEE);
   assert.equal(chargeEventFee(state, u, oceans, OCT + 3_600_000), 0, 'paid for the week');
-  assert.equal(chargeEventFee(state, u, casablanca, OCT), 10 * 억);
-  assert.equal(chargeEventFee(state, u, casablanca, OCT + 86_400_000), 10 * 억, 'a new day');
-  assert.equal(u.account.wallet, 20 * 억);
+  assert.equal(chargeEventFee(state, u, casablanca, OCT), FEE);
+  assert.equal(chargeEventFee(state, u, casablanca, OCT + 86_400_000), FEE, 'a new day');
+  assert.equal(u.account.wallet, 50 * 억 - 3 * FEE);
   assert.equal(state.ledger.filter(x => x.type === 'EVENT_FEE').length, 3);
-  assert.deepEqual(eventFeesView(u, [oceans, casablanca], OCT + 86_400_000), { oceans: { fee: 10 * 억, paid: true, per: 'week' }, casablanca: { fee: 10 * 억, paid: true, per: 'day' } });
+  assert.deepEqual(eventFeesView(u, [oceans, casablanca], OCT + 86_400_000), { oceans: { fee: FEE, paid: true, per: 'week' }, casablanca: { fee: FEE, paid: true, per: 'day' } });
   assert.throws(() => chargeEventFee(state, u, whale, OCT), /INSUFFICIENT_BANKROLL/);
 });
 
@@ -110,7 +112,7 @@ test('over the API: an event table sells its chips at any RP, the first bet pays
   assert.equal(first.data.state.eventFees.casablanca.paid, true);
   assert.equal((await spin()).status, 200);
   assert.equal(state.ledger.filter(x => x.type === 'EVENT_FEE').length, 1);
-  assert.equal(state.ledger.find(x => x.type === 'EVENT_FEE').amount, -10 * 억);
+  assert.equal(state.ledger.find(x => x.type === 'EVENT_FEE').amount, -333 * 3_000_000, 'a tenth of 100억 in whole chips');
   state.users.hanseo.rp.points = 80;
   const promo = await call('POST', '/api/rank/promo');
   assert.equal(promo.status, 200, JSON.stringify(promo.data));

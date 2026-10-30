@@ -1,7 +1,7 @@
 // Getting between tables quickly: the tables played lately on this device (the lobby's
 // "최근 테이블" row and the in-table switcher), the table last used per game, and the switcher
 // sheet that opens from a table's name.
-import { el, formatCH, sound } from './fx.js';
+import { el, wonCH, sound } from './fx.js';
 import { TIERS } from './chips.js';
 
 const RECENT_KEY = 'vegas:recent-tables';
@@ -66,7 +66,7 @@ export function openTableSwitcher({ games, current, currentTier, tierFor, tiersO
     for (const t of tiers) {
       const b = el('button', `switcher-tier${t.slug === currentTier ? ' is-current' : ''}`);
       b.type = 'button';
-      b.innerHTML = `<strong>${t.name}</strong><small>${formatCH(t.min)}–${formatCH(maxOf(t))}</small>`;
+      b.innerHTML = `<strong>${t.name}</strong><small>${wonCH(t.min)}–${wonCH(maxOf(t))}원</small>`;
       if (t.slug === currentTier) b.setAttribute('aria-current', 'true');
       b.disabled = !t.open || t.slug === currentTier;
       b.addEventListener('click', pick(() => onTier(t.slug)));
@@ -89,7 +89,7 @@ export function openTableSwitcher({ games, current, currentTier, tierFor, tiersO
     const b = el('button', `switcher-game${g.id === current.id ? ' is-current' : ''}`);
     b.type = 'button';
     const tier = TIERS[tierFor(g)];
-    b.innerHTML = `<strong>${g.name}</strong><small>${g.id === current.id ? '지금 앉은 게임' : tier ? `${tier.name} · ${formatCH(tier.min)}–${formatCH(maxOf(tier))}` : '테이블 고르기'}</small>`;
+    b.innerHTML = `<strong>${g.name}</strong><small>${g.id === current.id ? '지금 앉은 게임' : tier ? `${tier.name} · ${wonCH(tier.min)}–${wonCH(maxOf(tier))}원` : '테이블 고르기'}</small>`;
     if (g.id === current.id) { b.setAttribute('aria-current', 'true'); b.disabled = true; }
     b.addEventListener('click', pick(() => onGame(g)));
     li.append(b);

@@ -3,7 +3,7 @@ import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { renderAccountTools, forgetShownCode } from './js/account.js';
-import { formatCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits } from './js/fx.js';
+import { formatCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits, chipValueFor } from './js/fx.js';
 import { moneyOf } from './js/money.js';
 import { buyInSheet, cashOutQuiet } from './js/cashier.js';
 import { floorDoor } from './js/floor-door.js';
@@ -132,7 +132,7 @@ function showSurface(name, { focus = false } = {}) {
   document.body.classList.toggle('game-mode', name === 'table');
   document.body.classList.toggle('tier-mode', name === 'tiers');
   // At a table amounts are counted in chips (js/money.js), everywhere else in 원.
-  setTableUnits(name === 'table');
+  if (name === 'table') setTableUnits(true, chipValueFor(TIERS[activeTier]?.min)); else setTableUnits(false);
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (name !== 'table') closeTable();
   if (name === 'ranking') renderRanking();

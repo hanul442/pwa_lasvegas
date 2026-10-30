@@ -82,22 +82,22 @@ test('실버 to 그랜드마스터 is 50:50; 레전드 wins less and loses more 
   assert.deepEqual([0, 250, 950, 2000, 2400].map(loss), [-7, -10, -10, -10, -13]);
 });
 
-test('디비전별 베팅 상한: the floor my tier just opened grows from 2× to 10× its minimum', async () => {
+test('디비전별 베팅 상한: the floor my tier just opened grows from the floor below’s top bet to its own, never lower than before', async () => {
   const { rpBetCap, rpBetCaps } = await import('../lib/rank-points.mjs');
   const { checkBetCap } = await import('../lib/stakes.mjs');
   const { monthBoundary } = await import('../lib/rank-tier.mjs');
   const [gold, high] = FLOORS;
   assert.equal(rpBetCap(50, 0), gold.maxBet, '아이언 plays the Gold Room at its full limit');
   assert.equal(rpBetCap(150, 0), gold.maxBet, '브론즈 too');
-  assert.equal(rpBetCap(200, 1), high.minBet * 2, '실버 V: 2×');
-  assert.equal(rpBetCap(230, 1), high.minBet * 4, '실버 IV: 4×');
+  assert.equal(rpBetCap(200, 1), gold.maxBet, '실버 V: the Gold Room top (1억), not less');
+  assert.equal(rpBetCap(230, 1), gold.maxBet * 1.5, '실버 IV: 1.5억');
   assert.equal(rpBetCap(330, 1), high.minBet * 10, '실버 I: the full 10×');
   assert.equal(rpBetCap(200, 0), gold.maxBet, 'a floor already passed keeps its limit');
   assert.equal(rpBetCap(2400, FLOORS.length - 1), FLOORS.at(-1).maxBet, '레전드: no division, no cap');
-  assert.equal(rpBetCaps(200)[high.slug], high.minBet * 2);
+  assert.equal(rpBetCaps(200)[high.slug], gold.maxBet);
   const u = { rp: { season: monthBoundary(Date.now()).id, points: 200 } };
-  assert.throws(() => checkBetCap(u, high, high.minBet * 3), /BET_OVER_DIVISION_CAP/);
-  assert.doesNotThrow(() => checkBetCap(u, high, high.minBet * 2));
+  assert.throws(() => checkBetCap(u, high, gold.maxBet + high.minBet), /BET_OVER_DIVISION_CAP/);
+  assert.doesNotThrow(() => checkBetCap(u, high, gold.maxBet));
   assert.doesNotThrow(() => checkBetCap(u, gold, gold.maxBet));
 });
 
@@ -119,4 +119,14 @@ test('floors below my tier lock as I climb, and open again when I am short of a 
   assert.equal(floorRefusal(u, salon), 'FLOOR_RP_LOCKED');
   u.account.available = 10 * high.minBet;
   assert.equal(floorOpen(u, gold), true, 'under 20 High Limit bets the Gold Room opens again');
+});
+
+test('going up a tier never lowers the most I may bet', async () => {
+  const { rpBetCaps, RP_TIER_STARTS: S } = await import('../lib/rank-points.mjs');
+  let best = 0;
+  for (let p = 0; p < S.at(-1) + 50; p += 5) {
+    const top = Math.max(...Object.entries(rpBetCaps(p)).filter(([slug]) => FLOORS.findIndex(f => f.slug === slug) <= rpFloorLevel(p)).map(([, v]) => v));
+    assert.ok(top >= best, `RP ${p}: ${top} < ${best}`);
+    best = top;
+  }
 });

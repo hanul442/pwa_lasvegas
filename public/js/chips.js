@@ -28,6 +28,9 @@ export const TIERS = Object.fromEntries([
 
 // The cheapest table in the casino.
 export const FIRST_TIER = Object.values(TIERS)[0];
+// The most I may bet at a table now: the floor's top, or less on the floor my RP tier just opened
+// (디비전별 베팅 상한, lib/rank-points.mjs rpBetCap). Event tables pass event: true and keep the top.
+export const tableMax = (state, tier, { event = false } = {}) => (event ? tier.max : Math.min(tier.max, state?.rp?.betCaps?.[tier.slug] || tier.max));
 
 // Every chip value in the casino, low to high, takes the next colour, so a value looks the same on
 // every table that uses it and neighbouring values never match.

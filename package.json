@@ -11,7 +11,8 @@
     "verify": "node scripts/verify-ledger.mjs",
     "smoke:deploy": "node scripts/smoke-deployment.mjs",
     "rehearse:reset": "node scripts/rehearse-season-reset.mjs",
-    "check:fold": "node scripts/fold-check.mjs"
+    "check:fold": "node scripts/fold-check.mjs",
+    "check:screens": "node scripts/screen-check.mjs"
   },
   "engines": {
     "node": ">=22"

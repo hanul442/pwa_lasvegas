@@ -159,7 +159,7 @@ class FirstTips {
     const t = this.table;
     if (!this.root || !t.root.isConnected) return;
     // Once the coach or a sheet is open, the player is reading help already.
-    if (t.guide?.active || t.root.querySelector('.sheet.is-open')) { this.show(null); return; }
+    if (t.guide?.active || t.root.querySelector('.sheet.is-open') || document.querySelector('.lounge-sheet')) { this.show(null); return; }
     if (this.bye) return this.follow();
     const done = this.def.tipsDone || (tt => this.played && !tt.locked);
     if (t.locked) this.played = true;

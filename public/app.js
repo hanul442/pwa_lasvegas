@@ -1069,7 +1069,7 @@ function openPromoSheet() {
     eyebrow: '승급전', title: `${tierName(o.target)} 승급전`,
     body: `<p class="lounge-note">참가비 <b>${formatCH(o.fee)}원</b>을 내고 도전해요. ${formatCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 ${tierName(o.target, 'V')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. 다음 티어는 승급전으로만 올라가요. RP는 I 꼭대기에서 멈추고, 지면 평소처럼 내려가요.${short ? ` <b>${formatCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
     confirmText: short ? '' : `${formatCH(o.fee)}원 내고 도전`,
-    confirm: short ? null : async () => { const out = await api.rankPromo(); applyState(out.state); toast(`${tierName(o.target)} 승급전 시작 · 2승이면 승급`); }
+    confirm: short ? null : async () => { const out = await api.rankPromo(); applyState(out.state); toast(`${tierName(o.target)} 승급전 시작 · 5판 중 3승이면 승급`); }
   });
 }
 function renderTierPane() {
@@ -1116,6 +1116,7 @@ function renderBoards() {
   if (rpMode && rankPeriod === 'rp') rankPeriod = 'tier';
   const period = document.querySelector('[data-rank-period]');
   period.classList.toggle('segmented--four', !rpMode);
+  period.classList.toggle('segmented--three', rpMode);
   period.replaceChildren(...[['tier', '이번 시즌'], ['rp', 'RP 베타'], ['season', '이번 주'], ['allTime', '전체']].filter(([key]) => !(rpMode && key === 'rp')).map(([key, label]) => {
     const b = el('button', 'segment', label);
     b.type = 'button';

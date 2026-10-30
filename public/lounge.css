@@ -1079,6 +1079,8 @@ body.daily-open{overflow:hidden}
 .promo-dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--hair-strong)}
 .promo-dots i.is-win{background:#fff;border-color:#fff}
 .promo-dots i.is-loss{background:#ff5d5d;border-color:#ff5d5d}
+.promo-dots--log i.is-loss{background:none;position:relative}.promo-dots--log i.is-loss::after{content:"";position:absolute;left:50%;top:-1px;bottom:-1px;width:1.5px;background:#ff5d5d;transform:translateX(-50%) rotate(45deg)}
+.promo-card.is-defense{border-color:#ff8a8a80}
 .promo-last{margin:0;font-size:13px;font-weight:600}
 .promo-last.pos{color:#7ee2a8}.promo-last.neg{color:#ff8a8a}
 
@@ -1101,6 +1103,18 @@ body.daily-open{overflow:hidden}
 .rp-pop.is-down .rp-pop-bar i{background:#ff8a8a}
 .rp-pop.is-big .rp-pop-bar i{background:linear-gradient(90deg,#d9b56a,#f6e3a8)}
 .rp-pop-next{grid-column:1/-1;color:var(--smoke);font-size:12px}
+/* 승급전 (5판 3선승): five circles, white = win, red ring with a slash = loss */
+.rp-pop-dots{grid-column:1/-1;display:flex;gap:7px;margin:3px 0 1px}
+.rp-pop-dots i{position:relative;width:14px;height:14px;border-radius:50%;border:1.5px solid #ffffff59;flex:none}
+.rp-pop-dots i.is-win{background:#fff;border-color:#fff;box-shadow:0 0 8px #ffffff59}
+.rp-pop-dots i.is-loss{border-color:#ff6b6b}
+.rp-pop-dots i.is-loss::after{content:"";position:absolute;left:50%;top:-1px;bottom:-1px;width:1.5px;background:#ff6b6b;transform:translateX(-50%) rotate(45deg)}
+.rp-pop-dots i.is-new{animation:rp-dot .5s .25s cubic-bezier(.3,1.6,.5,1) both}
+.rp-pop.is-promo .rp-pop-label{color:#fff}
+.rp-pop.is-promo.is-big .rp-pop-label{color:#f2d38b}
+.rp-pop.is-promo.is-down .rp-pop-label{color:#ff8a8a}
+.rp-pop.is-defense.is-down{border-color:#ff8a8a99}
+@keyframes rp-dot{0%{transform:scale(.2);opacity:0}100%{transform:none;opacity:1}}
 .rp-pop.is-big .rp-pop-tier{font-size:15px}
 /* 승급: the emblem turns over, a ring and eight sparks go out, a gold light sweeps the card */
 .rp-pop-ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid #f2d38b;opacity:0;pointer-events:none}

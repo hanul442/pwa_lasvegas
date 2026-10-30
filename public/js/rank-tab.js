@@ -28,16 +28,21 @@ export function myMonthRank(state) {
 // 승급전 (lib/promo.mjs): the offer in a tier's division I, the score of a running series, or how
 // the last one ended.
 export function promoHtml(state) {
+  const d = state?.defense?.active;
+  if (d) {
+    const ring = (log = '') => Array.from({ length: 5 }, (_, i) => `<i class="${log[i] === 'W' ? 'is-win' : log[i] === 'L' ? 'is-loss' : ''}"></i>`).join('');
+    return `<section class="promo-card is-active is-defense" aria-label="${tierName(d.tier)} 강등 방어전 진행 중"><div><small>강등 방어전</small><strong>${tierName(d.tier)} 방어전</strong><span>${d.wins}승 ${d.losses}패 · ${formatCH(d.minStake)}원 이상 걸고 건 만큼 딴 판만 1승 · 친구방 제외 · 3승이면 유지, 3패면 ${tierName(d.below, 'I')}</span></div><p class="promo-score"><span class="promo-dots promo-dots--log" aria-label="${d.wins}승 ${d.losses}패">${ring(d.log)}</span></p></section>`;
+  }
   const p = state?.promo;
   if (!p) return '';
   if (p.active) {
     const a = p.active;
     const dots = (n, of, cls) => Array.from({ length: of }, (_, i) => `<i class="${i < n ? cls : ''}"></i>`).join('');
-    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 걸고 건 만큼 딴 판만 1승 · 친구방 제외 · 2승이면 ${tierName(a.target, 'IV')}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
+    return `<section class="promo-card is-active" aria-label="${tierName(a.target)} 승급전 진행 중"><div><small>승급전 진행 중</small><strong>${tierName(a.target)} 승급전</strong><span>${a.wins}승 ${a.losses}패 · ${formatCH(a.minStake)}원 이상 걸고 건 만큼 딴 판만 1승 · 친구방 제외 · 3승이면 ${tierName(a.target, "V")}</span></div><p class="promo-score"><span class="promo-dots" aria-label="${a.wins}승">${dots(a.wins, a.needWins, 'is-win')}</span><span class="promo-dots" aria-label="${a.losses}패">${dots(a.losses, a.needLosses, 'is-loss')}</span></p></section>`;
   }
   if (p.offer) {
     const o = p.offer;
-    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)} 승급전</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 3판 중 2승 · 건 만큼 따야 1승 · RP가 다 차면 자동으로 시작</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
+    return `<section class="promo-card"><div><small>승급전</small><strong>${tierName(o.target)} 승급전</strong><span>참가비 ${formatCH(o.fee)}원 · ${formatCH(o.minStake)}원 이상 걸고 5판 중 3승 · 건 만큼 따야 1승 · RP가 다 차면 자동으로 시작</span></div><button type="button" class="pill-button pill-button--solid" data-promo-start>도전</button></section>`;
   }
   if (p.last && Date.now() - Date.parse(p.last.at) < 6 * 3_600_000) return `<p class="promo-last ${p.last.result === 'won' ? 'pos' : 'neg'}">${tierName(p.last.target)} 승급전 ${p.last.result === 'won' ? '성공' : '실패'}</p>`;
   return '';
@@ -50,7 +55,7 @@ export function tierHeroHtml(state) {
   const pct = Math.round((rs.progress || 0) * 100);
   const place = myMonthRank(state);
   const next = rs.next
-    ? (rs.next.promo ? `<span><b>승급전 2승</b>이면 ${tierName(rs.next.id, rs.next.division)}</span>` : `<span>${tierName(rs.next.id, rs.next.division)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`)
+    ? (rs.next.promo ? `<span><b>승급전 3승</b>이면 ${tierName(rs.next.id, rs.next.division)}</span>` : `<span>${tierName(rs.next.id, rs.next.division)}까지 <b>${rpMode(rs) ? `${rs.next.need} RP` : `${formatCH(rs.next.need)}원`}</b></span>`)
     : '<span><b>최고 티어</b>에 올랐어요</span>';
   return `
     <div class="tier-hero-top"><span class="tier-hero-season">${rs.season.name}</span><span class="tier-hero-clock">${leftText(rs.season.endsAt)} 남음</span></div>
@@ -100,7 +105,7 @@ function rpRulesHtml(rp) {
     <div class="rp-rules-head"><h3>RP 이렇게 움직여요</h3><span>오늘 <b>+${rp.today}</b></span></div>
     <ul class="rp-rule-tiles">${tiles}</ul>
     <table class="rp-rule-tiers"><caption>티어별 배율</caption><thead><tr><th scope="col">티어</th><th scope="col">이기면</th><th scope="col">지면</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="rp-rules-foot">티어마다 V→I 다섯 칸, 위 티어일수록 칸이 넓어요. RP는 I 꼭대기에서 멈추고, 꼭대기에 닿으면 승급전이 자동으로 시작돼요(참가비가 모자라면 직접 도전). 이겨야 다음 티어로 올라가요. ${r.payoutCap ? `룰렛·슬롯은 한 판에 건 돈의 ${r.payoutCap}배(+${whole(r.perStake * r.payoutCap * r.winBy[me])} RP)까지만 쳐요.` : ''}${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'}</p>
+    <p class="rp-rules-foot">티어마다 V→I 다섯 칸, 위 티어일수록 칸이 넓어요. RP는 I 꼭대기에서 멈추고, 꼭대기에 닿으면 승급전이 자동으로 시작돼요(참가비가 모자라면 직접 도전). 이겨야 다음 티어로 올라가요. 지는 쪽도 같아요: RP는 V 바닥에서 멈추고 강등 방어전(5판 3선승)이 열려서, 3패해야 아래 티어로 내려가요. ${r.payoutCap ? `룰렛·슬롯은 한 판에 건 돈의 ${r.payoutCap}배(+${whole(r.perStake * r.payoutCap * r.winBy[me])} RP)까지만 쳐요.` : ''}${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'}</p>
   </div>`;
 }
 
@@ -123,7 +128,7 @@ export function rpCardHtml(state) {
       <span class="rp-card-rank">${mine ? `${mine.rank}<small>위</small>` : '<small>순위 없음</small>'}</span>
     </div>
     <div class="tier-hero-bar" role="progressbar" aria-label="다음 RP 티어까지" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-    <p class="rp-card-foot"><span>${rp.next ? (rp.nextPromo ? `승급전 2승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
+    <p class="rp-card-foot"><span>${rp.next ? (rp.nextPromo ? `승급전 3승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어'}</span><span>오늘 +${rp.today}</span></p>
     <p class="rp-card-rule">이기면 건 돈 대비 번 만큼 오르고(+10 = 건 만큼 땀), 지면 그 3/4만 내려가요. 룰렛·슬롯은 한 판에 건 돈의 3배(+30 RP)까지만 쳐요.</p>`;
 }
 

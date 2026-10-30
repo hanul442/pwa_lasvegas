@@ -177,10 +177,25 @@ const chipClass = item => `chip-accent--${skinName(item.id, /^chips-/)}`;
 function preview(item, nickname) {
   const box = el('div', `skin-preview skin-preview--${item.slot}`);
   box.setAttribute('aria-hidden', 'true');
-  if (item.slot === 'cardBack') box.append(backCard(item));
-  else if (item.slot === 'felt') box.classList.add(feltClass(item));
+  if (item.slot === 'cardBack') box.append(backCard(item), backCard(item));
+  else if (item.slot === 'felt') {
+    // The cloth with a hand on it: a house card and a chip, so the colour reads as a table.
+    box.classList.add(feltClass(item));
+    const card = createCard(null, { faceUp: false });
+    card.querySelector('.card-back').className = 'card-back';
+    box.append(card, createChip(10_000_000));
+  }
   else if (item.slot === 'frame') box.innerHTML = plate(item, nickname);
-  else { box.classList.add(chipClass(item)); box.append(createChip(10_000_000), createChip(1_000_000_000)); }
+  else {
+    // Two short stacks and a plaque, as they would sit in front of the player.
+    box.classList.add(chipClass(item));
+    for (const [value, n] of [[10_000_000, 5], [30_000_000, 3]]) {
+      const stack = el('div', 'pv-stack');
+      for (let i = 0; i < n; i++) { const c = createChip(value); c.style.setProperty('--i', i); stack.append(c); }
+      box.append(stack);
+    }
+    box.append(createChip(1_000_000_000));
+  }
   return box;
 }
 

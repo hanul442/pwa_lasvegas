@@ -47,8 +47,7 @@ test('승급전: the covered wheel now fails the series instead of passing it 99
   for (let i = 0; i < 5; i++) noteRp(u, { game: 'Roulette', stake, netPnl: 1_000_000 }, OCT);
   assert.equal(u.rp.promo.wins, 0);
   assert.equal(u.rp.promo.active, true);
-  noteRp(u, { game: 'Roulette', stake, netPnl: -stake }, OCT);
-  noteRp(u, { game: 'Roulette', stake, netPnl: -stake }, OCT);
+  for (let i = 0; i < 3; i++) noteRp(u, { game: 'Roulette', stake, netPnl: -stake }, OCT);
   assert.equal(u.rp.promo.result, 'lost');
 });
 

@@ -27,16 +27,30 @@ export const SIZES = {
   narrow: { width: 360, height: 780 },  // folded, larger font / display zoom
   inner: { width: 760, height: 840 },   // unfolded, upright
   innerL: { width: 840, height: 760 },  // unfolded, on its side
+  phone: { width: 390, height: 844 },   // common phone (iPhone 14/15, Galaxy S)
+  land: { width: 844, height: 390 },    // common phone on its side
+  pc1280: { width: 1280, height: 800, pc: true },   // laptop
+  pc1440: { width: 1440, height: 900, pc: true },
+  pc1920: { width: 1920, height: 1080, pc: true },  // desktop monitor
+};
+// Phone sizes run by default; PC sizes when asked (--sizes=pc1280,... or --sizes=all).
+const DEFAULT_SIZES = ['cover', 'narrow', 'inner', 'innerL'];
+export const context = size => {
+  const { pc, ...viewport } = SIZES[size];
+  return pc
+    ? { viewport, deviceScaleFactor: 1, locale: 'ko-KR', serviceWorkers: 'block' }
+    : { viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'ko-KR', serviceWorkers: 'block' };
 };
 export const GAMES = ['blackjack', 'baccarat', 'roulette', 'dice', 'slots', 'poker', 'sevenpoker', 'seotda', 'matgo', 'gostop', 'horses'];
 
 const games = arg('games', GAMES.join(',')).split(',').filter(Boolean);
-const sizes = arg('sizes', Object.keys(SIZES).join(',')).split(',').filter(s => SIZES[s]);
+const sizeArg = arg('sizes', DEFAULT_SIZES.join(','));
+const sizes = (sizeArg === 'all' ? Object.keys(SIZES).join(',') : sizeArg).split(',').filter(s => SIZES[s]);
 const out = path.resolve(arg('out', path.join(os.tmpdir(), 'vegas-fold-check')));
 const tier = arg('tier', 'gold-room');
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-async function startServer() {
+export async function startServer() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'vegas-fold-'));
   const port = 3400 + Math.floor(Math.random() * 400);
   const child = spawn(process.execPath, [path.join(ROOT, 'server.mjs')], { cwd: dir, env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
@@ -94,7 +108,7 @@ function inspect() {
   return found;
 }
 
-async function closeOverlays(page) {
+export async function closeOverlays(page) {
   // News, first-time tips, sheets: anything with a close button over the table.
   for (let i = 0; i < 4; i++) {
     const closed = await page.evaluate(() => {
@@ -106,6 +120,15 @@ async function closeOverlays(page) {
     if (!closed) break;
     await wait(250);
   }
+}
+
+export async function signInGuest(page, base) {
+  await page.goto(base);
+  const terms = page.locator('[data-terms-check]');
+  if (await terms.isVisible().catch(() => false)) { await terms.check(); await page.click('[data-terms-agree]'); }
+  await page.locator('[data-guest]').first().click();
+  await page.waitForFunction(() => document.body.classList.contains('signed-in') || localStorage.getItem('vegas:session'), null, { timeout: 15000 });
+  await wait(800);
 }
 
 // Puts a bet on the biggest spot (if the table has spots), then presses the main button.
@@ -123,7 +146,7 @@ async function primary(page) {
 }
 
 // Playwright is not a dependency of the app: use a local install, else the global one.
-async function loadPlaywright() {
+export async function loadPlaywright() {
   try { return await import('playwright'); } catch {}
   const { execSync } = await import('node:child_process');
   const { createRequire } = await import('node:module');
@@ -139,14 +162,9 @@ async function main() {
   const report = [];
   try {
     for (const size of sizes) {
-      const ctx = await browser.newContext({ viewport: SIZES[size], deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'ko-KR', serviceWorkers: 'block' });
+      const ctx = await browser.newContext(context(size));
       const page = await ctx.newPage();
-      await page.goto(server.base);
-      const terms = page.locator('[data-terms-check]');
-      if (await terms.isVisible().catch(() => false)) { await terms.check(); await page.click('[data-terms-agree]'); }
-      await page.locator('[data-guest]').first().click();
-      await page.waitForFunction(() => document.body.classList.contains('signed-in') || localStorage.getItem('vegas:session'), null, { timeout: 15000 });
-      await wait(800);
+      await signInGuest(page, server.base);
       for (const game of games) {
         await closeOverlays(page);
         await page.evaluate(([g, t]) => dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game: g, tier: t } })), [game, tier]);
@@ -154,12 +172,12 @@ async function main() {
         await wait(1800);
         // The cashier (js/cashier.js): leaving the last table cashed the chips in, so buy a stack
         // here from the seat, as a player would with the table's +.
-        if (await page.evaluate(() => document.querySelector('.table-screen [data-balance]')?.textContent.trim() === '0')) {
-          await page.evaluate(() => document.dispatchEvent(new CustomEvent('vegas:buyin')));
-          await wait(700);
-          await page.evaluate(() => document.querySelector('.buyin-sheet .pill-button--solid')?.click());
-          await wait(1200);
-        }
+        // Opening a table this way skips the seat's buy-in (it is the "back to my seat" path), and
+        // the chip count can show the wallet before a seat is bought, so always buy in here.
+        await page.evaluate(() => document.dispatchEvent(new CustomEvent('vegas:buyin')));
+        await wait(700);
+        await page.evaluate(() => document.querySelector('.buyin-sheet .pill-button--solid')?.click());
+        await wait(1200);
         await closeOverlays(page);
         let first = '';
         for (const step of ['idle', 'play', 'end']) {
@@ -170,7 +188,7 @@ async function main() {
             for (let i = 0; i < 14; i++) {
               // a card waiting to be peeked (섯다): tap it open
               const peek = await page.evaluate(() => { const r = document.querySelector('.table-screen .is-peekable')?.getBoundingClientRect(); return r && [r.left + r.width / 2, r.top + r.height / 2]; });
-              if (peek) { await page.touchscreen.tap(...peek); await wait(1200); }
+              if (peek) { await (SIZES[size].pc ? page.mouse.click(...peek) : page.touchscreen.tap(...peek)); await wait(1200); }
               const label = await page.evaluate(() => [...document.querySelectorAll('.table-screen [data-actions] button')].filter(b => !b.disabled && b.offsetParent).map(b => b.textContent.trim()).join('|'));
               if (label.includes(first.split('↵')[0])) break;
               if (label) await page.evaluate(() => { const bs = [...document.querySelectorAll('.table-screen [data-actions] button')].filter(b => !b.disabled && b.offsetParent); (bs.find(b => /스탠드|콜|체크|stand|call/i.test(b.textContent)) || bs.find(b => b.classList.contains('action--primary')) || bs.at(-1))?.click(); });

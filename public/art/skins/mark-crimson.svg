@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 20 20"><mask id="m"><rect x="-10" y="-10" width="20" height="20" fill="#000"/><path fill="#fff" d="M0 -8.4L2.23 -2.47L8.56 -2.18L3.61 1.77L5.29 7.88L0 4.4L-5.29 7.88L-3.61 1.77L-8.56 -2.18L-2.23 -2.47Z"/></mask><rect x="-10" y="-10" width="20" height="20" fill="#000" mask="url(#m)"/></svg>

@@ -16,32 +16,35 @@ const at = (t, fn) => { const real = Date.now; Date.now = () => t; try { return 
 const player = (state, id, wallet) => { const u = newUser(state, id, id.toUpperCase()); u.account.wallet = wallet; return u; };
 const withPoints = (u, points, now) => { rpOf(u, now); u.rp.points = points; u.rp.peak = points; };
 
-test('승급전: only in a tier\'s division I, the fee comes from the wallet, two wins lift to the next tier', () => {
+test('승급전: only in a tier\'s division I, the fee comes from the wallet, three wins lift to the next tier', () => {
   const state = defaultState();
   const u = player(state, 'p', 10 * 억);
   at(OCT, () => withPoints(u, 50, OCT));
   assert.equal(at(OCT, () => promoView(u)).offer, null, 'division II: no series yet');
   assert.throws(() => at(OCT, () => startPromo(state, u)), /PROMO_NOT_AVAILABLE/);
-  u.rp.points = 76;
+  u.rp.points = 85;
   const offer = at(OCT, () => promoView(u)).offer;
-  assert.deepEqual(offer, { target: 'bronze', fee: 2 * 억, minStake: 10_000_000, wins: 2, losses: 2 });
+  assert.deepEqual(offer, { target: 'bronze', fee: 2 * 억, minStake: 10_000_000, wins: 3, losses: 3 });
   at(OCT, () => startPromo(state, u));
   assert.equal(u.account.wallet, 8 * 억);
   assert.equal(state.ledger.at(-1).type, 'PROMO_FEE');
   assert.equal(state.ledger.at(-1).amount, -2 * 억);
   assert.throws(() => at(OCT, () => startPromo(state, u)), /PROMO_ACTIVE/);
-  noteRp(u, { game: 'Baccarat', stake: 1_000_000, netPnl: 1_000_000 }, OCT);
+  noteRp(u, { game: 'Baccarat', stake: 1_000_000, netPnl: -1_000_000 }, OCT);
   assert.equal(u.rp.promo.wins, 0, 'a bet under the series minimum does not count');
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: 10_000_000 }, OCT);
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000 }, OCT);
   assert.equal(u.rp.promo.active, true);
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: 10_000_000 }, OCT);
+  assert.equal(u.rp.promo.active, true, 'two wins of three');
+  noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: 10_000_000 }, OCT);
   assert.equal(u.rp.promo.result, 'won');
+  assert.equal(u.rp.promo.log, 'WLWW', 'the order of results, for the five circles');
   assert.ok(u.rp.points >= 100);
   assert.equal(rpView(u, OCT).tier, 'bronze');
 });
 
-test('승급전: two losses end it and the fee is gone; a new season drops an open series', () => {
+test('승급전: three losses end it and the fee is gone; a new season drops an open series', () => {
   const state = defaultState();
   const u = player(state, 'q', 10 * 억);
   at(OCT, () => withPoints(u, 190, OCT));
@@ -49,6 +52,8 @@ test('승급전: two losses end it and the fee is gone; a new season drops an op
   assert.equal(s.target, 'silver');
   assert.equal(s.fee, 30_000_000 * 20, 'silver plays High Limit: 20 of its 3천만 bets');
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000 }, OCT);
+  noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000 }, OCT);
+  assert.equal(u.rp.promo.active, true, 'two losses of three');
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000 }, OCT);
   assert.equal(u.rp.promo.result, 'lost');
   assert.ok(u.rp.points < 190);

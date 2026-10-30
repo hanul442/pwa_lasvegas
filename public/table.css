@@ -23,6 +23,7 @@
 @media (max-width:519px){.table-name strong{font-size:clamp(16px,4.8vw,19px);font-stretch:108%}}
 .table-name>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--taupe)}
 .table-name>span i{font-style:normal;white-space:nowrap}
+.table-name>span .table-cap{font-style:normal;font-size:11px;margin-left:6px;padding:0 6px;border:1px solid var(--hair-strong);border-radius:999px;color:var(--ivory);white-space:nowrap}
 /* very narrow phones (360px): the subtitle breaks between room and range instead of being cut */
 @media (max-width:380px){.table-name>span{white-space:normal;line-height:1.25}}
 /* my chips: the same wallet pill as the home top bar, with + to 지갑 */
@@ -50,10 +51,11 @@
 .felt{position:relative;isolation:isolate;margin:6px 12px 10px;border:10px solid transparent;border-radius:34px;overflow:hidden auto;overscroll-behavior:contain;touch-action:pan-y;
   --felt-a:#1b7556;--felt-b:#0e4e37;--felt-c:#05251a;
   background:
+    var(--felt-print,none) 50% 0/var(--felt-print-size,72px) padding-box,
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .45 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E") padding-box,
     radial-gradient(70% 55% at 50% 30%,var(--felt-a) 0,var(--felt-b) 50%,var(--felt-c) 100%) padding-box,
-    linear-gradient(180deg,#3a3f46,#16181c 18%,#0c0d10 70%,#1d2025) border-box;
-  box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}
+    var(--felt-rail,linear-gradient(180deg,#3a3f46,#16181c 18%,#0c0d10 70%,#1d2025)) border-box;
+  box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px var(--felt-piping,#ffffff1a),inset 0 0 90px #000b,0 24px 60px #000c}
 .felt--blue{--felt-a:#22548a;--felt-b:#143660;--felt-c:#08172d}
 .felt--red{--felt-a:#7c2230;--felt-b:#4f1320;--felt-c:#22070d}
 .felt--roulette{--felt-a:#1b7556;--felt-b:#0e4e37;--felt-c:#05251a}

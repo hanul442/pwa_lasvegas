@@ -1,6 +1,6 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord } from './fx.js';
-import { createChip, breakdown, holding, TIERS } from './chips.js';
+import { createChip, breakdown, holding, TIERS, tableMax } from './chips.js';
 import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 
 // A hand that loses this many table minimums (two max bets) gets the hard landing.
@@ -57,9 +57,14 @@ export class Table {
   // and the event felts, so a table that turns into an event mid-visit changes back.
   // backLabel: where the ← goes (the screen this table was opened from). onSwitch: the table name
   // opens the quick switcher (other games, other tables of this one).
-  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true, toke = false }) {
+  constructor({ mount, game, title, tier, state, onLeave, onSwitch = null, backLabel = '게임 목록으로 나가기', feltClass = '', multi = false, zoneMin = true, zoneWord = '박스당', pushDouble = false, hot = true, skin = true, toke = false, event = false }) {
     this.pushDouble = pushDouble;
-    this.tier = TIERS[tier] || TIERS.mid;
+    // 디비전별 베팅 상한 (lib/rank-points.mjs rpBetCap): the floor my tier just opened takes less
+    // than its full limit until division I. Event tables keep the floor's own limit.
+    this.baseTier = TIERS[tier] || TIERS.mid;
+    this.eventTable = event;
+    this.division = state?.rp?.division || null;
+    this.tier = this.cappedTier(state);
     this.game = game;
     this.available = state?.user?.account?.available ?? 0;
     this.nickname = state?.user?.nickname ?? '';
@@ -92,7 +97,7 @@ export class Table {
     root.innerHTML = `
       <header class="table-bar">
         <button class="table-back" type="button" aria-label="${backLabel}" title="${backLabel}"><span aria-hidden="true">←</span></button>
-        <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span><i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatUnit(this.tier.max)}</i></span></div>
+        <div class="table-name"><strong><span class="table-title">${title}</span><span class="hot-marker" data-hot hidden></span></strong><span data-limit></span></div>
         <div class="table-tools">
           <button class="sound-toggle table-icon" type="button" data-sound aria-label="소리 끄기" aria-pressed="true"><span aria-hidden="true">♪</span></button>
         </div>
@@ -150,6 +155,7 @@ export class Table {
     // 뽀찌: tables with a dealer get a toke box on the top rail (public/js/toke.js).
     this.toke = toke ? new Toke(this) : null;
     this.hotEl = root.querySelector('[data-hot]');
+    this.paintLimit();
     this.hotOn = hot;
     this.hotWindows = [];
     this.watchHot(state, { announce: true });
@@ -729,8 +735,22 @@ export class Table {
     setTimeout(hide, 5200);
   }
 
+  cappedTier(state) {
+    const base = this.baseTier, max = tableMax(state, base, { event: this.eventTable });
+    return max < base.max ? { ...base, max, capped: true } : base;
+  }
+  // The header's limit line: the floor's range, and the division's own top while it is lower.
+  limitHtml() {
+    return `<i>${this.tier.name}</i> · <i>${formatCH(this.tier.min)}–${formatUnit(this.tier.max)}</i>${this.tier.capped && this.division ? ` <em class="table-cap">${this.division} 한도</em>` : ''}`;
+  }
+  paintLimit() { const box = this.root?.querySelector('[data-limit]'); if (box) box.innerHTML = this.limitHtml(); }
+
   setServerState(state) {
     if (state?.user?.account) this.available = state.user.account.available;
+    // A new division raises the limit on the spot (the table header keeps the floor's own range).
+    if (state?.rp?.betCaps && this.tier.max !== this.cappedTier(state).max) { this.tier = this.cappedTier(state); }
+    if (state?.rp && (state.rp.division || null) !== this.division) this.division = state.rp.division || null;
+    this.paintLimit();
     // A bust or a 구제금융 shows once the round on the felt is over, not while its cards are dealt.
     this.serverState = state;
     if (!this.locked) { maybeBust(state); noteRpChange(state, { quiet: isSettlingIn(state) }); }

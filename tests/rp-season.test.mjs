@@ -36,8 +36,8 @@ test('the RP season starts 2026-10-29: tier, board, floors, pay and the bank all
   assert.equal(view.mode, 'rp');
   assert.equal(view.carry, true, 'October ends by dropping RP, not by a chip reset');
   assert.equal(view.rp, 520);
-  assert.deepEqual(view.next, { id: 'platinum', division: 'III', need: 30 }, 'next step is the next division');
-  assert.equal(view.division, 'IV');
+  assert.deepEqual(view.next, { id: 'platinum', division: 'IV', need: 20 }, 'next step is the next division');
+  assert.equal(view.division, 'V');
   at(OCT, () => {
     assert.equal(floorRefusal(a, FLOORS[1]), 'FLOOR_RP_LOCKED', 'chips no longer open floors');
     assert.equal(floorRefusal(b, FLOORS[3]), null);
@@ -163,6 +163,12 @@ test('October and November are one season: 11/1 closes nothing, 12/1 closes it b
   assert.equal(b.rank.reset.carry, 350);
   assert.equal(at(DEC1, () => rpPointsNow(b)), 350, '다이아몬드 950 → 골드 350');
   assert.equal(at(DEC1, () => rankView(state, b)).tier, 'gold');
+  // The season-end screen (js/season-finale.js) plays the drop from these.
+  const last = at(DEC1, () => rankView(state, b)).last;
+  assert.deepEqual(last.mine && [last.mine.tier, last.mine.rp, last.mine.rank], ['diamond', 950, 1]);
+  assert.deepEqual(last.start, { rp: 350, tier: 'gold', division: 'V' });
+  assert.equal(last.newBest, true);
+  assert.equal(last.next, '12월 시즌');
   assert.equal(at(DEC1, () => rpPointsNow(a)), 0);
   assert.equal(monthBoundary(DEC1).id, 'rank-2026-12', 'from December, one month a season again');
   assert.equal(monthBoundary(Date.parse('2027-01-01T00:30:00+09:00') - 86_400_000).endsAt, '2026-12-31T15:00:00.000Z');

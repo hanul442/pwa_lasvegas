@@ -19,7 +19,7 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
   let tourney = royaleMode ? 'royale' : tourneyMode;
   let royale = Boolean(tourney);
   const evOf = id => ctx.state?.events?.find(e => e.id === id) || null;
-  const t = new Table({ ...ctx, game: 'holdem', title: royale ? evOf(tourney)?.title || 'Casino Royale' : gameName('poker'), feltClass: `felt--poker${royale ? ` felt--royale felt--${tourney}` : ''}` });
+  const t = new Table({ ...ctx, event: !!royale, game: 'holdem', title: royale ? evOf(tourney)?.title || 'Casino Royale' : gameName('poker'), feltClass: `felt--poker${royale ? ` felt--royale felt--${tourney}` : ''}` });
   const pk = createPokerFelt(t, { sitdown: `
     <button type="button" class="zone pk-buyin" data-zone="buyin"><strong>Buy-in</strong><small data-blinds></small></button>
     <div class="pk-opponents" role="radiogroup" aria-label="상대 수">

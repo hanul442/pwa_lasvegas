@@ -1,0 +1,127 @@
+/* 층 입장 (js/floor-door.js): a door per floor that opens onto the room before the buy-in.
+   Layers, bottom to top: the room (lamp + felt edge), the floor's name plate, the door. Only
+   transform, opacity and filter-free brightness via opacity animate. */
+.floor-door{--d:520ms;--ease:cubic-bezier(.55,.05,.3,1);--rise:cubic-bezier(.2,.8,.2,1);
+  position:fixed;inset:0;z-index:90;overflow:hidden;background:#050607;opacity:0;transition:opacity 160ms linear;cursor:pointer;
+  perspective:1100px;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.floor-door.is-on{opacity:1}
+.floor-door.is-quick{--d:260ms}
+.floor-door.is-leaving{opacity:0;transition-duration:300ms;pointer-events:none}
+.floor-door.is-calm{--d:1ms}
+.floor-door.is-calm.is-leaving{transition-duration:150ms}
+
+/* the room behind the door */
+.floor-door-room{position:absolute;inset:0;background:radial-gradient(70% 45% at 50% 62%,var(--door-tint,#1c2a27) 0,transparent 70%),radial-gradient(60% 30% at 50% 0,#2a2e33 0,transparent 70%),#08090b;
+  opacity:.18;transform:scale(1.08);transition:opacity calc(var(--d) * 1.3) ease-out,transform calc(var(--d) * 1.7) var(--rise)}
+.floor-door.is-lit .floor-door-room{opacity:1;transform:none}
+.floor-door-lamp{position:absolute;left:50%;top:0;width:min(90vw,640px);height:48%;transform:translateX(-50%);background:radial-gradient(50% 100% at 50% 0,rgba(255,246,220,.2),transparent 70%)}
+.floor-door-felt{position:absolute;left:-15%;right:-15%;top:58%;bottom:-30%;border-radius:50% 50% 0 0/30% 30% 0 0;
+  background:radial-gradient(80% 70% at 50% 8%,var(--door-felt-hi,#145347) 0,var(--door-felt,#0f3b33) 45%,#06201b 100%);box-shadow:inset 0 0 0 6px #0b0c0e,inset 0 0 0 7px rgba(255,255,255,.12)}
+
+/* the floor's sign */
+.floor-door-plate{position:absolute;left:0;right:0;top:calc(18% + env(safe-area-inset-top));padding:0 20px;text-align:center;color:var(--white,#f4f5f7);
+  opacity:0;transform:translateY(12px);transition:opacity calc(var(--d) * .9) ease-out,transform var(--d) var(--rise)}
+.floor-door.is-lit .floor-door-plate{opacity:1;transform:none}
+.floor-door-plate small{display:block;font:600 12px var(--display);letter-spacing:.32em;color:var(--smoke)}
+.floor-door-plate strong{display:block;font:560 min(64px,12vw,calc(88vw / var(--len,6)))/1 var(--display);font-stretch:125%;letter-spacing:.06em;margin:8px 0 6px;overflow-wrap:normal;word-break:keep-all}
+.floor-door-plate span{display:block;font-size:14px;color:var(--smoke)}
+.floor-door-stars{display:block;margin-top:6px;font-style:normal;font-size:12px;letter-spacing:3px;color:var(--star,#fff6dc)}
+.floor-door-skip{position:absolute;right:max(14px,env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top));font-size:12px;color:var(--dim,#9aa0a8);border:1px solid var(--hair);border-radius:999px;padding:4px 10px;background:rgba(0,0,0,.45);transition:opacity .2s}
+.floor-door.is-done .floor-door-skip,.floor-door.is-quick .floor-door-skip,.floor-door.is-calm .floor-door-skip{opacity:0}
+
+/* the gate: holds the floor's door, fades once it has opened */
+.floor-door-gate{position:absolute;inset:0;transform-style:preserve-3d;transition:opacity calc(var(--d) * .6) ease-out calc(var(--d) * .5)}
+.floor-door.is-open .floor-door-gate{opacity:0}
+.floor-door.is-calm .floor-door-gate{display:none}
+.door-leaf{position:absolute;top:0;bottom:0;width:50.5%;transition:transform var(--d) var(--ease)}
+.door-leaf--l{left:0}.door-leaf--r{right:0}
+
+/* 1F HALL: two tall glass doors with steel pulls slide apart */
+.floor-door--gold-room .door-leaf{background:linear-gradient(100deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 40%,rgba(255,255,255,.06) 60%,rgba(255,255,255,.015)),#0d1013;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),inset 0 0 0 10px #121519,inset 0 0 0 11px rgba(255,255,255,.08)}
+.floor-door--gold-room .door-leaf::after{content:"";position:absolute;top:38%;width:6px;height:24%;border-radius:3px;background:linear-gradient(90deg,#8d939b,#e6e9ed,#8d939b)}
+.floor-door--gold-room .door-leaf--l::after{right:18px}.floor-door--gold-room .door-leaf--r::after{left:18px}
+.floor-door--gold-room.is-open .door-leaf--l{transform:translateX(-100%)}
+.floor-door--gold-room.is-open .door-leaf--r{transform:translateX(100%)}
+
+/* 2F CLUB: the rope drops, heavy black curtains sweep aside */
+.floor-door--high-limit{--door-felt:#2a1a20;--door-felt-hi:#452630;--door-tint:#2a1d22}
+.floor-door--high-limit .door-leaf{background:repeating-linear-gradient(90deg,#121316 0 14px,#1d1f23 22px,#121316 34px),#141518;box-shadow:inset 0 -40px 60px rgba(0,0,0,.6)}
+.floor-door--high-limit .door-leaf--l{transform-origin:0 0}.floor-door--high-limit .door-leaf--r{transform-origin:100% 0}
+.floor-door--high-limit.is-open .door-leaf--l{transform:translateX(-82%) scaleX(.35) skewY(-2deg)}
+.floor-door--high-limit.is-open .door-leaf--r{transform:translateX(82%) scaleX(.35) skewY(2deg)}
+.door-rope{position:absolute;left:18%;right:18%;top:64%;height:6px;border-radius:3px;background:linear-gradient(#e9e3d4,#a69f8f);box-shadow:0 2px 6px rgba(0,0,0,.6);transform-origin:0 50%;transition:transform calc(var(--d) * .6) var(--ease),opacity calc(var(--d) * .6)}
+.floor-door--high-limit.is-armed .door-rope{transform:rotate(68deg);opacity:0}
+
+/* 3F SALON: black lacquer double doors with white inlay swing in */
+.floor-door--salon-prive{--door-felt:#14243d;--door-felt-hi:#1f3658;--door-tint:#18202c}
+.floor-door--salon-prive .door-leaf{background:linear-gradient(180deg,#141619,#0b0c0e);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.floor-door--salon-prive .door-leaf::before{content:"";position:absolute;inset:12% 16%;border:1px solid rgba(255,255,255,.28)}
+.floor-door--salon-prive .door-leaf::after{content:"";position:absolute;top:50%;width:4px;height:44px;margin-top:-22px;background:#dfe2e6;border-radius:2px}
+.floor-door--salon-prive .door-leaf--l::after{right:12px}.floor-door--salon-prive .door-leaf--r::after{left:12px}
+.floor-door--salon-prive .door-leaf--l{transform-origin:0 50%}.floor-door--salon-prive .door-leaf--r{transform-origin:100% 50%}
+.floor-door--salon-prive.is-open .door-leaf--l{transform:rotateY(80deg)}
+.floor-door--salon-prive.is-open .door-leaf--r{transform:rotateY(-80deg)}
+
+/* 4F PENTHOUSE: the lift climbs to 4, brushed steel doors part */
+.floor-door--penthouse{--door-felt:#2b2f35;--door-felt-hi:#454b53;--door-tint:#23262b}
+.floor-door--penthouse .door-leaf{top:16%;background:repeating-linear-gradient(90deg,#2a2e33 0 2px,#30353b 3px 5px),#2c3036;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.floor-door--penthouse .door-leaf--l{box-shadow:inset -1px 0 0 rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.14)}
+.floor-door--penthouse.is-open .door-leaf--l{transform:translateX(-100%)}
+.floor-door--penthouse.is-open .door-leaf--r{transform:translateX(100%)}
+.door-lift{position:absolute;left:0;right:0;top:0;height:16%;display:grid;place-items:center;background:#0b0c0e;border-bottom:1px solid var(--hair-strong);transition:opacity calc(var(--d) * .5)}
+.door-lift b{font:600 clamp(28px,8vw,40px)/1 var(--display);color:var(--star,#fff6dc);font-variant-numeric:tabular-nums;padding-top:env(safe-area-inset-top)}
+.door-lift b::before{content:"▲ ";font-size:.4em;vertical-align:middle;color:var(--smoke)}
+
+/* 5F SKY: the night skyline drops away as you rise, then glass parts */
+.floor-door--sky-lounge{--door-felt:#14303d;--door-felt-hi:#1e4a5e;--door-tint:#152532}
+.door-sky{position:absolute;inset:0;background:linear-gradient(#05070c,#0d1522 70%,#16202e);transition:transform calc(var(--d) * 1.2) var(--ease)}
+.door-sky svg{position:absolute;left:0;width:100%;height:30%;bottom:0}
+.door-sky svg+svg{bottom:-30%;opacity:.6}
+.floor-door--sky-lounge.is-armed .door-sky{transform:translateY(40%)}
+.floor-door--sky-lounge .door-leaf{background:linear-gradient(100deg,rgba(255,255,255,.08),rgba(255,255,255,.02) 50%,rgba(255,255,255,.05));box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.floor-door--sky-lounge.is-open .door-leaf--l{transform:translateX(-100%)}
+.floor-door--sky-lounge.is-open .door-leaf--r{transform:translateX(100%)}
+
+/* 6F VAULT: the wheel turns, the bolts pull in, the round door swings */
+.floor-door--vault{--door-felt:#1f2a24;--door-felt-hi:#2f4136;--door-tint:#1d2421}
+.door-vault{position:absolute;left:50%;top:50%;width:min(78vw,52vh,420px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:#050607;box-shadow:0 0 0 10px #121417,0 0 0 11px rgba(255,255,255,.12),0 0 0 100vmax #0e1012}
+.door-vault-glow{position:absolute;inset:4%;border-radius:50%;background:radial-gradient(circle,rgba(255,246,220,.55),rgba(255,246,220,0) 70%);opacity:0;transition:opacity var(--d) ease-out}
+.floor-door--vault.is-open .door-vault-glow{opacity:1}
+.door-vault-door{position:absolute;inset:0;border-radius:50%;transform-origin:2% 50%;background:radial-gradient(circle at 35% 30%,#3a3f46,#22262b 55%,#15181b);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),inset 0 0 0 14px #1a1d21,inset 0 0 0 15px rgba(255,255,255,.08);transition:transform calc(var(--d) * 1.1) var(--ease)}
+.floor-door--vault.is-open .door-vault-door{transform:rotateY(-108deg)}
+.door-bolt{position:absolute;left:50%;top:50%;width:10%;height:4.5%;margin:-2.25% 0 0 -5%;border-radius:3px;background:linear-gradient(#d9dde2,#7f868e);transform:rotate(var(--a)) translateX(420%);transition:transform calc(var(--d) * .7) var(--ease)}
+.floor-door--vault.is-armed .door-bolt{transform:rotate(var(--a)) translateX(300%)}
+.door-vault-ring{position:absolute;inset:26%;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 0 0 1px rgba(0,0,0,.6)}
+.door-vault-wheel{position:absolute;inset:30%;transition:transform var(--d) var(--ease)}
+.door-vault-wheel svg{display:block;width:100%;height:100%}
+.floor-door--vault.is-armed .door-vault-wheel{transform:rotate(270deg)}
+.door-vault-mark{position:absolute;left:0;right:0;bottom:11%;text-align:center;font:600 10px var(--display);font-style:normal;letter-spacing:.34em;color:rgba(255,255,255,.4)}
+
+/* 7F CROWN: tall doors with the crown pressed across the seam split apart */
+.floor-door--crown{--door-felt:#2b2418;--door-felt-hi:#463b27;--door-tint:#2a2519}
+.floor-door--crown .door-leaf{background:linear-gradient(180deg,#121214,#0a0a0b);box-shadow:inset 0 0 0 1px rgba(233,227,212,.22),inset 0 0 0 12px #0f0f11,inset 0 0 0 13px rgba(233,227,212,.14);overflow:hidden}
+.door-crest{position:absolute;top:calc(50% - 40px);width:min(46vw,240px);height:auto}
+.door-crest svg{display:block;width:100%}
+.door-leaf--l .door-crest{right:0;transform:translateX(50%)}.door-leaf--r .door-crest{left:0;transform:translateX(-50%)}
+.floor-door--crown.is-armed .door-leaf--l{transform:translateX(-2%)}.floor-door--crown.is-armed .door-leaf--r{transform:translateX(2%)}
+.floor-door--crown.is-open .door-leaf--l{transform:translateX(-100%)}
+.floor-door--crown.is-open .door-leaf--r{transform:translateX(100%)}
+
+/* 8F OLYMPUS: a seam of white light widens until it fills the room, between two pillars */
+.floor-door--olympus{--door-felt:#2e3136;--door-felt-hi:#4c5058;--door-tint:#2b2e33}
+.floor-door--olympus .floor-door-gate{background:#0b0c0e}
+.door-pillar{position:absolute;top:0;bottom:0;width:14%;background:repeating-linear-gradient(90deg,#1c1f23 0 6px,#25292e 6px 12px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);z-index:1}
+.door-pillar--l{left:6%}.door-pillar--r{right:6%}
+.door-veil{position:absolute;inset:0;background:radial-gradient(60% 80% at 50% 50%,#fffdf6,#f4efe2 60%,#d8d2c4);transform:scaleX(.008);transform-origin:50% 50%;transition:transform var(--d) var(--ease)}
+.floor-door--olympus.is-armed .door-veil{transform:scaleX(.06)}
+.floor-door--olympus.is-open .door-veil{transform:scaleX(1)}
+.floor-door--olympus.is-open .door-pillar{opacity:0;transition:opacity var(--d)}
+
+/* the buy-in sheet over the room keeps the room in view */
+body.has-floor-door .buyin-scrim{background:rgba(0,0,0,.28);-webkit-backdrop-filter:none;backdrop-filter:none}
+
+@media (prefers-reduced-motion:reduce){
+  .floor-door *{transition-duration:1ms!important}
+  .floor-door-plate{transition:opacity 200ms linear!important}
+}

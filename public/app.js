@@ -6,9 +6,10 @@ import { renderAccountTools, forgetShownCode } from './js/account.js';
 import { formatCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits } from './js/fx.js';
 import { moneyOf } from './js/money.js';
 import { buyInSheet, cashOutQuiet } from './js/cashier.js';
+import { floorDoor } from './js/floor-door.js';
 import { music } from './js/music.js';
 import { voice, OPENS_WITH_BETS } from './js/voice.js';
-import { TIERS, FIRST_TIER, createChip } from './js/chips.js';
+import { TIERS, FIRST_TIER, createChip, tableMax } from './js/chips.js';
 import { settings, onSettings } from './js/settings.js';
 import { renderSettings, attachQuickSettings } from './js/settings-panel.js';
 import { renderDuels, watchBlock } from './js/social.js';
@@ -31,6 +32,8 @@ import { showFriends } from './js/friends.js';
 import { onGuestState, openNameSheet, guestCard, renderInviteCard } from './js/guest.js';
 import { isNewcomer, isSettlingIn, firstDayCard } from './js/first-day.js';
 import { noteRpChange } from './js/rp-pop.js';
+import { seasonMoment } from './js/season-finale.js';
+import { maybeLeagueMoment } from './js/league-moment.js';
 import { watchErrors } from './js/error-report.js';
 import { openWrapped, wrappedBlock } from './js/wrapped.js';
 import { startShine } from './js/shine.js';
@@ -40,7 +43,7 @@ import { replayBlock, loadReplays } from './js/replay.js';
 import { bragRank, bragTier } from './js/brags.js';
 import { remember } from './js/seen.js';
 import { tierHeroHtml, promoHtml, rpCardHtml, leagueHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
-import { tierEmblem, tierName, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
+import { tierEmblem, tierName, nextStepText, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
 watchErrors();
 startShine();
@@ -111,13 +114,13 @@ let activeTable = null;
 let shownWallet = null;
 
 // ---------- navigation ----------
-const NAV_GROUP = { shop: 'bank', settings: 'profile' };
+const NAV_GROUP = { events: 'games', settings: 'profile' };
 function showSurface(name, { focus = false } = {}) {
   const target = surfaces.find(s => s.dataset.surface === name);
   if (!target) return;
   if (name !== 'table' && name !== 'tiers') setTimeout(offerUpdate, 800);
   surfaces.forEach(s => s.classList.toggle('is-active', s === target));
-  // The bottom menu has six places; 지갑 holds 지갑 and 상점, 내 정보 holds 프로필 and 설정,
+  // The bottom menu has six places; 게임 holds 게임 and 이벤트, 내 정보 holds 프로필 and 설정,
   // each switched by the small tabs at the top of the page.
   const group = NAV_GROUP[name] || name;
   navItems.forEach(item => {
@@ -214,6 +217,7 @@ function openSwitcher() {
     },
     onTier: slug => openTable(slug),
     onAllTiers: toTierPicker,
+    maxOf: t => tableMax(state, t),
     onGame: game => {
       selectedGame = game;
       const quick = quickTier(game);
@@ -241,10 +245,10 @@ function tableAfterRound(st) {
   const up = Boolean(st.floors?.find(f => f.slug === cur.floor)?.outgrown);
   const to = up ? tiers.find(x => x.min > cur.min) || tiers.at(-1) : [...tiers].reverse().find(x => x.min < cur.min) || tiers[0];
   const reason = up
-    ? `자산이 커져서 ${cur.name}을 졸업하고 위층으로 올라왔어요.`
+    ? (st.rp?.floors ? `티어가 올라 ${cur.name}에서 졸업하고 위층으로 올라왔어요.` : `자산이 커져서 ${cur.name}에서 졸업하고 위층으로 올라왔어요.`)
     : `칩이 ${cur.name} 최소 베팅 ${formatMoney(cur.min)}보다 적어서 옮겼어요.`;
   applyState(st);
-  openTable(to.slug).then(() => activeTable?.moved?.(`${to.name} · ${formatCH(to.min)}–${formatCH(to.max)}`, reason));
+  openTable(to.slug).then(() => activeTable?.moved?.(`${to.name} · ${formatCH(to.min)}–${formatCH(tableMax(st, to))}`, reason));
 }
 
 // A floor this player has outgrown (net worth above 100× its minimum) stays shut; only a seat they
@@ -260,10 +264,16 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
   if (!seated && outgrownTier(tier)) { setTierHeader(selectedGame); renderTiers(); showSurface('tiers', { focus: true }); return; }
   // 캐셔 (js/cashier.js): not seated yet (chips held without a seat go back to the wallet), or
   // short of this table's smallest bet (an event: its entry) in hand: buy chips with money first.
-  const eventNeed = selectedGame.event ? [...(state?.events || []), ...(state?.eventsAlways || [])].find(e => e.id === selectedGame.event)?.entry || 0 : 0;
+  const eventInfo = selectedGame.event ? [...(state?.events || []), ...(state?.eventsAlways || [])].find(e => e.id === selectedGame.event) : null;
+  const eventNeed = eventInfo?.entry || 0;
+  // 층 입장 (js/floor-door.js): walking onto a floor (from the menus, or to another floor from a
+  // table) opens its door first; the game's code loads meanwhile. The buy-in comes after, over the room.
+  const enteringFloor = TIERS[tier] && TIERS[tier].floor !== (activeTable && TIERS[activeTier]?.floor);
+  const door = enteringFloor ? floorDoor(TIERS[tier], { game: selectedGame.name, event: eventInfo?.title || null }) : null;
+  if (door) { warmGame(selectedGame); await door.opened; }
   if (!seated && state?.cashier?.on && TIERS[tier] && (!state.cashier.seat || state.user.account.available < Math.max(TIERS[tier].min, eventNeed))) {
     const bought = await buyInSheet(state, TIERS[tier], { event: selectedGame.event || null });
-    if (!bought) return;
+    if (!bought) { door?.close(); return; }
     applyState(bought);
   }
   rememberTable(selectedGame.id, tier);
@@ -288,6 +298,7 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
   let guide;
   try { [, guide] = await game.mount.load(); } catch (err) {
     clearTimeout(slow);
+    door?.close();
     if (seq !== tableSeq) return;
     tableMount.replaceChildren();
     toast(navigator.onLine ? '테이블을 열지 못했어요. 다시 눌러 주세요.' : '연결이 끊겨 테이블을 열지 못했어요. 다시 눌러 주세요.');
@@ -295,9 +306,11 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
     return;
   }
   clearTimeout(slow);
+  if (seq !== tableSeq || !document.body.classList.contains('game-mode')) door?.close();
   if (seq !== tableSeq || !document.body.classList.contains('game-mode')) return;
   tableMount.replaceChildren();
   activeTable = await game.mount({ mount: tableMount, tier, state, backLabel, onSwitch: openSwitcher, onLeave: () => leaveTable() });
+  door?.close();
   // Also on sitting down: a table picked from 최근 테이블 may no longer fit the player's chips.
   activeTable.onIdle = st => tableAfterRound(st || state);
   if (!seated) { activeTable.idleDue = true; setTimeout(() => activeTable?.maybeIdle?.(), 0); }
@@ -447,7 +460,7 @@ function paintState(next) {
   if (isActive('tiers')) renderTiers();
   document.body.classList.toggle('is-settling', isSettlingIn(state));
   noteRpChange(state, { quiet: isSettlingIn(state) });
-  if (isActive('lobby') && !isSettlingIn(state)) { maybeSeasonMoment(state, { onWrapped: showWrapped }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
+  if (isActive('lobby') && !isSettlingIn(state)) { if (!seasonMoment(state, { onWrapped: showWrapped })) maybeLeagueMoment(state, { onLeague: openLeague }); maybeSeasonWarning(state, openSeasonEnd); celebrateFloors(state); celebrateTier(state); }
   sheetPaint?.();
 }
 
@@ -646,6 +659,7 @@ function renderHome() {
   renderFirstDay();
   renderHero();
   renderCats();
+  renderHomeTier();
   renderToday();
   if (isActive('events')) renderEventTab();
 }
@@ -702,6 +716,27 @@ function renderHero() {
   }
   card.append(actions);
   slot.replaceChildren(card);
+}
+
+// My tier and RP on home (2026-10-30): one slim card from the first visit on; it opens the 랭킹 tab.
+function renderHomeTier() {
+  const slot = document.querySelector('[data-home-tier]');
+  const rs = state?.rankSeason;
+  if (!rs || !state.user) { slot.replaceChildren(); return; }
+  const rp = rs.mode === 'rp', pct = Math.round(Math.max(0, Math.min(1, rs.progress || 0)) * 100);
+  const place = myMonthRank(state);
+  const score = rp ? `<b>${rs.rp}</b> RP` : `최고 <b>${formatCH(rs.peak)}</b>`;
+  const next = rs.next ? nextStepText(rs.next, rp ? `${rs.next.need} RP` : formatCH(rs.next.need)) : '최고 티어예요';
+  const b = el('button', `home-tier-card tier-hero--${rs.tier}`);
+  b.type = 'button';
+  b.setAttribute('aria-label', `내 티어 ${tierName(rs.tier, rs.division)}, ${rp ? `${rs.rp} RP` : ''}, ${next}. 랭킹 보기`);
+  b.innerHTML = `${tierEmblem(rs.tier, { size: 40, label: false })}
+    <span class="home-tier-main"><span class="home-tier-line"><strong>${tierName(rs.tier, rs.division)}</strong><span>${score}</span></span>
+    <span class="home-tier-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>
+    <small>${next}</small></span>
+    <span class="home-tier-rank">${place ? `${place.rank}<small>위</small>` : '<small>랭킹</small>'}</span>`;
+  b.addEventListener('click', () => openRankBoard());
+  slot.replaceChildren(b);
 }
 
 function renderCats() {
@@ -831,7 +866,8 @@ function renderToday() {
   if (rs && seasonEnding(rs)) {
     const left = seasonLeft(rs), d = Math.ceil(left / 86_400_000);
     chips.splice(Math.min(chips.length, 1), 0, todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: left <= 86_400_000 ? '오늘 자정 시즌 초기화' : `시즌 초기화 D-${d}`, sub: `<span data-season-clock data-ends="${rs.season.endsAt}">${seasonClock(left)}</span> · 지금 ${tierName(rs.tier, rs.division)}`, hot: true, label: `시즌 초기화까지 ${seasonClock(left)}, 지금 ${tierName(rs.tier, rs.division)}`, onClick: openSeasonEnd }));
-  } else if (rs) chips.push(todayChip({ mark: tierEmblem(rs.tier, { size: 26, label: false }), title: `시즌 ${tierName(rs.tier, rs.division)}`, sub: rs.next ? `${tierName(rs.next.id, rs.next.division)}까지 ${rs.mode === 'rp' ? `${rs.next.need} RP` : formatCH(rs.next.need)}` : '최고 티어예요', onClick: openRankBoard }));
+  }
+  // Otherwise my tier has its own card above the strip (renderHomeTier).
   if (!live && next) chips.push(todayChip({ mark: MARK.hot, title: `${startTime(next)} 핫 테이블`, sub: `${next.label} · <span data-hot-next>${clock(Date.parse(next.startsAt) - now)}</span> 뒤`, onClick: hotGo(next.game) }));
   const watching = watchBlock(state);
   if (watching) chips.push(todayChip({ mark: MARK.watch, title: '지금 플레이 중', sub: `${watching.querySelectorAll('li').length}개 테이블 구경하기`, onClick: () => openBlockSheet(() => watchBlock(state)) }));
@@ -888,6 +924,8 @@ function renderEventTab() {
 }
 
 // ---------- tiers ----------
+// A floor's sign on its card: 6F VAULT 볼트.
+const floorTitle = tier => `<span class="tier-no">${tier.no}F</span>${tier.en} <span class="tier-ko">${tier.name}</span>`;
 function renderTiers() {
   const grid = document.querySelector('[data-tier-grid]');
   const floors = state?.floors || [];
@@ -899,7 +937,7 @@ function renderTiers() {
   const outgrown = all.filter(x => x.floor?.outgrown);
   const firstLocked = all.findIndex(x => x.floor && !x.floor.unlocked);
   const shown = all.filter((x, i) => !x.floor?.outgrown && (firstLocked < 0 || i <= firstLocked + 1));
-  const note = outgrown.length ? [el('p', 'tier-outgrown', `${outgrown.map(x => x.tier.name).join(' · ')}은 졸업했어요. 순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.`)] : [];
+  const note = outgrown.length ? [el('p', 'tier-outgrown', `졸업한 층: ${outgrown.map(x => x.tier.name).join(' · ')}. ${state?.rp?.floors ? '티어가 오르면 아래층은 잠겨요. 칩과 지갑을 합쳐 내 층 최소 베팅의 20배가 안 되면 다시 열려요.' : '순자산이 최소 베팅의 100배를 넘으면 그 층에는 앉지 않아요.'}`)] : [];
   grid.replaceChildren(...note, ...shown.map(({ tier, floor }) => {
     const locked = floor ? !floor.unlocked : false;
     // Reached by net worth but its pass (one of the floor's skins, 상점 꾸미기) not bought yet.
@@ -916,7 +954,9 @@ function renderTiers() {
     const rpMode = floor?.rpNeed != null;
     const status = locked ? (rpMode ? `RP ${floor.rpNeed}이면 열려요 · ${floor.rpRemaining} 남음` : `순자산 ${formatCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)`) : needsPass ? `이번 달 입장권이 필요해요 · 이 층 꾸미기를 사거나 갱신 · ${formatCH(floor.minBet)}원부터` : broke ? (state?.bank?.closed ? '돈이 부족해요 · 일급·구제금융으로 채워요' : '칩이 부족해요 · 은행에서 빌릴 수 있어요') : rpMode ? (floor.rpNeed ? `RP ${floor.rpNeed} 층` : '모두에게 열린 층') : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
     const stars = `<em class="tier-stars" aria-label="난이도 ${tier.stars}/5">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>`;
-    b.innerHTML = `<strong>${tier.name}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${status}</small>`;
+    // 디비전별 베팅 상한: the floor my tier just opened shows the top bet my division allows now.
+    const cap = !locked && tableMax(state, tier) < tier.max ? tableMax(state, tier) : 0;
+    b.innerHTML = `<strong>${floorTitle(tier)}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(cap || tier.max)}원${cap ? ` <em class="tier-cap">${tierName(state.rp.tier, state.rp.division)} 상한</em>` : ''}</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
     b.addEventListener('click', () => needsPass ? openPassShop(floor.slug) : openTable(tier.slug));
@@ -941,7 +981,7 @@ function renderEventTier(grid, { tier, entry, open }) {
   const chips = el('span', 'tier-chips');
   tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
   chips.setAttribute('aria-hidden', 'true');
-  b.innerHTML = `<strong>${tier.name}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
+  b.innerHTML = `<strong>${floorTitle(tier)}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
   b.append(chips);
   b.addEventListener('click', () => openTable(tier.slug));
   grid.replaceChildren(b);
@@ -963,6 +1003,8 @@ const RANK_VIEW_KEY = 'vegas:rank-view';
 let rankView = (() => { try { const v = localStorage.getItem(RANK_VIEW_KEY); return RANK_VIEWS.some(([k]) => k === v) ? v : 'tier'; } catch { return 'tier'; } })();
 function setRankView(v) { rankView = v; try { localStorage.setItem(RANK_VIEW_KEY, v); } catch {} renderRanking(); }
 // The lobby's season card opens my tier; the season-end sheet opens the month's board.
+// The league result card's button opens this week's group.
+function openLeague() { rankView = 'league'; showSurface('ranking', { focus: true }); }
 function openRankBoard({ board = false } = {}) { rankView = board ? 'board' : 'tier'; rankPeriod = 'tier'; rankTab = 'tier'; showSurface('ranking', { focus: true }); }
 // The season-end warning (js/rank.js): what resets at midnight and what stays.
 function openSeasonEnd() {
@@ -1011,7 +1053,11 @@ function renderRanking() {
   document.querySelectorAll('[data-rank-pane]').forEach(p => { p.hidden = p.dataset.rankPane !== rankView; });
   if (rankView === 'tier') renderTierPane();
   else if (rankView === 'friends') renderFriendPane();
-  else if (rankView === 'league') document.querySelector('[data-league]').innerHTML = leagueHtml(state, (id, n) => nameFrame(state, id, n));
+  else if (rankView === 'league') {
+    const pane = document.querySelector('[data-league]');
+    pane.innerHTML = leagueHtml(state, (id, n) => nameFrame(state, id, n));
+    pane.querySelector('[data-league-last]')?.addEventListener('click', () => { sound.tick(); maybeLeagueMoment(state, { force: true }); });
+  }
   else renderBoards();
 }
 // 승급전 참가비: what it costs, what it takes, then the fee from the wallet.
@@ -1021,9 +1067,9 @@ function openPromoSheet() {
   const short = moneyOf(state) < o.fee;
   openSheet({
     eyebrow: '승급전', title: `${tierName(o.target)} 승급전`,
-    body: `<p class="lounge-note">참가비 <b>${formatCH(o.fee)}원</b>을 내고 도전해요. ${formatCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 바로 ${tierName(o.target, 'IV')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. RP는 평소처럼 오르내려요.${short ? ` <b>${formatCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
+    body: `<p class="lounge-note">참가비 <b>${formatCH(o.fee)}원</b>을 내고 도전해요. ${formatCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 ${tierName(o.target, 'V')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. 다음 티어는 승급전으로만 올라가요. RP는 I 꼭대기에서 멈추고, 지면 평소처럼 내려가요.${short ? ` <b>${formatCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
     confirmText: short ? '' : `${formatCH(o.fee)}원 내고 도전`,
-    confirm: short ? null : async () => { const out = await api.rankPromo(); applyState(out.state); toast(`${tierName(o.target)} 승급전 시작 · 2승이면 승급`); }
+    confirm: short ? null : async () => { const out = await api.rankPromo(); applyState(out.state); toast(`${tierName(o.target)} 승급전 시작 · 5판 중 3승이면 승급`); }
   });
 }
 function renderTierPane() {
@@ -1044,7 +1090,7 @@ function renderTierPane() {
   document.querySelector('[data-tier-steps]').innerHTML = tierStepsHtml(state);
   const past = document.querySelector('[data-tier-past]');
   past.innerHTML = tierPastHtml(state);
-  past.querySelector('[data-last-season]')?.addEventListener('click', () => maybeSeasonMoment(state, { force: true, onWrapped: showWrapped }));
+  past.querySelector('[data-last-season]')?.addEventListener('click', () => seasonMoment(state, { force: true, onWrapped: showWrapped }));
 }
 function renderFriendPane() {
   const box = document.querySelector('[data-friend-record]');

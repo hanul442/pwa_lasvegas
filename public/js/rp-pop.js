@@ -1,45 +1,122 @@
 // RP 팝업 (2026-10-29, 한서 "티어 RP 올라갔으면 팝업으로"): after a round moves RP, a small card
-// slides in under the top bar with the change, where I stand and the step ahead. A new division or
-// tier makes it bigger. It never blocks the table (no buttons, pointer-events off) and stays quiet
-// for a newcomer's first hands (js/first-day.js). The full tier-up moment stays in the lobby
-// (js/rank.js celebrateTier).
-import { el, sound, haptic } from './fx.js';
+// slides in under the top bar with the change, where I stand and the step ahead. It never blocks
+// the table (no buttons, pointer-events off) and stays quiet for a newcomer's first hands
+// (js/first-day.js). The full tier-up moment stays in the lobby (js/rank.js celebrateTier).
+// 2026-10-30 한서 "촤라락 올라가는 숫자" + "승급하면 특별한 모션": the RP change and my points roll,
+// the bar fills, and a promotion fills the bar to the end, then flips the emblem to the new one
+// with a ring, sparks and a gold sweep (bigger for a new tier).
+import { el, sound, haptic, rollNumber, reducedMotion, ms } from './fx.js';
 import { tierName, tierEmblem, TIERS } from './rank.js';
 
-const ORDER = Object.keys(TIERS), DIVS = ['IV', 'III', 'II', 'I'];
+const ORDER = Object.keys(TIERS), DIVS = ['V', 'IV', 'III', 'II', 'I'];
 const rankOf = r => ORDER.indexOf(r.tier) * 10 + (r.division ? DIVS.indexOf(r.division) : 9);
-const signed = x => `${x > 0 ? '+' : ''}${Math.round(x * 10) / 10}`;
+const tenthOf = x => Math.round(x); // RP is whole points since 2026-10-30
+const signed = x => `${x > 0 ? '+' : ''}${tenthOf(x)}`;
+const pct = x => `${Math.round(Math.max(0, Math.min(1, x || 0)) * 100)}%`;
+const ROLL = 900, SWAP_AT = 1000;
 let seen = null, node = null, timer = 0;
 
 export function noteRpChange(state, { quiet = false } = {}) {
   const rp = state?.rp, last = rp?.last;
   if (!rp?.era || !state.user) return;
-  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division };
+  const pa = state.promo?.active, pl = state.promo?.last;
+  const promoSig = pa ? `a:${pa.target}:${pa.log ?? `${pa.wins}-${pa.losses}`}` : pl ? `e:${pl.target}:${pl.result}:${pl.at}` : '';
+  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress, promoSig };
   const prev = seen;
   seen = now;
   // The first state after a load only sets the mark; the same round never shows twice.
-  if (!prev || prev.key === now.key || !last?.delta || quiet) return;
+  if (!prev || prev.key === now.key || quiet) return;
   if (!prev.key.startsWith(`${state.user.id}:${rp.season}:`)) return;
+  // 승급전 (2026-10-30 한서 "승급전이면 승급전이라고 말하면서 몇번 이기면 승급된다고", "5판3선승제",
+  // "동그라미 안에 하얀색 채워넣는걸로"): a round that starts, moves or loses the series gets its
+  // own card with five circles; the winning round goes on to the promotion below with the circles.
+  const promoMoved = prev.promoSig !== promoSig;
+  const promoWon = promoMoved && !pa && pl?.result === 'won';
+  if (promoMoved && pa) return promoCard(pa, { started: !prev.promoSig.startsWith(`a:${pa.target}:`), delta: last?.delta || 0 });
+  if (promoMoved && pl?.result === 'lost') return promoCard(pl, { lost: true, delta: last?.delta || 0 });
+  if (!last?.delta && !promoWon) return;
   const up = rankOf(now) > rankOf(prev), down = rankOf(now) < rankOf(prev), tierUp = up && now.tier !== prev.tier;
   const promo = state.promo?.active;
-  const lines = [
-    `<b class="rp-pop-delta ${last.delta > 0 ? 'pos' : 'neg'}">${signed(last.delta)} RP</b>`,
-    `<span class="rp-pop-tier">${tierUp ? '티어 승급 · ' : up ? '승급 · ' : down ? '강등 · ' : ''}${tierName(rp.tier, rp.division)} <small>${rp.points} RP</small></span>`,
-    `<small class="rp-pop-next">${promo ? `승급전 ${promo.wins}승 ${promo.losses}패` : rp.next ? `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP` : '최고 티어'}</small>`
-  ];
-  show(`${tierEmblem(rp.tier, { size: up ? 34 : 26, label: false })}<span class="rp-pop-text">${lines.join('')}</span>`, { big: up, down });
-  if (up) { sound.chip?.(); haptic?.(tierUp ? [20, 40, 20, 40, 60] : [14, 30, 14]); }
+  const from = Number.isFinite(prev.points) ? prev.points : tenthOf(rp.points - last.delta);
+  const nextLine = promo ? `승급전 ${promo.wins}승 ${promo.losses}패` : rp.next ? (rp.nextPromo ? `승급전 3승이면 ${tierName(rp.next, rp.nextDivision)}` : `${tierName(rp.next, rp.nextDivision)}까지 ${rp.toNext} RP`) : '최고 티어';
+  const label = promoWon && tierUp ? '승급전 통과!' : tierUp ? '티어 승급!' : up ? '승급!' : down ? '강등 · ' : '';
+  const motion = !reducedMotion();
+  // A promotion opens on where I was, then turns over to where I am.
+  const startTier = up && motion ? prev : now;
+  const said = `${signed(last.delta)} RP, ${label}${tierName(rp.tier, rp.division)} ${rp.points} RP`;
+  // Screen readers get the end result once; the rolling numbers are for the eye.
+  const html = `<span class="sr-only">${said}</span><span class="rp-pop-emblem" aria-hidden="true">${tierEmblem(startTier.tier, { size: up ? 36 : 26, label: false })}${up ? '<i class="rp-pop-ring"></i><i class="rp-pop-sparks">' + '<b></b>'.repeat(8) + '</i>' : ''}</span>
+    <span class="rp-pop-text" aria-hidden="true">
+      <b class="rp-pop-delta ${last.delta > 0 ? 'pos' : 'neg'}">${motion ? (last.delta > 0 ? '+0' : '-0') : signed(last.delta)} RP</b>
+      <span class="rp-pop-tier"><em class="rp-pop-label">${up && motion ? '' : label}</em><span class="rp-pop-name">${tierName(startTier.tier, startTier.division)}</span></span>
+      ${promoWon ? `<span class="rp-pop-dots">${dotsHtml(pl.log, { fresh: motion })}</span>` : ''}<span class="rp-pop-bar" aria-hidden="true"><i style="width:${pct(motion ? prev.progress ?? rp.progress : rp.progress)}"></i></span>
+      <small class="rp-pop-next"><b class="rp-pop-points">${tenthOf(motion ? from : rp.points)}</b> RP<span class="rp-pop-step"> · ${nextLine}</span></small>
+    </span>`;
+  const card = show(html, { big: up, down, tierUp, long: up ? 4200 : 2800 });
+  if (!motion) { if (up) promoted(card, { tierUp }); return; }
+
+  const bar = card.querySelector('.rp-pop-bar i');
+  rollNumber(card.querySelector('.rp-pop-delta'), 0, Math.round(last.delta), { duration: ROLL, format: v => `${signed(v)} RP` });
+  rollNumber(card.querySelector('.rp-pop-points'), Math.round(from), Math.round(rp.points), { duration: ROLL, format: v => `${v}` });
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = up ? '100%' : down ? '0%' : pct(rp.progress); }));
+  if (down) setTimeout(() => { bar.style.transition = 'none'; bar.style.width = '100%'; requestAnimationFrame(() => { bar.style.transition = ''; bar.style.width = pct(rp.progress); }); }, ms(ROLL));
+  if (!up) return;
+  setTimeout(() => {
+    if (!card.isConnected) return;
+    card.querySelector('.rp-pop-emblem svg').outerHTML = tierEmblem(rp.tier, { size: 36, label: false });
+    card.querySelector('.rp-pop-name').textContent = tierName(rp.tier, rp.division);
+    card.querySelector('.rp-pop-label').textContent = label;
+    bar.style.transition = 'none'; bar.style.width = '0%';
+    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = ''; bar.style.width = pct(rp.progress); }));
+    promoted(card, { tierUp });
+  }, ms(SWAP_AT));
 }
 
-function show(html, { big, down }) {
+// Five circles in the order the series went: a win fills white, a loss is a red ring with a slash,
+// rounds still to play stay empty. The newest one pops in.
+const PROMO_ROUNDS = 5;
+function dotsHtml(log = '', { fresh = false } = {}) {
+  return Array.from({ length: PROMO_ROUNDS }, (_, i) => {
+    const r = log[i];
+    return `<i class="${r === 'W' ? 'is-win' : r === 'L' ? 'is-loss' : ''}${fresh && i === log.length - 1 ? ' is-new' : ''}"></i>`;
+  }).join('');
+}
+
+function promoCard(p, { started = false, lost = false, delta = 0 }) {
+  const wins = p.wins || 0, losses = p.losses || 0, need = p.needWins || 3, out = p.needLosses || 3;
+  const target = tierName(p.target, 'V');
+  const matchPoint = !lost && wins === need - 1, edge = !lost && losses === out - 1;
+  const head = started ? '승급전 시작!' : lost ? '승급전 탈락' : matchPoint && edge ? '마지막 판!' : matchPoint ? "매치 포인트!" : edge ? "벼랑 끝" : `${wins}승 ${losses}패`;
+  const foot = started ? `5판 중 ${need}승이면 ${target}` : lost ? 'RP를 다시 채우면 또 도전해요' : matchPoint ? `1승만 더하면 ${target}` : edge ? `1패면 탈락 · ${need - wins}승 더 필요` : `${need - wins}승 더하면 ${target}`;
+  const said = `${tierName(p.target)} ${head} ${wins}승 ${losses}패. ${foot}`;
+  const html = `<span class="sr-only">${said}</span><span class="rp-pop-emblem" aria-hidden="true">${tierEmblem(p.target, { size: 30, label: false })}</span>
+    <span class="rp-pop-text" aria-hidden="true">
+      <span class="rp-pop-tier rp-pop-promo-head"><em class="rp-pop-label">${head}</em><span class="rp-pop-name">${tierName(p.target)} 승급전</span></span>
+      <span class="rp-pop-dots">${dotsHtml(p.log, { fresh: !started && !reducedMotion() })}</span>
+      <small class="rp-pop-next">${foot}${delta ? ` · ${signed(delta)} RP` : ''}</small>
+    </span>`;
+  const card = show(html, { big: started || matchPoint, down: lost, tierUp: false, long: started || lost ? 4200 : 3200 });
+  card.classList.add('is-promo');
+  if (started || matchPoint) { sound.levelUp?.(1); haptic?.([12, 30, 12]); }
+  else if (!lost && p.log?.endsWith('W')) haptic?.(12);
+}
+
+function promoted(card, { tierUp }) {
+  card.classList.add('is-promoted');
+  sound.levelUp?.(tierUp ? 3 : 2);
+  haptic?.(tierUp ? [20, 40, 20, 40, 80] : [14, 30, 30]);
+}
+
+function show(html, { big, down, tierUp, long }) {
   clearTimeout(timer);
   node?.remove();
-  node = el('div', `rp-pop${big ? ' is-big' : ''}${down ? ' is-down' : ''}`);
+  node = el('div', `rp-pop${big ? ' is-big' : ''}${tierUp ? ' is-tier' : ''}${down ? ' is-down' : ''}`);
   node.setAttribute('role', 'status');
   node.setAttribute('aria-live', 'polite');
   node.innerHTML = html;
   document.body.append(node);
   const mine = node;
   requestAnimationFrame(() => mine.classList.add('is-shown'));
-  timer = setTimeout(() => { mine.classList.remove('is-shown'); setTimeout(() => mine.remove(), 300); if (node === mine) node = null; }, big ? 3600 : 2400);
+  timer = setTimeout(() => { mine.classList.remove('is-shown'); setTimeout(() => mine.remove(), 300); if (node === mine) node = null; }, long);
+  return mine;
 }

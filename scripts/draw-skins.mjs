@@ -101,6 +101,34 @@ function cardBack({ base, line, field, emblem, rosette = true }) {
     + (field === 'sky' || field === 'flutes' ? '' : emb(`translate(${cx} 21) scale(.55)`) + emb(`translate(${cx} 119) scale(.55) rotate(180)`)));
 }
 
+// ---------- 화투 뒷면: 100x160, full-bleed lacquer like a real hwatu (no white card edge) ----------
+// The floor's field engraved tone on tone, a foil hairline frame, and one crest in the middle:
+// the floor's emblem on a raised medallion inside a ring of beads, the way a family crest sits.
+function hwatuBack({ base, line, field, emblem }) {
+  const [hi, lo] = base, cx = 50, cy = 80, E = EMBLEMS[emblem];
+  const fHi = mix(line, '#fff', .7), fLo = mix(line, '#000', .45);
+  const petals = Array.from({ length: 16 }, (_, i) => `<ellipse cx="${cx}" cy="${cy}" rx="21" ry="7.5" transform="rotate(${f(i * 11.25)} ${cx} ${cy})"/>`).join('');
+  const corners = [[13, 13, 0], [87, 13, 90], [87, 147, 180], [13, 147, 270]].map(([x, y, r]) => `<path transform="translate(${x} ${y}) rotate(${r})" d="M-1 7V-1H7M2 7V2H7" fill="none" stroke="url(#f)" stroke-width=".55"/>`).join('');
+  return svg('0 0 100 160', `<defs>`
+    + `<linearGradient id="g" x1="0" y1="0" x2=".55" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient>`
+    + `<linearGradient id="f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${fHi}"/><stop offset=".32" stop-color="${line}"/><stop offset=".5" stop-color="${fLo}"/><stop offset=".68" stop-color="${line}"/><stop offset="1" stop-color="${fHi}"/></linearGradient>`
+    + `<linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset=".28" stop-color="#fff" stop-opacity="0"/><stop offset=".42" stop-color="#fff" stop-opacity=".1"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+    + `<radialGradient id="v" cx=".5" cy=".46" r=".75"><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>`
+    + `<radialGradient id="m" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="${mix(lo, hi, .75)}"/><stop offset="1" stop-color="${lo}"/></radialGradient>`
+    + `<filter id="e" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy=".6" stdDeviation=".35" flood-color="#000" flood-opacity=".8"/><feDropShadow dx="0" dy="-.25" stdDeviation=".08" flood-color="#fff" flood-opacity=".2"/></filter>`
+    + `<clipPath id="p"><rect x="10" y="10" width="80" height="140" rx="2"/></clipPath></defs>`
+    + `<rect width="100" height="160" rx="9" fill="url(#g)"/>`
+    + `<g clip-path="url(#p)" fill="none" stroke="${line}" color="${line}" opacity=".55" transform="translate(0 10)">${FIELDS[field]()}</g>`
+    + `<circle cx="${cx}" cy="${cy}" r="26" fill="${lo}" fill-opacity=".7"/>`
+    + `<g fill="none" stroke="${line}" stroke-width=".28" stroke-opacity=".55">${petals}</g>`
+    + `<rect width="100" height="160" rx="9" fill="url(#v)"/><rect width="100" height="160" rx="9" fill="url(#s)"/>`
+    + `<g filter="url(#e)"><rect x="6.5" y="6.5" width="87" height="147" rx="5" fill="none" stroke="url(#f)" stroke-width=".9"/><rect x="9" y="9" width="82" height="142" rx="3" fill="none" stroke="url(#f)" stroke-width=".3"/>${corners}`
+    + `<path d="M30 22H70M30 138H70" stroke="url(#f)" stroke-width=".4"/><path d="M50 19.6l2.4 2.4-2.4 2.4-2.4-2.4zM50 135.6l2.4 2.4-2.4 2.4-2.4-2.4z" fill="url(#f)"/>`
+    + `<circle cx="${cx}" cy="${cy}" r="17.4" fill="none" stroke="url(#f)" stroke-width=".7" stroke-dasharray=".01 1.5" stroke-linecap="round"/>`
+    + `<circle cx="${cx}" cy="${cy}" r="15" fill="url(#m)" stroke="url(#f)" stroke-width=".9"/><circle cx="${cx}" cy="${cy}" r="13" fill="none" stroke="url(#f)" stroke-width=".3"/></g>`
+    + `<g transform="translate(${cx} ${cy}) scale(1.15)" filter="url(#e)">${E('url(#f)', lo)}</g>`);
+}
+
 // ---------- felt prints: a tile repeated over the cloth, white at a few percent ----------
 // Prints sit under the table's own printed layout, so they stay at about 60% of what reads in a swatch.
 const ink = (o) => `#ffffff${Math.round(o * 255 * .6).toString(16).padStart(2, '0')}`;
@@ -209,6 +237,61 @@ function plate(id, type, face, line, key) {
   css.push(`.name-frame--${id}::after{display:none}`);
 }
 
+// 화투 뒷면: on the card (.hw-back) when worn (:root[data-hw-back]), and on the shop's previews.
+// The edge under the card is the lacquer's own dark, so the thickness reads as one solid piece.
+const hwBackSel = id => `:root[data-hw-back="${id}"] .hw:not(.hw--pv) .hw-back,.hw-back.hwback--${id}`;
+function hwBack(id, base, line, field, emblem) {
+  once(`hwback-${id}.svg`, hwatuBack({ base, line, field, emblem }));
+  css.push(`${hwBackSel(id)}{background:url(art/skins/hwback-${id}.svg) center/100% 100% no-repeat,${base[1]};box-shadow:0 1.5px 0 ${mix(base[1], '#000', .3)},0 2.5px 0 #0008,0 6px 12px #0006}`);
+  css.push(`:root[data-hw-back="${id}"] .hw:not(.hw--pv) .hw-back::after,.hw-back.hwback--${id}::after{display:none}`);
+  css.push(`:root[data-hw-back="${id}"]{--hw-edge:${mix(base[1], base[0], .35)}}`);
+}
+// 화투 앞면: the deck's own pictures (public/js/hwatu.js) in another finish. Only colours of the
+// art change, by its fill attributes, never a shape. --hw-w is the card's width.
+//   rim  — the back's lacquer wraps round to the front as a thin border, as on a real card;
+//   noir — 흑화투: black ground, the ink lines in the floor's metal, darker colours lifted;
+//   hanji — warm hanji fibres under the art, a double frame in the floor's dark ink.
+const INK = '#1a1714';
+const hwFaceSel = (id, tail = '') => `:root[data-hw-face="${id}"] .hw:not(.hw--pv) .hw-face:not(.hw-face--bomb)${tail},.hw-face.hwface--${id}${tail}`;
+function hwFace(id, type, color, line) {
+  const pad = 'padding:calc(var(--hw-w,40px) * .072) calc(var(--hw-w,40px) * .045)';
+  if (type === 'rim') {
+    css.push(`${hwFaceSel(id)}{${pad};background:linear-gradient(160deg,${color[0]},${color[1]});box-shadow:inset 0 0 0 .5px ${line}80,0 1.5px 0 ${mix(color[1], '#000', .3)},0 2.5px 0 #0007,0 6px 12px #0006}`);
+    css.push(`${hwFaceSel(id, ' .hw-art')}{border-radius:calc(var(--hw-w,40px) * .05);box-shadow:0 0 0 .6px ${line}a6}`);
+  } else if (type === 'noir') {
+    const lift = { '#1f4a2c': '#4f8d60', '#2f6b3f': '#5ea271', '#5a3a22': '#9a6d47', '#283f73': '#5677bd', '#5b3a7a': '#9670bd', '#8f1d1d': '#b03a33' };
+    css.push(`${hwFaceSel(id)}{background:radial-gradient(120% 90% at 40% 25%,#26282d,#0b0c0e);box-shadow:inset 0 0 0 1px ${line}8c,inset 0 0 0 calc(var(--hw-w,40px) * .035) #0b0c0e,inset 0 0 0 calc(var(--hw-w,40px) * .035 + .6px) ${line}55,0 1.5px 0 #2a2e34,0 2.5px 0 #0008,0 6px 12px #0006}`);
+    css.push(`${hwFaceSel(id, ' .hw-art>rect:first-child')}{fill:transparent}`);
+    css.push(`${hwFaceSel(id, ` .hw-art [fill="${INK}"]:not([width="60"])`)}{fill:${line}}`);
+    css.push(`${hwFaceSel(id, ` .hw-art [stroke="${INK}"]`)}{stroke:${line}}`);
+    css.push(`${hwFaceSel(id, ' .hw-index rect')}{fill:#000a}`);
+    for (const [from, to] of Object.entries(lift)) css.push(`${hwFaceSel(id, ` .hw-art [fill="${from}"]:not([width="60"])`)}{fill:${to}}${hwFaceSel(id, ` .hw-art [stroke="${from}"]`)}{stroke:${to}}`);
+    // 8월 공산's hill stays a hill: dark slate under the metal grass, not a cut-out of light.
+    css.push(`${hwFaceSel(id, ' .hw-art path[d^="M0 62Q30 34"][fill]:not([width])')}{fill:#33363d}`);
+    // Tags (끗, 쌍피) keep a dark halo so the metal letters stay crisp on any picture.
+    css.push(`${hwFaceSel(id, ' .hw-art text[stroke]')}{stroke:#0b0c0e}`);
+  } else {
+    // The picture sits a little in, so the frame runs round it on the paper, never across it.
+    css.push(`${hwFaceSel(id)}{${pad};background:url(art/skins/hanji.svg) center/100% 100%,linear-gradient(170deg,#f8f0de,#eadfc6);box-shadow:inset 0 0 0 1px #0000002a,0 1.5px 0 #bdb29f,0 2.5px 0 #0007,0 6px 12px #0006}`);
+    css.push(`${hwFaceSel(id, ' .hw-art>rect:first-child')}{fill:transparent}`);
+    css.push(`${hwFaceSel(id, ' .hw-art')}{border-radius:calc(var(--hw-w,40px) * .04)}`);
+    css.push(`${hwFaceSel(id, '::after')}{content:"";position:absolute;inset:max(1.5px,calc(var(--hw-w,40px) * .016));border:max(.6px,calc(var(--hw-w,40px) * .012)) solid ${color};border-radius:calc(var(--hw-w,40px) * .07);pointer-events:none}`);
+  }
+}
+// Hanji: long pale fibres and a few darker flecks over the warm paper.
+{
+  let seed = 11; const r = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  let fib = '';
+  for (let i = 0; i < 70; i++) { const x = r() * 60, y = r() * 96, a = r() * Math.PI, l = 3 + r() * 9; fib += `M${f(x)} ${f(y)}q${f(Math.cos(a) * l / 2 + (r() - .5) * 2)} ${f(Math.sin(a) * l / 2 + (r() - .5) * 2)} ${f(Math.cos(a) * l)} ${f(Math.sin(a) * l)}`; }
+  let flecks = '';
+  for (let i = 0; i < 26; i++) flecks += `<circle cx="${f(r() * 60)}" cy="${f(r() * 96)}" r="${f(.15 + r() * .3)}"/>`;
+  once('hanji.svg', svg('0 0 60 96', `<path d="${fib}" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".35"/><g fill="#8a6f45" fill-opacity=".22">${flecks}</g>`, ' preserveAspectRatio="none"'));
+}
+// Previews in the shop (.hw--pv) show their own look, not the one the page wears.
+// The two free backs: the house red stays in hwatu.css; 흑단 is drawn here.
+hwBack('ebony', ['#2a2c31', '#08090b'], SILVER, 'lattice', 'star');
+const CINNABAR = ['#b4362b', '#5e110d'];
+
 for (const t of THEMES) {
   const line = t.line || t.back.line;
   if (t.plate || t.ways) once(`mark-${t.key}.svg`, svg('-10 -10 20 20', `<mask id="m"><rect x="-10" y="-10" width="20" height="20" fill="#000"/>${EMBLEMS[t.emblem]('#fff', '#000')}</mask><rect x="-10" y="-10" width="20" height="20" fill="#000" mask="url(#m)"/>`));
@@ -224,6 +307,16 @@ for (const t of THEMES) {
     felt(id, w.felt, t.tile, t.emblem, line);
     chips(id, w.edge, t.chips.ring, w.dark ? '#f6f1e6' : line, line, w.dark ? '#f6f1e6' : '#17181b');
     plate(id, w.plate, null, line, t.key);
+  }
+  // 화투 (lib/cosmetics.mjs floorLooks): three backs and three fronts per floor, in its motif.
+  if (t.ways) {
+    const noir = t.ways.find(w => w.way === 'noir'), ivory = t.ways.find(w => w.way === 'ivory');
+    hwBack(`${t.key}-classic`, t.back.base, line, t.back.field, t.emblem);
+    hwBack(`${t.key}-noir`, noir.back, line, t.back.field, t.emblem);
+    hwBack(`${t.key}-red`, CINNABAR, line, t.back.field, t.emblem);
+    hwFace(`${t.key}-classic`, 'rim', t.back.base, line);
+    hwFace(`${t.key}-noir`, 'noir', null, line);
+    hwFace(`${t.key}-red`, 'hanji', ivory.ink || '#1a1c20', line);
   }
 }
 fs.writeFileSync(path.join(ROOT, 'public/skins.css'), css.join('\n') + '\n');

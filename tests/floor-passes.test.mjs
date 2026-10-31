@@ -100,6 +100,6 @@ test('floors players had reached before passes stay theirs; later players buy in
 test('every bought look is drawn: scripts/draw-skins.mjs wrote a style for it', async () => {
   const { readFileSync } = await import('node:fs');
   const css = readFileSync(new URL('../public/skins.css', import.meta.url), 'utf8');
-  const cls = { cardBack: id => `.back--${id.replace(/^back-/, '')}{`, felt: id => `felt--skin-${id.replace(/^felt-/, '')}{`, chips: id => `.chip-accent--${id.replace(/^chips-/, '')}{`, frame: id => `.name-frame--${id.replace(/^frame-/, '')}{` };
+  const cls = { cardBack: id => `.back--${id.replace(/^back-/, '')}{`, felt: id => `felt--skin-${id.replace(/^felt-/, '')}{`, chips: id => `.chip-accent--${id.replace(/^chips-/, '')}{`, frame: id => `.name-frame--${id.replace(/^frame-/, '')}{`, hwatuBack: id => `.hwback--${id.replace(/^hwback-/, '')}`, hwatuFace: id => `.hwface--${id.replace(/^hwface-/, '')}` };
   for (const x of COSMETICS.filter(x => x.price > 0)) assert.ok(css.includes(cls[x.slot](x.id)), x.id);
 });

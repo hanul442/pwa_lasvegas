@@ -220,8 +220,10 @@
 @media (prefers-reduced-motion:reduce){.table-screen.is-ouch .felt,.banner--ouch{animation:none}.day-tag{transition:opacity .2s}}
 /* One toast spot for the whole app: top middle. On a table that is the felt's top edge, over the
    dealer's chip rack, so it never covers my cards, chips or buttons (notice.js puts app toasts there too). */
-.toast{position:absolute;left:50%;top:12px;z-index:21;max-width:calc(100% - 28px);transform:translate(-50%,-16px);opacity:0;padding:10px 16px;border-radius:999px;background:#0a0b0dee;border:1px solid var(--hair);font-size:13px;text-align:center;pointer-events:none;transition:transform .3s var(--ease-out),opacity .3s}
+.toast{position:absolute;left:50%;top:12px;z-index:21;width:max-content;max-width:calc(100% - 28px);transform:translate(-50%,-16px);opacity:0;padding:10px 16px;border-radius:20px;text-wrap:balance;background:#0a0b0dee;border:1px solid var(--hair);font-size:13px;text-align:center;pointer-events:none;transition:transform .3s var(--ease-out),opacity .3s}
 .toast.is-shown{opacity:1;transform:translate(-50%,0)}
+.toast.is-low{top:auto!important;bottom:12px;transform:translate(-50%,16px);border-color:var(--hair-strong);box-shadow:0 12px 32px #000c}
+.toast.is-low.is-shown{transform:translate(-50%,0)}
 .felt.is-glow{animation:felt-glow 1.6s ease-out}
 @keyframes felt-glow{0%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}30%{box-shadow:0 0 0 1px #0008,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffffaa,inset 0 0 120px #ffffff1a,0 24px 60px #000c,0 0 50px #ffffff22}100%{box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px #ffffff1a,inset 0 0 90px #000b,0 24px 60px #000c}}
 
@@ -700,6 +702,8 @@
 .table-screen--holdem:not(.is-seated) .pk-sizer{display:none}
 /* friends' rooms */
 .pk-friends-open{min-height:40px;padding:0 18px;border-radius:999px;border:1px solid var(--hair-strong);background:#0000002e;color:var(--white);font:600 13px var(--sans)}
+/* While a lobby panel covers the felt, the felt under it stays put (the panel scrolls itself). */
+.felt:has(> .pk-lobby:not([hidden])){overflow:hidden}
 .pk-lobby{position:absolute;inset:0;z-index:20;display:grid;align-content:start;gap:4px;padding:14px 16px 18px;border-radius:18px;background:#0a0b0df7;box-shadow:0 0 0 1px var(--hair);overflow:auto;overscroll-behavior:contain}
 .pk-lobby[hidden]{display:none}
 .pk-lobby-head{display:flex;align-items:center;justify-content:space-between}

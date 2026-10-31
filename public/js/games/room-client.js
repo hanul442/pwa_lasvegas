@@ -104,6 +104,7 @@ export function createRoomClient(t, game, hooks) {
 
   function open() {
     if (active || hooks.soloBusy()) return;
+    t.felt.scrollTop = 0; // the panel covers the felt from its top; a scrolled felt would cut its head off
     panel.hidden = false;
     paintCreate();
     loadList();

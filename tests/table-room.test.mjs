@@ -388,3 +388,16 @@ test('섯다: getting up on my own betting turn dies that hand and the table pla
   assert.equal(state.users[leaver].account.locked, 0, 'settled when the hand ended');
   assert.ok(state.ledger.some(tx => tx.userId === leaver && tx.referenceId === handId && tx.type.startsWith('GAME_')));
 });
+
+test('a friend who joined today sits in a room on a higher floor (한서, 2026-10-31)', () => {
+  const w = world(11), { state } = w;
+  const host = state.users.hanseo, friend = state.users.min;
+  host.account.available = 900_000_000;
+  friend.account.available = 900_000_000;
+  friend.createdAt = new Date().toISOString(); // a brand-new account
+  friend.account.unlockedFloors = [FLOORS[0].slug];
+  const salon = FLOORS[2];
+  const room = createRoom(state, host, { game: 'seotda', stake: salon.minBet, floor: salon.slug, size: 2 }, w.ctx());
+  joinRoom(state, friend, room.code, w.ctx());
+  assert.ok(room.players.min, 'the friend has a seat');
+});

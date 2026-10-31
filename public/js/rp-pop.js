@@ -7,6 +7,8 @@
 // with a ring, sparks and a gold sweep (bigger for a new tier).
 import { el, sound, haptic, rollNumber, reducedMotion, ms } from './fx.js';
 import { tierName, tierEmblem, TIERS } from './rank.js';
+import { TIERS as FLOOR_TIERS } from './chips.js';
+import { wonCH, chipValueFor } from './money.js';
 
 const ORDER = Object.keys(TIERS), DIVS = ['V', 'IV', 'III', 'II', 'I'];
 const rankOf = r => ORDER.indexOf(r.tier) * 10 + (r.division ? DIVS.indexOf(r.division) : 9);
@@ -23,7 +25,7 @@ export function noteRpChange(state, { quiet = false } = {}) {
   const promoSig = pa ? `a:${pa.target}:${pa.log ?? `${pa.wins}-${pa.losses}`}` : pl ? `e:${pl.target}:${pl.result}:${pl.at}` : '';
   const da = state.defense?.active, dl = state.defense?.last;
   const defenseSig = da ? `a:${da.tier}:${da.log}` : dl ? `e:${dl.tier}:${dl.result}:${dl.at}` : '';
-  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress, promoSig, defenseSig };
+  const now = { key: `${state.user.id}:${rp.season}:${last?.at || ''}`, tier: rp.tier, division: rp.division, points: rp.points, progress: rp.progress, floorLevel: rp.floorLevel, promoSig, defenseSig };
   const prev = seen;
   seen = now;
   // The first state after a load only sets the mark; the same round never shows twice.
@@ -59,7 +61,11 @@ export function noteRpChange(state, { quiet = false } = {}) {
       ${promoWon ? `<span class="rp-pop-dots">${dotsHtml(pl.log, { fresh: motion })}</span>` : ''}<span class="rp-pop-bar" aria-hidden="true"><i style="width:${pct(motion ? prev.progress ?? rp.progress : rp.progress)}"></i></span>
       <small class="rp-pop-next"><b class="rp-pop-points">${tenthOf(motion ? from : rp.points)}</b> RP<span class="rp-pop-step"> · ${nextLine}</span></small>
     </span>`;
-  const card = show(html, { big: up, down, tierUp, long: up ? 4200 : 2800 });
+  // A new tier opens a new floor, and its chips are worth more (2026-10-31, 한서 "승급할때 이제
+  // 칩단위가 바뀌었다고 알려주고나"): 1칩 is a hundredth of the floor's smallest bet.
+  const floors = Object.values(FLOOR_TIERS), newFloor = tierUp && rp.floors && rp.floorLevel > (prev.floorLevel ?? rp.floorLevel) ? floors[rp.floorLevel] : null;
+  const unitHtml = newFloor ? `<small class="rp-pop-unit">${newFloor.name} 열림 · 1칩 = ${wonCH(chipValueFor(newFloor.min))}원 (전 ${wonCH(chipValueFor(floors[prev.floorLevel]?.min || newFloor.min))}원)</small>` : '';
+  const card = show(html.replace(/<\/span>$/, `${unitHtml}</span>`), { big: up, down, tierUp, long: newFloor ? 6500 : up ? 4200 : 2800 });
   if (!motion) { if (up) promoted(card, { tierUp }); return; }
 
   const bar = card.querySelector('.rp-pop-bar i');

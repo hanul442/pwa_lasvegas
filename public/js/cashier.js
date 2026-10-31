@@ -11,6 +11,12 @@ let open = null;
 const lastKey = slug => `vegas:buyin:${playerId()}:${slug}`;
 const lastAmount = slug => { try { return Number(localStorage.getItem(lastKey(slug))) || 0; } catch { return 0; } };
 const keepAmount = (slug, v) => { try { localStorage.setItem(lastKey(slug), String(v)); } catch {} };
+// The chip value of the last table bought into (2026-10-31, 한서 "승급할때 이제 칩단위가 바뀌었다고
+// 알려주고나"): a chip is a hundredth of the floor's smallest bet, so 1,000칩 on a new floor is more
+// money than 1,000칩 below. When it changes, the buy-in sheet says so before the first chip is bought.
+const perKey = () => `vegas:chip-per:${playerId()}`;
+const lastPer = () => { try { return Number(localStorage.getItem(perKey())) || 0; } catch { return 0; } };
+const keepPer = v => { try { localStorage.setItem(perKey(), String(v)); } catch {} };
 
 // Resolves with the new state once chips are bought, or null when the player backs out.
 // mode: 'sit' (sitting down), 'topup' (more chips from the seat, the table's +), 'rebuy' (the
@@ -50,9 +56,13 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
         : `지갑 돈으로 테이블 칩을 사요. 이 테이블은 1칩이 ${wonCH(per)}원이고, 일어나면 남은 칩은 전부 지갑으로 돌아가요.`)
       + (entry ? ` 이벤트 테이블은 칩 ${chipCount(entry)}칩 이상을 들고 앉아야 해요.` : '')
       + (fee && !fee.paid ? ` 첫 판에 입장료 ${chipCount(fee.fee)}칩을 내요 (${fee.per === 'day' ? '하루' : '이번 주'} 한 번).` : '');
+    const before = lastPer();
+    const unitChange = before && before !== per && !room
+      ? `<p class="buyin-unit${per > before ? ' is-up' : ''}"><b>칩 단위가 바뀌었어요</b><span>1칩 = ${wonCH(per)}원 (전에 앉은 층은 ${wonCH(before)}원)${per > before ? ` · 같은 칩 수라도 ${Math.round((per / before) * 10) / 10}배 큰 돈이에요` : ''}</span></p>`
+      : '';
     sheet.innerHTML = `<p class="lounge-eyebrow">${eyebrow}</p>
       <h2 id="buyin-title"><span data-buyin-amount></span> <small data-buyin-won></small></h2>
-      <p class="lounge-note">${note}</p>
+      ${unitChange}<p class="lounge-note">${note}</p>
       <div class="buyin-chips" aria-hidden="true"></div>
       <label class="buyin-range"><span class="sr-only">바이인 금액</span><input type="range" min="${range.min}" max="${range.max}" step="${step}" value="${amount}"></label>
       <p class="buyin-scale"><span>${chipCount(range.min)}칩</span><span>지갑 ${wonCH(range.wallet)}원</span><span>${chipCount(range.max)}칩</span></p>
@@ -118,6 +128,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
       try {
         const out = await api.buyIn(tier.slug, amount, event, room);
         if (!event) keepAmount(tier.slug, amount);
+        keepPer(per);
         sound.chip?.(); haptic?.([12, 30, 12]);
         close(out.state);
       } catch (e) { buy.disabled = false; errorToast(e); }

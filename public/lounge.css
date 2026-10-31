@@ -1047,6 +1047,9 @@ body.daily-open{overflow:hidden}
 @keyframes buyin-chip{from{transform:translateY(8px);opacity:0}}
 .buyin-range{display:block;margin:6px 0 2px}
 .buyin-range input{width:100%;accent-color:#fff;height:28px}
+.buyin-unit{display:grid;gap:2px;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#ffffff10;border:1px solid #ffffff24;font-size:13px;line-height:1.45;color:var(--smoke)}
+.buyin-unit b{color:var(--white);font-size:14px}
+.buyin-unit.is-up{border-color:#ffffff40}
 .buyin-scale{display:flex;justify-content:space-between;gap:8px;margin:0;color:var(--muted,#ffffff8c);font-size:12px;font-variant-numeric:tabular-nums}
 .buyin-scale span:nth-child(2){text-align:center}
 .buyin-picks{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
@@ -1103,6 +1106,7 @@ body.daily-open{overflow:hidden}
 .rp-pop.is-down .rp-pop-bar i{background:#ff8a8a}
 .rp-pop.is-big .rp-pop-bar i{background:linear-gradient(90deg,#d9b56a,#f6e3a8)}
 .rp-pop-next{grid-column:1/-1;color:var(--smoke);font-size:12px}
+.rp-pop-unit{grid-column:1/-1;display:block;margin-top:4px;color:var(--white);font-size:12px;font-weight:600}
 /* 승급전 (5판 3선승): five circles, white = win, red ring with a slash = loss */
 .rp-pop-dots{grid-column:1/-1;display:flex;gap:7px;margin:3px 0 1px}
 .rp-pop-dots i{position:relative;width:14px;height:14px;border-radius:50%;border:1.5px solid #ffffff59;flex:none}

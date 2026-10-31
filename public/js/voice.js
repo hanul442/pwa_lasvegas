@@ -6,6 +6,7 @@
 import { audioContext, isMuted } from './fx.js';
 import { music } from './music.js';
 import { settings, onSettings } from './settings.js';
+import { inTableUnits, tableChipWon } from './money.js';
 
 const silent = () => isMuted() || !settings.get('voice');
 // 80 (default) ≈ 0.5. At full level the dealer measured ~10 dB over a dealt card and ~19 dB over a
@@ -147,8 +148,10 @@ export function amountWords(amount) {
 }
 const LEADS = { CALL: 'lead-call', RAISE: 'lead-raise', BET: 'lead-bet', ALL_IN: 'lead-all-in' };
 // "Fifty thousand." The last word is the falling, phrase-final take.
-export function betLine(action, amount) {
-  const words = amountWords(amount);
+// At a table the screen counts chips, so the dealer says the chip count too: a raise to 40칩 is
+// "Forty", not the 1,200만원 behind it (한서 2026-10-31 "딜러 보이스 … 하나도 안맞다").
+export function betLine(action, amount, per = inTableUnits() ? tableChipWon() : 1) {
+  const words = amountWords(Math.round((Number(amount) || 0) / per));
   if (!LEADS[action] || !words.length) return null;
   // Only the amount is spoken ("Sixty thousand"); the action is already on the seat's tag.
   return words.map((w, i) => `n-${w}${i === words.length - 1 ? '-end' : ''}`);

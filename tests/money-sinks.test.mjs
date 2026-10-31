@@ -19,10 +19,10 @@ const withPoints = (u, points, now) => { rpOf(u, now); u.rp.points = points; u.r
 test('승급전: only in a tier\'s division I, the fee comes from the wallet, three wins lift to the next tier', () => {
   const state = defaultState();
   const u = player(state, 'p', 10 * 억);
-  at(OCT, () => withPoints(u, 50, OCT));
+  at(OCT, () => withPoints(u, 100, OCT));
   assert.equal(at(OCT, () => promoView(u)).offer, null, 'division II: no series yet');
   assert.throws(() => at(OCT, () => startPromo(state, u)), /PROMO_NOT_AVAILABLE/);
-  u.rp.points = 85;
+  u.rp.points = 170;
   const offer = at(OCT, () => promoView(u)).offer;
   assert.deepEqual(offer, { target: 'bronze', fee: 2 * 억, minStake: 10_000_000, wins: 3, losses: 3 });
   at(OCT, () => startPromo(state, u));
@@ -40,14 +40,14 @@ test('승급전: only in a tier\'s division I, the fee comes from the wallet, th
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: 10_000_000 }, OCT);
   assert.equal(u.rp.promo.result, 'won');
   assert.equal(u.rp.promo.log, 'WLWW', 'the order of results, for the five circles');
-  assert.ok(u.rp.points >= 100);
+  assert.ok(u.rp.points >= 200);
   assert.equal(rpView(u, OCT).tier, 'bronze');
 });
 
 test('승급전: three losses end it and the fee is gone; a new season drops an open series', () => {
   const state = defaultState();
   const u = player(state, 'q', 10 * 억);
-  at(OCT, () => withPoints(u, 190, OCT));
+  at(OCT, () => withPoints(u, 425, OCT));
   const s = at(OCT, () => startPromo(state, u));
   assert.equal(s.target, 'silver');
   assert.equal(s.fee, 30_000_000 * 20, 'silver plays High Limit: 20 of its 3천만 bets');
@@ -56,9 +56,9 @@ test('승급전: three losses end it and the fee is gone; a new season drops an 
   assert.equal(u.rp.promo.active, true, 'two losses of three');
   noteRp(u, { game: 'Baccarat', stake: 10_000_000, netPnl: -10_000_000 }, OCT);
   assert.equal(u.rp.promo.result, 'lost');
-  assert.ok(u.rp.points < 190);
+  assert.ok(u.rp.points < 425);
   const v = player(state, 'r', 10 * 억);
-  at(NOV, () => withPoints(v, 80, NOV));
+  at(NOV, () => withPoints(v, 160, NOV));
   at(NOV, () => startPromo(state, v));
   assert.equal(at(DEC, () => promoView(v)).active, null, 'December is a new season');
 });
@@ -113,7 +113,7 @@ test('over the API: an event table sells its chips at any RP, the first bet pays
   assert.equal((await spin()).status, 200);
   assert.equal(state.ledger.filter(x => x.type === 'EVENT_FEE').length, 1);
   assert.equal(state.ledger.find(x => x.type === 'EVENT_FEE').amount, -333 * 3_000_000, 'a tenth of 100억 in whole chips');
-  state.users.hanseo.rp.points = 80;
+  state.users.hanseo.rp.points = 160;
   const promo = await call('POST', '/api/rank/promo');
   assert.equal(promo.status, 200, JSON.stringify(promo.data));
   assert.equal(promo.data.state.promo.active.target, 'bronze');

@@ -27,16 +27,16 @@ test('no cap on a day, points never go below 0, and a new season starts three ti
   const u = { rp: null };
   assert.equal(noteRp(u, { stake: 1e6, netPnl: -1e6 }, NOV), 0, 'nothing to lose yet');
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).points, 99, 'no cap on a round, but RP stops at the top of 아이언 I: the next tier takes a 승급전');
+  assert.equal(rpView(u, NOV).points, 199, 'no cap on a round, but RP stops at the top of 아이언 I: the next tier takes a 승급전');
   noteRp(u, { stake: 1e6, netPnl: 30e6 }, NOV);
-  assert.equal(rpView(u, NOV).today, 99, 'nothing kept past the top');
+  assert.equal(rpView(u, NOV).today, 199, 'nothing kept past the top');
   assert.equal(rpView(u, NOV).tier, 'iron');
-  u.rp.points = 300; // as if two 승급전 were won
+  u.rp.points = 650; // as if two 승급전 were won
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, NOV + 86_400_000);
   assert.equal(rpView(u, NOV + 86_400_000).today, 5, 'next day counts from 0');
-  assert.equal(rpForRound({ stake: 1e6, netPnl: 1e6, points: 300 }), 5, 'the Gold Room is below a silver player: 0.5×');
+  assert.equal(rpForRound({ stake: 1e6, netPnl: 1e6, points: 650 }), 5, 'the Gold Room is below a silver player: 0.5×');
   const DEC = Date.parse('2026-12-02T03:00:00Z');
-  assert.equal(rpView(u, DEC).points, 0, '실버 305 → 아이언 0');
+  assert.equal(rpView(u, DEC).points, 0, '실버 655 → 아이언 0');
   noteRp(u, { stake: 1e6, netPnl: 1e6 }, DEC);
   assert.equal(u.rp.prev.season, 'rank-2026-10', 'October and November are one season');
 });
@@ -56,20 +56,20 @@ test('every settled round notes RP, and the API shows my RP and the board', asyn
   assert.equal(s.rp.points, 10);
   assert.equal(s.rp.tier, 'iron');
   assert.equal(s.rp.division, 'V');
-  assert.equal(s.rp.toNext, 10, 'to 아이언 IV');
+  assert.equal(s.rp.toNext, 30, 'to 아이언 IV');
   assert.equal(s.rp.nextDivision, 'IV');
   assert.equal(s.rankings.rp.find(r => r.id === 'hanseo').value, 10);
 });
 
 test('tiers widen as they climb and split into five divisions; 레전드 has none', async () => {
   const { rpDivision, rpNextStep, rpTierFor, RP_TIER_STARTS } = await import('../lib/rank-points.mjs');
-  assert.deepEqual(RP_TIER_STARTS, [0, 100, 200, 350, 500, 700, 900, 1200, 1500, 2300]);
-  assert.deepEqual([0, 99, 100, 349, 350, 2299, 2300].map(p => rpTierFor(p).id), ['iron', 'iron', 'bronze', 'silver', 'gold', 'grandmaster', 'legend']);
-  assert.deepEqual([0, 19, 20, 40, 60, 80, 99, 100, 229, 230, 2299, 2300, 5000].map(rpDivision), ['V', 'V', 'IV', 'III', 'II', 'I', 'I', 'V', 'V', 'IV', 'I', null, null]);
-  assert.deepEqual(rpNextStep(60).next, { id: 'iron', division: 'I', need: 20 });
-  assert.deepEqual(rpNextStep(80).next, { id: 'bronze', division: 'V', need: 0, promo: true }, 'from I only the 승급전 goes on');
-  assert.deepEqual(rpNextStep(2250).next, { id: 'legend', division: null, need: 0, promo: true });
-  assert.equal(rpNextStep(2350).next, null);
+  assert.deepEqual(RP_TIER_STARTS, [0, 200, 450, 750, 1100, 1500, 2000, 2600, 3300, 5000]);
+  assert.deepEqual([0, 199, 200, 749, 750, 4999, 5000].map(p => rpTierFor(p).id), ['iron', 'iron', 'bronze', 'silver', 'gold', 'grandmaster', 'legend']);
+  assert.deepEqual([0, 39, 40, 80, 120, 160, 199, 200, 249, 250, 4999, 5000, 9000].map(rpDivision), ['V', 'V', 'IV', 'III', 'II', 'I', 'I', 'V', 'V', 'IV', 'I', null, null]);
+  assert.deepEqual(rpNextStep(120).next, { id: 'iron', division: 'I', need: 40 });
+  assert.deepEqual(rpNextStep(160).next, { id: 'bronze', division: 'V', need: 0, promo: true }, 'from I only the 승급전 goes on');
+  assert.deepEqual(rpNextStep(4900).next, { id: 'legend', division: null, need: 0, promo: true });
+  assert.equal(rpNextStep(5100).next, null);
 });
 
 import { FLOORS } from '../lib/constants.mjs';
@@ -80,8 +80,8 @@ test('실버 to 그랜드마스터 is 50:50; 레전드 wins less and loses more 
   const own = points => ({ stake: FLOORS[Math.min(FLOORS.length - 1, rpFloorLevel(points))].maxBet, points });
   const win = points => rpForRound({ ...own(points), netPnl: own(points).stake });
   const loss = points => rpForRound({ ...own(points), netPnl: -own(points).stake });
-  assert.deepEqual([0, 150, 250, 950, 2000, 2400].map(win), [10, 10, 10, 10, 10, 5]);
-  assert.deepEqual([0, 250, 950, 2000, 2400].map(loss), [-7, -10, -10, -10, -13]);
+  assert.deepEqual([0, 325, 550, 2100, 4363, 5213].map(win), [10, 10, 10, 10, 10, 5]);
+  assert.deepEqual([0, 550, 2100, 4363, 5213].map(loss), [-7, -10, -10, -10, -13]);
 });
 
 test('디비전별 베팅 상한: the floor my tier just opened grows from the floor below’s top bet to its own, never lower than before', async () => {
@@ -89,16 +89,16 @@ test('디비전별 베팅 상한: the floor my tier just opened grows from the f
   const { checkBetCap } = await import('../lib/stakes.mjs');
   const { monthBoundary } = await import('../lib/rank-tier.mjs');
   const [gold, high] = FLOORS;
-  assert.equal(rpBetCap(50, 0), gold.maxBet, '아이언 plays the Gold Room at its full limit');
-  assert.equal(rpBetCap(150, 0), gold.maxBet, '브론즈 too');
-  assert.equal(rpBetCap(200, 1), high.minBet * 4, '실버 V: 4× (1.2억, 400칩), above the Gold Room top (1억)');
-  assert.ok(rpBetCap(200, 1) >= gold.maxBet);
-  assert.equal(rpBetCap(230, 1), high.minBet * 5, '실버 IV: 5× (500칩)');
-  assert.equal(rpBetCap(330, 1), high.minBet * 10, '실버 I: the full 10×');
-  assert.equal(rpBetCap(200, 0), gold.maxBet, 'a floor already passed keeps its limit');
-  assert.equal(rpBetCap(2400, FLOORS.length - 1), FLOORS.at(-1).maxBet, '레전드: no division, no cap');
-  assert.equal(rpBetCaps(200)[high.slug], high.minBet * 4);
-  const u = { rp: { season: monthBoundary(Date.now()).id, points: 200 } };
+  assert.equal(rpBetCap(100, 0), gold.maxBet, '아이언 plays the Gold Room at its full limit');
+  assert.equal(rpBetCap(325, 0), gold.maxBet, '브론즈 too');
+  assert.equal(rpBetCap(450, 1), high.minBet * 4, '실버 V: 4× (1.2억, 400칩), above the Gold Room top (1억)');
+  assert.ok(rpBetCap(450, 1) >= gold.maxBet);
+  assert.equal(rpBetCap(510, 1), high.minBet * 5, '실버 IV: 5× (500칩)');
+  assert.equal(rpBetCap(710, 1), high.minBet * 10, '실버 I: the full 10×');
+  assert.equal(rpBetCap(450, 0), gold.maxBet, 'a floor already passed keeps its limit');
+  assert.equal(rpBetCap(5213, FLOORS.length - 1), FLOORS.at(-1).maxBet, '레전드: no division, no cap');
+  assert.equal(rpBetCaps(450)[high.slug], high.minBet * 4);
+  const u = { rp: { season: monthBoundary(Date.now()).id, points: 450 } };
   assert.throws(() => checkBetCap(u, high, high.minBet * 4 + 1_000_000), /BET_OVER_DIVISION_CAP/);
   assert.doesNotThrow(() => checkBetCap(u, high, high.minBet * 4));
   assert.doesNotThrow(() => checkBetCap(u, gold, gold.maxBet));
@@ -106,8 +106,8 @@ test('디비전별 베팅 상한: the floor my tier just opened grows from the f
 
 test('a minimum bet on my own new floor counts in full, even under the division cap', () => {
   const [, high] = FLOORS;
-  assert.equal(rpForRound({ stake: high.minBet, netPnl: high.minBet, points: 200 }), 10, '실버 V at High Limit: 3천만 is a High Limit bet');
-  assert.equal(rpForRound({ stake: FLOORS[0].minBet, netPnl: FLOORS[0].minBet, points: 200 }), 5, 'the Gold Room is below 실버: 0.5×');
+  assert.equal(rpForRound({ stake: high.minBet, netPnl: high.minBet, points: 450 }), 10, '실버 V at High Limit: 3천만 is a High Limit bet');
+  assert.equal(rpForRound({ stake: FLOORS[0].minBet, netPnl: FLOORS[0].minBet, points: 450 }), 5, 'the Gold Room is below 실버: 0.5×');
   assert.equal(rpForRound({ stake: high.minBet, netPnl: high.minBet, points: 0 }), 10, '아이언 at an event on High Limit: no 1.5×');
 });
 
@@ -115,7 +115,7 @@ test('floors below my tier lock as I climb, and open again when I am short of a 
   const { floorOpen, floorRefusal } = await import('../lib/state.mjs');
   const { monthBoundary } = await import('../lib/rank-tier.mjs');
   const [gold, high, salon] = FLOORS;
-  const u = { account: { available: 50 * high.minBet, locked: 0, wallet: 0, loans: [] }, rp: { season: monthBoundary(Date.now()).id, points: 200 } };
+  const u = { account: { available: 50 * high.minBet, locked: 0, wallet: 0, loans: [] }, rp: { season: monthBoundary(Date.now()).id, points: 450 } };
   assert.equal(floorOpen(u, high), true, '실버 plays High Limit');
   assert.equal(floorOpen(u, gold), false, 'the Gold Room is locked');
   assert.equal(floorRefusal(u, gold), 'FLOOR_OUTGROWN');

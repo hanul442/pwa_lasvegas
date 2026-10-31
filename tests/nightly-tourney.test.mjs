@@ -239,3 +239,15 @@ test('the hour: 18시 from 2026-10-29, a night made earlier keeps its own hour i
   const v = nightlyView(w.state, w.state.users.min, old - 3600_000);
   assert.deepEqual([v.label, v.clock, v.nextLabel, v.nextClock], ['밤 9시', '21:00', '저녁 6시', '18:00']);
 });
+
+test('the home card counts the wallet too: money off the table still affords the buy-in', () => {
+  const state = defaultState();
+  const u = state.users.hanseo;
+  const now = START - 3_600_000;
+  u.account.wallet = u.account.available + 32_000_000_000;
+  u.account.available = 0;
+  const v = nightlyView(state, u, now);
+  assert.equal(v.canAfford, true);
+  u.account.wallet = 0;
+  assert.equal(nightlyView(state, u, now).canAfford, false);
+});

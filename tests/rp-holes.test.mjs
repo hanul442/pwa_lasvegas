@@ -93,3 +93,41 @@ test('one-time repair: a big win in the capped window at a game no longer capped
   assert.ok(u.rp.points > 60);
   assert.equal(repairRpCap(state, T).length, 0, 'runs once');
 });
+
+test('맞고·고스톱: RP is measured against the 10-point deposit, so a 54-point win is +54, not +10', () => {
+  const state = defaultState();
+  const u = newUser(state, 'p', 'P');
+  u.account.available = 10_000_000_000;
+  const T = Date.parse('2026-10-31T07:40:00Z');
+  at(T, () => {
+    rpOf(u, T); u.rp.points = 0;
+    lockBet(state, u, { stake: 10_000_000, game: 'Gostop', roundId: 'g1' });
+    settleLockedHouseGame(state, u, { game: 'Gostop', stake: 10_000_000, netPnl: 54_000_000, roundId: 'g1', wagered: 54_000_000 });
+  });
+  assert.equal(u.rp.last.delta, 54);
+  assert.equal(u.stats.Gostop.wagered, 54_000_000, 'the stats keep their own wager');
+  at(T, () => {
+    lockBet(state, u, { stake: 10_000_000, game: 'Matgo', roundId: 'm1' });
+    settleLockedHouseGame(state, u, { game: 'Matgo', stake: 10_000_000, netPnl: -3_000_000, roundId: 'm1', wagered: 10_000_000 });
+  });
+  assert.equal(u.rp.last.delta, -2, 'a 3-point loss of a 10-point deposit: −3 × 0.75');
+});
+
+test('one-time 화투 repair: a big 맞고·고스톱 win this season gets the RP it was short, once', async () => {
+  const { repairHwatuRp } = await import('../lib/rp-cap-repair.mjs');
+  const state = defaultState();
+  const u = newUser(state, 'p', 'P');
+  u.account.available = 10_000_000_000;
+  const T = Date.parse('2026-10-31T07:40:00Z');
+  at(T, () => {
+    rpOf(u, T);
+    lockBet(state, u, { stake: 10_000_000, game: 'Gostop', roundId: 'g1' });
+    settleLockedHouseGame(state, u, { game: 'Gostop', stake: 10_000_000, netPnl: 54_000_000, roundId: 'g1', wagered: 54_000_000 });
+  });
+  u.rp.points = 10; // as the old rule left it
+  const fixed = repairHwatuRp(state, T);
+  assert.equal(fixed.length, 1);
+  assert.equal(fixed[0].rp, 44);
+  assert.equal(u.rp.points, 54);
+  assert.equal(repairHwatuRp(state, T).length, 0, 'runs once');
+});

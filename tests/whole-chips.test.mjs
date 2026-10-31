@@ -4,7 +4,7 @@
 // and prizes, and the stack itself. RP is whole points too.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FLOORS, MONEY_UNIT, chipValueOf, tableUnitOf } from '../lib/constants.mjs';
+import { FLOORS, MONEY_UNIT, chipValueOf, tableUnitOf, tableGrain, payout } from '../lib/constants.mjs';
 import { HOLDEM_BLINDS, royaleBlinds, ROYALE, createHoldemSession, dealNextHand, heroAction } from '../lib/holdem-session.mjs';
 import { SEVEN_ANTES, MIN_ANTES, createSevenSession, dealNextHand as dealSeven, heroAction as sevenAction } from '../lib/sevenpoker-session.mjs';
 import { legalActions } from '../lib/holdem.mjs';
@@ -19,14 +19,13 @@ import { chipCount, chipValueFor, tableUnitFor, holdemBlindsFor, setTableUnits, 
 
 function seededRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const whole = (floor, x) => x % chipValueOf(floor) === 0;
-const inUnit = (floor, x) => x % tableUnitOf(floor) === 0 && x % MONEY_UNIT === 0;
+const inUnit = (floor, x) => x % tableUnitOf(floor) === 0 && x % tableGrain() === 0;
 
-test('every floor: one chip is a hundredth of the smallest bet, and the table unit is whole chips and whole 100만s', () => {
+test('every floor: one chip is a hundredth of the smallest bet, and a table moves one chip at a time', () => {
   for (const f of FLOORS) {
     assert.equal(chipValueOf(f), f.minBet / 100, f.slug);
     assert.ok(Number.isSafeInteger(chipValueOf(f)), f.slug);
-    assert.ok(whole(f, tableUnitOf(f)) && tableUnitOf(f) % MONEY_UNIT === 0, f.slug);
-    assert.ok(tableUnitOf(f) <= 10 * chipValueOf(f), `${f.slug}: a unit is at most 10 chips`);
+    assert.equal(tableUnitOf(f), chipValueOf(f), f.slug);
     // The client reads the same numbers (public/js/money.js).
     assert.equal(chipValueFor(f.minBet), chipValueOf(f), f.slug);
     assert.equal(tableUnitFor(f.minBet), tableUnitOf(f), f.slug);
@@ -142,7 +141,7 @@ test('buy-ins are offered and taken in whole chips; a bet between chips is refus
     const r = buyInRange(user, f);
     for (const x of [r.min, r.max, r.default]) assert.ok(inUnit(f, x), `${f.slug}: ${x / chipValueOf(f)} chips`);
     assert.ok(inTableUnits(f, f.minBet + tableUnitOf(f)), f.slug);
-    if (tableUnitOf(f) > MONEY_UNIT) assert.equal(inTableUnits(f, f.minBet + MONEY_UNIT), false, `${f.slug}: 100만 more is part of a chip`);
+    if (chipValueOf(f) > MONEY_UNIT) assert.equal(inTableUnits(f, f.minBet + MONEY_UNIT), false, `${f.slug}: 100만 more is part of a chip`);
   }
   // At the floor itself (the 홀 is open to everyone): a bet that is part of a chip off is refused.
   const hall = FLOORS[0], { user } = seatedAt(hall, 50 * hall.minBet);
@@ -167,5 +166,20 @@ test('RP from a round is whole points', () => {
     const net = Math.round((rand() * 4 - 1.2) * stake);
     const rp = rpForRound({ stake, netPnl: net, points: Math.floor(rand() * 2500), game: k % 3 ? 'Blackjack' : 'Slots' });
     assert.ok(Number.isInteger(rp), `${stake} ${net}: ${rp}`);
+  }
+});
+
+test('a win reads exactly what the bet earns: banker 95칩 on 100칩, 3:2 is 150칩, at every floor', () => {
+  for (const f of FLOORS) {
+    const chip = chipValueOf(f), { state, user } = seatedAt(f, 50 * f.minBet);
+    for (const [k, [raw, want]] of [[100 * chip * 0.95, 95], [100 * chip * 1.5, 150], [110 * chip * 1.5, 165], [130 * chip * 0.95, 123.5]].entries()) {
+      const id = `x-${f.slug}-${k}`, stake = (k === 2 ? 110 : k === 3 ? 130 : 100) * chip;
+      lockBet(state, user, { stake, game: 'Baccarat', roundId: id });
+      if (Number.isInteger(want)) assert.equal(payout(stake, raw, () => 0.5) % chip, 0, `${f.slug}: engine payout ${payout(stake, raw, () => 0.5) / chip}`);
+      const tx = settleLockedHouseGame(state, user, { game: 'Baccarat', stake, netPnl: payout(stake, raw, () => 0.5), roundId: id });
+      const won = (tx.amount - stake) / chip;
+      if (Number.isInteger(want)) assert.equal(won, want, `${f.slug}: won ${won} chips, want ${want}`);
+      else assert.ok(won === Math.floor(want) || won === Math.ceil(want), `${f.slug}: ${won}`);
+    }
   }
 });

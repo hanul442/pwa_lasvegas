@@ -10,10 +10,8 @@
 export const CHIP_WON = 1_000_000;
 export const CHIPS_PER_MIN_BET = 100;
 export const chipValueFor = minBet => Math.max(1, Math.round((Number(minBet) || 0) / CHIPS_PER_MIN_BET)) || CHIP_WON;
-// The smallest amount a table moves: whole chips and whole 100만s (lib/constants.mjs tableUnitOf):
-// 10칩 on the two lowest floors, 1칩 from the Salon up.
-const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-export const tableUnitFor = minBet => { const c = chipValueFor(minBet); return (c / gcd(c, CHIP_WON)) * CHIP_WON; };
+// The smallest amount a table moves: one chip (lib/constants.mjs tableUnitOf).
+export const tableUnitFor = minBet => chipValueFor(minBet);
 // Hold'em blinds (and the 7포커 ante, the small one): 10/20칩 on every floor (lib/holdem-session.mjs).
 export const holdemBlindsFor = minBet => {
   const u = tableUnitFor(minBet), small = Math.ceil((10 * chipValueFor(minBet)) / u) * u;

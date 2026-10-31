@@ -8,6 +8,7 @@ import { gatherCards, riffle, needsShuffle, rake } from '../dealer.js';
 import { wait, formatCH, animate, el, flyFrom, flyTo, sound } from '../fx.js';
 import { createChip } from '../chips.js';
 import { buzz } from '../haptics.js';
+import { tableChipWon } from '../money.js';
 import { Table } from '../table.js';
 import { createDoubleOrNothing } from '../double-or-nothing.js';
 import { eventInfo, createStreakMeter } from '../event-table.js';
@@ -25,7 +26,8 @@ function betNet(zone, stake, r) {
   if (PAIRS.includes(zone)) return r.pairs?.[zone] ? stake * 11 : -stake;
   if (r.winner === 'TIE') return zone === 'TIE' ? stake * 8 : 0;
   if (zone !== r.winner) return -stake;
-  return zone === 'BANKER' ? stake - Math.round(stake * 0.05 / 1e6) * 1e6 : stake; // the 5% commission, to the nearest 100만 (lib/games.mjs)
+  const chip = tableChipWon();
+  return zone === 'BANKER' ? stake - Math.round(stake * 0.05 / chip) * chip : stake; // the 5% commission, in whole chips of this table
 }
 
 // What the AI regulars back this hand: a side (often following the last result) and now and then a pair.

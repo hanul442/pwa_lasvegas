@@ -35,7 +35,7 @@ test('뽀찌 refuses tables with no dealer, odd amounts, too fast, and more than
     assert.throws(() => tipDealer(state, u, { game, amount: 1_000_000 }, T0), /NO_DEALER_HERE/);
   }
   assert.ok(['blackjack', 'baccarat', 'roulette', 'dice'].every(g => TIP_GAMES.has(g)));
-  for (const amount of [0, -1_000_000, 1_500_000, 'x', 10 ** 20]) {
+  for (const amount of [0, -1_000_000, 1_550_000, 'x', 10 ** 20]) {
     assert.throws(() => tipDealer(state, u, { game: 'roulette', amount }, T0), /BET_NOT_IN_UNITS/);
   }
   tipDealer(state, u, { game: 'roulette', amount: 1_000_000 }, T0);

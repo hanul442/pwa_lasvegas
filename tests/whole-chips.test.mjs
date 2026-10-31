@@ -183,3 +183,13 @@ test('a win reads exactly what the bet earns: banker 95칩 on 100칩, 3:2 is 150
     }
   }
 });
+
+// The "×N" under a tray stack is how many chips I hold, not money: run through formatCH at a table
+// it became "×0" (한서 2026-10-31, 맞고 1,000 stack).
+test('tray stack count is a plain count, not a money amount', async () => {
+  const fs = await import('node:fs/promises');
+  const src = await fs.readFile(new URL('../public/js/table.js', import.meta.url), 'utf8');
+  const line = src.split('\n').find(l => l.includes("'.tray-count').textContent"));
+  assert.ok(line, 'tray-count line found');
+  assert.ok(!line.includes('formatCH'), line.trim());
+});

@@ -214,7 +214,7 @@ export class Table {
       slot.style.setProperty('--n', under);
       slot.classList.toggle('is-empty', n === 0);
       slot.classList.toggle('is-short', value > balance);
-      slot.querySelector('.tray-count').textContent = n > STACK_CAP ? `×${formatCH(n)}` : '';
+      slot.querySelector('.tray-count').textContent = n > STACK_CAP ? `×${n.toLocaleString('ko-KR')}` : '';
       slot.title = `${formatCH(value)} 칩 ${n.toLocaleString('ko-KR')}개`;
     });
   }

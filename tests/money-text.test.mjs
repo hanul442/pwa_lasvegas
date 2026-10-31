@@ -5,7 +5,7 @@ import './legacy-economy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { formatMoney, formatCH, formatJackpot } from '../public/js/money.js';
+import { formatMoney, formatCH, formatJackpot, setTableUnits, CHIP_WON } from '../public/js/money.js';
 import { formatWon } from '../lib/notifications.mjs';
 import { newsFor, bigLossText } from '../lib/news.mjs';
 import { defaultState, newUser } from '../lib/state.mjs';
@@ -82,4 +82,9 @@ test('slot jackpot is written out to 만', () => {
   assert.equal(formatJackpot(320_000_000), '3억 2천만원');
   assert.equal(formatJackpot(5_001_000_000_000), '5조 10억원');
   assert.equal(formatJackpot(12_345_678_901_234), '12조 3456억 7890만원');
+});
+
+test('slot jackpot reads in whole chips at a table', () => {
+  setTableUnits(true, 10_000);
+  try { assert.equal(formatJackpot(50_000_050_000), '5,000,005칩'); } finally { setTableUnits(false, CHIP_WON); }
 });

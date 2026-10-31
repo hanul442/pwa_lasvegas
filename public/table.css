@@ -134,6 +134,7 @@
 .zone strong{font:600 16px var(--display);font-stretch:108%;letter-spacing:-.01em;white-space:nowrap}
 .zone,.num{overflow-wrap:normal;word-break:normal}
 .zone>.bet-stack{left:auto;top:auto;right:4px;bottom:4px;margin:0;--size:28px}
+.zone>.bet-stack .chip--plaque{left:calc(var(--size) * -.32)} /* plaques are wider than a chip: keep them inside the spot */
 .zone small{font-size:13px;color:#efe7d9cc;white-space:nowrap}
 .zone:hover{background:#efe7d90a}
 .zone.is-hover{border-color:var(--ivory);background:#efe7d914}

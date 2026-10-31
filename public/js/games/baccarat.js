@@ -72,7 +72,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
         <div class="bac-zones">
           <button type="button" class="zone zone--player" data-zone="PLAYER"><strong>Player</strong><small>1 : 1</small></button>
           <button type="button" class="zone zone--tie" data-zone="TIE"><strong>Tie</strong><small>8 : 1</small></button>
-          <button type="button" class="zone zone--banker" data-zone="BANKER"><strong>Banker</strong><small>0.95 : 1</small></button>
+          <button type="button" class="zone zone--banker" data-zone="BANKER"><strong>Banker</strong><small>19 : 20</small></button>
         </div>
       </div>
       <div class="bac-foot">

@@ -90,7 +90,7 @@ test('chip tiers match server floor limits', () => {
 
 test('chip amounts read as Korean money and never overflow a unit', () => {
   assert.equal(formatCH(5_000), '5,000');
-  assert.equal(formatCH(25_000), '2.5만');
+  assert.equal(formatCH(25_000), '2만 5천');
   assert.equal(formatCH(999_999), '100만');
   assert.equal(formatCH(2_500_000), '250만');
   assert.equal(formatCH(-350_000), '-35만');
@@ -100,7 +100,10 @@ test('chip amounts read as Korean money and never overflow a unit', () => {
   assert.equal(formatCH(382_000_000), '3억 8200만');
   assert.equal(formatCH(1_240_000_000), '12억 4천만');
   assert.equal(formatCH(25_000_000_000), '250억');
-  assert.equal(formatCH(2_500_000_000_000), '2.5조');
+  assert.equal(formatCH(2_500_000_000_000), '2조 5천억');
+  // No decimal point anywhere (한서's hard rule), and 천 for round thousands like the sentences.
+  assert.equal(formatCH(100_000_000_000), '1천억');
+  assert.equal(formatCH(1_234_000_000_000), '1조 2340억');
 });
 
 test('every table offers four round chip denominations that fit under its limit', () => {

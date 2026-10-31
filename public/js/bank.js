@@ -3,7 +3,7 @@
 // left from before the bank closed shows only while it is unpaid, so it can still be paid off.
 // Every number comes from the server (lib/cashier.mjs, lib/engagement.mjs).
 import { api, errorMessage } from './api.js';
-import { el, formatCH, formatMoney, sound } from './fx.js';
+import { el, formatCH, wonCH, formatMoney, sound } from './fx.js';
 import { moneyOf } from './money.js';
 import { chipsToWallet, claimDaily } from './lounge.js';
 import { errorToast } from './notice.js';
@@ -11,7 +11,7 @@ import { renderLedger } from './ledger.js';
 
 const DAY = 86_400_000;
 const pct = rate => `${+(rate * 100).toFixed(2)}%`;
-const won = n => `${formatCH(n)}원`;
+const won = n => `${wonCH(n)}원`;
 
 function dueText(loan) {
   if (loan.overdue) return '연체 중 · 들어오는 칩에서 자동 회수';
@@ -153,7 +153,7 @@ function walletHero(state) {
   const box = el('section', 'wallet-hero');
   box.innerHTML = `
     <p class="wallet-hero-kicker">가진 돈</p>
-    <strong class="wallet-hero-total">${formatCH(total)}<span>원</span></strong>
+    <strong class="wallet-hero-total">${wonCH(total)}<span>원</span></strong>
     <dl class="wallet-split">
       <div><dt>지갑</dt><dd>${won(wallet)}</dd><small>테이블에 앉을 때 칩으로 바꿔요</small></div>
       <div><dt>테이블 칩</dt><dd>${won(table)}</dd><small>${floor ? `${floor.name}에 앉아 있어요 · 일어나면 지갑으로` : table > 0 ? '판이 끝나면 지갑으로 돌아와요' : '앉아 있는 테이블이 없어요'}</small></div>
@@ -228,11 +228,11 @@ function payBlock(state, onChanged) {
   const w = sup.welfare, left = w.perDay - w.taken;
   // Say why it can't be taken, in the player's terms: chips still on a table, or chips in the wallet.
   if (w.claimed) row('구제금융', w.perDay === 1 ? '오늘 받았어요 · 내일 다시 받을 수 있어요' : `오늘 ${w.perDay}번 다 받았어요 · 내일 다시 받을 수 있어요`, '오늘 다 받음', false, () => {});
-  else if (w.qualified) row('구제금융', `칩 ${won(w.below)} 미만일 때 · ${w.perDay === 1 ? '하루 한 번' : `오늘 ${left}번 남음`}`, `+${formatCH(w.amount)}`, true, claim('welfare'));
+  else if (w.qualified) row('구제금융', `가진 돈이 ${won(w.below)}보다 적을 때 · ${w.perDay === 1 ? '하루 한 번' : `오늘 ${left}번 남음`}`, `+${formatCH(w.amount)}`, true, claim('welfare'));
   else if (w.reason === 'TABLE') {
     const r = resumable(state);
-    row('구제금융', `테이블에 ${won(w.onTable)}이 걸려 있어요 · 판이 끝난 뒤 칩이 ${won(w.below)} 밑이면 받아요`, r ? '테이블로 가기' : '판 끝나면', Boolean(r), resumeTable);
-  } else row('구제금융', `칩이 ${won(w.below)} 미만일 때 받아요 · 지금 가진 돈 ${won(moneyOf(state))}`, '대상 아님', false, () => {});
+    row('구제금융', `테이블에 ${won(w.onTable)}이 걸려 있어요 · 판이 끝난 뒤 가진 돈이 ${won(w.below)}보다 적으면 받아요`, r ? '테이블로 가기' : '판 끝나면', Boolean(r), resumeTable);
+  } else row('구제금융', `가진 돈이 1층 최소 베팅 ${won(w.below)}보다 적을 때 받아요 · 지금 ${won(moneyOf(state))}`, '대상 아님', false, () => {});
   box.append(list);
   return box;
 }

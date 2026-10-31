@@ -1,7 +1,7 @@
 // The lobby's daily layer: 일급·주급·월급, today's missions, the lucky-card rescue,
 // the lounge news feed and the floor-unlock moment.
 import { api, playerId } from './api.js';
-import { el, formatCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
+import { el, formatCH, wonCH, formatMoney, sound, haptic, flyTo, animate, wait } from './fx.js';
 import { createChip, TIERS, FIRST_TIER } from './chips.js';
 import { duelInviteBlock } from './social.js';
 import { errorToast, toast } from './notice.js';
@@ -341,7 +341,7 @@ export function celebrateFloors(state) {
 function floorMoment(floor, nickname = '') {
   const node = el('div', 'floor-moment');
   node.setAttribute('role', 'status');
-  node.innerHTML = `<div class="floor-moment-inner"><span class="floor-star" aria-hidden="true"></span><p>새 층이 열렸어요</p><h2>${floor.name}</h2><small>${formatCH(floor.minBet)} – ${formatCH(floor.maxBet)}원 테이블</small><div class="moment-actions"><button type="button" class="pill-button" data-close>입장하기</button></div></div>`;
+  node.innerHTML = `<div class="floor-moment-inner"><span class="floor-star" aria-hidden="true"></span><p>새 층이 열렸어요</p><h2>${floor.name}</h2><small>${wonCH(floor.minBet)} – ${wonCH(floor.maxBet)}원 테이블</small><div class="moment-actions"><button type="button" class="pill-button" data-close>입장하기</button></div></div>`;
   document.body.append(node);
   sound.win(); haptic([30, 60, 30, 60, 60]);
   requestAnimationFrame(() => node.classList.add('is-open'));

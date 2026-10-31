@@ -1,7 +1,7 @@
 // 처음 온 사람의 첫날: until the first hand, home is just my chips, today's 손익 and one button
 // that seats me at blackjack with the table minimum already on the felt. For the first few hands
 // the app keeps quiet: no season sheet, no floor or tier moments, no news banners, no push ask.
-import { el, formatCH } from './fx.js';
+import { el, wonCH } from './fx.js';
 
 // Hands played across every game (lib/economy.mjs keeps per-game stats; the season reset leaves
 // them alone, so an old player never looks new again).
@@ -27,8 +27,8 @@ export function firstDayCard(st, { onPlay, onBrowse, again = null }) {
   card.innerHTML = `
     <span class="first-day-kicker">${first ? '어서 오세요' : '오늘'}</span>
     <div class="first-day-money">
-      <div><small>내 칩</small><b id="first-day-title">${formatCH(acc.available + acc.locked)}<em>원</em></b></div>
-      <div><small>오늘 손익</small><b class="${net < 0 ? 'is-down' : net > 0 ? 'is-up' : 'is-zero'}">${sign}${formatCH(Math.abs(net))}<em>원</em></b>${day.rounds ? `<small>${day.rounds}판 · 잃은 돈 ${formatCH(day.lost || 0)}</small>` : ''}</div>
+      <div><small>내 칩</small><b id="first-day-title">${wonCH(acc.available + acc.locked)}<em>원</em></b></div>
+      <div><small>오늘 손익</small><b class="${net < 0 ? 'is-down' : net > 0 ? 'is-up' : 'is-zero'}">${sign}${wonCH(Math.abs(net))}<em>원</em></b>${day.rounds ? `<small>${day.rounds}판 · 잃은 돈 ${wonCH(day.lost || 0)}</small>` : ''}</div>
     </div>
     <button type="button" class="first-day-go" data-first-play></button>
     ${first ? '<p class="first-day-note">최소 금액이 걸린 채로 앉아요. 딜만 누르면 시작해요.</p>' : ''}

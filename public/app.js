@@ -3,7 +3,7 @@ import { api, sessionToken, clearSession } from './js/api.js';
 import { openSignIn } from './js/auth.js';
 import { renderAdmin } from './js/admin.js';
 import { renderAccountTools, forgetShownCode } from './js/account.js';
-import { formatCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits, chipValueFor } from './js/fx.js';
+import { formatCH, wonCH, formatMoney, rollNumber, isMuted, setMuted, sound, preloadSounds, el, setTableUnits, inTableUnits, chipValueFor } from './js/fx.js';
 import { moneyOf } from './js/money.js';
 import { buyInSheet, cashOutQuiet } from './js/cashier.js';
 import { floorDoor } from './js/floor-door.js';
@@ -96,7 +96,7 @@ const GAMES = [
   { id: 'rounders', event: 'rounders', guide: 'poker', name: 'Rounders', blurb: '홀덤 1대1 보스전. 이기면 다음 보스로, 마지막은 KGB 테디.', mount: lazyGame('holdem', 'mountHoldem', { tourney: 'rounders' }) },
   { id: 'casablanca', event: 'casablanca', guide: 'roulette', name: 'Casablanca', blurb: '릭의 카페 뒷방 룰렛. 세 번 연속으로 이기면 릭의 보너스.', mount: lazyGame('roulette', 'mountRoulette', { event: 'casablanca' }) },
   { id: 'godofgamblers', event: 'godofgamblers', guide: 'dice', name: 'God of Gamblers', blurb: '도신의 홍콩 식보. 네 번 연속으로 맞히면 도신 보너스.', mount: lazyGame('dice', 'mountDice', { event: 'godofgamblers' }) },
-  { id: 'whale', event: 'whale', guide: 'poker', name: 'The Whale Room', blurb: '최상위 부자 전용 홀덤 토너먼트. 바이인 1천억, 우승하면 ×10.', mount: lazyGame('holdem', 'mountHoldem', { tourney: 'whale' }) },
+  { id: 'whale', event: 'whale', guide: 'poker', name: 'The Whale Room', blurb: '최상위 부자 전용 홀덤 토너먼트. 바이인 100억, 우승하면 ×10.', mount: lazyGame('holdem', 'mountHoldem', { tourney: 'whale' }) },
   { id: 'montecarlo', event: 'montecarlo', guide: 'baccarat', name: 'Monte Carlo Gala', blurb: '갈라 나이트 바카라. 세 판 연속으로 이기면 갈라 보너스.', mount: lazyGame('baccarat', 'mountBaccarat', { event: 'montecarlo' }) }
 ];
 const eventOf = g => (g.event ? state?.events?.find(e => e.id === g.event) || null : null);
@@ -620,7 +620,7 @@ function popCard(g) {
 function renderGameLists() {
   const games = GAMES.filter(g => !g.event);
   const byId = id => games.find(g => g.id === id);
-  const stake = `최소 ${formatCH(entryMin())}원부터 앉을 수 있어요`;
+  const stake = `최소 ${wonCH(entryMin())}원부터 앉을 수 있어요`;
   const homeIds = homeKind === 'all' ? POPULAR : KINDS.find(k => k[0] === homeKind)[2];
   document.querySelector('[data-game-grid]').replaceChildren(...homeIds.map(byId).filter(Boolean).map(popCard));
   filterTabs(document.querySelector('[data-home-filter]'), homeKind, k => { homeKind = k; renderGameLists(); });
@@ -838,7 +838,7 @@ function renderToday() {
   const day = state.user.today;
   if (day?.rounds > 0) {
     const sign = day.net < 0 ? '-' : day.net > 0 ? '+' : '';
-    chips.unshift(todayChip({ mark: MARK.ledger, title: `오늘 ${sign}${formatCH(Math.abs(day.net))}`, sub: `${day.rounds}판 · 잃은 돈 ${formatCH(day.lost)}${day.busts ? ` · 파산 ${day.busts}번` : ''}`, label: `오늘 손익 ${sign}${formatCH(Math.abs(day.net))}원, ${day.rounds}판, 잃은 돈 ${formatCH(day.lost)}원`, tone: day.net < 0 ? 'down' : day.net > 0 ? 'up' : '', onClick: () => openBlockSheet(() => dayBlock(state)) }));
+    chips.unshift(todayChip({ mark: MARK.ledger, title: `오늘 ${sign}${formatCH(Math.abs(day.net))}`, sub: `${day.rounds}판 · 잃은 돈 ${formatCH(day.lost)}${day.busts ? ` · 파산 ${day.busts}번` : ''}`, label: `오늘 손익 ${sign}${wonCH(Math.abs(day.net))}원, ${day.rounds}판, 잃은 돈 ${wonCH(day.lost)}원`, tone: day.net < 0 ? 'down' : day.net > 0 ? 'up' : '', onClick: () => openBlockSheet(() => dayBlock(state)) }));
   }
   // 오늘의 한 판: the same ten blackjack deals for everyone today.
   const db = state.dailyBj;
@@ -906,8 +906,8 @@ function entryLine(ev) {
   if (!e) return '';
   // 이벤트 입장료 (lib/event-fee.mjs): paid with the first bet, once a week (rotating) or a day (상시).
   const fee = state?.eventFees?.[ev?.id];
-  const feeText = fee ? ` · 입장료 ${formatCH(fee.fee)}원${fee.paid ? ` (${fee.per === 'day' ? '오늘' : '이번 주'} 냈어요)` : ` (${fee.per === 'day' ? '하루' : '한 주'} 한 번)`}` : '';
-  return `<p class="event-entry${e.open ? ' is-open' : ''}">입장 · 보유 칩 ${formatCH(e.entry)} 이상${feeText} · ${e.tier.name} ${formatCH(e.tier.min)}–${formatCH(e.tier.max)}원${e.open ? '' : ' · 아직 입장할 수 없어요'}</p>`;
+  const feeText = fee ? ` · 입장료 ${wonCH(fee.fee)}원${fee.paid ? ` (${fee.per === 'day' ? '오늘' : '이번 주'} 냈어요)` : ` (${fee.per === 'day' ? '하루' : '한 주'} 한 번)`}` : '';
+  return `<p class="event-entry${e.open ? ' is-open' : ''}">입장 · 보유 칩 ${formatCH(e.entry)} 이상${feeText} · ${e.tier.name} ${wonCH(e.tier.min)}–${wonCH(e.tier.max)}원${e.open ? '' : ' · 아직 입장할 수 없어요'}</p>`;
 }
 function renderEventTab() {
   const [now, next, ...later] = state?.eventSchedule || [];
@@ -952,11 +952,11 @@ function renderTiers() {
     const chips = el('span', 'tier-chips');
     tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
     const rpMode = floor?.rpNeed != null;
-    const status = locked ? (rpMode ? `RP ${floor.rpNeed}이면 열려요 · ${floor.rpRemaining} 남음` : `순자산 ${formatCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)`) : needsPass ? `이번 달 입장권이 필요해요 · 이 층 꾸미기를 사거나 갱신 · ${formatCH(floor.minBet)}원부터` : broke ? (state?.bank?.closed ? '돈이 부족해요 · 일급·구제금융으로 채워요' : '칩이 부족해요 · 은행에서 빌릴 수 있어요') : rpMode ? (floor.rpNeed ? `RP ${floor.rpNeed} 층` : '모두에게 열린 층') : floor?.ceiling ? `순자산 ${formatCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
+    const status = locked ? (rpMode ? `RP ${floor.rpNeed}이면 열려요 · ${floor.rpRemaining} 남음` : `순자산 ${wonCH(floor?.threshold || 0)}원${floor?.passed ? '' : ' + 입장 꾸미기'}로 열려요 (${Math.round((floor?.progress || 0) * 100)}%)`) : needsPass ? `이번 달 입장권이 필요해요 · 이 층 꾸미기를 사거나 갱신 · ${wonCH(floor.minBet)}원부터` : broke ? (state?.bank?.closed ? '돈이 부족해요 · 일급·구제금융으로 채워요' : '칩이 부족해요 · 은행에서 빌릴 수 있어요') : rpMode ? (floor.rpNeed ? `RP ${floor.rpNeed} 층` : '모두에게 열린 층') : floor?.ceiling ? `순자산 ${wonCH(floor.ceiling)}원을 넘으면 졸업` : '끝없는 층';
     const stars = `<em class="tier-stars" aria-label="난이도 ${tier.stars}/5">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>`;
     // 디비전별 베팅 상한: the floor my tier just opened shows the top bet my division allows now.
     const cap = !locked && tableMax(state, tier) < tier.max ? tableMax(state, tier) : 0;
-    b.innerHTML = `<strong>${floorTitle(tier)}${stars}</strong><span>${formatCH(tier.min)} – ${formatCH(cap || tier.max)}원${cap ? ` <em class="tier-cap">${tierName(state.rp.tier, state.rp.division)} 상한</em>` : ''}</span><small>${status}</small>`;
+    b.innerHTML = `<strong>${floorTitle(tier)}${stars}</strong><span>${wonCH(tier.min)} – ${wonCH(cap || tier.max)}원${cap ? ` <em class="tier-cap">${tierName(state.rp.tier, state.rp.division)} 상한</em>` : ''}</span><small>${status}</small>`;
     chips.setAttribute('aria-hidden', 'true');
     b.append(chips);
     b.addEventListener('click', () => needsPass ? openPassShop(floor.slug) : openTable(tier.slug));
@@ -981,7 +981,7 @@ function renderEventTier(grid, { tier, entry, open }) {
   const chips = el('span', 'tier-chips');
   tier.chips.forEach((v, i) => { const c = createChip(v); c.style.setProperty('--i', i); chips.append(c); });
   chips.setAttribute('aria-hidden', 'true');
-  b.innerHTML = `<strong>${floorTitle(tier)}</strong><span>${formatCH(tier.min)} – ${formatCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
+  b.innerHTML = `<strong>${floorTitle(tier)}</strong><span>${wonCH(tier.min)} – ${wonCH(tier.max)}원</span><small>${open ? `이벤트 전용 테이블 · 보유 ${formatCH(entry)} 이상 입장` : `보유 칩 ${formatCH(entry)} 이상만 입장할 수 있어요`}</small>`;
   b.append(chips);
   b.addEventListener('click', () => openTable(tier.slug));
   grid.replaceChildren(b);
@@ -1067,8 +1067,8 @@ function openPromoSheet() {
   const short = moneyOf(state) < o.fee;
   openSheet({
     eyebrow: '승급전', title: `${tierName(o.target)} 승급전`,
-    body: `<p class="lounge-note">참가비 <b>${formatCH(o.fee)}원</b>을 내고 도전해요. ${formatCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 ${tierName(o.target, 'V')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. 다음 티어는 승급전으로만 올라가요. RP는 I 꼭대기에서 멈추고, 지면 평소처럼 내려가요.${short ? ` <b>${formatCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
-    confirmText: short ? '' : `${formatCH(o.fee)}원 내고 도전`,
+    body: `<p class="lounge-note">참가비 <b>${wonCH(o.fee)}원</b>을 내고 도전해요. ${wonCH(o.minStake)}원 이상 건 판만 세고, 먼저 ${o.wins}번 이기면 ${tierName(o.target, 'V')}로 올라가요. ${o.losses}번 지면 끝나고 참가비는 돌려받지 못해요. 다음 티어는 승급전으로만 올라가요. RP는 I 꼭대기에서 멈추고, 지면 평소처럼 내려가요.${short ? ` <b>${wonCH(o.fee - moneyOf(state))}원 더 있어야 해요.</b>` : ''}</p>`,
+    confirmText: short ? '' : `${wonCH(o.fee)}원 내고 도전`,
     confirm: short ? null : async () => { const out = await api.rankPromo(); applyState(out.state); toast(`${tierName(o.target)} 승급전 시작 · 5판 중 3승이면 승급`); }
   });
 }
@@ -1221,7 +1221,7 @@ function noteLuxuryRefund(s) {
   if (!r?.id) return;
   try { if (localStorage.getItem('vegas:luxury-refund') === r.id) return; } catch { return; }
   remember('vegas:luxury-refund', r.id);
-  toast(`사치품이 없어져서 산 값 그대로 ${formatCH(r.amount)}원을 칩으로 돌려드렸어요`, { duration: 8000 });
+  toast(`사치품이 없어져서 산 값 그대로 ${wonCH(r.amount)}원을 칩으로 돌려드렸어요`, { duration: 8000 });
 }
 
 // ---------- profile ----------
@@ -1240,7 +1240,7 @@ function renderProfile() {
   const totals = Object.values(u.stats || {}).reduce((t, s) => ({ rounds: t.rounds + s.rounds, wins: t.wins + s.wins, best: Math.max(t.best, s.biggestWin) }), { rounds: 0, wins: 0, best: 0 });
   root.innerHTML = `
     <div class="profile-card">
-      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${formatCH(moneyOf(state))}원${state.bank?.debt ? ` · 남은 빚 ${formatCH(state.bank.debt)}원` : ''}</small></div>
+      <div><strong>${nameFrame(state, u.id, u.nickname)}</strong><small>보유 ${wonCH(moneyOf(state))}원${state.bank?.debt ? ` · 남은 빚 ${wonCH(state.bank.debt)}원` : ''}</small></div>
     </div>
     ${u.guest ? guestCard(state) : ''}
     <dl class="stat-grid">

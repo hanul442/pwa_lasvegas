@@ -7,10 +7,9 @@ import { el, formatCH, sound } from './fx.js';
 import { placeCards } from './cards.js';
 
 const METRIC = { QUALIFIED_PROFIT: '수익', WINS: '승리' };
-// The winner gets 100 smallest bets of the cheapest table they may sit at (lib/social-competition.mjs);
-// shown here as this player's own amount.
-let PRIZE = 1_000;
-const notePrize = state => { if (state?.bank?.base) PRIZE = state.bank.base * 100; };
+// What the winner gets, as the server pays it (lib/social-competition.mjs challengePrizeFor).
+let PRIZE = 0;
+const notePrize = state => { if (state?.socialCompetition?.prize) PRIZE = state.socialCompetition.prize; };
 
 function timeLeft(iso) {
   const ms = Math.max(0, Date.parse(iso) - Date.now());

@@ -2,14 +2,14 @@
 // and what is worn all come from the server (lib/shop.mjs); this screen only draws them.
 import { api, errorMessage } from './api.js';
 import { errorToast } from './notice.js';
-import { el, formatCH, sound, haptic, ms, reducedMotion } from './fx.js';
+import { el, formatCH, wonCH, sound, haptic, ms, reducedMotion } from './fx.js';
 import { moneyOf } from './money.js';
 import { createCard, setCardBack } from './cards.js';
 import { createChip } from './chips.js';
 import { bragButton } from './share.js';
 import { bragPurchase } from './brags.js';
 
-const won = n => `${formatCH(n)}원`;
+const won = n => `${wonCH(n)}원`;
 
 // ---------- applying skins ----------
 // Card backs live in cards.js; the chip accent is a variable set on the page; the felt is read
@@ -223,7 +223,7 @@ function buySkinSheet(state, item, onChanged, pass) {
   const opens = pass && !pass.passed;
   const body = el('div');
   body.append(stage(state, item));
-  body.append(el('p', 'lounge-note', `<b>${won(item.price)}</b> · ${item.blurb}. 사면 바로 장착하고, 꾸미기는 되팔 수 없어요.${skinEffect(item) ? ` 효과: ${skinEffect(item)}.` : ''}${opens ? ` <b>${pass.name} 입장권이 같이 생겨요${pass.unlocked ? '. 바로 앉을 수 있어요' : `. 순자산 ${formatCH(pass.threshold)}원이 되면 열려요`}.</b>` : ''}${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
+  body.append(el('p', 'lounge-note', `<b>${won(item.price)}</b> · ${item.blurb}. 사면 바로 장착하고, 꾸미기는 되팔 수 없어요.${skinEffect(item) ? ` 효과: ${skinEffect(item)}.` : ''}${opens ? ` <b>${pass.name} 입장권이 같이 생겨요${pass.unlocked ? '. 바로 앉을 수 있어요' : `. 순자산 ${wonCH(pass.threshold)}원이 되면 열려요`}.</b>` : ''}${short ? ` <b>${won(item.price - available)} 더 있어야 해요.</b>` : ''}`));
   openSheet({
     eyebrow: `${SLOT_NAME[item.slot]}${item.floor && pass ? ` · ${pass.name}` : ''}`, title: item.name, body,
     confirmText: short ? '' : `${won(item.price)}에 사고 장착`,
@@ -239,7 +239,7 @@ function buySkinSheet(state, item, onChanged, pass) {
         level: newPass ? 2 : 1,
         line: `${SLOT_NAME[item.slot]} · ${won(item.price)}`,
         note: skinEffect(item) ? `효과: ${skinEffect(item)}` : '',
-        stamp: newPass ? (pass.unlocked ? `${pass.name} 입장권 · 지금 앉을 수 있어요` : `${pass.name} 입장권 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : ''
+        stamp: newPass ? (pass.unlocked ? `${pass.name} 입장권 · 지금 앉을 수 있어요` : `${pass.name} 입장권 · 순자산 ${wonCH(pass.threshold)}원이면 열려요`) : ''
       });
     }
   });
@@ -263,7 +263,7 @@ function renewSheet(state, item, onChanged, pass) {
       acquireMoment({
         eyebrow: 'PASS', title: pass ? `${pass.name} 입장권` : item.name, art, level: 2,
         line: `${item.name} · ${won(item.price)}`,
-        stamp: pass ? (pass.unlocked ? '이번 시즌 · 지금 앉을 수 있어요' : `이번 시즌 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`) : ''
+        stamp: pass ? (pass.unlocked ? '이번 시즌 · 지금 앉을 수 있어요' : `이번 시즌 · 순자산 ${wonCH(pass.threshold)}원이면 열려요`) : ''
       });
     }
   });
@@ -389,8 +389,8 @@ function cosmeticsTab(state, onChanged, rerender) {
       section.open = floorOpenByHand.has(pass.slug) ? floorOpenByHand.get(pass.slug) : pass.slug === auto;
       section.addEventListener('toggle', () => floorOpenByHand.set(pass.slug, section.open));
       const state_ = era ? (pass.unlocked ? '열린 층' : `RP ${pass.rpNeed}이면 열려요`) : pass.passed
-        ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${formatCH(pass.threshold)}원이면 열려요`)
-        : pass.unlocked ? '순자산 충족 · 하나만 사거나 갱신하면 입장' : `순자산 ${formatCH(pass.threshold)}원 + 이번 달 입장권`;
+        ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${wonCH(pass.threshold)}원이면 열려요`)
+        : pass.unlocked ? '순자산 충족 · 하나만 사거나 갱신하면 입장' : `순자산 ${wonCH(pass.threshold)}원 + 이번 달 입장권`;
       const head = el('summary', 'pass-head', `<span class="pass-mark" aria-hidden="true"></span><span class="pass-name">${pass.name}</span><span class="pass-count">${owned}/${items.length}</span><small class="pass-state">${state_}</small>`);
       section.append(head);
       const grid = el('ul', 'skin-grid');

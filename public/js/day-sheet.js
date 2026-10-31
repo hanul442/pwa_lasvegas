@@ -2,11 +2,11 @@
 // went where and which game took the most (lib/loss-tally.mjs). 한서 (2026-10-27): "얼마
 // 잃었는지 보여주는 게 많았으면".
 import { el } from './fx.js';
-import { formatCH } from './money.js';
+import { wonCH } from './money.js';
 import { gameName } from './names.js';
 import { dayChart } from './day-chart.js';
 
-const signed = n => `${n < 0 ? '-' : n > 0 ? '+' : ''}${formatCH(Math.abs(n))}`;
+const signed = n => `${n < 0 ? '-' : n > 0 ? '+' : ''}${wonCH(Math.abs(n))}`;
 const tone = n => (n < 0 ? 'is-down' : n > 0 ? 'is-up' : '');
 
 export function dayBlock(state) {
@@ -18,15 +18,15 @@ export function dayBlock(state) {
   const games = Object.entries(d.games || {}).sort((a, b) => a[1].net - b[1].net);
   const wins = d.rounds - (d.losses || 0);
   const rows = [
-    ['딴 돈', `+${formatCH(d.won)}`, 'is-up'],
-    ['잃은 돈', `-${formatCH(d.lost)}`, 'is-down'],
-    ['한 판 최대 승', d.best ? `+${formatCH(d.best)}` : '없음', d.best ? 'is-up' : ''],
-    ['한 판 최대 패', d.worst ? `-${formatCH(d.worst)}` : '없음', d.worst ? 'is-down' : ''],
-    ['오늘 최고점', `${formatCH(d.peak)}`, ''],
-    ...(d.high > 0 && net < d.high ? [['최고 수익에서 놓친 돈', `-${formatCH(d.high - net)}`, 'is-down']] : []),
+    ['딴 돈', `+${wonCH(d.won)}`, 'is-up'],
+    ['잃은 돈', `-${wonCH(d.lost)}`, 'is-down'],
+    ['한 판 최대 승', d.best ? `+${wonCH(d.best)}` : '없음', d.best ? 'is-up' : ''],
+    ['한 판 최대 패', d.worst ? `-${wonCH(d.worst)}` : '없음', d.worst ? 'is-down' : ''],
+    ['오늘 최고점', `${wonCH(d.peak)}`, ''],
+    ...(d.high > 0 && net < d.high ? [['최고 수익에서 놓친 돈', `-${wonCH(d.high - net)}`, 'is-down']] : []),
     ...(d.busts ? [['파산', `${d.busts}번`, 'is-down']] : []),
     // 뽀찌 (lib/tips.mjs) is chips given away, not a hand lost, so it stands on its own line.
-    ...(d.tips ? [['딜러 팁', `-${formatCH(d.tips)}`, '']] : []),
+    ...(d.tips ? [['딜러 팁', `-${wonCH(d.tips)}`, '']] : []),
     ...(m?.rounds > d.rounds ? [[`이번 달 · ${m.rounds}판`, signed(m.net ?? m.won - m.lost), tone(m.net ?? m.won - m.lost)]] : [])
   ];
   box.innerHTML = `

@@ -1,6 +1,6 @@
 // What each brag says: a new floor, a purchase, a tier, a rank. Every one becomes a VEGAS card
 // and goes out through share.js with a link back to the app.
-import { formatCH } from './fx.js';
+import { formatCH, wonCH } from './fx.js';
 import { brandCard, shareImage, bragName } from './share.js';
 
 const QUOTES = {
@@ -12,7 +12,7 @@ const QUOTES = {
 const pick = (list, seed) => list[Math.abs([...String(seed)].reduce((h, c) => h * 31 + c.charCodeAt(0), 7)) % list.length];
 
 export async function bragFloor(floor, nickname = bragName()) {
-  const blob = await brandCard({ kicker: '새 층 입성 · NEW FLOOR', title: floor.name, big: `${formatCH(floor.minBet)}–${formatCH(floor.maxBet)}원 테이블`, quote: pick(QUOTES.floor, floor.slug), nickname });
+  const blob = await brandCard({ kicker: '새 층 입성 · NEW FLOOR', title: floor.name, big: `${wonCH(floor.minBet)}–${wonCH(floor.maxBet)}원 테이블`, quote: pick(QUOTES.floor, floor.slug), nickname });
   return shareImage({ blob, filename: 'vegas-floor.png', title: 'VEGAS 새 층', text: `VEGAS ${floor.name} 층에 올라왔어요 🏙️`, nickname });
 }
 
@@ -24,7 +24,7 @@ export async function bragPurchase({ eyebrow = 'NEW ACQUISITION', title, line = 
 // tier: the tier id; name: its Korean name; season: e.g. "2026년 10월"; rank/of when known.
 // rp: this season's RP when the tier is RP (from 2026-10-29); peak: net worth, for seasons before it.
 export async function bragTier({ tier, name, season = '', rank = 0, of = 0, peak = 0, rp = null, up = false }, nickname = bragName()) {
-  const big = rank && of ? `${of}명 중 ${rank}위` : rp != null ? `RP ${rp}` : peak ? `최고 순자산 ${formatCH(peak)}원` : '';
+  const big = rank && of ? `${of}명 중 ${rank}위` : rp != null ? `RP ${rp}` : peak ? `최고 순자산 ${wonCH(peak)}원` : '';
   const blob = await brandCard({ kicker: `${season ? `${season} · ` : ''}${up ? '티어 승급' : '시즌 티어'}`, title: name, big, quote: pick(QUOTES.tier, `${tier}${season}`), nickname, tier });
   return shareImage({ blob, filename: 'vegas-tier.png', title: 'VEGAS 티어', text: `VEGAS ${season ? `${season} ` : ''}${name} ${up ? '달성' : '티어'}! ${big} 🏆`.replace(/ {2,}/g, ' '), nickname });
 }

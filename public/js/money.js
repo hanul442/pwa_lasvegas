@@ -42,20 +42,30 @@ export function wonCH(value) {
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
   if (abs < 10_000) return sign + abs.toLocaleString('ko-KR');
-  if (abs >= 1e12) return `${sign}${trim(abs / 1e12)}조`;
-  if (abs < 1e6) return `${sign}${trim(abs / 1e4)}만`; // 2.5만, 35만
+  // Never a decimal point (한서's hard rule): 2조 5000억, not 2.5조; 2만 5천, not 2.5만.
+  if (abs >= 1e12) {
+    const jo = Math.floor(abs / 1e12), eok = Math.round((abs % 1e12) / 1e8);
+    if (eok === 0 || jo >= 100) return `${sign}${Math.round(abs / 1e12)}조`;
+    if (eok === 10_000) return `${sign}${jo + 1}조`;
+    return `${sign}${jo}조 ${thousands(eok)}억`;
+  }
+  if (abs < 1e5) {
+    const man = Math.floor(abs / 1e4), rest = abs % 1e4;
+    return `${sign}${man}만${rest ? ` ${thousands(rest)}` : ''}`;
+  }
   const total = Math.round(abs / 1e4); // in 만
   const eok = Math.floor(total / 1e4), man = total % 1e4;
-  if (eok >= 100 || (eok > 0 && man === 0)) return `${sign}${trim(abs / 1e8)}억`;
+  if (eok >= 100 || (eok > 0 && man === 0)) {
+    const e = Math.round(abs / 1e8);
+    return e >= 10_000 ? `${sign}${Math.round(e / 10_000)}조` : `${sign}${thousands(e)}억`;
+  }
   // Keep two parts at most: 1억 2천만, 3억 8200만.
   if (eok > 0) return `${sign}${eok}억 ${manText(man)}`;
   return sign + manText(man);
 }
-function manText(man) {
-  if (man >= 1000 && man % 1000 === 0) return `${man / 1000}천만`;
-  return `${man}만`;
-}
-function trim(x) { return x >= 100 ? String(Math.round(x)) : x >= 10 ? x.toFixed(1).replace(/\.0$/, '') : x.toFixed(2).replace(/\.?0+$/, ''); }
+// 1000 → 1천, 3000 → 3천; anything else as it is (1500, 8200).
+const thousands = v => (v >= 1000 && v < 10_000 && v % 1000 === 0 ? `${v / 1000}천` : String(v));
+function manText(man) { return `${thousands(man)}만`; }
 
 // Spelled out the way people say money: 7억 2천만원, 1조 3500억원, 2만 5천원, 800원.
 // The two largest units are kept, so a big win reads at a glance.

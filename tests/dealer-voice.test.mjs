@@ -51,6 +51,9 @@ test('bet amounts are spoken in words from recorded pieces', () => {
   assert.deepEqual(betLine('CALL', 50_000), ['n-fifty', 'n-thousand-end'], 'only the amount is spoken');
   assert.deepEqual(betLine('RAISE', 2_000_000), ['n-two', 'n-million-end']);
   assert.equal(betLine('FOLD', 100), null);
+  // At a table it says the chips the screen shows: 1,200만 at the 클럽 (30만 a chip) is forty chips.
+  assert.deepEqual(betLine('RAISE', 12_000_000, 300_000), ['n-forty-end']);
+  assert.deepEqual(betLine('BET', 3_000_000_000, 3_000_000), ['n-one', 'n-thousand-end']);
   // Every amount a table can produce, up to the vault's limits, resolves to recorded pieces.
   for (const n of [1, 19, 20, 99, 101, 999, 5_000, 12_345, 999_999, 1_000_001, 987_654_321, 123_456_789_012, 999_999_999_999_999]) {
     for (const action of ['CALL', 'RAISE', 'BET', 'ALL_IN']) for (const id of betLine(action, n)) assert.ok(files.has(id), `${n}: missing ${id}`);

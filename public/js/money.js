@@ -77,6 +77,8 @@ export function formatWon(value, unit = '원') {
 // 50억 100만원, 5조 10억 2500만원, 3억 2천만원. Below 만 it does not move.
 export function formatJackpot(value) {
   const n = Math.max(0, Math.floor(Number(value) || 0));
+  // At a table the pot reads in whole chips with every digit, so it visibly ticks up (5,000,005칩).
+  if (tableUnits) return `${Math.floor(n / chipWon).toLocaleString('ko-KR')}칩`;
   if (n < 10_000) return formatMoney(n);
   const parts = [[Math.floor(n / 1e12), '조'], [Math.floor(n / 1e8) % 1e4, '억'], [Math.floor(n / 1e4) % 1e4, '만']]
     .filter(([v]) => v > 0)

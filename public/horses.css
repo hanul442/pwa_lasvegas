@@ -50,7 +50,8 @@
 .hr[data-phase="race"] .hr-card,.hr[data-phase="result"] .hr-card{display:none}
 .hr-head{display:grid;grid-template-columns:minmax(0,1fr) 56px 56px;gap:6px;align-items:end;padding:0 2px 5px;border-bottom:1px solid #efe7d933;font-size:12px;color:#efe7d9b3}
 .hr-head>span:first-child{font:700 13px var(--sans);color:var(--white);letter-spacing:-.01em}
-.hr-col{text-align:center;font-weight:600}
+.hr-col{text-align:center;font-weight:600;line-height:1.15}
+.hr-col small{display:block;font-size:9px;font-weight:500;opacity:.7;white-space:nowrap}
 .hr-runners{margin:0;padding:0;list-style:none}
 .hr-runner{display:grid;grid-template-columns:26px minmax(0,1fr) 56px 56px;gap:6px;align-items:center;padding:4px 2px;border-bottom:1px solid #efe7d91f;transition:background .2s}
 .hr-runner.is-picked{background:linear-gradient(90deg,#f4f5f714,transparent 80%)}

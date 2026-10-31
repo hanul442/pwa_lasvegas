@@ -379,3 +379,4 @@
   .table-screen--seotda .action-row:has(>:nth-child(5)) .action>span{display:flex;flex-direction:column;align-items:center;line-height:1.15}
   .table-screen--seotda .action-row:has(>:nth-child(5)) .action-amt{font-size:12px;font-weight:500;opacity:.8}
 }
+.mg-zone:has(>.bet-stack .chip){padding-right:48px} /* the 점당 chip sits beside the words, not on them */

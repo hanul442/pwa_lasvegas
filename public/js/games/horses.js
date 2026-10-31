@@ -19,7 +19,9 @@ const BET_KO = { WIN: '단승', PLACE: '연승', QUINELLA: '복승', EXACTA: '�
 const KIND_KEY = 'vegas:horses:kind';
 const readKind = () => { try { const k = localStorage.getItem(KIND_KEY); return k in KINDS ? k : 'single'; } catch { return 'single'; } };
 const saveKind = k => { try { localStorage.setItem(KIND_KEY, k); } catch {} };
-const odds = x => (x / 100).toFixed(x % 10 ? 2 : 1);
+// Odds read as whole chips: what 100칩 brings back (2.55배 → 255). No decimals at the table.
+const odds = x => Math.round(x).toLocaleString('ko-KR');
+const back = (stake, x) => formatCH(Math.round(stake * x / 100));
 const raceTime = msec => `${Math.floor(msec / 60000)}:${(msec % 60000 / 1000).toFixed(1).padStart(4, '0')}`;
 // Korean particles after a name: 은하수가 / 한라산이.
 const josa = (word, withFinal, without) => { const c = word.charCodeAt(word.length - 1) - 0xac00; return word + (c >= 0 && c < 11172 && c % 28 ? withFinal : without); };
@@ -66,7 +68,7 @@ export async function mountHorses(ctx) {
       <ol class="hr-result" data-result aria-live="polite"></ol>
       <div class="hr-ticket" data-ticket></div>
       <section class="hr-card" aria-label="출전표">
-        <header class="hr-head"><span class="hr-head-left"><span class="sr-only" data-race-title>출전표</span><span class="hr-kinds" role="group" aria-label="베팅 종류">${Object.entries(KINDS).map(([k, label]) => `<button type="button" data-kind="${k}">${label}</button>`).join('')}</span></span><span class="hr-col">단승</span><span class="hr-col">연승</span><span class="hr-col hr-col--pair" data-pair-head></span></header>
+        <header class="hr-head"><span class="hr-head-left"><span class="sr-only" data-race-title>출전표</span><span class="hr-kinds" role="group" aria-label="베팅 종류">${Object.entries(KINDS).map(([k, label]) => `<button type="button" data-kind="${k}">${label}</button>`).join('')}</span></span><span class="hr-col">단승<small>100칩당</small></span><span class="hr-col">연승<small>100칩당</small></span><span class="hr-col hr-col--pair" data-pair-head></span></header>
         <ul class="hr-runners" data-runners></ul>
         <div class="hr-slip" data-slip>
           <span class="hr-slip-picks" data-slip-picks></span>
@@ -116,8 +118,8 @@ export async function mountHorses(ctx) {
           <span class="hr-name"><b>${r.name}</b><span class="hr-form" aria-label="최근 성적 ${r.form.join(', ')}착">${r.form.map(n => `<span class="${n === 1 ? 'is-win' : n <= 3 ? 'is-place' : ''}">${n}</span>`).join('')}</span></span>
           <span class="hr-tag"><i>${STYLE_KO[r.style] || ''}</i>${r.tag}</span>
         </span>
-        <button type="button" class="zone hr-odds" data-zone="W${r.gate}" aria-label="${r.gate}번 ${r.name} 단승 ${odds(r.win)}배${r.win === fav ? ', 인기 1위' : ''}"><strong>${odds(r.win)}</strong>${r.win === fav ? '<small>인기 1위</small>' : ''}</button>
-        <button type="button" class="zone hr-odds" data-zone="P${r.gate}" aria-label="${r.gate}번 ${r.name} 연승 ${odds(r.place)}배"><strong>${odds(r.place)}</strong></button>
+        <button type="button" class="zone hr-odds" data-zone="W${r.gate}" aria-label="${r.gate}번 ${r.name} 단승 100칩에 ${odds(r.win)}칩${r.win === fav ? ', 인기 1위' : ''}"><strong>${odds(r.win)}</strong>${r.win === fav ? '<small>인기 1위</small>' : ''}</button>
+        <button type="button" class="zone hr-odds" data-zone="P${r.gate}" aria-label="${r.gate}번 ${r.name} 연승 100칩에 ${odds(r.place)}칩"><strong>${odds(r.place)}</strong></button>
         <button type="button" class="hr-pick" data-pick="${r.gate}" aria-pressed="false" aria-label="${r.gate}번 ${r.name} 고르기"><span></span></button>`;
       li.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
       li.querySelector('[data-pick]').addEventListener('click', () => togglePick(r.gate));
@@ -154,7 +156,7 @@ export async function mountHorses(ctx) {
     const pair = kind !== 'single';
     root.classList.toggle('hr--pair', pair);
     kindButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === kind)));
-    pairHead.textContent = kind === 'EXACTA' ? '1착 → 2착' : '두 마리';
+    pairHead.textContent = `${kind === 'EXACTA' ? '1착 → 2착' : '두 마리'} · 100칩당`;
     runnersEl.querySelectorAll('[data-pick]').forEach(b => {
       const k = picks.indexOf(Number(b.dataset.pick));
       b.setAttribute('aria-pressed', String(k >= 0));
@@ -163,7 +165,7 @@ export async function mountHorses(ctx) {
     });
     const price = pairPrice(kind, picks);
     pairOdds.textContent = price ? odds(price) : '—';
-    pairZone.setAttribute('aria-label', price ? `${picks.join('번, ')}번 ${KINDS[kind]} ${odds(price)}배에 걸기` : `${KINDS[kind]}: 말 두 마리를 고르세요`);
+    pairZone.setAttribute('aria-label', price ? `${picks.join('번, ')}번 ${KINDS[kind]} 100칩에 ${odds(price)}칩, 걸기` : `${KINDS[kind]}: 말 두 마리를 고르세요`);
     slipPicks.replaceChildren(...picks.map(g => { const r = card && runner(g); const n = el('span', 'hr-gate'); n.textContent = g; if (r) n.style.cssText = `--silk:${r.silk};--silk-ink:${ink(r.silk)}`; return n; }));
     slipText.textContent = picks.length === 2
       ? (kind === 'EXACTA' ? `${runner(picks[0]).name} 1착, ${runner(picks[1]).name} 2착` : `${runner(picks[0]).name} · ${runner(picks[1]).name} 1·2착`)
@@ -491,7 +493,7 @@ export async function mountHorses(ctx) {
     t.lock();
     view.mine = r.gate;
     const gates = horses.map(h => `<span class="hr-gate" style="--silk:${h.silk};--silk-ink:${ink(h.silk)}">${h.gate}</span>`).join('');
-    ticketEl.innerHTML = `${gates}<span class="hr-ticket-text"><b>${horses.map(h => h.name).join(bet.betType === 'EXACTA' ? ' → ' : ' · ')}</b><span>${BET_KO[bet.betType]} ${odds(price)}배 · ${formatCH(t.total)}</span></span>`;
+    ticketEl.innerHTML = `${gates}<span class="hr-ticket-text"><b>${horses.map(h => h.name).join(bet.betType === 'EXACTA' ? ' → ' : ' · ')}</b><span>${BET_KO[bet.betType]} · ${formatCH(t.total)} → ${back(t.total, price)}</span></span>`;
     // The chips ride on the ticket: the odds button that holds them moves there for the race.
     const zoneNode = t.zones.get(t.bet.zone);
     const home = zoneNode.parentElement, before = zoneNode.nextSibling;
@@ -520,8 +522,8 @@ export async function mountHorses(ctx) {
     await wait(900);
     const winner = round.card.runners.find(x => x.gate === round.order[0]);
     const who = bet.pair ? `${bet.pick.join(bet.betType === 'EXACTA' ? '→' : '·')}번` : `${round.pick}번 ${r.name}`;
-    const label = round.won ? `${who} ${BET_KO[round.betType]} 적중 · ${odds(round.odds)}배` : `${winner.gate}번 ${winner.name} 우승`;
-    const big = round.won && round.odds >= 1000 ? { title: `${odds(round.odds)}배 적중`, subtitle: `${bet.pair ? horses.map(h => h.name).join(' · ') : r.name} ${BET_KO[round.betType]}` } : undefined;
+    const label = round.won ? `${who} ${BET_KO[round.betType]} 적중` : `${winner.gate}번 ${winner.name} 우승`;
+    const big = round.won && round.odds >= 1000 ? { title: '대박 적중', subtitle: `${bet.pair ? horses.map(h => h.name).join(' · ') : r.name} ${BET_KO[round.betType]}` } : undefined;
     await t.settle(round.netPnl, { label, big, kind: round.won && round.netPnl === 0 ? 'push' : undefined });
     await t.syncBalance();
     if (!alive) return;

@@ -132,7 +132,7 @@ test('one-time 화투 repair: a big 맞고·고스톱 win this season gets the R
   assert.equal(repairHwatuRp(state, T).length, 0, 'runs once');
 });
 
-test('홀덤·7포커: RP measures a cash session against 20× the floor minimum, not the buy-in', async () => {
+test('홀덤·7포커: RP measures a cash session against the floor minimum, not the buy-in', async () => {
   const { pokerRpStake, POKER_RP_BUYINS } = await import('../lib/rank-points.mjs');
   const { FLOORS } = await import('../lib/constants.mjs');
   const f = FLOORS[0];
@@ -146,7 +146,7 @@ test('홀덤·7포커: RP measures a cash session against 20× the floor minimum
     rpOf(u, T); u.rp.points = 0;
     const buyIn = f.minBet * 100;
     lockBet(state, u, { stake: buyIn, game: "Hold'em", roundId: 'h1' });
-    settleLockedHouseGame(state, u, { game: "Hold'em", stake: buyIn, netPnl: f.minBet * 50, roundId: 'h1', rpStake: pokerRpStake(f.slug) });
+    settleLockedHouseGame(state, u, { game: "Hold'em", stake: buyIn, netPnl: f.minBet * 5, roundId: 'h1', rpStake: pokerRpStake(f.slug) });
   });
-  assert.equal(u.rp.last.delta, 25, 'bought 100×, won 50× the minimum: +25 (was +5)');
+  assert.equal(u.rp.last.delta, 50, 'bought 100×, won 5× the minimum: +50 (was +0.5)');
 });

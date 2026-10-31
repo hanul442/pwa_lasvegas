@@ -5,6 +5,7 @@ import { errorToast } from './notice.js';
 import { el, formatCH, wonCH, sound, haptic, ms, reducedMotion } from './fx.js';
 import { moneyOf } from './money.js';
 import { createCard, setCardBack } from './cards.js';
+import { createHwatu } from './hwatu.js';
 import { createChip } from './chips.js';
 import { bragButton } from './share.js';
 import { bragPurchase } from './brags.js';
@@ -20,11 +21,16 @@ export function applyCosmetics(state) {
   const chips = eq.chips ? eq.chips.replace(/^chips-/, '') : '';
   if (chips) document.documentElement.dataset.chipAccent = chips;
   else delete document.documentElement.dataset.chipAccent;
+  // 화투 뒷면·앞면: read by skins.css off the page, so every hwatu table (friends' rooms too) wears them.
+  for (const [slot, key, prefix] of [['hwatuBack', 'hwBack', /^hwback-/], ['hwatuFace', 'hwFace', /^hwface-/]]) {
+    if (eq[slot]) document.documentElement.dataset[key] = eq[slot].replace(prefix, '');
+    else delete document.documentElement.dataset[key];
+  }
 }
 
 // ---------- what owning a skin does (looks only: odds never change) ----------
 // Skins: each bought one brings its own touch to the table.
-const SKIN_FX = { cardBack: '카드가 깔릴 때 뒷면에 빛이 스쳐요', felt: '테이블에 앉으면 펠트 위로 빛이 지나가요', chips: '칩을 걸 때마다 칩 둘레로 빛 고리가 퍼져요', frame: '랭킹과 프로필의 내 이름에 걸려요' };
+const SKIN_FX = { cardBack: '카드가 깔릴 때 뒷면에 빛이 스쳐요', felt: '테이블에 앉으면 펠트 위로 빛이 지나가요', chips: '칩을 걸 때마다 칩 둘레로 빛 고리가 퍼져요', frame: '랭킹과 프로필의 내 이름에 걸려요', hwatuBack: '섯다·고스톱·맞고의 화투 뒷면이 바뀌어요', hwatuFace: '그림은 그대로, 화투 앞면 마감이 바뀌어요' };
 export const skinEffect = item => item.house ? null : SKIN_FX[item.slot];
 
 // A handful of little stars scattered at random, for the purchase moment.
@@ -138,7 +144,7 @@ const VIEW_KEY = 'vegas:shop-skin-view';
 const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const recall = key => { try { return localStorage.getItem(key); } catch { return null; } };
 // The 꾸미기 tab shows either the floors (each floor's skins are its pass) or one slot at a time.
-const VIEWS = [['floors', '층별'], ['cardBack', '카드 뒷면'], ['felt', '펠트'], ['chips', '칩'], ['frame', '명패']];
+const VIEWS = [['floors', '층별'], ['cardBack', '카드 뒷면'], ['felt', '펠트'], ['chips', '칩'], ['frame', '명패'], ['hwatuBack', '화투 뒷면'], ['hwatuFace', '화투 앞면']];
 let view = VIEWS.some(([k]) => k === recall(VIEW_KEY)) ? recall(VIEW_KEY) : 'floors';
 // A floor whose skins the 꾸미기 tab opens and scrolls to once, when a locked table sent the player here.
 let focusFloor = null;
@@ -155,7 +161,8 @@ export function renderShop(root, state, onChanged) {
   root.replaceChildren(cosmeticsTab(state, onChanged, rerender));
 }
 
-const SLOT_NAME = { cardBack: '카드 뒷면', felt: '펠트', chips: '칩 테두리', frame: '명패' };
+const SLOT_NAME = { cardBack: '카드 뒷면', felt: '펠트', chips: '칩 테두리', frame: '명패', hwatuBack: '화투 뒷면', hwatuFace: '화투 앞면' };
+const HW_SLOTS = ['hwatuBack', 'hwatuFace'];
 
 // A player's name in the nameplate they wear (꾸미기 명패), for the ranking and the profile.
 export function nameFrame(state, userId, nickname) {
@@ -171,6 +178,14 @@ function backCard(item) {
   card.querySelector('.card-back').className = item.house ? 'card-back' : `card-back back--${skinName(item.id, /^back-/)}`;
   return card;
 }
+// A hwatu wearing one look (or the house look), whatever the page wears (skins.css skips .hw--pv).
+function hwatuCard(item, id) {
+  const back = item.slot === 'hwatuBack', node = createHwatu(id, { faceUp: !back });
+  node.classList.add('hw--pv');
+  node.style.removeProperty('--tilt');
+  if (!item.house) node.querySelector(back ? '.hw-back' : '.hw-face').classList.add(back ? `hwback--${skinName(item.id, /^hwback-/)}` : `hwface--${skinName(item.id, /^hwface-/)}`);
+  return node;
+}
 const feltClass = item => item.house ? 'felt-swatch--house' : `felt--skin-${skinName(item.id, /^felt-/)}`;
 const chipClass = item => `chip-accent--${skinName(item.id, /^chips-/)}`;
 
@@ -178,6 +193,8 @@ function preview(item, nickname) {
   const box = el('div', `skin-preview skin-preview--${item.slot}`);
   box.setAttribute('aria-hidden', 'true');
   if (item.slot === 'cardBack') box.append(backCard(item), backCard(item));
+  else if (item.slot === 'hwatuBack') box.append(hwatuCard(item, '01-1'), hwatuCard(item, '08-1'));
+  else if (item.slot === 'hwatuFace') box.append(hwatuCard(item, '01-1'), hwatuCard(item, '03-2'), hwatuCard(item, '08-1'));
   else if (item.slot === 'felt') {
     // The cloth with a hand on it: a house card and a chip, so the colour reads as a table.
     box.classList.add(feltClass(item));
@@ -208,8 +225,11 @@ function stage(state, tryOn = null) {
   const box = el('div', `skin-stage ${feltClass(pick('felt'))}`);
   box.setAttribute('aria-hidden', 'true');
   const cards = el('div', 'skin-stage-cards');
-  const a = backCard(pick('cardBack')), b = backCard(pick('cardBack'));
-  cards.append(a, b);
+  // Trying on a hwatu look, or looking at the hwatu slots, the hand on the felt is hwatu.
+  if ((tryOn && HW_SLOTS.includes(tryOn.slot)) || (!tryOn && HW_SLOTS.includes(view))) {
+    cards.classList.add('skin-stage-cards--hw');
+    cards.append(hwatuCard(pick('hwatuBack'), '01-1'), hwatuCard(pick('hwatuFace'), '01-1'), hwatuCard(pick('hwatuFace'), '08-1'));
+  } else cards.append(backCard(pick('cardBack')), backCard(pick('cardBack')));
   const chips = el('div', `skin-stage-chips ${chipClass(pick('chips'))}`);
   chips.append(createChip(10_000_000), createChip(100_000_000), createChip(1_000_000_000));
   const name = el('div', 'skin-stage-name', plate(pick('frame'), state.user.nickname));
@@ -328,7 +348,7 @@ function cosmeticsTab(state, onChanged, rerender) {
   const worn = el('section', 'skin-worn');
   worn.append(stage(state));
   const slots = el('ul', 'skin-slots');
-  for (const slot of ['cardBack', 'felt', 'chips', 'frame']) {
+  for (const slot of ['cardBack', 'felt', 'chips', 'frame', ...HW_SLOTS]) {
     const item = wornItem(all, slot, equipped);
     const li = el('li');
     const b = el('button', `skin-slot${view === slot ? ' is-active' : ''}`, `<small>${SLOT_NAME[slot]}</small><span>${item?.name ?? '기본'}</span>`);
@@ -356,7 +376,7 @@ function cosmeticsTab(state, onChanged, rerender) {
   box.append(filter);
 
   if (view === 'floors') {
-    box.append(el('p', 'shop-note', era ? '층마다 그 층의 꾸미기가 넷 있어요. 층은 RP 티어로 열리고, 꾸미기는 모양만 바꿔요.' : '층마다 그 층의 꾸미기가 넷 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
+    box.append(el('p', 'shop-note', era ? '층마다 그 층의 꾸미기가 있어요. 층은 RP 티어로 열리고, 꾸미기는 모양만 바꿔요.' : '층마다 그 층의 꾸미기가 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
     // 시즌 한정 (lib/cosmetics.mjs SEASON_COSMETICS): this season's four, sold only until it ends.
     const limited = all.filter(x => x.season && x.onSale);
     if (limited.length) {

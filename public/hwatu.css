@@ -58,8 +58,9 @@
 .mg-pile{position:relative;width:var(--hw-w);height:calc(var(--hw-w) * 1.6);margin:0 6px}
 .mg-pile .hw{position:absolute;inset:0;rotate:0deg}
 /* The deck is a squared stack: tile edges step down under the top card, thinner as it runs out. */
-.mg-pile::before{content:"";position:absolute;inset:0;border-radius:9%/5.6%;background:#5e1411;
-  box-shadow:1px 2px 0 #f2ebdd,2px 4px 0 #5e1411,3px 6px 0 #e6dccb,4px 8px 0 #4a0f0d,5px 10px 0 #d8cdb9,6px 14px 16px #000a;translate:-3px -5px}
+/* --hw-edge: the back's colour (skins.css sets it for a worn 화투 뒷면). */
+.mg-pile::before{content:"";position:absolute;inset:0;border-radius:9%/5.6%;background:var(--hw-edge,#5e1411);
+  box-shadow:1px 2px 0 #f2ebdd,2px 4px 0 var(--hw-edge,#5e1411),3px 6px 0 #e6dccb,4px 8px 0 color-mix(in srgb,var(--hw-edge,#5e1411) 80%,#000),5px 10px 0 #d8cdb9,6px 14px 16px #000a;translate:-3px -5px}
 .mg-pile:has(.hw[hidden])::before{display:none}
 .mg-pile .hw{translate:-3px -5px}
 .mg-pile-count{position:absolute;right:-12px;bottom:-12px;z-index:3;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:#0a0b0dcc;border:1px solid #ffffff24;color:var(--smoke);font:600 13px/18px var(--sans);font-variant-numeric:tabular-nums;text-align:center}

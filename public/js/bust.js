@@ -1,7 +1,7 @@
 // Going bust is news too: the screen goes dark, the loss rolls up in red, and the player gets a
 // card to brag about it ("동네방네 자랑하기"). Everyone else already hears it through the lounge
 // feed, the top banner and a push notification (lib/news.mjs).
-import { el, sound, haptic, rollNumber, formatCH, formatMoney, ms, reducedMotion } from './fx.js';
+import { el, sound, haptic, rollNumber, wonCH, formatMoney, formatWon, ms, reducedMotion } from './fx.js';
 import { playtime, duration } from './playtime.js';
 import { playerId } from './api.js';
 import { gameName } from './lounge.js';
@@ -42,16 +42,16 @@ export function stingFor(bust) {
 // The receipt under the drain: every way of counting what went, worst last.
 export function bustLines(bust) {
   const d = bustDay(bust);
-  const rows = [['마지막 한 판', `-${formatCH(d.last)}`]];
+  const rows = [['마지막 한 판', `-${wonCH(d.last)}`]];
   if (d.rounds > 1) {
-    rows.push([`오늘 잃은 돈 · ${d.losses || d.rounds}판`, `-${formatCH(d.lost)}`]);
-    if (d.won > 0) rows.push(['오늘 딴 돈', `+${formatCH(d.won)}`]);
-    if (d.peak > d.last) rows.push(['오늘 최고점', `${formatCH(d.peak)}`]);
+    rows.push([`오늘 잃은 돈 · ${d.losses || d.rounds}판`, `-${wonCH(d.lost)}`]);
+    if (d.won > 0) rows.push(['오늘 딴 돈', `+${wonCH(d.won)}`]);
+    if (d.peak > d.last) rows.push(['오늘 최고점', `${wonCH(d.peak)}`]);
   }
   const m = bust?.month;
-  if (m?.lost > d.lost) rows.push([`이번 달 잃은 돈 · ${m.rounds}판`, `-${formatCH(m.lost)}`]);
+  if (m?.lost > d.lost) rows.push([`이번 달 잃은 돈 · ${m.rounds}판`, `-${wonCH(m.lost)}`]);
   if (bust?.busts > 1) rows.push(['파산', m?.busts > 1 ? `이번 달 ${m.busts}번째 · 통산 ${bust.busts}번째` : `통산 ${bust.busts}번째`]);
-  return { rows, total: ['최고점에서 날린 돈', `-${formatCH(d.peak)}`] };
+  return { rows, total: ['최고점에서 날린 돈', `-${wonCH(d.peak)}`] };
 }
 
 const seenKey = () => `vegas:bust-seen:${playerId()}`;
@@ -93,7 +93,7 @@ export function bustMoment(bust, nickname, then = null) {
   node.setAttribute('role', 'dialog');
   const d = bustDay(bust);
   const { rows, total } = bustLines(bust);
-  node.setAttribute('aria-label', `파산. 최고점에서 ${formatMoney(d.peak)} 날렸어요`);
+  node.setAttribute('aria-label', `파산. 최고점에서 ${formatWon(d.peak)} 날렸어요`);
   const w = worth(bust);
   const played = playedToday();
   node.innerHTML = `
@@ -103,7 +103,7 @@ export function bustMoment(bust, nickname, then = null) {
       <h2 class="bigwin-title">파산</h2>
       <div class="bust-drain">
         <small>보유 칩</small>
-        <strong class="bigwin-amount"><span data-amount>${formatCH(d.peak)}</span><small>원</small></strong>
+        <strong class="bigwin-amount"><span data-amount>${wonCH(d.peak)}</span><small>원</small></strong>
       </div>
       ${dayChart(bust.today?.curve, { end: '0원', className: 'bust-chart' })}
       <dl class="bust-receipt">
@@ -128,7 +128,7 @@ export function bustMoment(bust, nickname, then = null) {
   const receipt = [...node.querySelectorAll('.bust-row')];
   // Drain, then the thud, then the receipt prints line by line.
   const drained = d.peak > 0 && !reducedMotion()
-    ? (sound.drain?.(1.6), rollNumber(amount, d.peak, 0, { duration: 1600, format: formatCH }))
+    ? (sound.drain?.(1.6), rollNumber(amount, d.peak, 0, { duration: 1600, format: wonCH }))
     : Promise.resolve(amount.textContent = '0');
   node.classList.add('is-draining');
   drained.then(() => {
@@ -170,7 +170,7 @@ function playedToday() {
 export function bailoutMoment(bail) {
   const node = el('div', 'bigwin bailout');
   node.setAttribute('role', 'dialog');
-  node.setAttribute('aria-label', `구제금융 +${formatMoney(bail.amount)}`);
+  node.setAttribute('aria-label', `구제금융 +${formatWon(bail.amount)}`);
   const left = bail.perDay ? Math.max(0, bail.perDay - bail.nth) : null;
   node.innerHTML = `
     <div class="bigwin-inner">
@@ -187,7 +187,7 @@ export function bailoutMoment(bail) {
   requestAnimationFrame(() => node.classList.add('is-open'));
   sound.chips?.(6);
   haptic([40, 40, 40]);
-  rollNumber(node.querySelector('[data-amount]'), 0, bail.amount, { duration: 1000, format: formatCH });
+  rollNumber(node.querySelector('[data-amount]'), 0, bail.amount, { duration: 1000, format: wonCH });
   const close = () => {
     removeEventListener('keydown', onKey, true);
     node.classList.remove('is-open');
@@ -225,7 +225,7 @@ export async function bustCard(bust, nickname = '') {
   ctx.fillText(`${total[1]}원`, W / 2, 500);
   ctx.fillStyle = '#b3b8bf';
   ctx.font = '500 34px "Noto Sans KR", sans-serif';
-  ctx.fillText(`${nickname ? `${nickname}님이 ` : ''}${gameName(bust.game) || '테이블'}에서 최고점 ${formatCH(d.peak)}원을 다 날렸어요`, W / 2, 566, W - 160);
+  ctx.fillText(`${nickname ? `${nickname}님이 ` : ''}${gameName(bust.game) || '테이블'}에서 최고점 ${wonCH(d.peak)}원을 다 날렸어요`, W / 2, 566, W - 160);
   const left = 160, right = W - 160;
   // The day's chips: white up to the high, red down to 0.
   const c = chartPoints(bust.today?.curve);
@@ -246,7 +246,7 @@ export async function bustCard(bust, nickname = '') {
     ctx.font = '600 28px Archivo, "Noto Sans KR", sans-serif'; ctx.fillStyle = '#fff6dc';
     const [tx, ty] = xy[c.top];
     ctx.textAlign = tx > W * 0.65 ? 'right' : tx < W * 0.3 ? 'left' : 'center';
-    ctx.fillText(`최고 ${formatCH(c.pts[c.top][1])}`, tx + (ctx.textAlign === 'left' ? -10 : ctx.textAlign === 'right' ? 10 : 0), Math.max(top - 6, ty - 22));
+    ctx.fillText(`최고 ${wonCH(c.pts[c.top][1])}`, tx + (ctx.textAlign === 'left' ? -10 : ctx.textAlign === 'right' ? 10 : 0), Math.max(top - 6, ty - 22));
     y = top + h + 20;
   }
   // The receipt, two columns between thin rules.
@@ -271,5 +271,5 @@ export async function bustCard(bust, nickname = '') {
 
 export async function shareBust(bust, nickname = '') {
   const blob = await bustCard(bust, nickname);
-  return shareImage({ blob, filename: 'vegas-bankrupt.png', title: 'VEGAS 파산', text: `VEGAS에서 파산했어요. 최고점에서 -${formatCH(bustDay(bust).peak)}원. ${stingFor(bust)} 💸`, nickname });
+  return shareImage({ blob, filename: 'vegas-bankrupt.png', title: 'VEGAS 파산', text: `VEGAS에서 파산했어요. 최고점에서 -${wonCH(bustDay(bust).peak)}원. ${stingFor(bust)} 💸`, nickname });
 }

@@ -1,6 +1,6 @@
 // Operator panel on the profile screen: hand chips to (or take them back from) any player.
 import { api, errorMessage } from './api.js';
-import { formatCH, el } from './fx.js';
+import { formatCH, wonCH, el } from './fx.js';
 import { TIERS, tierName } from './rank.js';
 
 const PRESETS = [1e8, 5e8, 1e9, 1e10];
@@ -83,7 +83,7 @@ export function renderAdmin(root, state, onChanged) {
       try {
         const out = await api.adminAdjust(ui.target, ui.mode === 'grant' ? ui.amount : -ui.amount, note);
         const a = out.adjustment;
-        Object.assign(ui, { message: `${a.nickname}에게 ${a.amount > 0 ? '+' : ''}${formatCH(a.amount)} 반영했어요. 지금 ${formatCH(a.available)}원.`, ok: true });
+        Object.assign(ui, { message: `${a.nickname}에게 ${a.amount > 0 ? '+' : ''}${formatCH(a.amount)} 반영했어요. 지금 ${wonCH(a.available)}원.`, ok: true });
         onChanged(out.state);
       } catch (err) {
         Object.assign(ui, { message: err.code === 'INSUFFICIENT_BANKROLL' ? '회수할 만큼 칩이 없어요.' : errorMessage(err), ok: false });

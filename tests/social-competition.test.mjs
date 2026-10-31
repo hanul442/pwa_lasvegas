@@ -3,7 +3,7 @@ import './legacy-economy.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState } from '../lib/store.mjs';
-import { tableBase } from '../lib/state.mjs';
+import { rewardBase } from '../lib/state.mjs';
 import { buildSocialCompetitionSnapshot, createRival, archiveRival, createChallenge, acceptChallenge, cancelChallenge } from '../lib/social-competition.mjs';
 
 test('social competition fails closed to empty read-only surfaces when source state is absent', () => {
@@ -127,7 +127,7 @@ test('a duel runs a week, scores table results only, and pays its winner once', 
   const live = buildSocialCompetitionSnapshot(state, 'hanseo').challenges[0];
   assert.deepEqual(live.score, { me: 2, them: 1 });
   const before = state.users.hanseo.account.available;
-  const prize = CHALLENGE_PRIZE * tableBase(state.users.hanseo);
+  const prize = CHALLENGE_PRIZE * rewardBase(state.users.hanseo);
   assert.deepEqual(settleChallenges(state, Date.parse('2026-10-18T00:00:00.000Z')), []);
   assert.deepEqual(settleChallenges(state, Date.parse('2026-10-19T02:00:00.000Z')), ['duel']);
   assert.equal(state.users.hanseo.account.available, before + prize);

@@ -4,7 +4,7 @@
 // vault door, 7F CROWN a split crest, 8F OLYMPUS a veil of light.
 // About 1.2s the first time this session, 0.55s on later visits, a tap skips it, and reduced motion
 // gets the floor's name plate with a fade. Only transform and opacity animate (memory: performance).
-import { el, haptic, formatCH } from './fx.js';
+import { el, haptic, formatCH, wonCH } from './fx.js';
 
 const SEEN = 'vegas:door-seen';
 const seen = () => { try { return JSON.parse(sessionStorage.getItem(SEEN) || '[]'); } catch { return []; } };
@@ -39,7 +39,7 @@ export function floorDoor(tier, { game = null, event = null, short } = {}) {
   root.setAttribute('aria-label', `${tier.no}층 ${tier.name} 입장`);
   const stars = tier.stars ? `<em class="floor-door-stars" aria-hidden="true">${'★'.repeat(tier.stars)}${'☆'.repeat(5 - tier.stars)}</em>` : '';
   root.innerHTML = `<div class="floor-door-room" aria-hidden="true"><i class="floor-door-lamp"></i><i class="floor-door-felt"></i></div>
-    <div class="floor-door-plate"><small>${tier.no}F</small><strong style="--len:${(tier.en || tier.name).length}">${tier.en || tier.name}</strong><span>${[tier.name, event || game, `${formatCH(tier.min)}–${formatCH(tier.max)}원`].filter(Boolean).join(' · ')}</span>${stars}</div>
+    <div class="floor-door-plate"><small>${tier.no}F</small><strong style="--len:${(tier.en || tier.name).length}">${tier.en || tier.name}</strong><span>${[tier.name, event || game, `${wonCH(tier.min)}–${wonCH(tier.max)}원`].filter(Boolean).join(' · ')}</span>${stars}</div>
     <div class="floor-door-gate" aria-hidden="true">${doors[slug]()}</div>
     <span class="floor-door-skip" aria-hidden="true">누르면 건너뛰기</span>`;
   document.body.append(root);

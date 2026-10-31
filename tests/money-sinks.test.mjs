@@ -67,8 +67,8 @@ test('이벤트 입장료: a tenth of the entry, once a week for a rotating even
   const state = defaultState();
   const u = player(state, 'e', 50 * 억);
   const oceans = eventById('oceans'), casablanca = eventById('casablanca'), whale = eventById('whale');
-  // A tenth of 100억, in whole chips of the 펜트하우스 (300만 each): 333칩.
-  const FEE = 333 * 3_000_000;
+  // A tenth of 100억, in whole smallest bets of the 펜트하우스 (3억 each): 9억 = 300칩.
+  const FEE = 3 * 300_000_000;
   assert.equal(eventFee(oceans), FEE);
   assert.equal(eventFee(whale), 100 * 억);
   assert.equal(chargeEventFee(state, u, oceans, OCT), FEE);
@@ -112,7 +112,7 @@ test('over the API: an event table sells its chips at any RP, the first bet pays
   assert.equal(first.data.state.eventFees.casablanca.paid, true);
   assert.equal((await spin()).status, 200);
   assert.equal(state.ledger.filter(x => x.type === 'EVENT_FEE').length, 1);
-  assert.equal(state.ledger.find(x => x.type === 'EVENT_FEE').amount, -333 * 3_000_000, 'a tenth of 100억 in whole chips');
+  assert.equal(state.ledger.find(x => x.type === 'EVENT_FEE').amount, -3 * 300_000_000, 'a tenth of 100억 in whole smallest bets');
   state.users.hanseo.rp.points = 160;
   const promo = await call('POST', '/api/rank/promo');
   assert.equal(promo.status, 200, JSON.stringify(promo.data));

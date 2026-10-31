@@ -1,7 +1,7 @@
 // Sign-in gate: every visitor plays with their own account (username + password).
 import { api, errorMessage, saveSession, playerId } from './api.js';
 import { pendingRef, dropPendingRef, pendingJoin } from './invite.js';
-import { formatCH } from './fx.js';
+import { formatCH, wonCH } from './fx.js';
 import { el } from './fx.js';
 import { mountInstallButton } from './install.js';
 import { openTerms, markAgreed } from './terms.js';
@@ -33,7 +33,7 @@ export function openSignIn(onSignedIn, { mode = 'login', notice = '' } = {}) {
     const who = invite?.inviter ? `<span><b>${invite.inviter}</b>님이 초대했어요</span>` : join || ref ? '<span>친구가 초대했어요</span>' : '';
     if (!who) return '';
     const where = join ? `${GAME_NAMES[join.game] || ''} 방 ${join.code}에 바로 앉아요.` : '';
-    const reward = ref && invite?.reward ? ` 첫 판을 끝내면 둘 다 ${formatCH(invite.reward)}원.` : '';
+    const reward = ref && invite?.reward ? ` 첫 판을 끝내면 둘 다 ${wonCH(invite.reward)}원.` : '';
     return `<p class="auth-invite">${who}<small>${where}${reward}</small></p>`;
   };
   const guestBlock = () => `

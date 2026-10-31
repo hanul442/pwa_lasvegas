@@ -79,6 +79,10 @@ test('a peak noted in a new month before the close still counts for the old mont
   const state = defaultState();
   const u = state.users.hanseo;
   at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); });
+  // Rows and accounts carry the real clock (new Date()), so pin them to October: on 10-31 the real
+  // time passed LASTDAY and the player looked active "after" the warning.
+  for (const tx of state.ledger) tx.createdAt = new Date(OCT).toISOString();
+  u.createdAt = new Date(OCT).toISOString();
   // The new month's first balance change notes a peak before anything settles (a read path).
   at(NOV, () => addLedger(state, u, { type: 'ADMIN_GRANT', amount: 1e6 }));
   const closed = at(NOV, () => settleFinishedRankSeason(state));
@@ -90,6 +94,10 @@ test('the month that ended is due until closed, and the results show what the fr
   const state = defaultState();
   const u = state.users.hanseo;
   at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); });
+  // Rows and accounts carry the real clock (new Date()), so pin them to October: on 10-31 the real
+  // time passed LASTDAY and the player looked active "after" the warning.
+  for (const tx of state.ledger) tx.createdAt = new Date(OCT).toISOString();
+  u.createdAt = new Date(OCT).toISOString();
   assert.equal(rankSeasonDue(state, OCT), false);
   assert.equal(rankSeasonDue(state, NOV), true);
   const chips = u.account.available;
@@ -109,6 +117,10 @@ test('the hourly cron closes the month at midnight, then the 1st announces each 
   u.push = { subs: [{ endpoint: 'https://push.example.com/x', keys: { p256dh: 'a'.repeat(87), auth: 'b'.repeat(22) } }], sent: {}, lastSeenAt: null };
   const LASTDAY = Date.parse('2026-10-31T13:00:00+09:00');
   at(OCT, () => { settleFinishedRankSeason(state); addLedger(state, u, { type: 'ADMIN_GRANT', amount: 20e9 }); });
+  // Rows and accounts carry the real clock (new Date()), so pin them to October: on 10-31 the real
+  // time passed LASTDAY and the player looked active "after" the warning.
+  for (const tx of state.ledger) tx.createdAt = new Date(OCT).toISOString();
+  u.createdAt = new Date(OCT).toISOString();
   const warn = messageFor(state, u, LASTDAY);
   assert.equal(warn.slot, 'seasonEnd');
   assert.match(warn.title, /오늘 자정/);

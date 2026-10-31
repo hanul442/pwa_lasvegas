@@ -105,7 +105,7 @@ function rpRulesHtml(rp) {
     <div class="rp-rules-head"><h3>RP 이렇게 움직여요</h3><span>오늘 <b>+${rp.today}</b></span></div>
     <ul class="rp-rule-tiles">${tiles}</ul>
     <table class="rp-rule-tiers"><caption>티어별 배율</caption><thead><tr><th scope="col">티어</th><th scope="col">이기면</th><th scope="col">지면</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="rp-rules-foot">티어마다 V→I 다섯 칸, 위 티어일수록 칸이 넓어요. RP는 I 꼭대기에서 멈추고, 꼭대기에 닿으면 승급전이 자동으로 시작돼요(참가비가 모자라면 직접 도전). 이겨야 다음 티어로 올라가요. 지는 쪽도 같아요: RP는 V 바닥에서 멈추고 강등 방어전(5판 3선승)이 열려서, 3패해야 아래 티어로 내려가요. ${r.payoutCap ? `룰렛·슬롯은 한 판에 건 돈의 ${r.payoutCap}배(+${whole(r.perStake * r.payoutCap * r.winBy[me])} RP)까지만 쳐요.` : ''}${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'}</p>
+    <p class="rp-rules-foot">티어마다 V→I 다섯 칸, 위 티어일수록 칸이 넓어요. RP는 I 꼭대기에서 멈추고, 꼭대기에 닿으면 승급전이 자동으로 시작돼요(참가비가 모자라면 직접 도전). 이겨야 다음 티어로 올라가요. 지는 쪽도 같아요: RP는 V 바닥에서 멈추고 강등 방어전(5판 3선승)이 열려서, 3패해야 아래 티어로 내려가요. ${r.payoutCap ? `룰렛·슬롯은 한 판에 건 돈의 ${r.payoutCap}배(+${whole(r.perStake * r.payoutCap * r.winBy[me])} RP)까지만 쳐요.` : ''} 맞고·고스톱은 10점 보증금, 홀덤·7포커는 바이인과 상관없이 테이블 최소 베팅을 건 돈으로 쳐요.${rp.floors ? '' : ' RP 티어가 오르면 위층이 열려요.'}</p>
   </div>`;
 }
 

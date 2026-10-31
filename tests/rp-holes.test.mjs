@@ -150,3 +150,27 @@ test('홀덤·7포커: RP measures a cash session against the floor minimum, not
   });
   assert.equal(u.rp.last.delta, 50, 'bought 100×, won 5× the minimum: +50 (was +0.5)');
 });
+
+test('티어 칸 넓히기: stored RP moves once to the same spot on the new ladder (레전드 5000)', async () => {
+  const { rescaleRpPoints, rescaleRpTiers } = await import('../lib/rp-cap-repair.mjs');
+  const { rpTierFor, rpTierIndex, RP_TIER_STARTS, RP_TIER_STARTS_BEFORE_1031: OLD } = await import('../lib/rank-points.mjs');
+  assert.equal(RP_TIER_STARTS.at(-1), 5000);
+  const oldTier = p => { let i = 0; while (i + 1 < OLD.length && p >= OLD[i + 1]) i++; return i; };
+  const oldDiv = p => { const i = oldTier(p); return i === OLD.length - 1 ? null : Math.floor((p - OLD[i]) / ((OLD[i + 1] - OLD[i]) / 5)); };
+  const newDiv = p => { const i = rpTierIndex(p), S = RP_TIER_STARTS; return i === S.length - 1 ? null : Math.floor((p - S[i]) / ((S[i + 1] - S[i]) / 5)); };
+  for (let old = 0; old <= 2600; old += 7) {
+    const neu = rescaleRpPoints(old);
+    assert.equal(rpTierIndex(neu), oldTier(old), `tier ${old} → ${neu}`);
+    assert.equal(newDiv(neu), oldDiv(old), `division ${old} → ${neu}`);
+  }
+  assert.equal(rescaleRpPoints(100), 200);
+  assert.equal(rescaleRpPoints(2300), 5000);
+  const state = defaultState();
+  delete state.meta.rpTierRescale;
+  const u = newUser(state, 'p', 'P');
+  u.rp = { season: 'rank-2026-10', points: 250, peak: 300, prev: { season: 'rank-2026-09', points: 100, peak: 100 } };
+  assert.equal(rescaleRpTiers(state) > 0, true);
+  assert.deepEqual([u.rp.points, u.rp.peak, u.rp.prev.points], [550, 650, 200]);
+  assert.equal(rpTierFor(u.rp.points).id, 'silver');
+  assert.equal(rescaleRpTiers(state), 0, 'once');
+});

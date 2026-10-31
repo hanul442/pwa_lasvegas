@@ -12,14 +12,14 @@ const win = u => noteRp(u, { game: 'Baccarat', stake: 30_000_000, netPnl: 30_000
 
 test('a loss at the bottom of 실버 V stops there and opens the 방어전; three losses drop to 브론즈 I', () => {
   const u = newUser(defaultState(), 'p', 'P');
-  rpOf(u, OCT); u.rp.points = 205;
+  rpOf(u, OCT); u.rp.points = 455;
   lose(u);
-  assert.equal(u.rp.points, 200, 'RP stops at the start of 실버 V');
+  assert.equal(u.rp.points, 450, 'RP stops at the start of 실버 V');
   assert.equal(u.rp.defense.active, true);
   assert.equal(u.rp.defense.tier, 'silver');
   assert.equal(u.rp.defense.losses, 0, 'the round that opens it does not count');
   lose(u); lose(u);
-  assert.equal(u.rp.points, 200);
+  assert.equal(u.rp.points, 450);
   assert.equal(at(OCT, () => defenseView(u, OCT)).active.log, 'LL');
   lose(u);
   assert.equal(u.rp.defense.result, 'demoted');
@@ -30,7 +30,7 @@ test('a loss at the bottom of 실버 V stops there and opens the 방어전; thre
 
 test('three wins keep the tier; 아이언 has no 방어전', () => {
   const u = newUser(defaultState(), 'p', 'P');
-  rpOf(u, OCT); u.rp.points = 200;
+  rpOf(u, OCT); u.rp.points = 450;
   lose(u);
   win(u); lose(u); win(u); win(u);
   assert.equal(u.rp.defense.result, 'kept');

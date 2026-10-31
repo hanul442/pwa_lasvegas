@@ -27,7 +27,7 @@ test('the RP season starts 2026-10-29: tier, board, floors, pay and the bank all
   const a = player(state, 'a', 'AAA'), b = player(state, 'b', 'BBB');
   at(OCT, () => {
     addLedger(state, a, { type: 'ADMIN_GRANT', amount: 500e9 }); // rich but no RP
-    giveRp(b, 520, OCT);
+    giveRp(b, 1140, OCT);
   });
   const rows = at(OCT, () => rankStandings(state));
   assert.deepEqual(rows.map(r => r.id), ['b'], 'only players with RP rank, by RP');
@@ -35,8 +35,8 @@ test('the RP season starts 2026-10-29: tier, board, floors, pay and the bank all
   const view = at(OCT, () => rankView(state, b));
   assert.equal(view.mode, 'rp');
   assert.equal(view.carry, true, 'October ends by dropping RP, not by a chip reset');
-  assert.equal(view.rp, 520);
-  assert.deepEqual(view.next, { id: 'platinum', division: 'IV', need: 20 }, 'next step is the next division');
+  assert.equal(view.rp, 1140);
+  assert.deepEqual(view.next, { id: 'platinum', division: 'IV', need: 40 }, 'next step is the next division');
   assert.equal(view.division, 'V');
   at(OCT, () => {
     assert.equal(floorRefusal(a, FLOORS[1]), 'FLOOR_RP_LOCKED', 'chips no longer open floors');
@@ -54,20 +54,20 @@ test('November: RP opens the floors, with no pass and nothing outgrown', () => {
     assert.equal(floorRefusal(u, FLOORS[0]), null);
     assert.equal(floorRefusal(u, FLOORS[1]), 'FLOOR_RP_LOCKED');
     assert.equal(tableBase(u), FLOORS[0].minBet);
-    giveRp(u, 210, NOV); // 실버: the High Limit
+    giveRp(u, 470, NOV); // 실버: the High Limit
     assert.equal(floorRefusal(u, FLOORS[0]), null, 'lower floors stay open');
     assert.equal(floorRefusal(u, FLOORS[1]), null);
     assert.equal(floorRefusal(u, FLOORS[2]), 'FLOOR_RP_LOCKED');
     assert.equal(tableBase(u), FLOORS[1].minBet);
     const floors = floorsFor(u);
     assert.deepEqual(floors.slice(0, 3).map(f => f.open), [true, true, false]);
-    assert.equal(floors[2].rpNeed, 350);
-    assert.equal(floors[2].rpRemaining, 140);
+    assert.equal(floors[2].rpNeed, 750);
+    assert.equal(floors[2].rpRemaining, 280);
     assert.ok(floors.every(f => !f.outgrown && f.passed));
     assert.equal(shopView(u).era, true);
-    giveRp(u, 1490, NOV);
+    giveRp(u, 3277, NOV);
     assert.equal(floorRefusal(u, FLOORS.at(-1)), 'FLOOR_RP_LOCKED');
-    giveRp(u, 1500, NOV);
+    giveRp(u, 3300, NOV);
     assert.equal(floorRefusal(u, FLOORS.at(-1)), null, '그랜드마스터 opens the top floor');
   });
 });
@@ -85,7 +85,7 @@ test('pay and 구제금융 are the same on every floor, and the bank lends no mo
   const state = defaultState();
   const low = player(state, 'low', 'LOW'), high = player(state, 'high', 'HIGH');
   at(NOV, () => {
-    giveRp(high, 990, NOV);
+    giveRp(high, 2180, NOV);
     assert.equal(dailyStatus(low).reward, dailyStatus(high).reward);
     assert.equal(dailyStatus(high).reward, PAY_MIN.daily);
     claimDaily(state, high);
@@ -138,8 +138,8 @@ test('October and November are one season: 11/1 closes nothing, 12/1 closes it b
   at(OCT, () => {
     settleFinishedRankSeason(state);
     addLedger(state, a, { type: 'ADMIN_GRANT', amount: 900e9 });
-    giveRp(a, 120, OCT);
-    giveRp(b, 950, OCT);
+    giveRp(a, 250, OCT);
+    giveRp(b, 2100, OCT);
     a.loans = [{ id: 'l1', balance: 5e8 }];
   });
   assert.equal(at(NOV1, () => settleFinishedRankSeason(state)), null, '11/1 is mid-season');
@@ -147,26 +147,26 @@ test('October and November are one season: 11/1 closes nothing, 12/1 closes it b
   assert.equal(season.id, 'rank-2026-10');
   assert.equal(season.name, '10~11월 시즌');
   assert.equal(season.endsAt, new Date(DEC1 - 30 * 60_000).toISOString(), 'closes 12/1 00:00 KST');
-  assert.equal(at(NOV, () => rpPointsNow(b)), 950, 'RP carries on through November');
+  assert.equal(at(NOV, () => rpPointsNow(b)), 2100, 'RP carries on through November');
   noteRp(b, { game: 'Baccarat', stake: 1e7, netPnl: 1e7 }, NOV);
-  assert.ok(b.rp.points > 950 && b.rp.season === 'rank-2026-10');
-  b.rp.points = 950;
+  assert.ok(b.rp.points > 2100 && b.rp.season === 'rank-2026-10');
+  b.rp.points = 2100;
   const closed = at(DEC1, () => settleFinishedRankSeason(state));
   assert.equal(closed.id, 'rank-2026-10');
   assert.equal(closed.mode, 'rp');
-  assert.deepEqual(closed.podium.map(p => [p.userId, p.tier, p.rp]), [['b', 'diamond', 950], ['a', 'bronze', 120]]);
+  assert.deepEqual(closed.podium.map(p => [p.userId, p.tier, p.rp]), [['b', 'diamond', 2100], ['a', 'bronze', 250]]);
   assert.equal(b.badges[0].tier, 'diamond');
-  assert.equal(b.rankHistory[0].rp, 950);
+  assert.equal(b.rankHistory[0].rp, 2100);
   assert.equal(a.account.available, 900e9, 'no chip reset');
   assert.deepEqual(a.loans, [], 'old loans are written off');
   assert.equal(b.rank.reset.mode, 'rp');
-  assert.equal(b.rank.reset.carry, 350);
-  assert.equal(at(DEC1, () => rpPointsNow(b)), 350, '다이아몬드 950 → 골드 350');
+  assert.equal(b.rank.reset.carry, 750);
+  assert.equal(at(DEC1, () => rpPointsNow(b)), 750, '다이아몬드 2100 → 골드 750');
   assert.equal(at(DEC1, () => rankView(state, b)).tier, 'gold');
   // The season-end screen (js/season-finale.js) plays the drop from these.
   const last = at(DEC1, () => rankView(state, b)).last;
-  assert.deepEqual(last.mine && [last.mine.tier, last.mine.rp, last.mine.rank], ['diamond', 950, 1]);
-  assert.deepEqual(last.start, { rp: 350, tier: 'gold', division: 'V' });
+  assert.deepEqual(last.mine && [last.mine.tier, last.mine.rp, last.mine.rank], ['diamond', 2100, 1]);
+  assert.deepEqual(last.start, { rp: 750, tier: 'gold', division: 'V' });
   assert.equal(last.newBest, true);
   assert.equal(last.next, '12월 시즌');
   assert.equal(at(DEC1, () => rpPointsNow(a)), 0);

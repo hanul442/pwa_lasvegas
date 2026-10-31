@@ -12,12 +12,12 @@ test('the operator moves a player to 실버 V and only the operator can', () => 
   const admin = newUser(state, 'a', 'A'); admin.isAdmin = true;
   const u = newUser(state, 'p', 'P');
   const r = adminSetRp(state, admin, { userId: u.id, tier: 'silver', division: 'V' }, OCT);
-  assert.equal(r.points, 200);
+  assert.equal(r.points, 450);
   assert.equal(rpTierFor(u.rp.points).id, 'silver');
   assert.equal(rpDivision(u.rp.points), 'V');
-  assert.equal(adminSetRp(state, admin, { userId: u.id, tier: 'gold', division: 'II' }, OCT).points, 440);
-  assert.equal(rpDivision(440), 'II');
-  assert.equal(adminSetRp(state, admin, { userId: u.id, tier: 'legend' }, OCT).points, 2300);
+  assert.equal(adminSetRp(state, admin, { userId: u.id, tier: 'gold', division: 'II' }, OCT).points, 960);
+  assert.equal(rpDivision(960), 'II');
+  assert.equal(adminSetRp(state, admin, { userId: u.id, tier: 'legend' }, OCT).points, 5000);
   assert.throws(() => adminSetRp(state, u, { userId: u.id, tier: 'silver' }, OCT), /FORBIDDEN/);
   assert.throws(() => adminSetRp(state, admin, { userId: u.id, tier: 'nope' }, OCT), /INVALID_TIER/);
 });

@@ -41,7 +41,7 @@ test('a friend below the room\'s RP floor buys its chips with the room code and 
   const friend = await guest(store, 'dev-friend-001');
   // The host's RP opens the High Limit; the friend's doesn't. The friend is a day-old guest, and
   // the High Limit is still a floor a new account may use for friends' rooms.
-  store.edit(s => { const u = s.users[host.id]; const rp = rpOf(u); rp.points = rp.peak = 250; u.createdAt = '2026-01-01T00:00:00Z'; });
+  store.edit(s => { const u = s.users[host.id]; const rp = rpOf(u); rp.points = rp.peak = 550; u.createdAt = '2026-01-01T00:00:00Z'; });
   let res = await call(store, 'POST', '/api/cashier/buyin', { floor: 'high-limit', amount: 1_500_000_000 }, host.token);
   assert.equal(res.status, 200, JSON.stringify(res.data));
   res = await call(store, 'POST', '/api/rooms', { game: 'matgo', stake: 30_000_000, floor: 'high-limit', size: 2 }, host.token);

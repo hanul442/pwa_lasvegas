@@ -17,10 +17,10 @@ test('the round that fills division I opens the 승급전 and pays its fee', () 
   const u = newUser(state, 'p', 'P');
   u.account.available = 1_000_000_000;
   at(OCT, () => {
-    rpOf(u, OCT); u.rp.points = 95;
+    rpOf(u, OCT); u.rp.points = 195;
     win(state, u, 'r1');
   });
-  assert.equal(u.rp.points, 99, 'RP stops at the top of 아이언 I');
+  assert.equal(u.rp.points, 199, 'RP stops at the top of 아이언 I');
   assert.equal(u.rp.promo?.active, true);
   assert.equal(u.rp.promo.target, 'bronze');
   assert.ok(u.rp.promo.fee > 0);
@@ -37,9 +37,9 @@ test('no money for the fee: RP still stops, the series waits for the button', ()
   const u = newUser(state, 'p', 'P');
   u.account.available = 10_000_000;
   at(OCT, () => {
-    rpOf(u, OCT); u.rp.points = 95;
+    rpOf(u, OCT); u.rp.points = 195;
     win(state, u, 'r1', 5_000_000);
   });
-  assert.equal(u.rp.points, 99);
+  assert.equal(u.rp.points, 199);
   assert.ok(!u.rp.promo?.active);
 });

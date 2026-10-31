@@ -19,7 +19,7 @@ test('a rich new player gets no floor achievements; RP opens them', () => {
   assert.equal(v['floor-high-limit'].done, false, 'net worth no longer opens floor achievements');
   assert.equal(v['rp-bronze'].done, false);
   noteRp(u, { game: 'Baccarat', stake: 1e7, netPnl: 1e7 });
-  u.rp.points = u.rp.peak = 360; // gold: High Limit and Salon Privé
+  u.rp.points = u.rp.peak = 780; // gold: High Limit and Salon Privé
   noteRp(u, { game: 'Baccarat', stake: 1e7, netPnl: 0 });
   v = view(u);
   assert.equal(v['rp-bronze'].done, true);

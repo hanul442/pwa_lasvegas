@@ -58,7 +58,7 @@ export function buyInSheet(state, tier, { mode = 'sit', event = null, room = nul
       + (fee && !fee.paid ? ` 첫 판에 입장료 ${chipCount(fee.fee)}칩을 내요 (${fee.per === 'day' ? '하루' : '이번 주'} 한 번).` : '');
     const before = lastPer();
     const unitChange = before && before !== per && !room
-      ? `<p class="buyin-unit${per > before ? ' is-up' : ''}"><b>칩 단위가 바뀌었어요</b><span>1칩 = ${wonCH(per)}원 (전에 앉은 층은 ${wonCH(before)}원)${per > before ? ` · 같은 칩 수라도 ${Math.round((per / before) * 10) / 10}배 큰 돈이에요` : ''}</span></p>`
+      ? `<p class="buyin-unit${per > before ? ' is-up' : ''}"><b>칩 단위가 바뀌었어요</b><span>1칩 = ${wonCH(per)}원 (전에 앉은 층은 ${wonCH(before)}원)${per > before ? ' · 같은 칩 수라도 더 큰 돈이에요' : ''}</span></p>`
       : '';
     sheet.innerHTML = `<p class="lounge-eyebrow">${eyebrow}</p>
       <h2 id="buyin-title"><span data-buyin-amount></span> <small data-buyin-won></small></h2>

@@ -143,12 +143,16 @@ class FirstTips {
     // Tapping the line puts it away; the table keeps going.
     this.line.addEventListener('click', () => { if (this.current) this.shown.add(this.current); this.show(null); });
     this.table.root.append(this.root);
-    this.timer = setInterval(() => this.check(), 250);
+    // Checked at the start of a frame: the rect reads in follow() then share the layout the frame
+    // does anyway, instead of forcing an extra one in the middle of a card or chip animation.
+    this.timer = setInterval(() => { if (!this.frame && !document.hidden) this.frame = requestAnimationFrame(() => { this.frame = 0; this.check(); }); }, 250);
     this.check();
   }
 
   stop({ remember = true } = {}) {
     clearInterval(this.timer);
+    cancelAnimationFrame(this.frame);
+    this.frame = 0;
     clearTimeout(this.byeTimer);
     this.root?.remove();
     this.root = null;

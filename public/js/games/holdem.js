@@ -138,7 +138,8 @@ export async function mountHoldem(ctx, { royale: royaleMode = false, tourney: to
     showSeated(true);
     const stackChips = [...t.stackOf('buyin').children];
     sound.chips(3);
-    await Promise.all(stackChips.map((c, k) => flyTo(c, rectOf(seatEls[0].plate), { duration: 420, delay: k * 25, fade: true })));
+    const seat = rectOf(seatEls[0].plate);
+    await Promise.all(stackChips.map((c, k) => flyTo(c, seat, { duration: 420, delay: k * 25, fade: true })));
     t.emptyZone('buyin');
     await t.syncBalance();
     seatEls.forEach((s, k) => animate(s.node, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: k * 70, fill: 'backwards' }));

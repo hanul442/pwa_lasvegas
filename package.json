@@ -12,6 +12,7 @@
     "smoke:deploy": "node scripts/smoke-deployment.mjs",
     "rehearse:reset": "node scripts/rehearse-season-reset.mjs",
     "check:fold": "node scripts/fold-check.mjs",
+    "check:jank": "node scripts/jank.mjs",
     "check:screens": "node scripts/screen-check.mjs"
   },
   "engines": {

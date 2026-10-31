@@ -41,7 +41,9 @@ export function flyFrom(el, fromRect, { duration = 420, delay = 0, lift = 0, spi
     frames.push({ transform: 'translate(0,0) rotate(0) scale(.93)', offset: 0.9 }, end);
   }
   // While it is in the air a thing casts a wide, soft shadow; the shadow tightens as it lands.
-  if (lift) el.classList.add('is-airborne');
+  // The class goes on after the caller's loop: several chips or cards thrown at once each read
+  // their spot first, and a class change between those reads made the phone redo the layout per item.
+  if (lift) queueMicrotask(() => el.classList.add('is-airborne'));
   const done = animate(el, frames, { duration, delay, easing: easing || 'cubic-bezier(.16,.84,.3,1)', fill: 'backwards' });
   return lift ? done.then(() => el.classList.remove('is-airborne')) : done;
 }

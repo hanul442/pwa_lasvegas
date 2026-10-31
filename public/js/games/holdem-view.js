@@ -282,7 +282,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
     const stack = paintBet(i, total);
     const fresh = [...stack.children].slice(before);
     sound.chip(); haptic(6);
-    await Promise.all(fresh.map((c, k) => flyFrom(c, rectOf(plate), { duration: 340, delay: k * 40, lift: 26, spin: 30 })));
+    const from = rectOf(plate);
+    await Promise.all(fresh.map((c, k) => flyFrom(c, from, { duration: 340, delay: k * 40, lift: 26, spin: 30 })));
   }
 
   async function play(ev, tb) {
@@ -352,7 +353,8 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         if (ev.action === 'FOLD') {
           const cards = [...seatEls[ev.seat].cards.children];
           // Folded cards are slid face down into the muck in the middle, not back into the deck.
-          await Promise.all(cards.map((c, k) => flyTo(c, rectOf(burn), { duration: 380, delay: k * 50, fade: true })));
+          const muck = rectOf(burn);
+          await Promise.all(cards.map((c, k) => flyTo(c, muck, { duration: 380, delay: k * 50, fade: true })));
           seatEls[ev.seat].cards.replaceChildren();
           seatEls[ev.seat].node.classList.add('is-folded');
           inHand.delete(ev.seat);
@@ -374,7 +376,10 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const chips = seatEls.flatMap(s => [...s.bet.querySelectorAll('.chip')]);
         sound.chips(3);
         potEl.hidden = false;
-        await Promise.all(chips.map((c, k) => flyTo(c, rectOf(potStack), { duration: 380, delay: k * 15, fade: true })));
+        // Every target is read once before the throws start: a read between two throws made the phone
+        // redo the table's layout once per chip.
+        const pot = rectOf(potStack);
+        await Promise.all(chips.map((c, k) => flyTo(c, pot, { duration: 380, delay: k * 15, fade: true })));
         seatEls.forEach((_, i) => paintBet(i, 0));
         paintPot(ev.pot);
         clearTags();
@@ -421,12 +426,15 @@ export function createPokerFelt(t, { sitdown = '' } = {}) {
         const pay = breakdown(ev.amount, pk.chipSet, 8);
         const from = rectOf(potStack);
         paintPot(Math.max(0, potLeft - ev.amount));
-        const flying = pay.map((v, k) => {
+        const r = rectOf(target.plate);
+        const pile = pay.map(v => {
           const c = createChip(v);
           c.classList.add('pk-flying');
-          document.body.append(c);
-          const r = rectOf(target.plate);
           c.style.left = `${r.left + r.width / 2}px`; c.style.top = `${r.top + r.height / 2}px`;
+          return c;
+        });
+        document.body.append(...pile);
+        const flying = pile.map((c, k) => {
           // The pot is pushed across the cloth as one pile, not tossed chip by chip.
           return flyFrom(c, { left: from.left + (k % 3 - 1) * 5, top: from.top - (k >> 1) * 2, width: from.width, height: from.height }, { duration: 620, delay: k * 18, easing: 'cubic-bezier(.3,.05,.2,1)' }).then(() => c.remove());
         });

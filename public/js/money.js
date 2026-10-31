@@ -18,6 +18,9 @@ export const holdemBlindsFor = minBet => {
   return { small, big: 2 * small };
 };
 let tableUnits = false, chipWon = CHIP_WON;
+// One number formatter, made once: a toLocaleString call builds a new one every time, and a busy
+// table formats hundreds of amounts a round.
+const KO = new Intl.NumberFormat('ko-KR');
 export function setTableUnits(on, value = chipWon) { tableUnits = Boolean(on); if (value > 0) chipWon = value; }
 export const inTableUnits = () => tableUnits;
 export const tableChipWon = () => chipWon;
@@ -27,7 +30,7 @@ export const tableChipWon = () => chipWon;
 export function chipCount(value, per = chipWon) {
   const c = (Number(value) || 0) / per;
   const sign = c < 0 ? '-' : '', a = Math.abs(c);
-  if (a < 100_000) return (Math.round(a) ? sign : '') + Math.round(a).toLocaleString('ko-KR');
+  if (a < 100_000) return (Math.round(a) ? sign : '') + KO.format(Math.round(a));
   return sign + wonCH(a);
 }
 // The unit word after an amount: 원, or 칩 at a table. formatUnit(5e8) → "5억원" / "500칩".
@@ -41,7 +44,7 @@ export function wonCH(value) {
   const n = Math.round(Number(value) || 0);
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
-  if (abs < 10_000) return sign + abs.toLocaleString('ko-KR');
+  if (abs < 10_000) return sign + KO.format(abs);
   // Never a decimal point (한서's hard rule): 2조 5000억, not 2.5조; 2만 5천, not 2.5만.
   if (abs >= 1e12) {
     const jo = Math.floor(abs / 1e12), eok = Math.round((abs % 1e12) / 1e8);
@@ -75,7 +78,7 @@ export function formatMoney(value, unit = '원') {
 }
 export function formatWon(value, unit = '원') {
   const n = Math.abs(Math.round(Number(value) || 0));
-  if (n < 10_000) return `${n.toLocaleString('ko-KR')}${unit}`;
+  if (n < 10_000) return `${KO.format(n)}${unit}`;
   const groups = [[1e12, '조'], [1e8, '억'], [1e4, '만'], [1, '']]
     .map(([size, name]) => [Math.floor(n / size) % 1e4, name]);
   groups[0][0] = Math.floor(n / 1e12);
@@ -88,7 +91,7 @@ export function formatWon(value, unit = '원') {
 export function formatJackpot(value) {
   const n = Math.max(0, Math.floor(Number(value) || 0));
   // At a table the pot reads in whole chips with every digit, so it visibly ticks up (5,000,005칩).
-  if (tableUnits) return `${Math.floor(n / chipWon).toLocaleString('ko-KR')}칩`;
+  if (tableUnits) return `${KO.format(Math.floor(n / chipWon))}칩`;
   if (n < 10_000) return formatMoney(n);
   const parts = [[Math.floor(n / 1e12), '조'], [Math.floor(n / 1e8) % 1e4, '억'], [Math.floor(n / 1e4) % 1e4, '만']]
     .filter(([v]) => v > 0)

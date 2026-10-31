@@ -35,15 +35,17 @@ html[data-pace="minimal"] .riffle,html[data-pace="minimal"] .dealer-paddle{displ
 .toke-word{font:700 9px/1 var(--display);font-stretch:125%;letter-spacing:.22em}
 .toke:hover,.toke.is-hover{color:#fff;box-shadow:inset 0 1px 0 #ffffff40,0 0 0 1.5px #f4f5f7aa,0 4px 12px #000a}
 .toke:focus-visible{outline:2px solid #f4f5f7;outline-offset:3px}
-.toke.is-glint{animation:toke-glint 1.6s ease-in-out infinite}
+/* The glint is a glow layer fading in and out (opacity only), not an animated box-shadow, so the table is not repainted every frame. */
+.toke::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1.5px #ffe7b0cc,0 0 16px #ffd98a66}
+.toke.is-glint::after{animation:toke-glint 1.6s ease-in-out infinite}
 .toke.is-glint .toke-word{color:#fff}
-@keyframes toke-glint{0%,100%{box-shadow:inset 0 1px 0 #ffffff2e,0 0 0 1px #f4f5f726,0 4px 10px #000a}50%{box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1.5px #ffe7b0cc,0 0 16px #ffd98a66,0 4px 10px #000a}}
+@keyframes toke-glint{0%,100%{opacity:0}50%{opacity:1}}
 .toke.is-fed .toke-slot{background:#3a2f1a;box-shadow:inset 0 1px 1px #000,0 0 6px #ffd98a88}
 .toke-flyer{z-index:210}
 /* The dealer's knuckle on the lid. */
 .toke-knock{position:fixed;z-index:211;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid #f4f5f7cc;pointer-events:none;animation:toke-knock .45s ease-out forwards}
 @keyframes toke-knock{from{transform:scale(.4);opacity:.9}to{transform:scale(1.25);opacity:0}}
 html[data-pace="minimal"] .toke-knock{display:none}
-@media (prefers-reduced-motion:reduce){.toke.is-glint{animation:none;box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1.5px #ffe7b0cc,0 4px 10px #000a}.toke-knock{animation-duration:.01s}}
+@media (prefers-reduced-motion:reduce){.toke.is-glint::after{animation:none;opacity:1}.toke-knock{animation-duration:.01s}}
 .toke-note{display:block;margin-top:3px;font-size:12px;font-weight:500;opacity:.72}
 .toast:has(.toke-note){border-radius:18px;white-space:nowrap}

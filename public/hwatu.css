@@ -183,9 +183,12 @@
 /* first-hand tips: one line, no dimming, the table stays playable */
 .tip{position:fixed;inset:0;z-index:88;pointer-events:none;display:none}
 .tip.is-on{display:block}
-.tip-ring{position:fixed;border-radius:14px;box-shadow:0 0 0 2px #ffffffd9;animation:tip-ring 1.6s var(--ease-out,ease) infinite;transition:left .25s,top .25s,width .25s,height .25s}
+/* The pulse is a second ring that grows and fades (transform and opacity only): an infinite box-shadow
+   animation repainted the whole table every frame for as long as a tip was up. */
+.tip-ring{position:fixed;border-radius:14px;box-shadow:0 0 0 2px #ffffffd9;transition:left .25s,top .25s,width .25s,height .25s}
+.tip-ring::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:3px solid #ffffff66;animation:tip-ring 1.6s var(--ease-out,ease) infinite}
 .tip-ring.is-none{display:none}
-@keyframes tip-ring{0%{box-shadow:0 0 0 2px #ffffffd9,0 0 0 0 #ffffff55}70%{box-shadow:0 0 0 2px #ffffffd9,0 0 0 10px #ffffff00}100%{box-shadow:0 0 0 2px #ffffffd9,0 0 0 0 #ffffff00}}
+@keyframes tip-ring{0%{transform:scale(1);opacity:1}70%{transform:scale(1.06,1.14);opacity:0}100%{transform:scale(1.06,1.14);opacity:0}}
 .tip-line{position:fixed;left:16px;width:max-content;max-width:min(420px,calc(100vw - 24px));margin:0;padding:10px 16px;border:0;border-radius:999px;background:var(--white);color:var(--ink);font:600 14px/1.35 var(--sans);letter-spacing:-.01em;text-align:center;text-wrap:balance;box-shadow:0 10px 28px #000000b3,0 0 0 1px #0000000f;pointer-events:auto;cursor:pointer;transition:top .25s var(--ease-out,ease)}
 .tip-line.is-in{animation:tip-in .32s var(--ease-out,ease)}
 @keyframes tip-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -263,7 +266,7 @@
 }
 @media (prefers-reduced-motion:reduce){
   .sheet,.coach-ring,.coach-bubble,.tip-ring,.tip-line{transition:none}
-  .hw.is-option::after,.coach-do::before,.tip-ring,.tip-line.is-in{animation:none}
+  .hw.is-option::after,.coach-do::before,.tip-ring,.tip-ring::after,.tip-line.is-in{animation:none}
 }
 
 /* ---------- 고스톱 (three seats) ---------- */

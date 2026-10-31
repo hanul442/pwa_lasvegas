@@ -124,6 +124,11 @@ export class Table {
     mount.replaceChildren(root);
     this.root = root;
     this.felt = root.querySelector('[data-felt]');
+    // A friends' lobby panel covers the felt from its top; the felt under it must not scroll away
+    // (iPhone Safari scrolls it when a field inside takes focus), or the panel's head is cut off.
+    this.felt.addEventListener('scroll', () => {
+      if (this.felt.scrollTop && this.felt.querySelector(':scope > .pk-lobby:not([hidden])')) this.felt.scrollTop = 0;
+    }, { passive: true });
     this.body = root.querySelector('[data-body]');
     this.rack = root.querySelector('[data-rack]');
     this.tray = root.querySelector('[data-tray]');
@@ -879,6 +884,11 @@ export class Table {
   // action/onAction: one button in the toast (다시 시도); it then stays up a little longer.
   toast(text, { action = '', onAction = null } = {}) {
     const node = this.root.querySelector('[data-toast]');
+    // The toast lives in the felt, which scrolls on short screens: keep it at the visible top edge.
+    // Over a friends' lobby panel it goes to the bottom edge, clear of the panel's title and ×.
+    const overLobby = Boolean(this.felt?.querySelector(':scope > .pk-lobby:not([hidden])'));
+    node.classList.toggle('is-low', overLobby);
+    node.style.top = overLobby ? '' : `${(this.felt?.scrollTop || 0) + 12}px`;
     node.textContent = text;
     node.classList.toggle('has-action', Boolean(action && onAction));
     if (action && onAction) {

@@ -241,7 +241,6 @@ const MESSAGES = {
   BUY_IN_OUT_OF_RANGE: '바이인은 최소 베팅 20~300번어치 사이로 골라 주세요.',
   BUY_IN_STACK_FULL: '이 테이블 칩이 이미 최소 베팅 300번어치 넘게 있어요.',
   FLOOR_PASS_REQUIRED: '이 층은 아직 잠겨 있어요. RP 티어를 올리면 열려요.',
-  NEW_ACCOUNT_ROOM_LIMIT: '가입 7일이 안 된 계정은 친구방을 2층 클럽까지만 쓸 수 있어요.',
   EVENT_ENTRY_REQUIRED: '이 이벤트에 입장할 만큼 칩이 없어요. 이벤트 탭에서 입장 조건을 확인해 주세요.',
   EVENT_FLOOR_ONLY: '이 이벤트는 정해진 층 테이블에서만 열려요.',
   EVENT_CLOSED: '이번 주에 열린 이벤트가 아니에요.',

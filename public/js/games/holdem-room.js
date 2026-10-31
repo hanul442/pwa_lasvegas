@@ -148,6 +148,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
 
   function open() {
     if (active || hooks.soloOpen()) return;
+    t.felt.scrollTop = 0; // the panel covers the felt from its top; a scrolled felt would cut its head off
     panel.hidden = false;
     paintCreate();
     loadList();

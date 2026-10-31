@@ -131,13 +131,11 @@ test('rewards stop growing at the Vault and loan limits at the Sky Lounge', () =
   assert.equal(lenderOffer(u, LENDERS.find(l => l.slug === 'shark'), OCT_14).limit, 500 * floor('sky-lounge').minBet);
 });
 
-test('a new account uses friends\' rooms only up to the High Limit for its first week', () => {
+test('a brand-new account may use friends\' rooms on any floor, only the chips count', () => {
   const state = defaultState(), u = newUser(state, 'p', 'P');
   grant(state, u, 100 * 억);
-  assert.throws(() => validateRoomStake(u, floor('penthouse'), 10 * 억), /NEW_ACCOUNT_ROOM_LIMIT/);
-  assert.doesNotThrow(() => validateRoomStake(u, floor('high-limit'), 5_000 * 10_000));
-  u.createdAt = new Date(Date.now() - 8 * 86_400_000).toISOString();
   assert.doesNotThrow(() => validateRoomStake(u, floor('penthouse'), 10 * 억));
+  assert.doesNotThrow(() => validateRoomStake(u, floor('high-limit'), 5_000 * 10_000));
 });
 
 test('a floor pass lasts the month: after the reset the owned skin is bought again to renew it', t => {

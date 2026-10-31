@@ -48,6 +48,7 @@ export function seatedElsewhere(t, e, retry, goHere = null) {
     t.toast(`${name} 방에서 나왔어요`);
     await t.run(retry);
   });
+  t.felt.scrollTop = 0;
   t.felt.append(box);
   box.querySelector('[data-go]').focus({ preventScroll: true });
   return true;

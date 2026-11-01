@@ -140,19 +140,21 @@ export function openSheet({ eyebrow, title, body = '', confirm = null, confirmTe
 }
 
 // ---------- the screen ----------
-const VIEW_KEY = 'vegas:shop-skin-view';
+const VIEW_KEY = 'vegas:shop-view';
+const FLOOR_KEY = 'vegas:shop-floor';
+const SLOT_KEY = 'vegas:shop-slot';
 const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const recall = key => { try { return localStorage.getItem(key); } catch { return null; } };
-// The 꾸미기 tab shows either the floors (each floor's skins are its pass) or one slot at a time.
-const VIEWS = [['floors', '층별'], ['cardBack', '카드 뒷면'], ['felt', '펠트'], ['chips', '칩'], ['frame', '명패'], ['hwatuBack', '화투 뒷면'], ['hwatuFace', '화투 앞면']];
-let view = VIEWS.some(([k]) => k === recall(VIEW_KEY)) ? recall(VIEW_KEY) : 'floors';
-// A floor whose skins the 꾸미기 tab opens and scrolls to once, when a locked table sent the player here.
+// Four ways in: one floor at a time, one kind at a time, the season's limited pieces, the free ones.
+const TABS = [['floors', '층별'], ['slots', '종류별'], ['season', '시즌 한정'], ['free', '무료·업적']];
+let view = TABS.some(([k]) => k === recall(VIEW_KEY)) ? recall(VIEW_KEY) : 'floors';
+let pickedFloor = recall(FLOOR_KEY);
+let pickedSlot = recall(SLOT_KEY) || 'cardBack';
+// Set when a locked table sent the player here: open that floor and bring it into view once.
 let focusFloor = null;
-// Floors the player opened or closed by hand this visit, so a re-render (after a purchase) keeps them.
-const floorOpenByHand = new Map();
 export function showShopTab(key, floor = null) {
   focusFloor = floor;
-  if (floor) { view = 'floors'; floorOpenByHand.delete(floor); }
+  if (floor) { view = 'floors'; pickedFloor = floor; }
 }
 
 export function renderShop(root, state, onChanged) {
@@ -219,14 +221,14 @@ function preview(item, nickname) {
 // The look as a whole: a corner of felt with a card, two chips and the nameplate, as the player
 // wears it now. `tryOn` swaps one slot for a skin they are looking at.
 const wornItem = (all, slot, equipped) => all.find(x => x.slot === slot && (equipped[slot] ? x.id === equipped[slot] : x.house));
-function stage(state, tryOn = null) {
+function stage(state, tryOn = null, hw = false) {
   const all = state.shop.cosmetics, equipped = state.shop.equipped || {};
   const pick = slot => tryOn && tryOn.slot === slot ? tryOn : wornItem(all, slot, equipped);
   const box = el('div', `skin-stage ${feltClass(pick('felt'))}`);
   box.setAttribute('aria-hidden', 'true');
   const cards = el('div', 'skin-stage-cards');
   // Trying on a hwatu look, or looking at the hwatu slots, the hand on the felt is hwatu.
-  if ((tryOn && HW_SLOTS.includes(tryOn.slot)) || (!tryOn && HW_SLOTS.includes(view))) {
+  if ((tryOn && HW_SLOTS.includes(tryOn.slot)) || (!tryOn && hw)) {
     cards.classList.add('skin-stage-cards--hw');
     cards.append(hwatuCard(pick('hwatuBack'), '01-1'), hwatuCard(pick('hwatuFace'), '01-1'), hwatuCard(pick('hwatuFace'), '08-1'));
   } else cards.append(backCard(pick('cardBack')), backCard(pick('cardBack')));
@@ -295,13 +297,12 @@ async function equip(item, onChanged, button) {
   catch (e) { if (button) button.disabled = false; errorToast(e); }
 }
 
-function skinTile(state, item, onChanged, pass, { showFloor = false } = {}) {
+function skinTile(state, item, onChanged, pass) {
   const available = moneyOf(state);
   const li = el('li', `skin-tile${item.equipped ? ' is-equipped' : ''}${item.owned ? '' : ' is-locked'}`);
   li.append(preview(item, state.user.nickname));
-  const where = showFloor && pass ? pass.name : SLOT_NAME[item.slot];
-  const status = item.owned ? (item.house ? '기본' : item.achievement ? '업적 보상' : '보유') : item.achievement ? `업적 「${item.achievementLabel}」` : null;
-  li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}${item.season ? '<span class="skin-limited">한정</span>' : ''}</span><small>${where}${status ? ` · ${status}` : ''}</small>`));
+  const status = item.owned ? (item.house ? '기본' : item.achievement ? '업적 보상' : '보유') : item.achievement ? `업적 「${item.achievementLabel}」` : item.season ? '시즌 한정' : '';
+  li.append(el('div', 'skin-text', `<span class="skin-name">${item.name}</span>${status ? `<small>${status}</small>` : ''}`));
   if (item.renewable && pass && !pass.passed) {
     const short = available < item.price;
     const b = el('button', `pill-button skin-act skin-price${short ? ' is-short' : ''}`, `갱신 ${won(item.price)}`);
@@ -325,118 +326,127 @@ function skinTile(state, item, onChanged, pass, { showFloor = false } = {}) {
     b.addEventListener('click', () => buySkinSheet(state, item, onChanged, pass));
     li.append(b);
   } else {
-    li.append(el('span', 'skin-lock', '업적을 달성하면 열려요'));
+    li.append(el('span', 'skin-lock', '잠김'));
   }
   return li;
 }
 
-// Which floor opens by itself: the one a locked table sent the player to, else the one a single
-// purchase would let them into, else the next floor still without a pass.
-function floorToOpen(passes) {
-  return focusFloor
-    || passes.find(p => p.unlocked && !p.passed)?.slug
-    || passes.find(p => !p.passed)?.slug
-    || null;
+// The floor shown first: the one a locked table sent the player to, else the one they picked last,
+// else the highest floor open to them (where they play now).
+function floorShown(passes) {
+  if (focusFloor && passes.some(p => p.slug === focusFloor)) return focusFloor;
+  if (pickedFloor && passes.some(p => p.slug === pickedFloor)) return pickedFloor;
+  return [...passes].reverse().find(p => p.unlocked)?.slug || passes[0]?.slug || null;
 }
 
-// 꾸미기: what I wear now on top (one picture of the whole look), then the floors or one slot.
+// One shelf: a small head and the looks in one row you swipe sideways (a grid on wide screens).
+function shelf(state, title, items, onChanged, passOf, { note = '', count = true } = {}) {
+  const sec = el('section', 'shop-shelf');
+  const owned = items.filter(x => x.owned).length;
+  sec.append(el('div', 'shop-shelf-head', `<h3>${title}</h3>${count ? `<span class="shop-shelf-count">${owned}/${items.length}</span>` : ''}${note ? `<small>${note}</small>` : ''}`));
+  const row = el('ul', 'skin-row');
+  for (const item of items) row.append(skinTile(state, item, onChanged, passOf(item)));
+  sec.append(row);
+  return sec;
+}
+
+// Chips you swipe through to pick one floor or one kind.
+function picker(label, entries, current, onPick) {
+  const bar = el('div', 'shop-picker');
+  bar.setAttribute('role', 'tablist');
+  bar.setAttribute('aria-label', label);
+  for (const [key, text, cls = ''] of entries) {
+    const b = el('button', `shop-pick${key === current ? ' is-active' : ''}${cls ? ` ${cls}` : ''}`, text);
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(key === current));
+    b.addEventListener('click', () => onPick(key));
+    bar.append(b);
+  }
+  requestAnimationFrame(() => bar.querySelector('.is-active')?.scrollIntoView({ inline: 'center', block: 'nearest' }));
+  return bar;
+}
+
+const SLOTS_ORDER = ['cardBack', 'felt', 'chips', 'frame', ...HW_SLOTS];
+const bySlot = items => SLOTS_ORDER.map(slot => [slot, items.filter(x => x.slot === slot)]).filter(([, list]) => list.length);
+
+// 상점: what I wear now (one small picture), four tabs that stay on top, then one floor or one
+// kind at a time, each kind or floor in a row of its own.
 function cosmeticsTab(state, onChanged, rerender) {
   const box = el('div', 'shop-pane');
-  const all = state.shop.cosmetics, equipped = state.shop.equipped || {};
+  const all = state.shop.cosmetics;
   const passes = state.shop.passes || [];
+  const era = Boolean(state.shop.era);
+  const passOfSlug = slug => passes.find(p => p.slug === slug) || null;
+  const passOf = item => item.floor ? passOfSlug(item.floor) : null;
+  const limited = all.filter(x => x.season && x.onSale), past = all.filter(x => x.season && !x.onSale);
+  const free = all.filter(x => !x.floor && !x.season);
+  const tabs = TABS.filter(([k]) => k !== 'season' || limited.length || past.length);
+  if (!tabs.some(([k]) => k === view)) view = 'floors';
+  const go = (key, value) => { if (key === 'view') { view = value; remember(VIEW_KEY, value); } if (key === 'floor') { pickedFloor = value; remember(FLOOR_KEY, value); } if (key === 'slot') { pickedSlot = value; remember(SLOT_KEY, value); } rerender(); };
 
+  // What I wear now, small: the felt, the hand (hwatu while looking at hwatu), the chips and my name.
   const worn = el('section', 'skin-worn');
-  worn.append(stage(state));
-  const slots = el('ul', 'skin-slots');
-  for (const slot of ['cardBack', 'felt', 'chips', 'frame', ...HW_SLOTS]) {
-    const item = wornItem(all, slot, equipped);
-    const li = el('li');
-    const b = el('button', `skin-slot${view === slot ? ' is-active' : ''}`, `<small>${SLOT_NAME[slot]}</small><span>${item?.name ?? '기본'}</span>`);
-    b.type = 'button';
-    b.setAttribute('aria-label', `${SLOT_NAME[slot]}: ${item?.name ?? '기본'}. 바꾸기`);
-    b.addEventListener('click', () => { view = slot; remember(VIEW_KEY, slot); rerender(); });
-    li.append(b);
-    slots.append(li);
-  }
-  worn.append(slots);
-  const passCount = passes.filter(p => p.passed).length, era = Boolean(state.shop.era);
-  box.append(el('h2', 'sub-head shop-head', era ? '착용 중' : `착용 중 <small>입장권 ${passCount}/${passes.length}층</small>`), worn);
+  worn.append(stage(state, null, view === 'slots' && HW_SLOTS.includes(pickedSlot)));
+  const passCount = passes.filter(p => p.passed).length;
+  worn.append(el('p', 'skin-worn-label', `착용 중${era ? '' : ` · 입장권 ${passCount}/${passes.length}층`}`));
+  box.append(worn);
 
-  const filter = el('div', 'shop-filter');
-  filter.setAttribute('role', 'tablist');
-  filter.setAttribute('aria-label', '꾸미기 보기');
-  for (const [key, label] of VIEWS) {
-    const b = el('button', `shop-filter-chip${key === view ? ' is-active' : ''}`, label);
+  const bar = el('div', 'shop-tabs');
+  bar.setAttribute('role', 'tablist');
+  bar.setAttribute('aria-label', '상점 보기');
+  for (const [key, label] of tabs) {
+    const b = el('button', `shop-tab${key === view ? ' is-active' : ''}`, label);
     b.type = 'button';
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(key === view));
-    b.addEventListener('click', () => { view = key; remember(VIEW_KEY, key); rerender(); });
-    filter.append(b);
+    b.addEventListener('click', () => go('view', key));
+    bar.append(b);
   }
-  box.append(filter);
+  box.append(bar);
 
   if (view === 'floors') {
-    box.append(el('p', 'shop-note', era ? '층마다 그 층의 꾸미기가 있어요. 층은 RP 티어로 열리고, 꾸미기는 모양만 바꿔요.' : '층마다 그 층의 꾸미기가 있어요. 하나만 가지고 있어도 그 층 입장권이 돼요. 순자산 조건도 함께 채워야 해요.'));
-    // 시즌 한정 (lib/cosmetics.mjs SEASON_COSMETICS): this season's four, sold only until it ends.
-    const limited = all.filter(x => x.season && x.onSale);
-    if (limited.length) {
-      const sec = el('section', 'season-shop');
-      const ends = state.shop.season?.endsAt ? new Date(Date.parse(state.shop.season.endsAt) - 1).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' }) : '';
-      sec.append(el('div', 'season-shop-head', `<h3>시즌 한정</h3><small>${state.shop.season?.name || ''}${ends ? ` · ${ends}까지` : ''}</small>`));
-      sec.append(el('p', 'shop-note', '이번 시즌에만 파는 꾸미기예요. 시즌이 끝나면 다시 팔지 않고, 산 꾸미기는 계속 가져요.'));
-      const grid = el('ul', 'skin-grid');
-      for (const item of limited) grid.append(skinTile(state, item, onChanged, null));
-      sec.append(grid);
-      box.append(sec);
-    }
-    // Sets from past seasons are no longer sold; the server sends them only to those who own them.
-    const past = all.filter(x => x.season && !x.onSale);
-    if (past.length) {
-      const sec = el('section', 'season-shop season-shop--past');
-      sec.append(el('div', 'season-shop-head', `<h3>지난 시즌 한정</h3><small>${past.length}개 보유</small>`));
-      const grid = el('ul', 'skin-grid');
-      for (const item of past) grid.append(skinTile(state, item, onChanged, null));
-      sec.append(grid);
-      box.append(sec);
-    }
-    const auto = era ? (focusFloor || null) : floorToOpen(passes);
-    let focus = null;
-    for (const pass of passes) {
+    const slug = floorShown(passes);
+    box.append(picker('층 고르기', passes.map(p => [p.slug, `<span class="pick-mark${p.unlocked ? ' is-open' : ''}" aria-hidden="true"></span>${p.name}`]), slug, s => go('floor', s)));
+    const pass = passOfSlug(slug);
+    if (pass) {
       const items = all.filter(x => x.floor === pass.slug);
       const owned = items.filter(x => x.owned).length;
-      const section = el('details', `pass-floor${pass.passed && (!era || pass.unlocked) ? ' is-passed' : ''}${pass.unlocked && !pass.passed ? ' is-due' : ''}`);
-      section.dataset.passFloor = pass.slug;
-      section.open = floorOpenByHand.has(pass.slug) ? floorOpenByHand.get(pass.slug) : pass.slug === auto;
-      section.addEventListener('toggle', () => floorOpenByHand.set(pass.slug, section.open));
-      const state_ = era ? (pass.unlocked ? '열린 층' : `RP ${pass.rpNeed}이면 열려요`) : pass.passed
+      const line = era ? (pass.unlocked ? '열린 층 · 꾸미기는 모양만 바꿔요' : `RP ${pass.rpNeed}이면 열리는 층 · 꾸미기는 먼저 사 둘 수 있어요`) : pass.passed
         ? (pass.unlocked ? '입장권 보유' : `입장권 보유 · 순자산 ${wonCH(pass.threshold)}원이면 열려요`)
         : pass.unlocked ? '순자산 충족 · 하나만 사거나 갱신하면 입장' : `순자산 ${wonCH(pass.threshold)}원 + 이번 달 입장권`;
-      const head = el('summary', 'pass-head', `<span class="pass-mark" aria-hidden="true"></span><span class="pass-name">${pass.name}</span><span class="pass-count">${owned}/${items.length}</span><small class="pass-state">${state_}</small>`);
-      section.append(head);
-      const grid = el('ul', 'skin-grid');
-      for (const item of items) grid.append(skinTile(state, item, onChanged, pass));
-      section.append(grid);
-      box.append(section);
-      if (pass.slug === focusFloor) focus = section;
+      const head = el('div', `shop-floor-head${pass.unlocked ? ' is-open' : ''}`, `<span class="pass-mark" aria-hidden="true"></span><div><h2>${pass.name}</h2><small>${line}</small></div><span class="shop-floor-count">${owned}/${items.length}</span>`);
+      head.dataset.passFloor = pass.slug;
+      box.append(head);
+      for (const [slot, list] of bySlot(items)) box.append(shelf(state, SLOT_NAME[slot], list, onChanged, passOf));
+      if (focusFloor) {
+        focusFloor = null;
+        requestAnimationFrame(() => { bar.scrollIntoView({ block: 'start', behavior: 'smooth' }); head.classList.add('is-focus'); });
+      }
     }
-    if (focus) {
-      focusFloor = null;
-      requestAnimationFrame(() => { focus.scrollIntoView({ block: 'start', behavior: 'smooth' }); focus.classList.add('is-focus'); });
+  } else if (view === 'slots') {
+    box.append(picker('종류 고르기', SLOTS_ORDER.map(s => [s, SLOT_NAME[s]]), pickedSlot, s => go('slot', s)));
+    const of = list => list.filter(x => x.slot === pickedSlot);
+    // Free first (what costs nothing to swap to), then this season's, then floor by floor.
+    if (of(free).length) box.append(shelf(state, '무료·업적', of(free), onChanged, passOf));
+    if (of(limited).length) box.append(shelf(state, '시즌 한정', of(limited), onChanged, passOf));
+    for (const pass of passes) {
+      const list = of(all.filter(x => x.floor === pass.slug));
+      if (list.length) box.append(shelf(state, pass.name, list, onChanged, passOf, { note: era ? (pass.unlocked ? '' : `RP ${pass.rpNeed}`) : '' }));
     }
-    const free = all.filter(x => !x.floor && !x.season);
-    box.append(el('h2', 'sub-head', `기본 · 업적 <small>무료 ${free.filter(x => x.owned).length}/${free.length}</small>`));
-    const grid = el('ul', 'skin-grid');
-    for (const item of free) grid.append(skinTile(state, item, onChanged, null));
-    box.append(grid);
+    if (of(past).length) box.append(shelf(state, '지난 시즌 한정', of(past), onChanged, passOf));
+  } else if (view === 'season') {
+    // 시즌 한정 (lib/cosmetics.mjs SEASON_COSMETICS): sold only until the season ends.
+    if (limited.length) {
+      const ends = state.shop.season?.endsAt ? new Date(Date.parse(state.shop.season.endsAt) - 1).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' }) : '';
+      box.append(el('p', 'shop-note', `${state.shop.season?.name ? `<b>${state.shop.season.name}</b> · ` : ''}${ends ? `${ends}까지만 팔아요. ` : ''}시즌이 끝나면 다시 팔지 않고, 산 꾸미기는 계속 가져요.`));
+      box.append(shelf(state, '이번 시즌', limited, onChanged, passOf));
+    }
+    // Past seasons' sets are no longer sold; the server sends them only to those who own them.
+    if (past.length) box.append(shelf(state, '지난 시즌 한정', past, onChanged, passOf, { count: false, note: `${past.length}개 보유` }));
   } else {
-    // One slot: what I own first (cheapest to swap to), then what is for sale, then achievements.
-    const passOf = slug => passes.find(p => p.slug === slug) || null;
-    const rank = x => x.equipped ? 0 : x.owned ? 1 : x.achievement ? 3 : 2;
-    const items = all.filter(x => x.slot === view).sort((a, b) => rank(a) - rank(b) || a.price - b.price);
-    box.append(el('p', 'shop-note', `${SLOT_NAME[view]} ${items.length}가지.${era ? '' : ' 층 꾸미기는 그 층 입장권도 돼요.'}`));
-    const grid = el('ul', 'skin-grid');
-    for (const item of items) grid.append(skinTile(state, item, onChanged, item.floor ? passOf(item.floor) : null, { showFloor: true }));
-    box.append(grid);
+    box.append(el('p', 'shop-note', '처음부터 있는 기본 꾸미기와, 업적을 달성하면 열리는 꾸미기예요.'));
+    for (const [slot, list] of bySlot(free)) box.append(shelf(state, SLOT_NAME[slot], list, onChanged, passOf));
   }
   return box;
 }

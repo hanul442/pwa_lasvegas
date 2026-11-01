@@ -27,6 +27,11 @@ const rankView = label => async page => {
   await wait(400);
   await page.evaluate(l => [...document.querySelectorAll('[data-rank-view] button')].find(b => b.textContent.trim() === l)?.click(), label);
 };
+const shopTab = label => async page => {
+  await nav('shop')(page);
+  await wait(400);
+  await page.evaluate(l => [...document.querySelectorAll('[data-shop] .shop-tab')].find(b => b.textContent.trim() === l)?.click(), label);
+};
 export const PAGES = {
   lobby: nav('lobby'),
   games: nav('games'),
@@ -37,7 +42,10 @@ export const PAGES = {
   'ranking-friends': rankView('친구'),
   bank: nav('bank'),
   shop: nav('shop'),
-  'shop-sheet': async page => { await nav('shop')(page); await wait(500); await page.evaluate(() => document.querySelector('[data-shop] button:not([disabled])')?.click()); },
+  'shop-slots': shopTab('종류별'),
+  'shop-season': shopTab('시즌 한정'),
+  'shop-free': shopTab('무료·업적'),
+  'shop-sheet': async page => { await shopTab('층별')(page); await wait(400); await page.evaluate(() => document.querySelector('[data-shop] .skin-price:not([disabled])')?.click()); },
   profile: nav('profile'),
   settings: nav('settings'),
   tiers: async page => page.evaluate(() => dispatchEvent(new CustomEvent('vegas:choose-game', { detail: { game: 'blackjack' } }))),

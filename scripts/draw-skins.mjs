@@ -129,6 +129,25 @@ function hwatuBack({ base, line, field, emblem }) {
     + `<g transform="translate(${cx} ${cy}) scale(1.15)" filter="url(#e)">${E('url(#f)', lo)}</g>`);
 }
 
+// 무광 화투 뒷면: soft-touch stock. One flat muted colour with a fine grain, no gloss and no foil:
+// the field, frame and crest are pressed into the card (a dark edge above, a pale lip below).
+function hwatuBackMatte({ base, field, emblem }) {
+  const c = mix(mix(base[0], base[1], .4), '#6b6e74', .2), dk = mix(c, '#000', .45), lt = mix(c, '#fff', .3), ink = mix(c, '#fff', .55), cx = 50, cy = 80, E = EMBLEMS[emblem];
+  // Pressed: the shadow edge above, the pale lip below, the cut face in the card's own colour.
+  const press = (body, w) => `<g transform="translate(0 .5)">${body(lt, w)}</g><g transform="translate(0 -.35)">${body(dk, w)}</g>${body(c, w * .6)}`;
+  const frame = (k, w) => `<rect x="7" y="7" width="86" height="146" rx="5" fill="none" stroke="${k}" stroke-width="${w}"/><rect x="10" y="10" width="80" height="140" rx="3" fill="none" stroke="${k}" stroke-width="${w * .5}"/><path d="M32 22H68M32 138H68" stroke="${k}" stroke-width="${w * .6}"/>`;
+  const ring = (k, w) => `<circle cx="${cx}" cy="${cy}" r="16.5" fill="none" stroke="${k}" stroke-width="${w}"/>`;
+  return svg('0 0 100 160', `<defs><filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .6 0"/></filter>`
+    + `<clipPath id="p"><rect x="10" y="10" width="80" height="140" rx="2"/></clipPath></defs>`
+    + `<rect width="100" height="160" rx="9" fill="${c}"/>`
+    + `<g clip-path="url(#p)" fill="none" stroke="${dk}" color="${dk}" transform="translate(0 10)">${FIELDS[field]()}</g>`
+    + `<circle cx="${cx}" cy="${cy}" r="21" fill="${c}"/>`
+    + press(frame, 1) + press(ring, 1.2)
+    + `<circle cx="${cx}" cy="${cy}" r="14.6" fill="${mix(c, '#000', .16)}"/>`
+    + `<g transform="translate(${cx} ${cy + .4}) scale(1.15)">${E(dk, dk)}</g><g transform="translate(${cx} ${cy}) scale(1.15)">${E(ink, mix(c, '#000', .16))}</g>`
+    + `<rect width="100" height="160" rx="9" fill="#fff" filter="url(#n)" opacity=".2"/>`);
+}
+
 // ---------- felt prints: a tile repeated over the cloth, white at a few percent ----------
 // Prints sit under the table's own printed layout, so they stay at about 60% of what reads in a swatch.
 const ink = (o) => `#ffffff${Math.round(o * 255 * .6).toString(16).padStart(2, '0')}`;
@@ -240,8 +259,8 @@ function plate(id, type, face, line, key) {
 // 화투 뒷면: on the card (.hw-back) when worn (:root[data-hw-back]), and on the shop's previews.
 // The edge under the card is the lacquer's own dark, so the thickness reads as one solid piece.
 const hwBackSel = id => `:root[data-hw-back="${id}"] .hw:not(.hw--pv) .hw-back,.hw-back.hwback--${id}`;
-function hwBack(id, base, line, field, emblem) {
-  once(`hwback-${id}.svg`, hwatuBack({ base, line, field, emblem }));
+function hwBack(id, base, line, field, emblem, matte = false) {
+  once(`hwback-${id}.svg`, matte ? hwatuBackMatte({ base, field, emblem }) : hwatuBack({ base, line, field, emblem }));
   css.push(`${hwBackSel(id)}{background:url(art/skins/hwback-${id}.svg) center/100% 100% no-repeat,${base[1]};box-shadow:0 1.5px 0 ${mix(base[1], '#000', .3)},0 2.5px 0 #0008,0 6px 12px #0006}`);
   css.push(`:root[data-hw-back="${id}"] .hw:not(.hw--pv) .hw-back::after,.hw-back.hwback--${id}::after{display:none}`);
   css.push(`:root[data-hw-back="${id}"]{--hw-edge:${mix(base[1], base[0], .35)}}`);
@@ -270,6 +289,13 @@ function hwFace(id, type, color, line) {
     css.push(`${hwFaceSel(id, ' .hw-art path[d^="M0 62Q30 34"][fill]:not([width])')}{fill:#33363d}`);
     // Tags (끗, 쌍피) keep a dark halo so the metal letters stay crisp on any picture.
     css.push(`${hwFaceSel(id, ' .hw-art text[stroke]')}{stroke:#0b0c0e}`);
+  } else if (type === 'matte') {
+    // 무광: cotton stock with a tooth, colours a shade quieter, a frame pressed in, no sheen at all.
+    css.push(`${hwFaceSel(id)}{${pad};background:url(art/skins/cotton.svg) center/100% 100%,#ece6d9;box-shadow:inset 0 0 0 1px #00000022,0 1.5px 0 #b3ab9c,0 2.5px 0 #0006,0 5px 10px #0005}`);
+    css.push(`${hwFaceSel(id, ' .hw-art>rect:first-child')}{fill:transparent}`);
+    css.push(`${hwFaceSel(id, ' .hw-art')}{border-radius:calc(var(--hw-w,40px) * .04);filter:saturate(.84) contrast(.96)}`);
+    css.push(`${hwFaceSel(id, ' .hw-index rect')}{fill:#efe9dccc}`);
+    css.push(`${hwFaceSel(id, '::after')}{content:"";position:absolute;inset:max(1.5px,calc(var(--hw-w,40px) * .018));border-radius:calc(var(--hw-w,40px) * .07);box-shadow:inset 0 .6px 0 ${mix(color, '#ece6d9', .35)},0 .6px 0 #ffffffb0,inset 0 0 0 .6px ${mix(color, '#ece6d9', .45)};pointer-events:none}`);
   } else {
     // The picture sits a little in, so the frame runs round it on the paper, never across it.
     css.push(`${hwFaceSel(id)}{${pad};background:url(art/skins/hanji.svg) center/100% 100%,linear-gradient(170deg,#f8f0de,#eadfc6);box-shadow:inset 0 0 0 1px #0000002a,0 1.5px 0 #bdb29f,0 2.5px 0 #0007,0 6px 12px #0006}`);
@@ -287,6 +313,8 @@ function hwFace(id, type, color, line) {
   for (let i = 0; i < 26; i++) flecks += `<circle cx="${f(r() * 60)}" cy="${f(r() * 96)}" r="${f(.15 + r() * .3)}"/>`;
   once('hanji.svg', svg('0 0 60 96', `<path d="${fib}" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".35"/><g fill="#8a6f45" fill-opacity=".22">${flecks}</g>`, ' preserveAspectRatio="none"'));
 }
+// Cotton: fine even tooth for the matte fronts.
+once('cotton.svg', svg('0 0 60 96', `<filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="9"/><feColorMatrix values="0 0 0 0 .45 0 0 0 0 .4 0 0 0 0 .32 0 0 0 .55 0"/></filter><rect width="60" height="96" filter="url(#n)" opacity=".22"/>`, ' preserveAspectRatio="none"'));
 // Previews in the shop (.hw--pv) show their own look, not the one the page wears.
 // The two free backs: the house red stays in hwatu.css; 흑단 is drawn here.
 hwBack('ebony', ['#2a2c31', '#08090b'], SILVER, 'lattice', 'star');
@@ -312,9 +340,11 @@ for (const t of THEMES) {
   if (t.ways) {
     const noir = t.ways.find(w => w.way === 'noir'), ivory = t.ways.find(w => w.way === 'ivory');
     hwBack(`${t.key}-classic`, t.back.base, line, t.back.field, t.emblem);
+    hwBack(`${t.key}-matte`, t.back.base, line, t.back.field, t.emblem, true);
     hwBack(`${t.key}-noir`, noir.back, line, t.back.field, t.emblem);
     hwBack(`${t.key}-red`, CINNABAR, line, t.back.field, t.emblem);
     hwFace(`${t.key}-classic`, 'rim', t.back.base, line);
+    hwFace(`${t.key}-matte`, 'matte', ivory.ink || '#1a1c20', line);
     hwFace(`${t.key}-noir`, 'noir', null, line);
     hwFace(`${t.key}-red`, 'hanji', ivory.ink || '#1a1c20', line);
   }

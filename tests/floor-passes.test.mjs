@@ -20,11 +20,11 @@ function player(amount) {
   return { state, u };
 }
 
-test('every floor has three looks in each slot, priced one to seven of its smallest bets', () => {
+test('every floor has three looks in each slot (four for hwatu: 무광 too), priced one to seven of its smallest bets', () => {
   assert.deepEqual(Object.keys(PASS_ITEMS), FLOORS.slice(1).map(f => f.slug));
   for (const f of FLOORS) {
     const items = COSMETICS.filter(x => x.floor === f.slug);
-    for (const slot of SLOTS) assert.equal(items.filter(x => x.slot === slot).length, 3, `${f.slug} ${slot}`);
+    for (const slot of SLOTS) assert.equal(items.filter(x => x.slot === slot).length, slot.startsWith('hwatu') ? 4 : 3, `${f.slug} ${slot}`);
     for (const x of items) {
       assert.ok(isMoney(x.price), x.id);
       assert.ok(x.price >= f.minBet && x.price <= f.minBet * 7, x.id);

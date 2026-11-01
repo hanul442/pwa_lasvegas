@@ -10,13 +10,12 @@
 .shop-summary--two{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 6px}
 .shop-note{margin:12px 0 4px;color:var(--smoke);font-size:14px;line-height:1.6}
 
-.skin-grid,.skin-slots{list-style:none;margin:0;padding:0}
+.skin-grid,.skin-row{list-style:none;margin:0;padding:0}
 .shop-head{margin-top:26px}
 .shop-empty{margin:4px 0 0;padding:18px;border:1px dashed var(--hair-strong);border-radius:16px;color:var(--smoke);font-size:14px;line-height:1.6}
 
   background:radial-gradient(120% 90% at 20% 0,#22262d,#0d0e10 70%)}
 
-.skin-slot:focus-visible{outline:2px solid var(--white);outline-offset:2px}
 
 /* sheets */
 .shop-sheet-body{margin-top:6px}
@@ -111,12 +110,7 @@
 .podium-name .name-frame,.rank-name .name-frame{padding-top:0;padding-bottom:0}
 
 /* ---------- floor passes in the 꾸미기 tab ---------- */
-.pass-floor{scroll-margin-top:110px;border-radius:20px;outline:1px solid transparent;outline-offset:8px;transition:outline-color 1.2s}
-.pass-floor.is-focus{outline-color:#ffffff8c;animation:pass-focus 2.6s ease-out forwards}
-@keyframes pass-focus{70%{outline-color:#ffffff8c}to{outline-color:transparent}}
 .pass-mark{width:13px;height:13px;clip-path:var(--star-shape);background:#ffffff38;flex:none}
-.pass-floor.is-passed .pass-mark{background:var(--star)}
-.pass-floor.is-due .pass-head small{color:var(--white)}
 .floor-pass-go{margin-top:10px;min-height:40px;font-size:14px}
 .tier-card.needs-pass{cursor:pointer}
 .tier-card.needs-pass small{color:var(--white)}
@@ -137,35 +131,6 @@
 .skin-stage-chips{--chip:40px;display:flex;align-items:flex-end}
 .skin-stage-chips{gap:6px}
 .skin-stage-name{grid-column:1/-1;justify-self:center;font:600 15px var(--sans);letter-spacing:-.01em;padding:4px 12px;border-radius:999px;background:#0008}
-.skin-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--hair)}
-.skin-slots li{display:flex;min-width:0}
-.skin-slots li+li{border-left:1px solid var(--hair)}
-.skin-slots li:nth-child(4){border-left:0}.skin-slots li:nth-child(n+4){border-top:1px solid var(--hair)}
-.skin-slot{display:grid;align-content:center;gap:1px;width:100%;min-height:58px;padding:8px 10px;border:0;background:none;text-align:left;min-width:0}
-.skin-slot small{font-size:12px;color:var(--smoke);white-space:nowrap}
-.skin-slot span{font:600 13.5px/1.3 var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.skin-slot.is-active{background:#ffffff0d;box-shadow:inset 0 -2px 0 var(--white)}
-@media (max-width:420px){.skin-slots{grid-template-columns:repeat(2,minmax(0,1fr))}.skin-slots li:nth-child(4){border-left:1px solid var(--hair)}.skin-slots li:nth-child(odd){border-left:0}.skin-slots li:nth-child(n+3){border-top:1px solid var(--hair)}}
-
-/* the view switch under it: floors, or one slot at a time */
-.shop-filter{display:flex;gap:8px;margin:18px -16px 0;padding:0 16px 2px;overflow-x:auto;scrollbar-width:none}
-.shop-filter::-webkit-scrollbar{display:none}
-.shop-filter-chip{flex:none;min-height:40px;padding:0 15px;border:1px solid var(--hair-strong);border-radius:999px;background:none;color:var(--smoke);font-size:14px;white-space:nowrap}
-.shop-filter-chip.is-active{background:var(--white);border-color:var(--white);color:var(--ink);font-weight:600}
-
-/* floors fold: the one worth buying into opens by itself */
-details.pass-floor{margin-top:12px;padding:0 14px;border:1px solid var(--hair);border-radius:18px;background:#0b0c0e}
-details.pass-floor[open]{padding-bottom:14px}
-details.pass-floor.is-due{border-color:var(--hair-strong)}
-.pass-floor>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:4px 10px;min-height:60px;padding:12px 0}
-.pass-floor>summary::-webkit-details-marker{display:none}
-.pass-floor>summary::after{grid-column:4;grid-row:1;content:"";width:8px;height:8px;border:solid var(--smoke);border-width:0 1.5px 1.5px 0;rotate:45deg;translate:0 -2px;transition:rotate .2s}
-.pass-floor[open]>summary::after{rotate:225deg;translate:0 2px}
-.pass-name{font:600 19px var(--display);font-stretch:112%;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pass-count{grid-column:3;grid-row:1;font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums}
-.pass-state{grid-column:2/-1;font-size:13px;color:var(--smoke);line-height:1.4}
-.pass-floor.is-due .pass-state{color:var(--white)}
-.pass-floor .skin-grid{margin-top:2px}
 
 
 /* ---------- what owning something does at the table (looks only) ---------- */
@@ -230,17 +195,6 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
 .name-frame--attend::after{content:"";position:absolute;left:50%;bottom:2px;width:31px;height:3px;margin-left:-15.5px;background:radial-gradient(circle at 1.5px 1.5px,#c8352b 1.5px,transparent 1.6px) 0 0/5px 3px repeat-x}
 
 
-/* 시즌 한정 section in the shop */
-.season-shop{margin:4px 0 18px;padding:14px;border:1px solid var(--hair-strong);border-radius:18px;background:linear-gradient(180deg,#ffffff08,#ffffff02)}
-.season-shop-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 4px}
-.season-shop-head h3{margin:0;font-size:16px;font-weight:700}
-.season-shop-head small{color:var(--smoke);font-size:12px}
-.season-shop .shop-note{margin:0 0 12px}
-.skin-tile .skin-limited{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;border:1px solid var(--hair-strong);font-size:10px;font-weight:700;letter-spacing:.04em;vertical-align:1px}
-
-.season-shop--past{border-color:var(--hair);background:none}
-.season-shop--past .season-shop-head{margin-bottom:12px}
-
 /* PC: the "착용 중" stage is a wide strip, so the pieces on it grow with it */
 @media (min-width:980px){
   .skin-stage{min-height:220px}
@@ -249,3 +203,73 @@ details.pass-floor.is-due{border-color:var(--hair-strong)}
   .skin-stage-chips{--chip:60px;gap:10px}
   .skin-stage-name{font-size:18px;padding:6px 16px}
 }
+
+/* ---------- the shop's layout (PR: 상점 정리) ----------
+   A small picture of what I wear, four tabs that stay on top, a row of floor or kind chips, then
+   one shelf per kind (or per floor), each a single row you swipe sideways. */
+.skin-worn{position:relative}
+.skin-worn .skin-stage{min-height:128px;padding:16px 14px 12px;gap:8px 20px}
+.skin-worn .skin-stage-cards{--card-w:42px}
+.skin-worn .skin-stage-cards--hw{--hw-w:32px}
+.skin-worn .skin-stage-chips{--chip:34px}
+.skin-worn .skin-stage-name{font-size:13.5px;padding:3px 10px}
+.skin-worn-label{position:absolute;left:12px;top:10px;margin:0;font-size:11.5px;font-weight:600;letter-spacing:.08em;color:#ffffffb3}
+
+.shop-tabs{position:sticky;top:calc(var(--top-h) + env(safe-area-inset-top));z-index:6;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;margin:14px -20px 0;padding:8px 20px;background:#0a0b0d;border-bottom:1px solid var(--hair)}
+.shop-tab{min-height:42px;padding:0 4px;border:0;border-radius:12px;background:none;color:var(--smoke);font-size:14.5px;font-weight:600;white-space:nowrap}
+.shop-tab.is-active{background:var(--white);color:var(--ink)}
+.shop-tab:focus-visible,.shop-pick:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+
+.shop-picker{display:flex;gap:6px;margin:12px -20px 0;padding:0 20px 2px;overflow-x:auto;scrollbar-width:none;scroll-padding:0 20px}
+.shop-picker::-webkit-scrollbar{display:none}
+.shop-pick{flex:none;display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 14px;border:1px solid var(--hair-strong);border-radius:999px;background:none;color:var(--smoke);font-size:14px;white-space:nowrap}
+.shop-pick.is-active{border-color:var(--white);color:var(--white);font-weight:600;box-shadow:inset 0 0 0 1px var(--white)}
+.pick-mark{width:9px;height:9px;clip-path:var(--star-shape);background:#ffffff38}
+.pick-mark.is-open{background:var(--star)}
+
+.shop-floor-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;margin-top:16px;scroll-margin-top:120px;border-radius:14px;outline:1px solid transparent;outline-offset:6px}
+.shop-floor-head h2{margin:0;font:600 22px/1.15 var(--display);font-stretch:112%;letter-spacing:-.02em}
+.shop-floor-head small{display:block;margin-top:2px;font-size:13px;color:var(--smoke);line-height:1.4}
+.shop-floor-head .pass-mark{width:15px;height:15px}
+.shop-floor-head.is-open .pass-mark{background:var(--star)}
+.shop-floor-count{font-size:13px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.shop-floor-head.is-focus{animation:pass-focus 2.6s ease-out forwards}
+@keyframes pass-focus{0%,70%{outline-color:#ffffff8c}to{outline-color:transparent}}
+
+.shop-shelf{margin-top:18px}
+.shop-shelf-head{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}
+.shop-shelf-head h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.shop-shelf-count,.shop-shelf-head small{font-size:12.5px;color:var(--smoke);font-variant-numeric:tabular-nums}
+.shop-shelf-head small{margin-left:auto}
+.shop-shelf+.shop-shelf{padding-top:16px;border-top:1px solid var(--hair)}
+.shop-pane>.shop-note b{color:var(--white)}
+
+.skin-row{display:grid;grid-auto-flow:column;grid-auto-columns:max(146px,calc((100% - 30px) / 4));gap:10px;margin:0 -20px;padding:0 20px 4px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 20px;scrollbar-width:none;overscroll-behavior-x:contain}
+.skin-row::-webkit-scrollbar{display:none}
+.skin-row>.skin-tile{scroll-snap-align:start}
+.skin-row .skin-tile{gap:8px;padding:10px;border-radius:14px;grid-template-rows:auto 1fr auto}
+.skin-row .skin-preview{height:96px;border-radius:10px}
+.skin-row .skin-preview--cardBack{--card-w:46px}
+.skin-row .skin-preview--hwatuBack{--hw-w:38px}
+.skin-row .skin-preview--hwatuFace{--hw-w:34px}
+.skin-row .skin-preview--chips{--chip:32px;padding-bottom:16px}
+.skin-row .skin-preview--chips .chip--plaque{--size:28px}
+.skin-row .skin-preview--felt{--card-w:34px;--chip:26px}
+.skin-row .skin-preview--frame{font-size:14px}
+@media (max-width:620px){.skin-row .skin-preview--frame .name-frame{zoom:.84}}
+.skin-row .skin-name{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-row .skin-text small{font-size:12px;line-height:1.4}
+.skin-row .skin-act{min-height:36px;padding:0 12px;font-size:13.5px}
+.skin-row .skin-on{min-height:36px;font-size:13.5px}
+.skin-row .skin-lock{font-size:12.5px;gap:6px;align-self:end;min-height:36px;display:flex;align-items:center}
+@media (min-width:980px){
+  .shop-tabs{margin:14px 0 0;padding:8px 0}
+  .shop-picker,.skin-row{margin:12px 0 0;padding:0}
+  .skin-row{margin:0;grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));overflow:visible}
+  .skin-worn .skin-stage{min-height:180px}
+  .skin-worn .skin-stage-cards{--card-w:58px}
+  .skin-worn .skin-stage-cards--hw{--hw-w:44px}
+  .skin-worn .skin-stage-chips{--chip:46px}
+  .skin-worn .skin-stage-name{font-size:15px}
+}
+.skin-row .skin-lock::before{content:"";width:10px;height:12px;background:currentColor;clip-path:polygon(0 45%,100% 45%,100% 100%,0 100%,0 45%,18% 45%,18% 25%,30% 8%,50% 0,70% 8%,82% 25%,82% 45%,66% 45%,66% 28%,58% 18%,50% 15%,42% 18%,34% 28%,34% 45%)}

@@ -78,6 +78,8 @@ test('맞고 room: a loss past the table chips is paid from the wallet and the w
   let x = 11, clock = Date.now();
   const rand = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
   const ctx = () => ({ now: clock, rand, validateStake: (user, f, s) => validateRoomStake(user, FLOORS.find(y => y.slug === f), s) });
+  const { rpOf } = await import('../lib/rank-points.mjs');
+  for (const u of [a, b]) { rpOf(u, clock); u.rp.points = 190; } // 아이언 I: room for a big loss, no 방어전
   const room = createRoom(state, a, { game: 'matgo', stake, floor: floor.slug }, ctx());
   joinRoom(state, b, room.code, ctx());
   startRoom(state, a, room.code, ctx());
@@ -90,7 +92,13 @@ test('맞고 room: a loss past the table chips is paid from the wallet and the w
         const nets = Object.values(r.nets);
         assert.equal(nets[0] + nets[1], 0, 'what one paid the other got');
         for (const u of [a, b]) assert.equal(u.account.locked, 0, 'nothing stays locked between hands');
-        if (Math.min(...nets) < -deposit) big++;
+        if (Math.min(...nets) < -deposit) {
+          big++;
+          // RP counts the loss against the deposit, like the win: losing 30 points is −30 × 0.75, not −10.
+          const loser = [a, b].find(u => r.nets[u.id] < -deposit);
+          assert.equal(loser.rp.last.delta, Math.round(r.nets[loser.id] / deposit * 10 * 0.75));
+          assert.ok(loser.rp.last.delta < -8, 'a loss past the deposit costs more than a whole-deposit loss');
+        }
         // Back to just the deposit on the table for the next hand.
         for (const u of [a, b]) { u.account.wallet += u.account.available - deposit; u.account.available = deposit; }
       }
@@ -102,4 +110,24 @@ test('맞고 room: a loss past the table chips is paid from the wallet and the w
     roomAction(state, user, room.code, { handNo: room.handNo, seq: room.events.length, ...matgoAiDecision(r, seat, m => Math.floor(rand() * m)) }, ctx());
   }
   assert.ok(big >= 1, `a hand lost more than the deposit within ${seen.size} hands`);
+});
+
+// 2026-11-01 한서 "Rp 내려가는건 왜 배율이 없냐": a 54-point win was +54 but a 54-point loss only
+// −10, because the loss was measured against the lock that grew to cover it. Both sides count
+// against the 10-point deposit now.
+test('맞고: a loss past the deposit moves RP as far as a win of the same size', async () => {
+  const { rpOf } = await import('../lib/rank-points.mjs');
+  const { state, user } = seated({ chips: 100 * M, wallet: 500 * M });
+  rpOf(user); user.rp.points = 190;
+  const roundId = 'big-loss';
+  lockBet(state, user, { stake: 10 * M, game: 'Matgo', roundId });
+  const out = chargeOverDeposit(state, user, { net: -54 * M, locked: 10 * M, game: 'Matgo', roundId });
+  settleLockedHouseGame(state, user, { game: 'Matgo', stake: out.locked, netPnl: out.net, roundId, rpStake: 10 * M });
+  assert.equal(user.rp.last.delta, Math.round(-54 * 0.75), '아이언 loses 3/4: −41, not −8');
+});
+
+test('맞고·고스톱 settle code passes the deposit as the RP stake', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile(new URL('../lib/card-room.mjs', import.meta.url), 'utf8');
+  assert.equal(src.match(/game: '(Matgo|Gostop)', stake: locked, netPnl: net, roundId: round\.id, rpStake: deposit/g)?.length, 2);
 });

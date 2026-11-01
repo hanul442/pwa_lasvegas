@@ -1,0 +1,60 @@
+/* ---------- matte finish ----------
+   The whole app reads as soft-touch matte instead of shiny plastic: a fine still grain on the
+   black surfaces, chalk-white buttons instead of bright white, a suede
+   rail around the felt, and soft satin light on cards and chips instead of hard glossy streaks.
+   Nothing here moves: the grain is one small still tile (art/grain.png, scripts/grain.mjs). */
+:root{--chalk:#e9e8e4;--chalk-hi:#f1f0ec;--go:var(--chalk);--matte-grain:url("art/grain.png")}
+
+/* Black surfaces: a touch lifted off pure black, with a fine still grain, the way matte black
+   looks under room light. The grain sits only on dark surfaces; cards and white buttons stay clean. */
+body{background:var(--matte-grain) 0 0/96px 96px,radial-gradient(80% 50% at 50% -14%,#1c2026 0,transparent 70%),#0c0d0f;background-attachment:fixed}
+html{background:#0c0d0f}
+.topbar,.bottom-nav,.sheet,.lounge-sheet{background-image:var(--matte-grain);background-size:96px 96px}
+.topbar,.bottom-nav{background-color:#0c0d0f}
+
+/* Main buttons: chalk white with a faint pressed edge, no shine. */
+.pill-button--solid,.action--primary,.pill-button.is-active{background:var(--chalk);border-color:var(--chalk);box-shadow:inset 0 -1px 0 #00000014}
+.action--primary:not(:disabled):hover,.pill-button--solid:not(:disabled):hover{background:var(--chalk-hi)}
+.pill-button--solid.pill-button--danger{background:var(--signal);border-color:var(--signal);box-shadow:none}
+
+/* Panels with a light-to-clear top sheen become flat matte tiles. */
+.jk-summary-open,.rank-card,.season-end-me,.season-shop{background:#ffffff07}
+.jk-tile.is-got .jk-tile-btn{background:#ffffff09}
+
+/* The rail around the felt: soft-touch suede black, no lacquer highlight at the top. */
+.felt{--felt-rail:linear-gradient(180deg,#22252a,#141619 20%,#0f1013 72%,#181a1e);
+  box-shadow:0 0 0 1px #ffffff0d,inset 0 0 0 1px #000a,inset 0 0 0 2px var(--felt-piping,#ffffff12),inset 0 0 90px #000b,0 24px 60px #000c}
+
+/* Chips: clay, not plastic. The top-left sheen is halved. */
+.chip:not(.chip--plaque){
+  background:
+    linear-gradient(155deg,#ffffff0d 0,transparent 34%,transparent 66%,#0000002e 100%),
+    radial-gradient(circle closest-side,transparent 0 76.5%,color-mix(in srgb,var(--rim) 45%,#000) 77.5% 79%,transparent 79.5%),
+    radial-gradient(circle closest-side,var(--c) 0 70%,color-mix(in srgb,var(--c) 88%,#000) 77.5%,transparent 78%),
+    radial-gradient(circle closest-side,transparent 0 93%,#00000052 100%),
+    repeating-conic-gradient(from -11deg,transparent 0 9.6deg,color-mix(in srgb,var(--rim) 80%,#000) 9.6deg 12.4deg,transparent 12.4deg 60deg),
+    repeating-conic-gradient(from -11deg,var(--edge) 0 22deg,var(--rim) 22deg 60deg)}
+.chip:not(.chip--plaque)::before{background:radial-gradient(circle closest-side,color-mix(in srgb,var(--c) 95%,#fff) 0,var(--c) 100%)}
+
+/* Tilt light (js/shine.js): a soft satin glow that drifts, no bright specular stripe. */
+.card-face::after{background:radial-gradient(90% 70% at var(--shine-x) var(--shine-y),#ffffff2b,transparent 72%),linear-gradient(165deg,transparent 45%,#00000012)}
+.chip-shine{background:radial-gradient(circle at var(--shine-x) var(--shine-y),#ffffff3d 0,#ffffff14 26%,transparent 52%),radial-gradient(circle at calc(100% - var(--shine-x)) calc(100% - var(--shine-y)),#00000026,transparent 55%)}
+.chip--plaque .chip-shine{background:radial-gradient(80% 90% at var(--shine-x) var(--shine-y),#ffffff33,transparent 70%)}
+
+/* Dealer paddle and tip box: drop the glossy top edge. */
+.dealer-paddle{background:linear-gradient(#1f2226,#101114);box-shadow:0 0 0 1px #f4f5f726,0 6px 10px #000a}
+.toke{background:linear-gradient(#1d2024,#0f1013);box-shadow:inset 0 -1px 0 #0009,0 0 0 1px #f4f5f71f,0 4px 10px #000a}
+.toke:hover,.toke.is-hover{box-shadow:0 0 0 1.5px #f4f5f7aa,0 4px 12px #000a}
+
+/* Solid dark tiles get the same grain, so they match the page around them. */
+.daily-card,.daily-stats div,.lender,.duel-form,.wr-row,.rank-me,.guest-card,.invite-card,.usage-tiles>div,.today-chip,.admin-form,.rp-rule-tiles li,.wallet-split div,.segmented,.wallet,.table-balance,.subtab,.filter-tab,.home-more{background-image:var(--matte-grain);background-size:96px 96px}
+
+/* Other white fills (speech bubbles, tips, picked tabs and toggles) take the same chalk white. */
+.crowd-bubble,.callout,.sd-bubble,.coach-bubble,.tip-line,.talk,.pk-say,.resume-button,.app-toast-action,.install-pill,.news-join,
+.buyin-pick.is-active,.switcher-tier.is-current,.friend-seg button[aria-checked="true"],.friend-tiers button[aria-checked="true"],
+.shop-filter-chip.is-active,.jk-tab.is-active,.sd-count button[aria-checked="true"],.bank-terms .segment[aria-checked="true"],
+.hr-tool[aria-pressed="true"],.hr-kinds button[aria-pressed="true"],.slot-auto button[aria-pressed="true"],.slot-mode button[aria-pressed="true"],
+.switch[aria-checked="true"],.subtab.is-active,.filter-tab.is-active{background:var(--chalk)}
+
+/* The home card: flat matte tile, no lacquer line along the top. */
+.first-day{background:var(--matte-grain) 0 0/96px 96px,linear-gradient(180deg,#141619,#0e0f11);box-shadow:inset 0 0 0 1px #ffffff14}

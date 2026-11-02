@@ -42,6 +42,7 @@ import { handBookBlock, watchHandBook } from './js/hand-book.js';
 import { replayBlock, loadReplays } from './js/replay.js';
 import { bragRank, bragTier } from './js/brags.js';
 import { remember } from './js/seen.js';
+import { raceHtml, homeRaceHtml, startRaceClock } from './js/race.js';
 import { tierHeroHtml, promoHtml, rpCardHtml, leagueHtml, tierStepsHtml, tierPastHtml, friendRecordHtml, myMonthRank } from './js/rank-tab.js';
 import { tierEmblem, tierName, nextStepText, rankBadges, celebrateTier, maybeSeasonMoment, maybeSeasonWarning, seasonEndBlock, seasonEnding, seasonLeft, seasonClock, watchSeasonEnd } from './js/rank.js';
 
@@ -733,10 +734,11 @@ function renderHomeTier() {
   b.innerHTML = `${tierEmblem(rs.tier, { size: 40, label: false })}
     <span class="home-tier-main"><span class="home-tier-line"><strong>${tierName(rs.tier, rs.division)}</strong><span>${score}</span></span>
     <span class="home-tier-bar" aria-hidden="true"><i style="width:${pct}%"></i></span>
-    <small>${next}</small></span>
+    <small>${next}</small>${homeRaceHtml(state)}</span>
     <span class="home-tier-rank">${place ? `${place.rank}<small>위</small>` : '<small>랭킹</small>'}</span>`;
   b.addEventListener('click', () => openRankBoard());
   slot.replaceChildren(b);
+  startRaceClock();
 }
 
 function renderCats() {
@@ -1076,6 +1078,9 @@ function renderTierPane() {
   const hero = document.querySelector('[data-tier-hero]');
   const rs = state?.rankSeason;
   hero.className = `tier-hero${rs ? ` tier-hero--${rs.tier}` : ''}`;
+  const race = document.querySelector('[data-race]');
+  race.innerHTML = raceHtml(state, (id, n) => nameFrame(state, id, n));
+  if (race.innerHTML) startRaceClock();
   hero.innerHTML = tierHeroHtml(state) + promoHtml(state);
   hero.querySelector('[data-season-rules]')?.addEventListener('click', openSeasonEnd);
   hero.querySelector('[data-promo-start]')?.addEventListener('click', openPromoSheet);
@@ -1348,6 +1353,7 @@ function takeDailyLink() {
   return true;
 }
 // 받기 on a friend's 도전 banner (js/news.js): sit at their table like an invite link would.
+document.addEventListener('vegas:open-ranking', () => openRankBoard());
 document.addEventListener('vegas:join-room', e => { const d = e.detail || {}; if (setPendingJoin({ ...d, tier: d.floor || d.tier })) openInvite(); });
 // ./?rank=friends from a "친구가 들어왔어요" push: open the friends list.
 let friendsWanted = (() => {

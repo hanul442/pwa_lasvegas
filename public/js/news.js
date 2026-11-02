@@ -77,6 +77,18 @@ function next() {
     });
     banner.append(go);
   }
+  // 시즌 레이스 (lib/rank-race.mjs): someone passed me; one tap to the board (not from a table).
+  if (n.go === 'ranking' && !document.body.classList.contains('game-mode')) {
+    const go = el('button', 'news-join', '보기');
+    go.type = 'button';
+    go.addEventListener('pointerdown', e => e.stopPropagation());
+    go.addEventListener('click', e => {
+      e.stopPropagation();
+      document.dispatchEvent(new CustomEvent('vegas:open-ranking'));
+      close();
+    });
+    banner.append(go);
+  }
   document.body.append(banner);
   requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('is-open')));
   if (n.push) haptic(25);
@@ -92,7 +104,7 @@ function next() {
   let startY = null;
   banner.addEventListener('pointerdown', e => { startY = e.clientY; });
   banner.addEventListener('pointermove', e => { if (startY !== null && e.clientY - startY < -16) close(); });
-  setTimeout(close, (document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW) + (n.reactable ? 1800 : 0) + (n.join ? 6000 : 0));
+  setTimeout(close, (document.body.classList.contains('game-mode') ? SHOW_AT_TABLE : SHOW) + (n.reactable ? 1800 : 0) + (n.join ? 6000 : 0) + (n.go ? 2000 : 0));
 }
 
 export function startNews() {

@@ -62,7 +62,8 @@ export async function mountMatgo(ctx) {
     label: '맞고', word: '점당',
     soloBusy: () => Boolean(view && view.status === 'PLAYING'),
     begin, apply, snapshot, refreshActions,
-    clear: () => clearFelt()
+    clear: () => clearFelt(),
+    seatName: name => { t.body.querySelector('.mg-seat--me .mg-name').firstChild.textContent = `${name} `; }
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
 

@@ -37,6 +37,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
   let prompted = ''; // the hand and turn "Your action" was last called for
   // 관전 (lib/watch.mjs): the friend whose chair I watch from, their cards included; nothing to play.
   let watching = null, watchName = '';
+  let demo = false; // 구경하기: an AI-only table, one hand after another (watchDemo below)
 
   // ---------- lobby panel ----------
   const panel = el('div', 'pk-lobby');
@@ -371,7 +372,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
   // ---------- polling ----------
   function schedule(delay = POLL_MS) {
     clearTimeout(pollTimer);
-    if (active) pollTimer = setTimeout(poll, delay);
+    if (active && !demo) pollTimer = setTimeout(poll, delay);
   }
   async function poll() {
     if (!active || gone) return;
@@ -502,6 +503,106 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     await enqueue(res.room, sent, Date.now());
   }
 
+  // ---------- 구경하기 ----------
+  // Six house bots play real hands at this floor's stakes and I watch from one bot's chair, its
+  // cards included. No chips move. 참여하기 opens the table fresh, ready to sit down.
+  const DEMO_GAP = 3000;
+  let demoStarting = false, demoNo = 0;
+  const fetchDemo = () => api.holdemRoomDemo(game, t.tier.floor).then(r => r.room);
+  async function watchDemo() {
+    if (active || demoStarting) return;
+    if (hooks.soloOpen?.() || t.busy) { t.toast('지금 앉은 자리를 정리하고 구경할 수 있어요'); return; }
+    demoStarting = true;
+    let view;
+    try { view = await fetchDemo(); } catch (e) { t.toast(errorMessage(e)); return; } finally { demoStarting = false; }
+    if (active) return;
+    close();
+    demo = true;
+    watching = 'demo';
+    watchName = view.watching?.nickname || 'AI';
+    active = true;
+    code = 'DEMO';
+    cursor = null;
+    room = view;
+    pk.setStakes(view.floor);
+    hooks.useStakes?.(view.table);
+    pk.me = 0;
+    pk.meName = watchName;
+    pk.clear();
+    hooks.showSeated(true);
+    t.locked = true;
+    t.root.classList.add('is-room', 'is-watching', 'is-demo');
+    setRoomName(`${label} 구경 중`, seven ? formatCH(view.table.ante) : `${formatCH(pk.bb / 2)}/${formatCH(pk.bb)}`);
+    chipEl.hidden = true;
+    chat.show(false);
+    refreshActions();
+    t.toast('AI들끼리 치는 판을 구경해요. 언제든 참여하기를 누르세요');
+    demoLoop(view);
+  }
+  async function demoLoop(first) {
+    let view = first;
+    while (active && demo && view) {
+      demoNo += 1;
+      watchName = view.watching?.nickname || 'AI';
+      pk.meName = watchName;
+      const upcoming = fetchDemo().catch(() => null); // the next hand loads while this one plays
+      const v = view;
+      applying = applying.then(async () => {
+        if (!active || !demo) return;
+        room = v;
+        pk.hintLine.hidden = false;
+        pk.hintLine.textContent = `👀 ${watchName} 자리 어깨너머 구경 중`;
+        pk.clock(-1);
+        await pk.sweep();
+        if (pk.layout !== pk.layoutKey(v.table)) pk.buildSeats(v.table);
+        refreshActions();
+        await pk.playEvents(v.events, v.table);
+        cursor = { hand: demoNo, from: v.events.length };
+      }).catch(() => {});
+      await applying;
+      if (!active || !demo) return;
+      pk.hintLine.textContent = '다음 판을 곧 돌려요';
+      await sleep(DEMO_GAP);
+      while (active && demo && document.hidden) await sleep(500);
+      view = await upcoming;
+      for (let tries = 0; !view && tries < 3 && active && demo; tries++) { await sleep(2000); view = await fetchDemo().catch(() => null); }
+    }
+    if (active && demo) await stopDemo('구경을 마쳤어요');
+  }
+  async function stopDemo(message) {
+    stop();
+    active = false;
+    demo = false;
+    pk.halted = true;
+    await applying;
+    pk.halted = false;
+    watching = null;
+    pk.meName = '나';
+    t.root.classList.remove('is-watching', 'is-demo');
+    await standDown(message);
+  }
+  // A poker hand can run on a while, so the table opens fresh rather than wait for it.
+  function joinFromDemo() {
+    if (!demo) return;
+    demo = false;
+    active = false;
+    pk.halted = true;
+    dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game: seven ? 'sevenpoker' : 'poker', tier: t.tier.slug } }));
+  }
+  // The 구경하기 button sits beside 친구와 함께.
+  const friendsOpen = t.body.querySelector('[data-friends-open]');
+  if (friendsOpen) {
+    const demoBtn = el('button', 'pk-friends-open rm-demo-open', '구경하기');
+    demoBtn.type = 'button';
+    demoBtn.setAttribute('aria-label', 'AI들끼리 치는 판 구경하기');
+    demoBtn.addEventListener('click', () => { sound.tick(); watchDemo(); });
+    const pair = el('div', 'rm-entry pk-entry');
+    friendsOpen.replaceWith(pair);
+    pair.append(demoBtn, friendsOpen);
+    pair.hidden = friendsOpen.hidden;
+    new MutationObserver(() => { pair.hidden = friendsOpen.hidden; }).observe(friendsOpen, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
   // ---------- controls ----------
   // 7포커's open-card pick is everyone's at once, so it needs no turn of mine.
   const legal = () => (room && room.me >= 0 && !room.table.handOver && (room.table.toAct === room.me || room.table.legal?.phase === 'CHOOSE') && !pk.animating ? room.table.legal : null);
@@ -555,6 +656,12 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     const { sizer } = bar;
     const me = room?.table.seats[room.me];
     t.betEl.textContent = formatCH(me?.stack ?? 0);
+    if (demo) {
+      sizer.hidden = true;
+      t.hint('');
+      t.setActions([{ label: '참여하기', primary: true, anytime: true, onClick: joinFromDemo }, { label: '칩 없이 구경 중', ghost: true, disabled: true }]);
+      return;
+    }
     if (watching) {
       sizer.hidden = true;
       const tb = room?.table;
@@ -749,6 +856,8 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
 
   return {
     get active() { return active; },
+    get demo() { return demo; },
+    watchDemo,
     legal, refreshActions, open, resume, act, view: () => room, street: () => room?.table.street,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },
     stop: () => { stop(); active = false; chat.destroy(); document.removeEventListener('visibilitychange', onVisible); }

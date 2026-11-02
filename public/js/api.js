@@ -187,6 +187,8 @@ export const api = {
   nightlyUnregister: () => request('/api/nightly/unregister', { method: 'POST', body: {} }),
   // Friends' rooms. cursor { hand, from } asks for the events after what this screen has played.
   holdemRooms: (game = 'holdem') => request(game === 'holdem' ? '/api/holdem/rooms' : `/api/holdem/rooms?game=${encodeURIComponent(game)}`),
+  // 구경하기: one hand of an AI-only poker table (nothing stored, no chips move).
+  holdemRoomDemo: (game, floor) => request(`/api/holdem/rooms/demo?game=${encodeURIComponent(game)}&floor=${encodeURIComponent(floor || '')}`),
   holdemRoom: (code, cursor, watch) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}`),
   holdemRoomCreate: (buyIn, floor, size, mode = 'cash', bots = true, game = 'holdem') => request('/api/holdem/rooms', { method: 'POST', body: { buyIn, floor, size, mode, bots, game } }),
   holdemRoomJoin: code => request('/api/holdem/rooms/join', { method: 'POST', body: { code } }),
@@ -204,6 +206,8 @@ export const api = {
   roomStart: (code, cursor) => request('/api/rooms/start', { method: 'POST', body: { code, cursor } }),
   roomAction: (code, handNo, seq, move, cursor) => request('/api/rooms/action', { method: 'POST', body: { code, handNo, seq, ...move, cursor } }),
   roomLeave: code => request('/api/rooms/leave', { method: 'POST', body: { code } }),
+  // 구경하기: one hand of an AI-only table (nothing stored, no chips move).
+  roomDemo: (game, stake, floor) => request(`/api/rooms/demo?game=${game}&stake=${stake}&floor=${encodeURIComponent(floor || '')}`),
   roomChat: (code, line, cursor) => request('/api/rooms/chat', { method: 'POST', body: { code, ...line, cursor } })
 };
 

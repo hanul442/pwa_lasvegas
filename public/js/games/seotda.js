@@ -67,7 +67,8 @@ export async function mountSeotda(ctx) {
     label: '섯다', word: '판돈', sizes: [2, 3, 4, 5], size: 4,
     soloBusy: () => Boolean(view && view.status === 'PLAYING'),
     begin, apply, snapshot, refreshActions,
-    clear: () => clearFelt()
+    clear: () => clearFelt(),
+    seatName: name => { t.body.querySelector('.sd-meta .mg-name').textContent = name; }
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
   t.onBetChange = () => { refreshActions(); room.onBetChange(); };
@@ -103,7 +104,7 @@ export async function mountSeotda(ctx) {
     return s;
   }
 
-  const potText = (pot, put) => { potEl.innerHTML = `${formatCH(pot)}<small>판 · 내가 건 돈 ${formatCH(put)}</small>`; };
+  const potText = (pot, put) => { potEl.innerHTML = `${formatCH(pot)}<small>판 · ${room?.watching ? `${room.meName} 건 돈` : '내가 건 돈'} ${formatCH(put)}</small>`; };
   function paintPot(v) { if (v) potText(v.pot, v.contrib[ME]); else potEl.textContent = ''; }
 
   function paintSeats(v) {
@@ -277,7 +278,7 @@ export async function mountSeotda(ctx) {
     if (view.status === 'SETTLED') await finish(view, res.netPnl || 0);
   }
 
-  const nameOf = (v, s) => (s === ME ? '나' : v.players[s].name || 'AI');
+  const nameOf = (v, s) => (s === ME ? room.meName : v.players[s].name || 'AI');
 
   async function finish(v, net) {
     const r = v.result, won = r.winners.includes(ME), folded = v.players[ME].folded;

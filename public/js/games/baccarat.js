@@ -389,7 +389,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     setRoomScore('BANKER', v.bankerScore);
     mark(v.turn);
   }
-  async function roomClear() {
+  async function roomClear({ fromDemo = false } = {}) {
     rv = null;
     await clearCards();
     clearSeatStacks();
@@ -404,7 +404,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
       crowd.seats.forEach(n => { clearTimeout(n.timer); n.bets = []; });
       if (!inRoom && !t.locked) crowd.open();
     }
-    if (!inRoom) road.replaceChildren();
+    if (!inRoom && !fromDemo) road.replaceChildren(); // the coups watched from the rail stay on the road
   }
   function paintRoad(list) {
     if (!Array.isArray(list)) return;
@@ -435,7 +435,8 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
     stake: () => { const z = mainZone(); return z ? t.zoneTotal(z) : 0; },
     soloBusy: () => t.locked,
     begin: roomBegin, apply: roomApply, snapshot: roomSnapshot, refreshActions,
-    clear: roomClear
+    clear: roomClear,
+    demoFinishHand: true // a coup is over in seconds: 참여하기 waits for it and keeps the road
   });
   const friendsBtn = t.body.querySelector('[data-friends-open]');
   friendsBtn.addEventListener('click', () => { sound.tick(); room.open(); });

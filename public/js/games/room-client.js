@@ -24,6 +24,7 @@ export function createRoomClient(t, game, hooks) {
   let active = false;
   // 관전 (lib/watch.mjs): the friend whose chair I watch from; nothing at the table is mine to play.
   let watching = null, watchName = '';
+  let demo = false; // 구경하기: an AI-only table, one hand after another (watchDemo below)
   const own = { setActions: t.setActions.bind(t), settle: t.settle.bind(t), bigWin: t.bigWin.bind(t) };
   let pollTimer = null, listTimer = null, clockTimer = null;
   let queue = Promise.resolve();
@@ -194,6 +195,7 @@ export function createRoomClient(t, game, hooks) {
       t.resetRound();
     };
     t.bigWin = () => Promise.resolve();
+    hooks.seatName?.(watchName);
     await enter(res.room);
     t.toast(`${watchName}님 자리에서 관전해요. 카드는 ${watchName}님 것만 보여요`);
   }
@@ -233,6 +235,8 @@ export function createRoomClient(t, game, hooks) {
 
   async function exit(message) {
     stop();
+    const fromDemo = demo;
+    demo = false;
     active = false;
     room = null;
     code = null;
@@ -240,11 +244,12 @@ export function createRoomClient(t, game, hooks) {
     bar.hidden = true;
     chat.show(false);
     unwatch();
+    hooks.seatName?.('나');
     chipEl.hidden = false;
-    t.root.classList.remove('is-room', 'is-playing', 'is-watching');
+    t.root.classList.remove('is-room', 'is-playing', 'is-watching', 'is-demo');
     tableName.textContent = tableNameText;
     t.locked = false;
-    await hooks.clear();
+    await hooks.clear({ fromDemo });
     t.resetRound();
     try { t.setServerState(await api.state()); } catch {}
     await t.syncBalance();
@@ -282,7 +287,7 @@ export function createRoomClient(t, game, hooks) {
   // ---------- polling ----------
   function schedule(delay = POLL_MS) {
     clearTimeout(pollTimer);
-    if (active) pollTimer = setTimeout(poll, delay);
+    if (active && !demo) pollTimer = setTimeout(poll, delay);
   }
   async function poll() {
     if (!active) return;
@@ -391,6 +396,118 @@ export function createRoomClient(t, game, hooks) {
     clockTimer = setInterval(paint, 250);
   }
 
+
+  // ---------- 구경하기 ----------
+  // Sit on the rail of an AI-only table: the house AI play real hands of this game at this
+  // table's minimum, one after another, and I watch over the shoulder of one of them. No chips
+  // move. 참여하기 puts me back at my own table, ready to bet.
+  const DEMO_GAP = 2600;
+  const demoStake = () => hooks.demoStake?.() ?? t.tier.min;
+  const fetchDemo = () => api.roomDemo(game, demoStake(), t.tier.floor).then(r => r.hand);
+  const demoView = h => ({ code: 'DEMO', game, stake: h.stake, players: [], round: h.round, watching: { nickname: h.seats[0] }, watchers: [], started: true, handNo: 0, seq: 0, road: [] });
+  let joining = false, demoStarting = false;
+
+  async function watchDemo() {
+    if (active || demoStarting) return;
+    if (hooks.soloBusy() || t.busy || t.locked) { t.toast('이번 판을 마치고 구경할 수 있어요'); return; }
+    demoStarting = true;
+    let hand;
+    try { hand = await fetchDemo(); } catch (e) { t.toast(errorMessage(e)); return; } finally { demoStarting = false; }
+    if (active) return;
+    close();
+    if (t.total) await t.clearBet();
+    demo = true;
+    joining = false;
+    watching = 'demo';
+    watchName = hand.seats[0] || 'AI';
+    t.setActions = () => own.setActions(joining
+      ? [{ label: '이번 판 끝나면 앉아요', disabled: true }]
+      : [
+        { label: '참여하기', primary: true, anytime: true, onClick: joinFromDemo },
+        { label: '칩 없이 구경 중', ghost: true, disabled: true }
+      ]);
+    t.settle = async (net, { label } = {}) => {
+      t.banner(`${watchName} ${label || ''}`.trim(), net > 0 ? 'win' : net < 0 ? 'lose' : 'push', net);
+      await sleep(900);
+      t.resetRound();
+    };
+    t.bigWin = () => Promise.resolve();
+    active = true;
+    code = 'DEMO';
+    cursor = null;
+    t.locked = true;
+    t.root.classList.add('is-room', 'is-watching', 'is-demo');
+    tableName.textContent = `${label} 구경 중`;
+    chipEl.hidden = true;
+    bar.hidden = false;
+    chat.show(false);
+    room = demoView(hand);
+    await hooks.clear();
+    hooks.refreshActions();
+    t.toast('AI들끼리 치는 판을 구경해요. 언제든 참여하기를 누르세요');
+    demoLoop(hand);
+  }
+
+  async function demoLoop(first) {
+    let hand = first;
+    while (active && demo && hand) {
+      watchName = hand.seats[0] || 'AI';
+      room = demoView(hand);
+      hooks.seatName?.(watchName);
+      statusEl.textContent = `👀 ${watchName} 자리 어깨너머 구경 중`;
+      const upcoming = fetchDemo().catch(() => null); // the next hand loads while this one plays
+      const h = hand;
+      queue = queue.then(async () => {
+        if (!active || !demo) return;
+        t.busy = true;
+        t.actions.querySelectorAll('button:not([data-anytime])').forEach(b => { b.disabled = true; });
+        try { await hooks.begin({ round: h.round, events: h.events, netPnl: h.netPnl }); }
+        finally { t.busy = false; if (demo) hooks.refreshActions(); }
+      }).catch(() => {});
+      await queue;
+      if (!active || !demo || joining) break;
+      statusEl.textContent = '다음 판을 곧 돌려요';
+      await sleep(DEMO_GAP);
+      while (active && demo && document.hidden) await sleep(500);
+      hand = await upcoming;
+      for (let tries = 0; !hand && tries < 3 && active && demo; tries++) { await sleep(2000); hand = await fetchDemo().catch(() => null); }
+    }
+    if (joining) return;
+    if (active && demo) await exit('구경을 마쳤어요');
+  }
+
+  // A baccarat coup is over in seconds, so the felt (and its road) waits for it; a longer hand is
+  // left where it is and the table opens fresh, so joining never waits on a 고스톱 hand.
+  async function joinFromDemo() {
+    if (!demo || joining) return;
+    if (t.busy && !hooks.demoFinishHand) {
+      demo = false; active = false;
+      dispatchEvent(new CustomEvent('vegas:open-table', { detail: { game, tier: t.tier.slug } }));
+      return;
+    }
+    joining = true;
+    hooks.refreshActions();
+    await queue;
+    joining = false;
+    await exit('이제 칩을 올리고 시작하세요');
+  }
+
+  // The 구경하기 button sits beside 친구와 함께; the pair takes the place the game gave that button.
+  const friendsBtn = t.body.querySelector('[data-friends-open]');
+  const demoBtn = el('button', 'pk-friends-open rm-demo-open', '구경하기');
+  demoBtn.type = 'button';
+  demoBtn.setAttribute('aria-label', 'AI들끼리 치는 판 구경하기');
+  demoBtn.addEventListener('click', () => { sound.tick(); watchDemo(); });
+  if (friendsBtn) {
+    const pair = el('div', ['rm-entry', ...[...friendsBtn.classList].filter(c => c !== 'pk-friends-open')].join(' '));
+    friendsBtn.className = 'pk-friends-open';
+    friendsBtn.replaceWith(pair);
+    pair.append(demoBtn, friendsBtn);
+    // An event table hides 친구와 함께; 구경하기 goes with it.
+    pair.hidden = friendsBtn.hidden;
+    new MutationObserver(() => { pair.hidden = friendsBtn.hidden; }).observe(friendsBtn, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
   // ---------- moves ----------
   // Sends my move with the cursor of what this screen has played; the reply plays like a poll.
   async function act(move) {
@@ -423,6 +540,10 @@ export function createRoomClient(t, game, hooks) {
   return {
     get active() { return active; },
     get watching() { return Boolean(watching); },
+    get demo() { return demo; },
+    // Who sits in seat 0: me, or the chair I watch from.
+    get meName() { return watching ? watchName : '나'; },
+    watchDemo,
     get view() { return room; },
     open, resume, act, idleActions, leaveAction,
     onBetChange: () => { if (!panel.hidden) paintCreate(); },

@@ -52,12 +52,12 @@ export function noteRpChange(state, { quiet = false } = {}) {
   const motion = !reducedMotion();
   // A promotion opens on where I was, then turns over to where I am.
   const startTier = up && motion ? prev : now;
-  const said = `${signed(last.delta)} RP, ${label}${tierName(rp.tier, rp.division)} ${rp.points} RP`;
+  const said = `${signed(last.delta)} RP${last.spurt && last.delta > 0 ? ` (막판 스퍼트 ${last.spurt}배)` : ''}, ${label}${tierName(rp.tier, rp.division)} ${rp.points} RP`;
   // Screen readers get the end result once; the rolling numbers are for the eye.
   const html = `<span class="sr-only">${said}</span><span class="rp-pop-emblem" aria-hidden="true">${tierEmblem(startTier.tier, { size: up ? 36 : 26, label: false })}${up ? '<i class="rp-pop-ring"></i><i class="rp-pop-sparks">' + '<b></b>'.repeat(8) + '</i>' : ''}</span>
     <span class="rp-pop-text" aria-hidden="true">
       <b class="rp-pop-delta ${last.delta > 0 ? 'pos' : 'neg'}">${motion ? (last.delta > 0 ? '+0' : '-0') : signed(last.delta)} RP</b>
-      <span class="rp-pop-tier"><em class="rp-pop-label">${up && motion ? '' : label}</em><span class="rp-pop-name">${tierName(startTier.tier, startTier.division)}</span></span>
+      <span class="rp-pop-tier"><em class="rp-pop-label">${up && motion ? '' : label}</em><span class="rp-pop-name">${tierName(startTier.tier, startTier.division)}</span>${last.spurt && last.delta > 0 ? `<i class="rp-pop-spurt">스퍼트 ×${last.spurt}</i>` : ''}</span>
       ${promoWon ? `<span class="rp-pop-dots">${dotsHtml(pl.log, { fresh: motion })}</span>` : ''}<span class="rp-pop-bar" aria-hidden="true"><i style="width:${pct(motion ? prev.progress ?? rp.progress : rp.progress)}"></i></span>
       <small class="rp-pop-next"><b class="rp-pop-points">${tenthOf(motion ? from : rp.points)}</b> RP<span class="rp-pop-step"> · ${nextLine}</span></small>
     </span>`;

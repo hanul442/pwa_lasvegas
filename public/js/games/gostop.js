@@ -74,7 +74,8 @@ export async function mountGostop(ctx, { event = null } = {}) {
     label: '고스톱', word: '점당',
     soloBusy: () => Boolean(view && view.status === 'PLAYING'),
     begin, apply, snapshot, refreshActions,
-    clear: () => clearFelt()
+    clear: () => clearFelt(),
+    seatName: name => { t.body.querySelector('.mg-seat--me .mg-name').firstChild.textContent = `${name} `; }
   });
   t.body.querySelector('[data-friends-open]').addEventListener('click', () => { sound.tick(); room.open(); });
   // 타짜 나이트 or the plain table; a resumed round is drawn as whichever kind it really is.
@@ -394,7 +395,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
     nodes.forEach(n => n.remove()); nodes.clear();
     board.querySelectorAll('.mg-slot').forEach(s => s.remove());
     const round = res.round;
-    names = round.seats.map((s, i) => (i === ME ? '나' : s.name || `AI ${i}`));
+    names = round.seats.map((s, i) => (i === ME ? room.meName : s.name || `AI ${i}`));
     paintNames();
     const opening = round.opening;
     model = { hand: [], opp: [0, 0, 0], floor: [], pileCount: 48, captured: [[], [], []], ppeok: [] };
@@ -464,7 +465,7 @@ export async function mountGostop(ctx, { event = null } = {}) {
     await clearFelt();
     if (v.status !== 'PLAYING') return;
     view = v;
-    names = view.seats.map((s, i) => (i === ME ? '나' : s.name || `AI ${i}`));
+    names = view.seats.map((s, i) => (i === ME ? room.meName : s.name || `AI ${i}`));
     paintNames();
     if (room.active) t.locked = true; else t.lock();
     t.root.classList.add('is-playing');

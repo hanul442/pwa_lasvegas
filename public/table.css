@@ -1283,3 +1283,15 @@
 @media (max-height:900px) and (orientation:portrait){.bj:not(.is-insurance) .bj-insurance:not(.has-bet){visibility:hidden}}
 /* Side-bet circles stay readable when a hand's cards reach down to the box. */
 .bj-box .side-circle{z-index:6}
+
+/* 구경하기 (js/games/room-client.js): beside 친구와 함께, the pair sits where the game put that button. */
+.rm-entry{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rm-entry[hidden],.table-screen.is-playing .rm-entry,.table-screen.is-room .rm-entry{display:none}
+.rm-entry .pk-friends-open{flex:none}
+.bj-friends.rm-entry{flex-direction:column;align-items:stretch}
+.sd-pot .rm-entry{grid-column:2;grid-row:2;justify-self:start}
+.table-screen.is-demo .rm-status{color:var(--white)}
+/* On the rail nothing on the felt is mine: the AI seat's stake is its own, so no 베팅 readout. */
+.table-screen.is-demo .bet-readout{visibility:hidden}
+.pk-sitdown .rm-entry{justify-content:center}
+@media (orientation:landscape) and (max-height:520px){.pk-sitdown .rm-entry{grid-area:fr;justify-self:start}}

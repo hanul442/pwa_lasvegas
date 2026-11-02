@@ -249,7 +249,7 @@
 .felt-arc .arc-sub{fill-opacity:.3;letter-spacing:.12em}
 .felt-arc path.arc-line{fill:none;stroke:#efe7d9;stroke-opacity:.18;stroke-width:.8}
 .bj-spots{display:flex;justify-content:safe center;min-width:0;max-width:100%;align-items:flex-end;gap:clamp(4px,3vw,32px);width:100%;align-self:end;padding-bottom:18px}
-.bj-spot{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 1 auto;min-width:0}
+.bj-spot{display:flex;flex-direction:column;align-items:center;gap:10px;flex:0 1 auto;min-width:0}
 .bj-hands{display:flex;justify-content:center;align-items:flex-end;gap:calc(var(--card-w) * .2);min-height:calc(var(--card-w) * 1.4 + 34px)}
 .bj-hands:empty{min-height:calc(var(--card-w) * 1.4 + 34px)}
 .bj-insurance{--size:30px;position:relative;display:flex;align-items:center;justify-content:center;min-width:min(240px,70%);height:34px;padding:0 16px;border-radius:999px;border:1px solid #efe7d91f;transition:border-color .3s,background .3s}
@@ -1278,3 +1278,8 @@
   .sb .die{--d:min(50px,19cqw)}
   .sb-main{margin-top:4px}
 }
+/* Short portrait phones (Fold cover): the printed arc is lifted onto the insurance line, so the
+   insurance pill shows only while insurance is on offer or carries a bet. */
+@media (max-height:900px) and (orientation:portrait){.bj:not(.is-insurance) .bj-insurance:not(.has-bet){visibility:hidden}}
+/* Side-bet circles stay readable when a hand's cards reach down to the box. */
+.bj-box .side-circle{z-index:6}

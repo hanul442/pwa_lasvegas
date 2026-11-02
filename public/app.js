@@ -578,6 +578,14 @@ function entryMin() {
 // Three kinds of tables, as the home cards and the 게임 tab's filter split them.
 const KINDS = [['casino', '카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'slots', 'horses']], ['poker', '포커', ['poker', 'sevenpoker']], ['hwatu', '화투', ['matgo', 'gostop', 'seotda']]];
 const POPULAR = ['blackjack', 'poker', 'seotda', 'roulette', 'matgo', 'baccarat', 'gostop', 'sevenpoker', 'dice', 'slots', 'horses'];
+// 인기 게임 follows today's hands across every real player (state.popular, KST day). Until a few
+// hands are in, or on a tie, the house order above stands.
+const POPULAR_MIN_PLAYS = 5;
+const playsToday = id => Number(state?.popular?.plays?.[id]) || 0;
+const popularSorted = () => Object.values(state?.popular?.plays || {}).reduce((a, n) => a + (Number(n) || 0), 0) >= POPULAR_MIN_PLAYS;
+const byPlays = ids => (popularSorted() ? ids.map((id, i) => [id, i]).sort((a, b) => playsToday(b[0]) - playsToday(a[0]) || a[1] - b[1]).map(([id]) => id) : ids);
+// Whole numbers only: 1,234판, then 1만+판.
+const playsText = n => (n >= 10000 ? `${Math.floor(n / 10000)}만+판` : `${n.toLocaleString('ko-KR')}판`);
 let homeKind = 'all';
 let gamesKind = 'all';
 const groupHead = (text, aside = '') => {
@@ -610,7 +618,8 @@ function popCard(g) {
   const hot = hotStatus(state).live;
   const isHot = hot && hot.game === g.id;
   if (isHot) b.classList.add('is-hot');
-  b.innerHTML = `${art(g.id, 'pop-art')}${isHot ? `<span class="hot-badge">HOT ${pct(hot)}</span>` : ''}<span class="pop-text"><b>${g.name}</b><small>${g.tag}</small></span>`;
+  const plays = playsToday(g.id);
+  b.innerHTML = `${art(g.id, 'pop-art')}${isHot ? `<span class="hot-badge">HOT ${pct(hot)}</span>` : ''}${plays ? `<span class="pop-plays" aria-label="오늘 ${plays}판">오늘 ${playsText(plays)}</span>` : ''}<span class="pop-text"><b>${g.name}</b><small>${g.tag}</small></span>`;
   b.addEventListener('click', () => chooseGame(b));
   li.append(b);
   return li;
@@ -622,7 +631,8 @@ function renderGameLists() {
   const games = GAMES.filter(g => !g.event);
   const byId = id => games.find(g => g.id === id);
   const stake = `최소 ${wonCH(entryMin())}원부터 앉을 수 있어요`;
-  const homeIds = homeKind === 'all' ? POPULAR : KINDS.find(k => k[0] === homeKind)[2];
+  const homeIds = byPlays(homeKind === 'all' ? POPULAR : KINDS.find(k => k[0] === homeKind)[2]);
+  document.querySelector('[data-home-games-note]').hidden = !popularSorted();
   document.querySelector('[data-game-grid]').replaceChildren(...homeIds.map(byId).filter(Boolean).map(popCard));
   filterTabs(document.querySelector('[data-home-filter]'), homeKind, k => { homeKind = k; renderGameLists(); });
   const kinds = gamesKind === 'all' ? KINDS : KINDS.filter(k => k[0] === gamesKind);

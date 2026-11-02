@@ -131,6 +131,9 @@ test('the hourly cron closes the month at midnight, then the 1st announces each 
   // Nobody plays overnight: the cron's own prepare closes October.
   at(NOV, () => prepareState(state));
   assert.equal(u.rankHistory[0].season, 'rank-2026-10');
+  // The reset row is stamped with the real clock too (new Date()); in the casino it lands at
+  // midnight, so pin it there, or from 11-01 on the player looks active after the morning push.
+  for (const tx of state.ledger) if (Date.parse(tx.createdAt) > NOV) tx.createdAt = new Date(NOV).toISOString();
   const morning = Date.parse('2026-11-01T10:00:00+09:00');
   const result = messageFor(state, u, morning);
   assert.equal(result.slot, 'seasonStart');

@@ -208,18 +208,56 @@ class FirstTips {
     const on = r && r.width && r.height && r.bottom > 0 && r.top < vh;
     this.ring.classList.toggle('is-none', !on);
     const lw = this.line.offsetWidth || 240;
-    const cx = on ? (Math.max(0, r.left) + Math.min(vw, r.right)) / 2 : vw / 2;
-    this.line.style.left = `${Math.round(Math.max(12, Math.min(vw - lw - 12, cx - lw / 2)))}px`;
-    let top;
-    if (!on) top = vh * 0.38;
-    else {
+    const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(hi, v)));
+    const leftAt = x => clamp(x - lw / 2, 12, vw - lw - 12);
+    if (on) {
       const pad = 4;
       Object.assign(this.ring.style, { left: `${Math.max(2, r.left - pad)}px`, top: `${Math.max(2, r.top - pad)}px`, width: `${Math.min(vw - 4, r.width + pad * 2)}px`, height: `${Math.min(vh - 4, r.height + pad * 2)}px` });
-      // Above the spot when there is room (thumbs cover what is below), otherwise below.
-      top = r.top - lh - 12 >= 56 ? r.top - lh - 12 : r.bottom + 12;
-      if (top + lh > vh - 8) top = Math.max(56, r.top + 8);
     }
-    this.line.style.top = `${Math.round(Math.max(8, Math.min(vh - lh - 8, top)))}px`;
+    // Only re-place the line when the tip, the spot or the screen changed: the search below reads
+    // many rects, too much for every quarter second.
+    const key = `${tip.text}|${on ? `${r.left | 0},${r.top | 0},${r.width | 0},${r.height | 0}` : '-'}|${vw}x${vh}|${lw}x${lh}`;
+    // Cards and chips move under a still spot, so look again every second too.
+    if (key === this.placed && Date.now() - this.placedAt < 1000) return;
+    this.placed = key;
+    this.placedAt = Date.now();
+    const cx = on ? (Math.max(0, r.left) + Math.min(vw, r.right)) / 2 : vw / 2;
+    const bar = this.table.root.querySelector('.table-bar')?.getBoundingClientRect();
+    const head = bar ? bar.bottom + 8 : 56;
+    // Places to try, best first: just above the spot (thumbs cover what is below), just below it,
+    // under the table's top bar, the middle of the screen.
+    const spots = on
+      ? [[cx, r.top - lh - 12], [cx, r.bottom + 12], [vw / 2, vh * 0.38], [vw / 2, head], [vw / 2, vh * 0.5]]
+      : [[vw / 2, vh * 0.38], [vw / 2, head]];
+    // Then any clear strip down the middle of the screen.
+    for (let y = head; y < vh - lh - 8; y += 24) spots.push([vw / 2, y]);
+    // The line must not sit on what the player reads or taps: chips, cards, the bet, names, buttons.
+    const busy = [...this.table.root.querySelectorAll('button, .chip, .card, .hw, .hand-total, .bet-readout, .zone-amount, [data-pot], .mg-name, .mg-score, .sd-meta, [class*="plate"], [class*="score"]')]
+      .filter(n => !this.root.contains(n) && !node?.contains(n) && !n.contains(node))
+      .map(n => n.getBoundingClientRect())
+      .filter(b => b.width && b.height && b.width * b.height < vw * vh * 0.2);
+    const cover = (x, y) => {
+      let sum = 0;
+      for (const b of busy) {
+        const w = Math.min(x + lw, b.right) - Math.max(x, b.left), h = Math.min(y + lh, b.bottom) - Math.max(y, b.top);
+        if (w > 0 && h > 0) sum += w * h;
+      }
+      return sum;
+    };
+    // Stay put while the current place is still clear: a line that hops around is hard to read.
+    if (this.at && this.at.key === key && !cover(this.at.x, this.at.y)) return;
+    let best = null;
+    for (const [sx, sy] of spots) {
+      const x = leftAt(sx), y = clamp(sy, 8, vh - lh - 8);
+      if (on && y < r.bottom && y + lh > r.top && x < r.right && x + lw > r.left) continue; // never on the spot itself
+      const c = cover(x, y);
+      if (!best || c < best.c) best = { x, y, c };
+      if (!c) break;
+    }
+    best ||= { x: leftAt(cx), y: clamp(vh * 0.38, 8, vh - lh - 8) };
+    this.at = { key, x: best.x, y: best.y };
+    this.line.style.left = `${best.x}px`;
+    this.line.style.top = `${best.y}px`;
   }
 }
 

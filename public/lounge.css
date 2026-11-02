@@ -1249,6 +1249,10 @@ button.league-last.is-down{border-color:#ff8a8a44}
 @keyframes finale-in{to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.league-moment *,.season-finale *{animation:none!important;transition:none!important}.league-moment.is-up .is-from,.league-moment.is-down .is-from{opacity:0}.league-moment .is-to,.league-moment-verdict,.finale-beat,.finale-rewards li,.season-finale .moment-actions{opacity:1!important;transform:none!important}}
 @media (max-width:480px){.season-finale-inner{gap:10px!important}.finale-emblem .tier-emblem{width:72px;height:72px}.season-finale h2{font-size:34px!important}.season-finale .rank-moment-podium{gap:4px}.season-finale .rank-moment-podium li{padding:5px 10px;font-size:14px}.finale-rewards li{padding:7px 10px}.season-finale .moment-actions{gap:8px}}
+.rp-rule-list{display:grid;gap:0;margin:0;border-top:1px solid var(--line,#ffffff14)}
+.rp-rule-list>div{display:grid;grid-template-columns:minmax(72px,auto) 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line,#ffffff14)}
+.rp-rule-list dt{font:600 13px/1.45 var(--sans);color:var(--white)}
+.rp-rule-list dd{margin:0;font-size:13px;line-height:1.45;color:var(--smoke)}
 
 /* 시즌 레이스 (js/race.js): the clock, the player above and below me, the gap to the podium. */
 .race-card{display:grid;gap:12px;margin:0 0 14px;padding:16px 16px 14px;border:1px solid var(--hair-strong);border-radius:20px;background:var(--ink-2)}

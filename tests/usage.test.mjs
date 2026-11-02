@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultState, newUser } from '../lib/state.mjs';
 import { addLedger } from '../lib/economy.mjs';
-import { noteVisit, visitDue, usageReport } from '../lib/usage.mjs';
+import { noteVisit, visitDue, usageReport, popularToday } from '../lib/usage.mjs';
 
 const at = (t, fn) => { const real = Date.now; Date.now = () => t; try { return fn(); } finally { Date.now = real; } };
 const T = Date.parse('2027-03-24T12:00:00+09:00'), DAY = 86_400_000;
@@ -47,4 +47,24 @@ test('only the operator can read 이용 현황, and a first look of the day is c
   assert.ok(ok.data.totals.today >= 1);
   const no = await call('/api/admin/usage', 'min');
   assert.notEqual(no.status, 200);
+});
+
+test('인기 게임 counts today\'s hands by game id: poker sittings by their hands, demo players and yesterday left out', () => {
+  const state = defaultState();
+  const a = newUser(state, 'a', 'A');
+  at(T, () => addLedger(state, a, { type: 'ADMIN_GRANT', amount: 1e8 }));
+  at(T - DAY, () => addLedger(state, a, { type: 'GAME_WIN', amount: 1e6, metadata: { game: 'Roulette', stake: 1e6 } }));
+  at(T, () => {
+    addLedger(state, a, { type: 'GAME_LOSS', amount: -1e6, metadata: { game: 'Blackjack', stake: 1e6 } });
+    addLedger(state, a, { type: 'GAME_WIN', amount: 1e6, metadata: { game: 'Sic Bo', stake: 1e6 } });
+    addLedger(state, a, { type: 'GAME_WIN', amount: 1e6, metadata: { game: "Hold'em", stake: 1e6, hands: 12 } });
+    addLedger(state, a, { type: 'GAME_PUSH', amount: 1e6, metadata: { game: 'Seven Poker', stake: 1e6, hands: 0 } });
+    addLedger(state, a, { type: 'GAME_WIN', amount: 1e6, metadata: { game: 'Seotda', stake: 1e6, hands: [['1', '2']] } });
+    addLedger(state, a, { type: 'GAME_WIN', amount: 1e6, metadata: { game: 'Double', stake: 1e6 } });
+    addLedger(state, state.users.min, { type: 'GAME_LOSS', amount: -1e6, metadata: { game: 'Slots', stake: 1e6 } });
+  });
+  const p = popularToday(state, T);
+  assert.deepEqual(p.plays, { blackjack: 1, dice: 1, poker: 12, seotda: 1 });
+  assert.equal(usageReport(state, T).totals.roundsToday, 6, 'the operator still counts sittings');
+  assert.deepEqual(popularToday(state, T + DAY).plays, {}, 'a new KST day starts at zero');
 });

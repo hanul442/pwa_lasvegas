@@ -16,6 +16,10 @@ import { eventResult } from '../event-result.js';
 
 const POLL_MS = 1500;
 const LIST_MS = 4000;
+// The poll waits on the server until the room changes (lib/hold.mjs), so the next one can go
+// straight away. A quick answer that changed nothing (a server that doesn't wait) falls back to POLL_MS.
+const HELD_GAP = 60;
+const nextPoll = (asked, got, began) => (got && (got !== asked || Date.now() - began > POLL_MS) ? HELD_GAP : POLL_MS);
 const sleep = value => new Promise(resolve => setTimeout(resolve, value)); // real time, not paced by motion settings
 const tierName = slug => TIERS[slug]?.name || slug;
 
@@ -29,6 +33,7 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
   let cursor = null; // { hand, from }: what this screen has played
   let active = false;
   let pollTimer = null, listTimer = null;
+  let viewKey = ''; // the key of the last view a poll brought (lib/hold.mjs)
   let applying = Promise.resolve();
   let clockKey = '';
   let size = 6;
@@ -379,16 +384,18 @@ export function createFriends(t, pk, bar, hooks, { game = 'holdem', label = '홀
     // Paused while hidden or while I'm sending a move; the move's reply carries the news.
     if (document.hidden || t.busy) return schedule();
     const sent = cursor && { ...cursor };
+    const asked = viewKey, began = Date.now();
     let res;
-    try { res = await api.holdemRoom(code, sent, watching); }
+    try { res = await api.holdemRoom(code, sent, watching, asked); }
     catch (e) {
       if (watching && (/^WATCH_/.test(e.code || '') || e.code === 'ROOM_NOT_FOUND')) { await stopWatching(e.code === 'ROOM_NOT_FOUND' ? '방이 닫혔어요' : e.code === 'WATCH_GONE' ? `${watchName}님이 방에서 나갔어요` : errorMessage(e)); return; }
       if (e.code === 'ROOM_NOT_FOUND') { if (bustedNow()) { goneBust(); return; } await standDown('방이 닫혔어요'); return; }
       return schedule(POLL_MS * 2);
     }
     const at = Date.now();
+    viewKey = res.key || '';
     await enqueue(res.room, sent, at);
-    schedule();
+    schedule(nextPoll(asked, res.key, began));
   }
   const onVisible = () => { if (active && !document.hidden) schedule(50); };
   document.addEventListener('visibilitychange', onVisible);

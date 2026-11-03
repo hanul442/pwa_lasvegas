@@ -189,7 +189,7 @@ export const api = {
   holdemRooms: (game = 'holdem') => request(game === 'holdem' ? '/api/holdem/rooms' : `/api/holdem/rooms?game=${encodeURIComponent(game)}`),
   // 구경하기: one hand of an AI-only poker table (nothing stored, no chips move).
   holdemRoomDemo: (game, floor) => request(`/api/holdem/rooms/demo?game=${encodeURIComponent(game)}&floor=${encodeURIComponent(floor || '')}`),
-  holdemRoom: (code, cursor, watch) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}`),
+  holdemRoom: (code, cursor, watch, wait) => request(`/api/holdem/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}${wait ? `&wait=${encodeURIComponent(wait)}` : ''}`),
   holdemRoomCreate: (buyIn, floor, size, mode = 'cash', bots = true, game = 'holdem') => request('/api/holdem/rooms', { method: 'POST', body: { buyIn, floor, size, mode, bots, game } }),
   holdemRoomJoin: code => request('/api/holdem/rooms/join', { method: 'POST', body: { code } }),
   holdemRoomStart: (code, cursor) => request('/api/holdem/rooms/start', { method: 'POST', body: { code, cursor } }),
@@ -200,7 +200,8 @@ export const api = {
   holdemRoomBack: (code, cursor) => request('/api/holdem/rooms/back', { method: 'POST', body: { code, cursor } }),
   // Friends' rooms for 섯다, 고스톱 and 맞고: the same shape, one route set for all three.
   rooms: game => request(`/api/rooms${game ? `?game=${game}` : ''}`),
-  room: (code, cursor, watch) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}`),
+  // wait: the key of the last view; the server answers when the room changes (lib/hold.mjs).
+  room: (code, cursor, watch, wait) => request(`/api/room?code=${encodeURIComponent(code)}${cursor ? `&hand=${cursor.hand}&from=${cursor.from}` : ''}${watch ? `&watch=${encodeURIComponent(watch)}` : ''}${wait ? `&wait=${encodeURIComponent(wait)}` : ''}`),
   roomCreate: (game, stake, floor, size) => request('/api/rooms', { method: 'POST', body: { game, stake, floor, size } }),
   roomJoin: code => request('/api/rooms/join', { method: 'POST', body: { code } }),
   roomStart: (code, cursor) => request('/api/rooms/start', { method: 'POST', body: { code, cursor } }),

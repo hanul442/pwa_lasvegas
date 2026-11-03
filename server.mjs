@@ -7,11 +7,14 @@ import { handleApi, prepareState } from './lib/api.mjs';
 import { runPushRound, runNightlyRound } from './lib/notifications.mjs';
 import { previewFor, injectPreview, isInvitePath } from './lib/link-preview.mjs';
 import { findByRef } from './lib/referral.mjs';
+import { changeSignal } from './lib/hold.mjs';
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR=path.join(__dirname,'public');
 const PORT=Number(process.env.PORT||3000);
-const store={load:loadState,mutate};
+// Friends' room polls wait on `changed` for the next change (lib/hold.mjs).
+const changes=changeSignal();
+const store={load:loadState,mutate:async fn=>{const out=await mutate(fn);changes.fire();return out;},changed:ms=>changes.wait(ms)};
 
 function error(res,status,message){
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});

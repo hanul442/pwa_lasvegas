@@ -7,7 +7,6 @@
 import { reducedMotion } from './fx.js';
 import { onSettings } from './settings.js';
 
-const root = document.documentElement;
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 let rest = null;          // drifting rest pose { x, y } in degrees
@@ -17,11 +16,31 @@ let frame = 0;
 let running = false;
 let lastWrite = 0;
 
+// The light is written into one style rule aimed at the few things that draw it, not onto <html>:
+// a variable changed on <html> made the browser restyle every element on the page ~30 times a
+// second while the mouse moved or the phone tilted (the biggest lag at tables, PC and phone alike).
+let rule = null;
+function shineRule() {
+  if (rule) return rule;
+  const tag = document.createElement('style');
+  tag.dataset.shine = '';
+  tag.textContent = '.card-face::after,.chip-shine{}';
+  document.head.append(tag);
+  rule = tag.sheet.cssRules[0].style;
+  return rule;
+}
+let written = '';
 function write() {
-  root.style.setProperty('--shine-x', `${(50 + shown.x * 42).toFixed(1)}%`);
-  root.style.setProperty('--shine-y', `${(32 + shown.y * 40).toFixed(1)}%`);
-  root.style.setProperty('--shine-band', `${(shown.x * 30 + shown.y * 12).toFixed(1)}%`);
-  root.style.setProperty('--shine-o', shown.o.toFixed(3));
+  const x = `${(50 + shown.x * 42).toFixed(1)}%`, y = `${(32 + shown.y * 40).toFixed(1)}%`;
+  const band = `${(shown.x * 30 + shown.y * 12).toFixed(1)}%`, o = shown.o.toFixed(2);
+  const key = `${x}${y}${band}${o}`;
+  if (key === written) return; // nothing a person could see changed
+  written = key;
+  const r = shineRule();
+  r.setProperty('--shine-x', x);
+  r.setProperty('--shine-y', y);
+  r.setProperty('--shine-band', band);
+  r.setProperty('--shine-o', o);
 }
 
 function tick(now) {

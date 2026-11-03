@@ -42,7 +42,7 @@
 .skin-on::before{content:"";width:8px;height:8px;background:var(--star);clip-path:var(--star-shape)}
 /* Previews: each look on a lit table, as it would be dealt or worn. A soft spot from above, the
    cloth's grain, and the rail around the felt. */
-.skin-preview{--spot:radial-gradient(60% 80% at 50% 0,#fff6dc2e,transparent 72%);--cloth:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .45 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
+.skin-preview{--spot:radial-gradient(60% 80% at 50% 0,#fff6dc2e,transparent 72%);--cloth:url(art/felt-noise.png) 0 0/160px 160px;
   position:relative;height:124px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px;overflow:hidden;
   background:var(--spot),var(--cloth),radial-gradient(90% 90% at 50% 30%,#1c5a43,#0c3324 62%,#04140e);box-shadow:inset 0 0 0 1px #ffffff12,inset 0 -24px 34px #0007}
 .skin-preview--cardBack{--card-w:58px}

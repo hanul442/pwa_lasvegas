@@ -53,7 +53,7 @@
   --felt-a:#1b7556;--felt-b:#0e4e37;--felt-c:#05251a;
   background:
     var(--felt-print,none) 50% 0/var(--felt-print-size,72px) padding-box,
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .45 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E") padding-box,
+    url(art/felt-noise.png) 0 0/160px 160px padding-box,
     radial-gradient(70% 55% at 50% 30%,var(--felt-a) 0,var(--felt-b) 50%,var(--felt-c) 100%) padding-box,
     var(--felt-rail,linear-gradient(180deg,#3a3f46,#16181c 18%,#0c0d10 70%,#1d2025)) border-box;
   box-shadow:0 0 0 1px #ffffff12,inset 0 0 0 1px #000a,inset 0 0 0 2px var(--felt-piping,#ffffff1a),inset 0 0 90px #000b,0 24px 60px #000c}
@@ -1215,7 +1215,7 @@
    (.suit) so they look the same on every phone. */
 .card-face{--paper:#fbf9f4;--line:#17181b;--slate:#34495f;--skin:#f1e3cc;--red:#b3241d;--robe:var(--slate);--trim:var(--red);color:var(--line);
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .08 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E") 0 0/96px 96px,
+    url(art/card-noise.png) 0 0/96px 96px,
     linear-gradient(170deg,#fffefb,#f5f1e8)}
 .card-face.is-red{--robe:var(--red);--trim:var(--slate);color:var(--red)}
 .suit{display:block;width:1em;height:1em;fill:currentColor}

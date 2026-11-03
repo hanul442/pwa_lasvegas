@@ -24,6 +24,7 @@ export class VegasFloor extends DurableObject {
     // The parsed floor, kept between requests: this object is the only writer of its storage, so
     // the copy in memory stays true until a change fails (then it is dropped and read again).
     this.state = null;
+    this.written = null; // the state chunks as last written to storage
     // Friends' room polls wait on this for the next change (lib/hold.mjs).
     this.changes = changeSignal();
     this.store = { load: () => this.load(), mutate: fn => this.mutate(fn), changed: ms => this.changes.wait(ms) };
@@ -47,7 +48,8 @@ export class VegasFloor extends DurableObject {
     }
     const keys = Array.from({ length: count }, (_, i) => `state:${i}`);
     const parts = await this.ctx.storage.get(keys);
-    this.state = JSON.parse(keys.map(k => parts.get(k)).join(''));
+    this.written = keys.map(k => parts.get(k));
+    this.state = JSON.parse(this.written.join(''));
     return this.state;
   }
 
@@ -68,13 +70,20 @@ export class VegasFloor extends DurableObject {
       await putAll(this.ctx.storage, archive);
     }
     const raw = JSON.stringify(state);
-    const before = (await this.ctx.storage.get('state:n')) || 0;
+    // Only the chunks that differ from what storage already holds are written (this object is
+    // the only writer, so `written` is what is there). A failed write forgets it: all go next time.
+    const was = this.written;
+    this.written = null;
+    const before = was ? was.length : (await this.ctx.storage.get('state:n')) || 0;
+    const chunks = [];
+    for (let i = 0; i < raw.length; i += CHUNK) chunks.push(raw.slice(i, i + CHUNK));
+    const n = chunks.length;
     const entries = {};
-    let n = 0;
-    for (let i = 0; i < raw.length; i += CHUNK) entries[`state:${n++}`] = raw.slice(i, i + CHUNK);
-    entries['state:n'] = n;
+    chunks.forEach((c, i) => { if (!was || was[i] !== c) entries[`state:${i}`] = c; });
+    if (n !== before || !was) entries['state:n'] = n;
     await putAll(this.ctx.storage, entries);
     if (before > n) await this.ctx.storage.delete(Array.from({ length: before - n }, (_, i) => `state:${n + i}`));
+    this.written = chunks;
   }
 
   mutate(fn) {
@@ -87,6 +96,7 @@ export class VegasFloor extends DurableObject {
         return result;
       } catch (e) {
         this.state = null;
+        this.written = null;
         throw e;
       }
     });

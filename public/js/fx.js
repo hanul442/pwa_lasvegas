@@ -5,7 +5,10 @@ import { settings, onSettings, pace, paceScale } from './settings.js';
 export const reducedMotion = () => pace() === 'minimal';
 
 // Every duration follows the chosen pace; minimal shrinks it to near-instant.
-export const ms = value => (reducedMotion() ? Math.min(value, 60) : Math.round(value * paceScale()));
+// A tap on the felt while a round plays out runs the rest of that round quicker (Table.hurry).
+let hurry = 1;
+export const setHurry = value => { hurry = value; };
+export const ms = value => (reducedMotion() ? Math.min(value, 60) : Math.round(value * paceScale() * hurry));
 export const wait = value => new Promise(resolve => setTimeout(resolve, ms(value)));
 
 export function animate(el, keyframes, options) {

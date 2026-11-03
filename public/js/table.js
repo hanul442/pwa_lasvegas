@@ -1,5 +1,5 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
-import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord, wonCH, inTableUnits } from './fx.js';
+import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord, wonCH, inTableUnits, setHurry } from './fx.js';
 import { createChip, breakdown, holding, TIERS, tableMax } from './chips.js';
 import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 
@@ -17,6 +17,8 @@ import { Toke } from './toke.js';
 
 // The tallest stack drawn under a tray chip; past it a count says how many there are.
 const STACK_CAP = 10;
+// 빨리 넘기기 (Table.hurry): the rest of the round at this share of the time.
+const HURRY = 0.35;
 
 // Narrow phones show the balance as 12억 5천만 so the top bar keeps room for its buttons.
 const balanceText = value => formatCH(value);
@@ -129,6 +131,7 @@ export class Table {
     this.felt.addEventListener('scroll', () => {
       if (this.felt.scrollTop && this.felt.querySelector(':scope > .pk-lobby:not([hidden])')) this.felt.scrollTop = 0;
     }, { passive: true });
+    this.felt.addEventListener('pointerdown', e => this.hurry(e), { passive: true });
     this.body = root.querySelector('[data-body]');
     this.rack = root.querySelector('[data-rack]');
     this.tray = root.querySelector('[data-tray]');
@@ -707,6 +710,7 @@ export class Table {
     [...this.zones.keys()].forEach(z => this.emptyZone(z));
     this.history = [];
     this.locked = false;
+    this.endHurry();
     this.root.classList.remove('is-playing');
     this.refreshBet();
     maybeBust(this.serverState);
@@ -988,7 +992,24 @@ export class Table {
     if (this.busy || !fn) return;
     this.busy = true;
     this.actions.querySelectorAll('button:not([data-anytime])').forEach(b => { b.disabled = true; });
-    try { await fn(); } finally { this.busy = false; this.refreshActions?.(); this.maybeIdle(); }
+    try { await fn(); } finally { this.busy = false; this.endHurry(); this.refreshActions?.(); this.maybeIdle(); }
+  }
+
+  // 빨리 넘기기: a tap on the felt while the dealer is still dealing, flipping or paying runs the
+  // rest of that round at a third of the time; the next round is back to the chosen pace.
+  hurry(e) {
+    if (!this.busy || !this.locked || this.hurried || e.button > 0) return;
+    if (e.target.closest?.('button, input, .sheet, .toke')) return;
+    this.hurried = true;
+    setHurry(HURRY);
+    clearTimeout(this.hurryTimer);
+    this.hurryTimer = setTimeout(() => this.endHurry(), 15_000); // never left on by a stuck round
+  }
+  endHurry() {
+    if (!this.hurried) return;
+    this.hurried = false;
+    clearTimeout(this.hurryTimer);
+    setHurry(1);
   }
 
   onKey(handler) {
@@ -998,6 +1019,7 @@ export class Table {
   }
 
   destroy() {
+    this.endHurry();
     this.toke?.destroy();
     this.listeners.forEach(([t, fn]) => (t === 'hot-timer' ? clearInterval(fn) : window.removeEventListener(t, fn))); this.listeners = []; this.hotTimer = null;
     this.seatRecap();

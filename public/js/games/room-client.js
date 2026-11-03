@@ -13,6 +13,10 @@ import { createRoomChat } from '../room-chat.js';
 
 const POLL_MS = 1500;
 const LIST_MS = 4000;
+// The poll waits on the server until the room changes (lib/hold.mjs), so the next one can go
+// straight away. A quick answer that changed nothing (a server that doesn't wait) falls back to POLL_MS.
+const HELD_GAP = 60;
+const nextPoll = (asked, got, began) => (got && (got !== asked || Date.now() - began > POLL_MS) ? HELD_GAP : POLL_MS);
 const sleep = value => new Promise(resolve => setTimeout(resolve, value));
 const tierName = slug => TIERS[slug]?.name || slug;
 
@@ -27,6 +31,7 @@ export function createRoomClient(t, game, hooks) {
   let demo = false; // 구경하기: an AI-only table, one hand after another (watchDemo below)
   const own = { setActions: t.setActions.bind(t), settle: t.settle.bind(t), bigWin: t.bigWin.bind(t) };
   let pollTimer = null, listTimer = null, clockTimer = null;
+  let viewKey = ''; // the key of the last view a poll brought (lib/hold.mjs)
   let queue = Promise.resolve();
 
   // ---------- lobby panel ----------
@@ -294,17 +299,19 @@ export function createRoomClient(t, game, hooks) {
     // Paused while hidden or while I'm sending a move; the move's reply carries the news.
     if (document.hidden || t.busy) return schedule();
     const sent = cursor && { ...cursor };
+    const asked = viewKey, at = Date.now();
     let res;
-    try { res = await api.room(code, sent, watching); }
+    try { res = await api.room(code, sent, watching, asked); }
     catch (e) {
       if (e.code === 'ROOM_NOT_FOUND') { await exit('방이 닫혔어요'); return; }
       if (watching && /^WATCH_/.test(e.code || '')) { active = false; await exit(e.code === 'WATCH_GONE' ? `${watchName}님이 방에서 나갔어요` : errorMessage(e)); return; }
       return schedule(POLL_MS * 2);
     }
     if (typeof res.available === 'number') t.available = res.available;
+    viewKey = res.key || '';
     enqueue(res.room, sent);
     await queue;
-    schedule();
+    schedule(nextPoll(asked, res.key, at));
   }
   const onVisible = () => { if (active && !document.hidden) schedule(50); };
   document.addEventListener('visibilitychange', onVisible);

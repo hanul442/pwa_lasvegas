@@ -5,6 +5,7 @@ import { handleApi, prepareState } from '../lib/api.mjs';
 import { defaultState } from '../lib/state.mjs';
 import { runPushRound, runNightlyRound } from '../lib/notifications.mjs';
 import { compactHistory } from '../lib/history.mjs';
+import { changeSignal } from '../lib/hold.mjs';
 import { previewFor, injectPreview, isInvitePath } from '../lib/link-preview.mjs';
 
 const HOURLY = '0 * * * *'; // wrangler.toml [triggers]; the other cron is the evening's minute clock
@@ -23,6 +24,10 @@ export class VegasFloor extends DurableObject {
     // The parsed floor, kept between requests: this object is the only writer of its storage, so
     // the copy in memory stays true until a change fails (then it is dropped and read again).
     this.state = null;
+    this.written = null; // the state chunks as last written to storage
+    // Friends' room polls wait on this for the next change (lib/hold.mjs).
+    this.changes = changeSignal();
+    this.store = { load: () => this.load(), mutate: fn => this.mutate(fn), changed: ms => this.changes.wait(ms) };
   }
 
   // Requests arriving together before the floor is in memory share one read of storage, so they
@@ -43,7 +48,8 @@ export class VegasFloor extends DurableObject {
     }
     const keys = Array.from({ length: count }, (_, i) => `state:${i}`);
     const parts = await this.ctx.storage.get(keys);
-    this.state = JSON.parse(keys.map(k => parts.get(k)).join(''));
+    this.written = keys.map(k => parts.get(k));
+    this.state = JSON.parse(this.written.join(''));
     return this.state;
   }
 
@@ -64,13 +70,20 @@ export class VegasFloor extends DurableObject {
       await putAll(this.ctx.storage, archive);
     }
     const raw = JSON.stringify(state);
-    const before = (await this.ctx.storage.get('state:n')) || 0;
+    // Only the chunks that differ from what storage already holds are written (this object is
+    // the only writer, so `written` is what is there). A failed write forgets it: all go next time.
+    const was = this.written;
+    this.written = null;
+    const before = was ? was.length : (await this.ctx.storage.get('state:n')) || 0;
+    const chunks = [];
+    for (let i = 0; i < raw.length; i += CHUNK) chunks.push(raw.slice(i, i + CHUNK));
+    const n = chunks.length;
     const entries = {};
-    let n = 0;
-    for (let i = 0; i < raw.length; i += CHUNK) entries[`state:${n++}`] = raw.slice(i, i + CHUNK);
-    entries['state:n'] = n;
+    chunks.forEach((c, i) => { if (!was || was[i] !== c) entries[`state:${i}`] = c; });
+    if (n !== before || !was) entries['state:n'] = n;
     await putAll(this.ctx.storage, entries);
     if (before > n) await this.ctx.storage.delete(Array.from({ length: before - n }, (_, i) => `state:${n + i}`));
+    this.written = chunks;
   }
 
   mutate(fn) {
@@ -79,9 +92,11 @@ export class VegasFloor extends DurableObject {
       try {
         const result = await fn(state);
         await this.save(state, compactHistory(state));
+        this.changes.fire();
         return result;
       } catch (e) {
         this.state = null;
+        this.written = null;
         throw e;
       }
     });
@@ -91,14 +106,12 @@ export class VegasFloor extends DurableObject {
 
   // Hourly cron: send whatever reminders are due. Only the scheduled() handler below can reach this.
   async pushRound() {
-    const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
-    return runPushRound(store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
+    return runPushRound(this.store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
   }
 
   // Minute cron in the evening: the 밤 9시 토너먼트 clock (lib/nightly-tourney.mjs).
   async nightlyRound() {
-    const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
-    return runNightlyRound(store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
+    return runNightlyRound(this.store, { subject: this.env.VAPID_SUBJECT, prepare: prepareState });
   }
 
   async fetch(request) {
@@ -112,8 +125,7 @@ export class VegasFloor extends DurableObject {
         return raw ? JSON.parse(raw) : {};
       }
     };
-    const store = { load: () => this.load(), mutate: fn => this.mutate(fn) };
-    const { status, data } = await handleApi(req, url, store, { NODE_ENV: 'production', AUTH_REQUIRED: true, SOURCE_COMMIT: this.env.SOURCE_COMMIT, SOURCE_BRANCH: 'main' });
+    const { status, data } = await handleApi(req, url, this.store, { NODE_ENV: 'production', AUTH_REQUIRED: true, SOURCE_COMMIT: this.env.SOURCE_COMMIT, SOURCE_BRANCH: 'main' });
     return Response.json(data, { status, headers: { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
   }
 }

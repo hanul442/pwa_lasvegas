@@ -10,7 +10,7 @@
 //   tap       the slowest tap: from the finger to the next frame on screen (Chrome's INP)
 //   ⚠         an endless animation of something other than transform/opacity (repaints every frame);
 //             any of these makes the exit code 1
-// Lobby: idle for 3s, then a scroll down and up. Tables: open, buy in, play one round.
+// Lobby: idle for 3s, then a scroll down and up. Tables: open, move the light (mouse or tilt), buy in, play one round.
 import fs from 'node:fs/promises';
 import { GAMES, SIZES, context, startServer, signInGuest, closeOverlays, loadPlaywright } from './fold-check.mjs';
 
@@ -19,6 +19,8 @@ const games = arg('games', GAMES.join(',')).split(',').filter(Boolean);
 const sizes = arg('sizes', 'cover,inner').split(',').filter(s => SIZES[s]);
 const cpu = Number(arg('cpu', 4));
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// A finger on a phone, the mouse on a PC.
+const tap = (page, x, y) => (SIZES[page.__size]?.pc ? page.mouse.click(x, y) : page.touchscreen.tap(x, y));
 
 // Installed before the app runs: a frame clock, long tasks and tap timings, reset per screen.
 function probe() {
@@ -50,7 +52,7 @@ async function tapMain(page) {
     const r = zones.sort((a, b) => area(b) - area(a))[0]?.getBoundingClientRect();
     return r && [r.left + r.width / 2, r.top + r.height / 2];
   });
-  if (box) { await page.touchscreen.tap(...box); await wait(700); }
+  if (box) { await tap(page, ...box); await wait(700); }
   const btn = await page.evaluate(() => {
     const bs = [...(document.querySelector('.table-screen [data-actions]')?.querySelectorAll('button') || [])].filter(b => !b.disabled && b.offsetParent);
     const b = bs.find(b => /solid|primary/.test(b.className)) || bs.at(-1);
@@ -58,8 +60,25 @@ async function tapMain(page) {
     const r = b.getBoundingClientRect();
     return { at: [r.left + r.width / 2, r.top + r.height / 2], label: b.textContent.trim() };
   });
-  if (btn) await page.touchscreen.tap(...btn.at);
+  if (btn) await tap(page, ...btn.at);
   return btn?.label || '';
+}
+
+// 1.5s of a moving mouse on a PC, or a phone tilting in the hand (with a little sensor noise).
+async function moveLight(page, pc) {
+  if (pc) {
+    for (let i = 0; i < 50; i++) { await page.mouse.move(640 + 300 * Math.cos(i / 8), 420 + 200 * Math.sin(i / 8)); await wait(30); }
+    return;
+  }
+  await page.evaluate(async () => {
+    for (let i = 0; i < 90; i++) {
+      const e = new Event('deviceorientation');
+      e.beta = 40 + Math.sin(i / 10) * 6 + Math.random() * 0.6;
+      e.gamma = Math.cos(i / 12) * 5 + Math.random() * 0.6;
+      dispatchEvent(e);
+      await new Promise(r => setTimeout(r, 16));
+    }
+  });
 }
 
 async function playRound(page, first) {
@@ -67,7 +86,7 @@ async function playRound(page, first) {
     const over = await page.waitForSelector('.table-screen .banner.is-shown:is(.banner--win,.banner--lose,.banner--push,.banner--big)', { timeout: 1800 }).then(() => true, () => false);
     if (over) { await wait(1500); return; }
     const peek = await page.evaluate(() => { const r = document.querySelector('.table-screen .is-peekable')?.getBoundingClientRect(); return r && [r.left + r.width / 2, r.top + r.height / 2]; });
-    if (peek) { await page.touchscreen.tap(...peek); await wait(900); }
+    if (peek) { await tap(page, ...peek); await wait(900); }
     const next = await page.evaluate(() => {
       const bs = [...document.querySelectorAll('.table-screen [data-actions] button')].filter(b => !b.disabled && b.offsetParent);
       const b = bs.find(b => /스탠드|콜|체크|stand|call/i.test(b.textContent)) || bs.find(b => b.classList.contains('action--primary')) || bs.at(-1);
@@ -76,7 +95,7 @@ async function playRound(page, first) {
       return { at: [r.left + r.width / 2, r.top + r.height / 2], label: b.textContent.trim() };
     });
     if (next && first && next.label.includes(first.split('↵')[0]) && i > 0) return;
-    if (next) await page.touchscreen.tap(...next.at);
+    if (next) await tap(page, ...next.at);
     await closeOverlays(page);
   }
 }
@@ -93,6 +112,7 @@ async function main() {
       const ctx = await browser.newContext(context(size));
       await ctx.addInitScript(probe);
       const page = await ctx.newPage();
+      page.__size = size;
       const cdp = await ctx.newCDPSession(page);
       await signInGuest(page, server.base);
       await closeOverlays(page);
@@ -115,6 +135,10 @@ async function main() {
         await page.waitForSelector('.table-screen', { timeout: 15000 }).catch(() => {});
         await wait(2500);
         s = await page.evaluate(summary); results.push({ size, game, what: 'open', ...s }); console.log(fmt(`${game} 입장`, s));
+        // The light on cards and chips follows the mouse (PC) or the phone's tilt (js/shine.js).
+        await page.evaluate(() => window.__jank.reset());
+        await moveLight(page, SIZES[size].pc);
+        s = await page.evaluate(summary); results.push({ size, game, what: 'light', ...s }); console.log(fmt(`${game} 빛 움직임`, s));
         await page.evaluate(() => document.dispatchEvent(new CustomEvent('vegas:buyin')));
         await wait(900);
         await page.evaluate(() => document.querySelector('.buyin-sheet .pill-button--solid')?.click());

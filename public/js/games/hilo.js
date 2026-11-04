@@ -1,4 +1,5 @@
-// 하이로우: one 52-card deck. Call whether the next card is higher or lower; each right call
+// 하이로우: one 54-card deck (two jokers). Call whether the next card is higher or lower; a joker
+// or the same rank loses the stake. Each right call
 // raises the prize by the honest odds of that call on the cards still in the deck, and 챙기기
 // takes it home. The server holds the deck (lib/hilo.mjs); this screen shows the card, what is
 // left of each rank, and what each call pays in whole chips.
@@ -10,7 +11,9 @@ import { gameName } from '../names.js';
 
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 const ARROW = { HIGH: '▲', LOW: '▼' };
-const rankOf = card => RANKS.indexOf(card.slice(0, -1)) + 1;
+const isJoker = card => card.startsWith('JK');
+const rankOf = card => (isJoker(card) ? 0 : RANKS.indexOf(card.slice(0, -1)) + 1);
+const NOTE = '같은 숫자·조커는 몰수';
 
 export async function mountHilo(ctx) {
   const t = new Table({ ...ctx, game: 'hilo', title: gameName('hilo'), feltClass: 'felt--hilo' });
@@ -21,16 +24,16 @@ export async function mountHilo(ctx) {
       <div class="hl-play">
         <button type="button" class="hl-call hl-call--high" data-call="HIGH" disabled>
           <span class="hl-call-head"><i aria-hidden="true">▲</i><strong data-label>높게</strong></span>
-          <small data-note>같은 숫자도 맞음</small>
+          <small data-note>같은 숫자·조커는 몰수</small>
           <span class="hl-call-pay"><b data-pays>—</b><em data-chance></em></span>
         </button>
         <div class="hl-table">
           <div class="hl-slot" data-slot><div class="hl-ghost" aria-hidden="true">?</div></div>
-          <div class="hl-deck" data-deck aria-hidden="true"><span class="${cardBackClass()}"></span><span class="${cardBackClass()}"></span><span class="${cardBackClass()}"></span><b data-left>52</b></div>
+          <div class="hl-deck" data-deck aria-hidden="true"><span class="${cardBackClass()}"></span><span class="${cardBackClass()}"></span><span class="${cardBackClass()}"></span><b data-left>54</b></div>
         </div>
         <button type="button" class="hl-call hl-call--low" data-call="LOW" disabled>
           <span class="hl-call-head"><i aria-hidden="true">▼</i><strong data-label>낮게</strong></span>
-          <small data-note>같은 숫자도 맞음</small>
+          <small data-note>같은 숫자·조커는 몰수</small>
           <span class="hl-call-pay"><b data-pays>—</b><em data-chance></em></span>
         </button>
       </div>
@@ -55,17 +58,25 @@ export async function mountHilo(ctx) {
 
   let round = null, cardNode = null, shown = 0;
   countsEl.replaceChildren(...RANKS.map(r => { const li = el('li', 'hl-count'); li.innerHTML = `<b>${r}</b><span><i></i><i></i><i></i><i></i></span>`; return li; }));
+  // The jokers' column: two dots, and drawing one on a call loses.
+  const jokerLi = el('li', 'hl-count hl-count--joker');
+  jokerLi.innerHTML = '<b>JK</b><span><i></i><i></i></span>';
+  countsEl.append(jokerLi);
+  const rankLis = [...countsEl.children].slice(0, 13);
 
-  function paintCounts(counts, current) {
+  function paintCounts(counts, current, jokers = 2) {
     const cur = current ? rankOf(current) : 0;
-    [...countsEl.children].forEach((li, i) => {
+    jokerLi.querySelectorAll('i').forEach((dot, k) => dot.classList.toggle('is-gone', k >= jokers));
+    jokerLi.classList.toggle('is-out', jokers === 0);
+    jokerLi.setAttribute('aria-label', `조커 ${jokers}장`);
+    rankLis.forEach((li, i) => {
       const n = counts ? counts[i] : 4;
       li.querySelectorAll('i').forEach((dot, k) => dot.classList.toggle('is-gone', k >= n));
       li.classList.toggle('is-now', i + 1 === cur);
       li.classList.toggle('is-out', n === 0);
       li.setAttribute('aria-label', `${RANKS[i]} ${n}장`);
     });
-    leftEl.textContent = counts ? counts.reduce((a, b) => a + b, 0) : 52;
+    leftEl.textContent = counts ? counts.reduce((a, b) => a + b, 0) + jokers : 54;
   }
 
   function paintCalls() {
@@ -73,7 +84,7 @@ export async function mountHilo(ctx) {
     for (const [k, b] of Object.entries(callBtns)) {
       const o = round?.options?.[k];
       b.querySelector('[data-label]').textContent = o ? o.label : k === 'HIGH' ? '높게' : '낮게';
-      b.querySelector('[data-note]').textContent = o ? o.note : '같은 숫자도 맞음';
+      b.querySelector('[data-note]').textContent = o ? o.note : NOTE;
       b.querySelector('[data-pays]').textContent = o && playing ? (o.open ? `맞히면 ${formatUnit(o.pays)}` : '상금 그대로') : '—';
       b.querySelector('[data-chance]').textContent = o && playing ? `${o.chance}%` : '';
       b.disabled = !playing || !o?.open || t.busy;
@@ -134,10 +145,19 @@ export async function mountHilo(ctx) {
     await flipCard(node, text, { duration: 340, squeeze: squeeze && !reducedMotion() });
   }
 
+  // A joker turned on a start or a 넘기기 is burned: it shows for a beat, then the next card comes.
+  async function burn(cards) {
+    for (const c of cards) {
+      await deal(c);
+      t.toast('조커는 버리고 다음 카드로 가요');
+      await wait(ms(420));
+    }
+  }
+
   function paint(next, { roll = false } = {}) {
     round = next;
     root.dataset.phase = round?.status === 'PLAYING' ? 'play' : 'bet';
-    paintCounts(round?.counts || null, round?.card);
+    paintCounts(round?.counts || null, round?.card, round?.jokers ?? 2);
     paintCalls();
     paintPrize({ roll });
     if (round) paintTrail(round.trail || []);
@@ -170,6 +190,7 @@ export async function mountHilo(ctx) {
     round = res.round;
     root.dataset.phase = 'play';
     paintCounts(null, null);
+    await burn((res.round.trail || []).filter(s => s.kind === 'BURN').map(s => s.card));
     await deal(res.round.card);
     paint(res.round);
   }
@@ -185,7 +206,7 @@ export async function mountHilo(ctx) {
     t.setServerState(res.state);
     const ev = res.event, next = res.round;
     if (!ev) { paint(next); return; } // a step already played: just catch up
-    if (ev.type === 'skip') { await deal(ev.card); paint(next); return; }
+    if (ev.type === 'skip') { await burn(ev.burned || []); await deal(ev.card); paint(next); return; }
     if (ev.type === 'hit' || ev.type === 'miss') {
       await deal(ev.card, { squeeze: true });
       callBtns[kind].classList.remove('is-picked');
@@ -204,7 +225,8 @@ export async function mountHilo(ctx) {
 
   async function finish(done) {
     const net = done.netPnl ?? ((done.result?.value ?? 0) - done.stake);
-    const label = done.result?.kind === 'MISS' ? `${done.card} · 빗나갔어요` : done.result?.kind === 'MAX' ? '최고 상금 1000배' : `${done.wins}번 맞혀 챙겼어요`;
+    const why = done.result?.why;
+    const label = done.result?.kind === 'MISS' ? (why === 'JOKER' ? '조커 · 몰수' : why === 'SAME' ? `${done.card} · 같은 숫자라 몰수` : `${done.card} · 빗나갔어요`) : done.result?.kind === 'MAX' ? '최고 상금 1000배' : `${done.wins}번 맞혀 챙겼어요`;
     await t.settle(net, { label });
     await t.syncBalance();
     round = null;

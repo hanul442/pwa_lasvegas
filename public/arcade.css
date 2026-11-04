@@ -5,7 +5,7 @@
 .hl{--card-w:clamp(84px,min(24vw,15dvh),132px);display:flex;flex-direction:column;align-items:stretch;gap:12px;max-width:620px;width:100%;margin:0 auto}
 
 /* what is left of each rank: four dots under each */
-.hl-counts{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:2px;margin:0;padding:6px 4px;list-style:none;border-radius:12px;background:#0a0b0d73;box-shadow:inset 0 0 0 1px #ffffff1f}
+.hl-counts{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:2px;margin:0;padding:6px 4px;list-style:none;border-radius:12px;background:#0a0b0d73;box-shadow:inset 0 0 0 1px #ffffff1f}
 .hl-count{display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0;border-radius:7px;transition:background .2s}
 .hl-count b{font:700 12px/1 var(--display);font-stretch:108%;color:var(--smoke)}
 .hl-count span{display:grid;grid-template-columns:repeat(2,5px);gap:2px}
@@ -21,7 +21,9 @@
 .hl-step .card{--card-w:clamp(26px,7vw,40px);rotate:0deg}
 .hl-step+.hl-step{margin-left:-6px}
 .hl-step--miss .card{outline:2px solid #5ea2ff;border-radius:4px}
-.hl-step--skip .card{opacity:.5}
+.hl-step--skip .card,.hl-step--burn .card{opacity:.5}
+.hl-count--joker{box-shadow:inset 1px 0 0 #ffffff1f;border-radius:0 7px 7px 0}
+.hl-count--joker b{color:#ff8a8a;letter-spacing:-.04em}
 .hl-step-mark{position:absolute;top:-4px;right:-3px;display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--ink);font:700 9px/1 var(--sans);font-style:normal;color:var(--white);box-shadow:0 0 0 1px #ffffff40}
 
 /* the card, the deck and the two calls */
@@ -83,8 +85,8 @@
 /* ================= VEGAS 거래소 ================= */
 .felt.felt--market{--felt-a:#171b22;--felt-b:#0e1116;--felt-c:#050608}
 .table-screen--stocks .felt-body{padding:44px 10px 12px;justify-content:flex-start}
-.table-screen--stocks .felt-body>*{flex:1 1 auto}
-.mk{--up:#ff5a5f;--down:#4d9bff;display:flex;flex-direction:column;gap:8px;min-height:100%;max-width:980px;width:100%;margin:0 auto}
+.table-screen--stocks .felt-body>*{flex:1 1 0;min-height:0}
+.mk{--up:#ff5a5f;--down:#4d9bff;display:flex;flex-direction:column;gap:8px;min-height:0;max-width:980px;width:100%;margin:0 auto}
 [data-tone="up"]{--tone:var(--up)}
 [data-tone="down"]{--tone:var(--down)}
 [data-tone="flat"],[data-tone="vi"]{--tone:var(--smoke)}
@@ -166,7 +168,13 @@
 .mk-side button i{font-style:normal;font-size:11px}
 .mk-side button[data-side="LONG"][aria-pressed="true"]{background:var(--up);color:#fff}
 .mk-side button[data-side="SHORT"][aria-pressed="true"]{background:var(--down);color:#fff}
-.mk-lev button[aria-pressed="true"]{background:var(--white);color:var(--ink)}
+.mk-lev{align-items:stretch}
+.mk-lev button{flex:none;width:40px;font-size:20px;font-weight:600;color:var(--white)}
+.mk-lev button:disabled{opacity:.3}
+.mk-lev-v{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;line-height:1.1}
+.mk-lev-v small{font-size:11px;color:var(--smoke);white-space:nowrap}
+.mk-lev-v b{font:700 17px/1.1 var(--display);font-stretch:108%;color:var(--white);white-space:nowrap}
+.mk[data-lev="high"] .mk-lev-v b{color:#ffb347}
 .mk-zone{grid-column:1/3;min-height:50px;padding:4px 6px}
 .mk-zone small{white-space:normal;text-align:center}
 .is-playing .mk-seg,.mk:has(.mk-pos:not([hidden])) .mk-seg{opacity:.55;pointer-events:none}
@@ -199,6 +207,17 @@
   .mk-zone{grid-column:1}
   .mk-talk{min-height:96px;max-height:none}
   .mk:has(.mk-pos:not([hidden])) .mk-order{display:grid}
+}
+/* Narrow phones (folded, or display zoom): slimmer order controls so the 주문 spot stays on the felt. */
+@media (max-width:420px){
+  .mk-order{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
+  .mk-seg button{min-height:36px;padding:3px 4px}
+  .mk-side button small{display:none}
+  .mk-side button{flex-direction:row;gap:3px}
+  .mk-lev-v small{display:none}
+  .mk-lev button{width:34px}
+  .mk-zone{min-height:44px}
+  .mk-chart{min-height:120px}
 }
 @media (max-height:700px) and (max-width:699px){
   .mk-talk{display:none}

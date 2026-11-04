@@ -2,7 +2,7 @@
 import { animate, flyFrom, sound, el, ms, wait } from './fx.js';
 import { buzz } from './haptics.js';
 
-const RED_SUITS = new Set(['♥', '♦']);
+const RED_SUITS = new Set(['♥', '♦', 'R']); // 'R': the red joker (JKR; JKB is the black one)
 const PIPS = {
   2: [[50, 0], [50, 100]],
   3: [[50, 0], [50, 50], [50, 100]],
@@ -97,8 +97,16 @@ export function parseCard(text) {
   return { rank: text.slice(0, -1), suit: text.slice(-1) };
 }
 
+// The joker (하이로우): JOKER down both corners and the house star in the middle.
+const cardLabel = card => (card.rank === 'JK' ? (card.suit === 'R' ? '컬러 조커' : '흑백 조커') : `${card.rank}${card.suit}`);
+function jokerMarkup() {
+  const corner = '<span class="card-corner card-corner--joker"><b>J</b><b>O</b><b>K</b><b>E</b><b>R</b></span>';
+  return `${corner}<span class="card-joker"><i class="joker-star" aria-hidden="true"></i><b>JOKER</b></span>${corner.replace('card-corner ', 'card-corner card-corner--end ')}`;
+}
+
 function faceMarkup(card) {
   const { rank, suit } = card;
+  if (rank === 'JK') return jokerMarkup();
   const corner = `<span class="card-corner"><b${rank === '10' ? ' class="is-ten"' : ''}>${rank}</b><i>${suitSvg(suit)}</i></span>`;
   let center;
   if (PIPS[rank]) {
@@ -134,7 +142,7 @@ export function createCard(text, { faceUp = true } = {}) {
   node.innerHTML = `<div class="card-inner"><div class="card-face${card && RED_SUITS.has(card.suit) ? ' is-red' : ''}">${card ? faceMarkup(card) : ''}</div><div class="${cardBackClass()}"><i class="card-glint" aria-hidden="true"></i></div></div>`;
   if (faceUp && card) node.classList.add('is-faceup');
   node.setAttribute('role', 'img');
-  node.setAttribute('aria-label', card ? `${card.rank}${card.suit}` : '뒷면 카드');
+  node.setAttribute('aria-label', card ? cardLabel(card) : '뒷면 카드');
   return node;
 }
 
@@ -145,7 +153,7 @@ export function setCardFace(node, text) {
   const face = node.querySelector('.card-face');
   face.className = `card-face${RED_SUITS.has(card.suit) ? ' is-red' : ''}`;
   face.innerHTML = faceMarkup(card);
-  node.setAttribute('aria-label', `${card.rank}${card.suit}`);
+  node.setAttribute('aria-label', cardLabel(card));
 }
 
 export async function flipCard(node, text, { duration = 360, squeeze = false } = {}) {

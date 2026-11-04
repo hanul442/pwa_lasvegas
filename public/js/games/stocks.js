@@ -2,7 +2,7 @@
 // only once its time has come (lib/market.mjs); this screen plays the ticks back a moment behind
 // the server's clock so the chart moves smoothly, and dresses the day as a Korean exchange:
 // 빨강 상승·파랑 하락, candles and volume, a 호가창, a ticker tape, [속보], 상한가·하한가, VI and the
-// closing auction. Buying (매수) wins when the price rises, 인버스 when it falls, at 1·2·5배.
+// closing auction. Buying (매수) wins when the price rises, 인버스 when it falls, at 1·2·5·10·20·50배.
 import { api, errorMessage } from '../api.js';
 import { sound, haptic, el, formatUnit, reducedMotion, audioContext, isMuted, chipValueFor } from '../fx.js';
 import { Table } from '../table.js';
@@ -11,7 +11,7 @@ import { gameName } from '../names.js';
 const LAG = 380;       // the screen plays the day this far behind the server
 const POLL = 320;
 const PER_CANDLE = 10; // ticks per candle (about 16 minutes of the day)
-const LEVS = [1, 2, 5];
+const LEVS = [1, 2, 5, 10, 20, 50]; // lib/market.mjs LEVERAGES
 const PREF = 'vegas:stocks';
 const readPref = () => { try { return JSON.parse(localStorage.getItem(PREF)) || {}; } catch { return {}; } };
 const savePref = p => { try { localStorage.setItem(PREF, JSON.stringify({ ...readPref(), ...p })); } catch {} };
@@ -59,7 +59,7 @@ export async function mountStocks(ctx) {
   const t = new Table({ ...ctx, game: 'stocks', title: gameName('stocks'), feltClass: 'felt--market', skin: false });
   const pref = readPref();
   let side = pref.side === 'SHORT' ? 'SHORT' : 'LONG';
-  let lev = LEVS.includes(pref.lev) ? pref.lev : 1;
+  let lev = LEVS.includes(pref.lev) ? pref.lev : 5;
   t.body.innerHTML = `
     <div class="mk" data-phase="idle">
       <div class="mk-tape" aria-hidden="true"><div class="mk-tape-run" data-tape></div></div>
@@ -84,7 +84,7 @@ export async function mountStocks(ctx) {
           <button type="button" data-side="LONG" aria-pressed="false"><i aria-hidden="true">▲</i>매수<small>오르면 수익</small></button>
           <button type="button" data-side="SHORT" aria-pressed="false"><i aria-hidden="true">▼</i>인버스<small>내리면 수익</small></button>
         </div>
-        <div class="mk-seg mk-lev" role="group" aria-label="레버리지">${LEVS.map(n => `<button type="button" data-lev="${n}" aria-pressed="false">${n}배</button>`).join('')}</div>
+        <div class="mk-seg mk-lev" role="group" aria-label="레버리지"><button type="button" data-lev-step="-1" aria-label="레버리지 낮추기">−</button><span class="mk-lev-v"><small>레버리지</small><b data-lev-val aria-live="polite">1배</b></span><button type="button" data-lev-step="1" aria-label="레버리지 올리기">+</button></div>
         <button type="button" class="zone mk-zone" data-zone="ORDER"><strong>주문</strong><small data-fee>수수료 거래대금의 1%</small></button>
       </div>
     </div>`;
@@ -96,7 +96,7 @@ export async function mountStocks(ctx) {
   const nameEl = $('[data-name]'), sectorEl = $('[data-sector]');
   const newsEl = $('[data-news]'), stampEl = $('[data-stamp]'), boardEl = $('[data-board]');
   const bookEl = $('[data-book]'), talkEl = $('[data-talk]'), posEl = $('[data-pos]'), tapeEl = $('[data-tape]');
-  const sideBtns = [...root.querySelectorAll('[data-side]')], levBtns = [...root.querySelectorAll('[data-lev]')];
+  const sideBtns = [...root.querySelectorAll('[data-side]')], levBtns = [...root.querySelectorAll('[data-lev-step]')], levVal = root.querySelector('[data-lev-val]');
   t.addZone($('[data-zone="ORDER"]'));
 
   // ---------- the day as this screen knows it ----------
@@ -110,6 +110,7 @@ export async function mountStocks(ctx) {
   let lastStamp = '';
 
   const tickerById = id => tickers.find(x => x.id === id);
+  const levsOf = id => { const m = tickerById(id)?.margins; return m ? LEVS.filter(n => m[n] != null) : LEVS; };
   const elapsedIdx = () => Math.floor((performance.now() - startLocal - LAG) / (session?.tickMs || 250));
   const nowIdx = () => Math.min(have - 1, session ? Math.min(session.ticks - 1, elapsedIdx()) : -1);
   const auctionAt = i => session && i >= session.ticks - session.auction;
@@ -245,7 +246,10 @@ export async function mountStocks(ctx) {
     root.dataset.phase = phase;
     stateEl.textContent = { open: '장중', vi: 'VI 발동', auction: '동시호가', closed: '장 마감' }[phase];
   }
-  const equity = (pos, p) => Math.max(0, pos.stake * (1 + pos.lev * (pos.side === 'SHORT' ? -1 : 1) * (p / pos.entryPrice - 1)));
+  const equity = (pos, p) => {
+    const e = pos.stake * (1 + pos.lev * (pos.side === 'SHORT' ? -1 : 1) * (p / pos.entryPrice - 1));
+    return e <= pos.stake * (pos.margin || 0) / 100 ? 0 : e;
+  };
   const takeHome = (pos, p) => { const e = equity(pos, p); return e <= 0 ? 0 : Math.max(0, Math.floor(e / pos.unit + 1e-9) * pos.unit - pos.fee); };
   function paintPosition() {
     if (!position) { posEl.hidden = true; return; }
@@ -255,7 +259,7 @@ export async function mountStocks(ctx) {
     const rate = Math.round(net / position.stake * 100);
     posEl.dataset.tone = tone(net);
     posEl.innerHTML = `<span class="mk-pos-k">${position.side === 'LONG' ? '매수' : '인버스'} ${position.lev}배 · ${tickerById(position.ticker)?.name || ''}</span>
-      <span class="mk-pos-in">매수가 ${won(position.entryPrice)} · 원금 ${formatUnit(position.stake)}</span>
+      <span class="mk-pos-in">매수가 ${won(position.entryPrice)} · 원금 ${formatUnit(position.stake)}${position.liqPrice ? ` · 반대매매 ${won(position.liqPrice)}` : ''}</span>
       <strong class="mk-pos-pl">${net > 0 ? '+' : ''}${formatUnit(net)} <small>${signed(rate)}%</small></strong>`;
     refreshActions();
   }
@@ -263,15 +267,27 @@ export async function mountStocks(ctx) {
   // ---------- the order panel ----------
   function paintOrder() {
     sideBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.side === side)));
-    levBtns.forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.lev) === lev)));
+    // The levers this stock allows (lib/market.mjs MARGINS): a jumpy one stops short of 50배.
+    const allowed = levsOf(session?.ticker);
+    if (!allowed.includes(lev)) lev = allowed.filter(n => n <= lev).at(-1) || 1;
+    levVal.textContent = `${lev}배`;
+    root.dataset.lev = lev >= 10 ? 'high' : 'low';
+    levBtns.forEach(b => { const k = allowed.indexOf(lev) + Number(b.dataset.levStep); b.disabled = k < 0 || k >= allowed.length; });
     root.dataset.side = side;
     const stake = t.total || t.tier.min;
-    $('[data-fee]').textContent = lev > 1 ? `1% 움직이면 ${lev}% · 수수료 ${formatUnit(feeOf(stake))}` : `칩을 놓고 사요 · 수수료 ${formatUnit(feeOf(stake))}`;
+    const fee = `수수료 ${formatUnit(feeOf(stake))}`;
+    const margin = tickerById(session?.ticker)?.margins?.[lev] || 0; // lib/market.mjs MARGINS: 반대매매 at this percent left
+    $('[data-fee]').textContent = margin ? `1% 움직이면 ${lev}% · 원금 ${margin}% 남으면 반대매매 · ${fee}` : lev > 1 ? `1% 움직이면 ${lev}% · ${fee}` : `칩을 놓고 사요 · ${fee}`;
   }
   const unit = () => chipValueFor(t.tier.min); // one chip
-  const feeOf = stake => Math.max(unit(), Math.round(stake * lev / 100 / unit()) * unit()); // lib/market.mjs feeOf
+  const feeOf = stake => Math.max(unit(), Math.round(stake * Math.min(lev, 5) / 100 / unit()) * unit()); // lib/market.mjs feeOf
   sideBtns.forEach(b => b.addEventListener('click', () => { if (position || t.busy) return; side = b.dataset.side; savePref({ side }); sound.tick(); paintOrder(); refreshActions(); }));
-  levBtns.forEach(b => b.addEventListener('click', () => { if (position || t.busy) return; lev = Number(b.dataset.lev); savePref({ lev }); sound.tick(); paintOrder(); refreshActions(); }));
+  levBtns.forEach(b => b.addEventListener('click', () => {
+    if (position || t.busy) return;
+    const allowed = levsOf(session?.ticker), next = allowed[allowed.indexOf(lev) + Number(b.dataset.levStep)];
+    if (!next) return;
+    lev = next; savePref({ lev }); sound.tick(); paintOrder(); refreshActions();
+  }));
 
   // ---------- actions ----------
   function refreshActions() {
@@ -441,7 +457,7 @@ export async function mountStocks(ctx) {
     nameEl.textContent = tk?.name || s.ticker;
     sectorEl.textContent = tk ? `${tk.sector} · ${s.dayNo}일째` : '';
     t.root.querySelector('.table-title').textContent = tk?.name || gameName('stocks');
-    paintTape();
+    paintTape(); paintOrder();
     if (s.elapsed < 1500) { bell(1); flash('09:00 장 시작', 'flat', `${tk?.name || ''} 기준가 ${won(s.prevClose)}`); }
   }
 

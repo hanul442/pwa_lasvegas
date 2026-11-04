@@ -987,15 +987,35 @@ export class Table {
   // ---------- actions ----------
   setActions(list) {
     this.actionList = list;
+    // The same row of buttons as now (a live game such as 주식 relabels it every tick): update the
+    // buttons in place. Replacing them would drop a tap that lands while its button is swapped out.
+    const shapeOf = a => `${a.primary ? 'p' : ''}${a.ghost ? 'g' : ''}${a.anytime ? 'a' : ''}|${a.key || ''}`;
+    const old = [...this.actions.children];
+    if (old.length === list.length && list.every((a, i) => old[i].dataset.shape === shapeOf(a))) {
+      list.forEach((a, i) => {
+        const b = old[i];
+        b._action = a;
+        // Marks a game puts on a button after the fact (blackjack's 추천 hint) start over.
+        b.className = `action${a.primary ? ' action--primary' : ''}${a.ghost ? ' action--ghost' : ''}`;
+        b.removeAttribute('aria-description');
+        const span = b.firstElementChild;
+        if (span.innerHTML !== String(a.label)) span.innerHTML = a.label;
+        if (a.pressed != null) b.setAttribute('aria-pressed', String(a.pressed)); else b.removeAttribute('aria-pressed');
+        b.disabled = Boolean(a.disabled) || (this.busy && !a.anytime);
+      });
+      return;
+    }
     this.actions.replaceChildren(...list.map(a => {
       const b = el('button', `action${a.primary ? ' action--primary' : ''}${a.ghost ? ' action--ghost' : ''}`);
       b.type = 'button';
+      b.dataset.shape = shapeOf(a);
+      b._action = a;
       if (a.pressed != null) b.setAttribute('aria-pressed', String(a.pressed));
       b.innerHTML = `<span>${a.label}</span>${a.key ? `<kbd>${a.key}</kbd>` : ''}`;
       // `anytime`: a way out (leaving a room) that works mid-animation, outside the busy lock.
       b.disabled = Boolean(a.disabled) || (this.busy && !a.anytime);
-      if (a.anytime) { b.dataset.anytime = ''; b.addEventListener('click', () => a.onClick()); }
-      else b.addEventListener('click', () => this.run(a.onClick));
+      if (a.anytime) { b.dataset.anytime = ''; b.addEventListener('click', () => b._action.onClick()); }
+      else b.addEventListener('click', () => this.run(b._action.onClick));
       return b;
     }));
   }

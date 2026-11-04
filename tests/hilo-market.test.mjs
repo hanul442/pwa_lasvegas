@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { defaultState } from '../lib/state.mjs';
 import { handleApi } from '../lib/api.mjs';
 import { HILO_GAME, HILO_EDGE, startHilo, hiloMove, hiloPublic, callChance, callFactor, callsFor, rankOf } from '../lib/hilo.mjs';
-import { MARKET_GAME, TICKERS, TICKS, TICK_MS, DAY_MS, AUCTION_TICKS, dayPath, payoutAt, liquidationTick, feeOf, limitsOf, tickSize } from '../lib/market.mjs';
+import { MARKET_GAME, TICKERS, TICKS, TICK_MS, DAY_MS, AUCTION_TICKS, dayPath, payoutAt, liquidationTick, feeOf, limitsOf, tickSize, marginFor, liquidationPrice, levOk } from '../lib/market.mjs';
 import { RP_CAPPED_GAMES } from '../lib/rank-points.mjs';
 
 function api(initial) {
@@ -27,13 +27,35 @@ test('하이로우: each call pays its honest odds on the cards left, less the c
   for (const call of ['HIGH', 'LOW']) {
     const p = callChance(r.deck, rank, call);
     const wins = r.deck.filter(c => callsFor(rank)[call].test(rankOf(c))).length;
-    assert.equal(p, wins / 51);
+    assert.equal(p, wins / r.deck.length);
     if (p > 0) assert.ok(Math.abs(callFactor(p) * p - (1 - HILO_EDGE)) < 1e-12);
   }
-  // A and K: one real call and "the same again".
-  assert.equal(callsFor(1).LOW.label, '같게');
-  assert.equal(callsFor(13).HIGH.label, '같게');
-  assert.equal(callsFor(7).HIGH.test(7), true, 'a tie counts in the middle');
+  // 54 cards with two jokers; the open card is never a joker.
+  assert.equal(r.deck.length + r.trail.length, 54);
+  assert.notEqual(rankOf(r.card), 0);
+  // A tie and a joker lose both calls; nothing is lower than A or higher than K.
+  for (const call of ['HIGH', 'LOW']) {
+    assert.equal(callsFor(7)[call].test(7), false, 'a tie loses');
+    assert.equal(callsFor(7)[call].test(rankOf('JKR')), false, 'a joker loses');
+  }
+  assert.equal(callChance(['2♠', '3♠', 'JKB'], 1, 'LOW'), 0);
+  assert.equal(callChance(['2♠', 'K♥', 'JKB'], 13, 'HIGH'), 0);
+});
+
+test('하이로우: a joker or the same rank on a call forfeits; a joker on 넘기기 is burned', () => {
+  const r = startHilo({ stake: 10_000, unit: 100, floor: 'x' }, mulberry(3));
+  r.card = '7♠'; r.deck = ['JKR', '7♥', '9♣', '2♦', '5♠'];
+  let ev = hiloMove(r, 'SKIP');
+  assert.deepEqual([ev.card, ev.burned], ['7♥', ['JKR']]);
+  const same = structuredClone(r);
+  ev = hiloMove(same, 'HIGH'); // 9♣: a win
+  assert.equal(ev.type, 'hit');
+  const r2 = structuredClone(r); r2.deck = ['7♦', '9♣'];
+  ev = hiloMove(r2, 'HIGH');
+  assert.equal(ev.type, 'miss'); assert.equal(ev.why, 'SAME'); assert.equal(r2.result.value, 0);
+  const r3 = structuredClone(r); r3.deck = ['JKB', '9♣'];
+  ev = hiloMove(r3, 'HIGH');
+  assert.equal(ev.why, 'JOKER'); assert.equal(r3.status, 'READY_TO_SETTLE');
 });
 
 test('하이로우: the prize shown and paid is whole chips, and the deck order stays secret', () => {
@@ -59,7 +81,8 @@ test('하이로우: on average a call keeps 97 of every 100 chips', () => {
   let paid = 0, n = 20_000;
   for (let k = 0; k < n; k++) {
     const r = startHilo({ stake: 1_000_000, unit: 1, floor: 'x' }, rng);
-    hiloMove(r, rng() < 0.5 ? 'HIGH' : 'LOW');
+    const open = Object.entries(hiloPublic(r).options).filter(([, o]) => o.open).map(([k]) => k);
+    hiloMove(r, open[Math.floor(rng() * open.length)]);
     if (r.status === 'PLAYING') hiloMove(r, 'CASH');
     paid += r.result.value;
   }
@@ -120,19 +143,23 @@ test('거래소: prices sit on the exchange tick grid within 상한가·하한�
 test('거래소: no moment to buy or sell beats the fee on average', () => {
   for (const t of TICKERS) {
     let back = 0, n = 0;
-    for (let k = 0; k < 1500; k++) {
+    for (let k = 0; k < 3000; k++) {
       const path = dayPath(day(t.id, crypto.randomBytes(6).toString('hex')));
-      for (const side of ['LONG', 'SHORT']) for (const lev of [1, 5]) {
-        const entryIdx = k % 200, pos = { side, lev, stake: 10_000, unit: 100, fee: feeOf(10_000, 100, lev), entryIdx, entryPrice: path.price[entryIdx] };
+      for (const side of ['LONG', 'SHORT']) for (const lev of [1, 5, 10, 20, 50].filter(l => levOk(t.id, l))) {
+        const entryIdx = k % 200, pos = { side, lev, margin: marginFor(t.id, lev), stake: 10_000, unit: 100, fee: feeOf(10_000, 100, lev), entryIdx, entryPrice: path.price[entryIdx] };
         const exit = Math.min(TICKS - 1, entryIdx + 5 + (k * 7) % 60), liq = liquidationTick(pos, path);
         back += liq !== null && liq <= exit ? 0 : payoutAt(pos, path.price[exit]); n += 10_000;
       }
     }
-    assert.ok(back / n > 0.93 && back / n < 1, `${t.id} ${back / n}`);
+    assert.ok(back / n > 0.85 && back / n < 0.99, `${t.id} ${back / n}`);
   }
   assert.equal(feeOf(10_000, 100), 100, '1 per 100 traded');
   assert.equal(feeOf(10_000, 100, 5), 500, '5배 trades five times the stake');
   assert.equal(feeOf(1_000, 100), 100, 'the fee is at least one chip');
+  assert.equal(feeOf(10_000, 100, 50), 500, 'never more than 5 per 100 of the stake');
+  // 반대매매 at 10배 with 30% left: a 7% move against.
+  const p10 = { side: 'SHORT', lev: 10, margin: 30, stake: 10_000, entryPrice: 10_000 };
+  assert.equal(Math.round(liquidationPrice(p10)), 10_700);
 });
 
 test('거래소 through the API: future ticks stay hidden, trades settle in whole chips', async () => {

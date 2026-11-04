@@ -285,7 +285,7 @@ const MESSAGES = {
   MARKET_AUCTION: '마감 동시호가 중이에요. 종가에 자동으로 정리돼요.',
   MARKET_HALTED: 'VI 발동 중이에요. 2초 뒤에 다시 주문해 주세요.',
   MARKET_POSITION_OPEN: '들고 있는 주식이 있어요. 먼저 팔아 주세요.',
-  MARKET_BAD_LEVERAGE: '레버리지는 1배, 2배, 5배 중에서 골라 주세요.',
+  MARKET_BAD_LEVERAGE: '이 종목에서는 쓸 수 없는 레버리지예요. 다시 골라 주세요.',
   MARKET_BAD_SIDE: '매수나 인버스 중에서 골라 주세요.',
   MARKET_TICKER_UNKNOWN: '없는 종목이에요.',
   MARKET_DAY_LOST: '이 거래의 장 기록을 찾을 수 없어요.',

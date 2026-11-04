@@ -1235,6 +1235,11 @@
 .ace-star{position:absolute;left:50%;top:48%;width:calc(var(--card-w) * .13);height:calc(var(--card-w) * .13);transform:translate(-50%,-50%);background:var(--paper);clip-path:var(--star-shape)}
 /* court panel: framed between the two index strips, the figure filling it edge to edge */
 .card-court{position:absolute;top:6.5%;bottom:6.5%;left:20%;right:20%;display:block}
+.card-corner--joker{gap:.02em}
+.card-corner--joker b{font-size:.5em;line-height:1;letter-spacing:0}
+.card-joker{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:calc(var(--card-w) * .04)}
+.joker-star{width:calc(var(--card-w) * .42);height:calc(var(--card-w) * .42);background:currentColor;clip-path:var(--star-shape)}
+.card-joker b{font:700 calc(var(--card-w) * .12)/1 var(--display);letter-spacing:.08em}
 .court-art{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .court-art *{vector-effect:non-scaling-stroke}
 .court-art .ln{stroke:var(--line);stroke-width:max(.55px,calc(var(--card-w) * .0085));stroke-linejoin:round;stroke-linecap:round}

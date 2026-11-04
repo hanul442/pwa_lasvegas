@@ -273,7 +273,7 @@ async function openTable(tier, { seated = false, firstBet = false } = {}) {
   const door = enteringFloor ? floorDoor(TIERS[tier], { game: selectedGame.name, event: eventInfo?.title || null }) : null;
   if (door) { warmGame(selectedGame); await door.opened; }
   if (!seated && state?.cashier?.on && TIERS[tier] && (!state.cashier.seat || state.user.account.available < Math.max(TIERS[tier].min, eventNeed))) {
-    const bought = await buyInSheet(state, TIERS[tier], { event: selectedGame.event || null });
+    const bought = await buyInSheet(state, TIERS[tier], { event: selectedGame.event || null, game: selectedGame.id });
     if (!bought) { door?.close(); return; }
     applyState(bought);
   }
@@ -356,7 +356,7 @@ async function buyMore(mode, st = activeTable?.serverState || state) {
   if (!mode) mode = st.user.account.available < tier.min ? 'rebuy' : 'topup';
   // At a friend's room opened from an invite: its floor's chips whatever the RP tier.
   const room = inviteRoom?.tier === activeTier ? inviteRoom.code : null;
-  const next = await buyInSheet(st, tier, { mode, event: selectedGame?.event || null, room, onLeave: () => leaveTable() });
+  const next = await buyInSheet(st, tier, { mode, event: selectedGame?.event || null, room, onLeave: () => leaveTable(), game: room ? null : selectedGame?.id });
   if (!next) return;
   applyState(next);
   const t = activeTable;

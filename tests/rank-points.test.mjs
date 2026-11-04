@@ -13,7 +13,7 @@ test('RP follows the result against the bet, not the size of the bet', () => {
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: -1_000_000 }), -7, 'lose it: −7.5, rounded to whole RP');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 1_500_000 }), 15, 'blackjack 3:2');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 0 }), 0, 'a push moves nothing');
-  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 35_000_000 }), 30, 'a straight-up hit counts 3× its bet (배당 상한, roulette and slots)');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 35_000_000 }), 15, 'a straight-up hit counts 3× its bet (배당 상한, roulette and slots), at half (단순 베팅)');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: 35_000_000 }), 350, 'other games: no cap');
   assert.equal(rpForRound({ stake: 1_000_000, netPnl: -5_000_000 }), -37, 'nor on a loss');
   // A win counts for the most expensive floor its bet covers, never above the player's own floor;

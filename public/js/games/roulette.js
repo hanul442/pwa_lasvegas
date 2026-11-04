@@ -147,6 +147,7 @@ export async function mountRoulette(ctx, { event = null } = {}) {
       <p class="rl-payouts" data-payouts aria-hidden="true"></p>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
+  t.betLimits = { game: 'Roulette', of: zoneBet }; // 베팅 방법별 한도 (js/bet-limits.js)
   const crowd = seatCrowd(t, { plan: crowdPlan });
   const rotor = t.body.querySelector('.wheel-rotor');
   const wheel = t.body.querySelector('[data-wheel]');

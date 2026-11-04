@@ -1,6 +1,7 @@
 // Shared table shell: header, felt, chip tray, bet zones, payouts and the balance readout.
 import { animate, flyFrom, flyTo, flyOut, sound, formatCH, formatMoney, moneyResult, rollNumber, el, wait, ms, formatUnit, unitWord, wonCH, inTableUnits, setHurry } from './fx.js';
 import { createChip, breakdown, holding, TIERS, tableMax } from './chips.js';
+import { betTypeRange } from './bet-limits.js';
 import { bigWin, bigWinLevel, namedWinCounts } from './bigwin.js';
 
 // A hand that loses this many table minimums (two max bets) gets the hard landing.
@@ -342,6 +343,15 @@ export class Table {
   stackOf(zoneId) { return this.zones.get(zoneId)?.querySelector('.bet-stack'); }
   chipsOf(zoneId) { return this.bets.get(zoneId) || []; }
   zoneTotal(zoneId) { return this.chipsOf(zoneId).reduce((a, b) => a + b, 0); }
+  // 베팅 방법별 한도 (js/bet-limits.js): a game sets `betLimits = { game, of: zoneId => ({ betType, target }) }`
+  // and each spot then has its own most and least, under the table's (division's) top.
+  zoneRange(zoneId) {
+    const bet = this.betLimits?.of?.(zoneId);
+    if (!bet?.betType) return { min: 0, max: this.tier.max };
+    return betTypeRange({ minBet: this.tier.min, maxBet: this.tier.max }, this.tier.max, this.betLimits.game, bet.betType, bet.target ?? null);
+  }
+  zoneMax(zoneId) { return this.zoneRange(zoneId).max; }
+  overMax(zoneId) { const max = this.zoneMax(zoneId); return max < this.tier.max ? `이 칸은 최대 ${formatCH(max)}까지예요` : `${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(max)}이에요`; }
   get total() { let sum = 0; this.bets.forEach(chips => { sum += chips.reduce((a, b) => a + b, 0); }); return sum; }
   get betZones() { return [...this.zones.keys()].filter(z => this.chipsOf(z).length && !this.passive.has(z)); }
   // Compatibility view for single-bet games: the zone holding the bet and its chips.
@@ -356,7 +366,7 @@ export class Table {
     if (this.locked || this.busy) return;
     if (!this.multi) { const held = this.bet.zone; if (held && held !== zoneId) await this.moveBet(held, zoneId); }
     this.setFocus(zoneId);
-    if (this.zoneTotal(zoneId) + value > this.tier.max) return this.reject(`${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`);
+    if (this.zoneTotal(zoneId) + value > this.zoneMax(zoneId)) return this.reject(this.overMax(zoneId));
     if (this.total + value > this.available) return this.reject('칩이 부족해요');
     this.record(zoneId, value);
     const chip = this.pushChip(zoneId, value);
@@ -439,9 +449,9 @@ export class Table {
     let added = 0, blocked = '';
     for (const zoneId of this.betZones) {
       const now = this.zoneTotal(zoneId);
-      const room = Math.min(this.tier.max - now, this.available - this.total);
+      const top = this.zoneMax(zoneId), room = Math.min(top - now, this.available - this.total);
       const want = Math.min(now, room);
-      if (want < now) blocked = room === this.tier.max - now ? `${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요` : '칩이 부족해요';
+      if (want < now) blocked = room === top - now ? this.overMax(zoneId) : '칩이 부족해요';
       let sum = 0;
       for (const v of breakdown(want, this.tier.chips, 20)) {
         if (sum + v > want) break;
@@ -466,7 +476,7 @@ export class Table {
     const zoneId = this.maxZone;
     if (!zoneId) { this.hint('베팅할 곳을 탭하세요'); return false; }
     const unit = Math.min(...this.tier.chips);
-    const floor = this.sides.has(zoneId) || !this.zoneMin ? unit : this.tier.min;
+    const floor = Math.max(this.sides.has(zoneId) || !this.zoneMin ? unit : this.tier.min, this.zoneRange(zoneId).min);
     const now = this.zoneTotal(zoneId);
     if (dir < 0) {
       if (!now) return false;
@@ -483,7 +493,7 @@ export class Table {
       return Boolean(target);
     }
     const target = now ? Math.floor(now / unit) * unit + unit : Math.max(floor, unit);
-    if (target > this.tier.max) { this.reject(`${this.multi ? this.zoneWord : '이 테이블'} 최대 베팅은 ${formatCH(this.tier.max)}이에요`); return false; }
+    if (target > this.zoneMax(zoneId)) { this.reject(this.overMax(zoneId)); return false; }
     if (this.total - now + target > this.available) { this.reject('칩이 부족해요'); return false; }
     this.setFocus(zoneId);
     this.restack(zoneId, target);
@@ -520,8 +530,8 @@ export class Table {
     if (!zoneId) { this.hint('베팅할 곳을 탭하세요'); return; }
     const step = Math.min(...this.tier.chips);
     const room = this.available - (this.total - this.zoneTotal(zoneId));
-    const target = Math.floor(Math.min(this.tier.max, room) / step) * step;
-    if (target < this.tier.min) return this.reject('칩이 부족해요');
+    const target = Math.floor(Math.min(this.zoneMax(zoneId), room) / step) * step;
+    if (target < Math.min(this.tier.min, this.zoneMax(zoneId))) return this.reject('칩이 부족해요');
     if (target === this.zoneTotal(zoneId)) return;
     this.setFocus(zoneId);
     this.restack(zoneId, target);
@@ -539,7 +549,7 @@ export class Table {
     for (const [zoneId, chips] of this.lastBet) {
       if (!this.zones.has(zoneId)) continue;
       for (const v of chips) {
-        if (this.zoneTotal(zoneId) + v > this.tier.max || this.total + v > this.available) { short = true; break; }
+        if (this.zoneTotal(zoneId) + v > this.zoneMax(zoneId) || this.total + v > this.available) { short = true; break; }
         this.record(zoneId, v);
         flyFrom(this.pushChip(zoneId, v), tray, { duration: 340, lift: 50 });
         sound.chip();
@@ -587,7 +597,9 @@ export class Table {
     const main = zones.filter(z => !this.sides.has(z));
     const mainTotal = main.reduce((n, z) => n + this.zoneTotal(z), 0);
     const short = this.zoneMin ? main.some(z => this.zoneTotal(z) < this.tier.min) : mainTotal > 0 && mainTotal < this.tier.min;
-    this.hint(short ? `${this.multi && this.zoneMin && main.length > 1 ? '박스마다 ' : this.zoneMin ? '' : '합계 '}최소 ${formatCH(this.tier.min)}` : '');
+    // A spot under its own bet type's least (js/bet-limits.js), e.g. red/black at 2 smallest bets.
+    const under = zones.find(z => this.zoneTotal(z) < this.zoneRange(z).min);
+    this.hint(short ? `${this.multi && this.zoneMin && main.length > 1 ? '박스마다 ' : this.zoneMin ? '' : '합계 '}최소 ${formatCH(this.tier.min)}` : under ? `이 칸 최소 ${formatCH(this.zoneRange(under).min)}` : '');
     if (this.multi) this.zones.forEach((node, id) => {
       const tag = node.querySelector('.zone-amount');
       if (tag) tag.textContent = this.zoneTotal(id) ? formatCH(this.zoneTotal(id)) : '';
@@ -602,7 +614,7 @@ export class Table {
     const zones = this.betZones;
     const main = zones.filter(z => !this.sides.has(z));
     const enough = this.zoneMin ? main.every(z => this.zoneTotal(z) >= this.tier.min) : main.reduce((n, z) => n + this.zoneTotal(z), 0) >= this.tier.min;
-    return main.length > 0 && this.total <= this.available && enough && zones.every(z => this.zoneTotal(z) <= this.tier.max);
+    return main.length > 0 && this.total <= this.available && enough && zones.every(z => { const r = this.zoneRange(z); return this.zoneTotal(z) <= r.max && this.zoneTotal(z) >= r.min; });
   }
 
   // Idle action row shared by every game: clear, rebet, and the primary deal/spin/roll.

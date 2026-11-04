@@ -174,16 +174,16 @@ test('the bank over the API: borrow, play, repay, outgrow a floor', async t => {
   assert.equal(got.data.state.bank.loans.length, 1);
   assert.equal(got.data.state.bank.netWorth, 0);
   const loanId = got.data.loan.id;
-  assert.equal((await call('POST', '/api/sicbo/play', { stake: 1_000_000, floor: 'gold-room', betType: 'BIG' })).status, 200);
+  assert.equal((await call('POST', '/api/sicbo/play', { stake: 2_000_000, floor: 'gold-room', betType: 'BIG' })).status, 200);
   const paid = await call('POST', '/api/bank/repay', { loanId, amount: 50_000_000 });
   assert.equal(paid.status, 200, JSON.stringify(paid.data));
   assert.equal(paid.data.state.bank.loans[0].balance, 50_000_000);
   // The seeded 10억 profile is far too rich for the Gold Room.
-  const outgrown = await call('POST', '/api/sicbo/play', { stake: 1_000_000, floor: 'gold-room', betType: 'BIG' }, 'hanseo');
+  const outgrown = await call('POST', '/api/sicbo/play', { stake: 2_000_000, floor: 'gold-room', betType: 'BIG' }, 'hanseo');
   assert.equal(outgrown.status, 403);
   assert.equal(outgrown.data.error, 'FLOOR_OUTGROWN');
   // Every way to bet is shut, the multi-spot roulette table included.
-  const spin = await call('POST', '/api/roulette/spin', { floor: 'gold-room', bets: [{ betType: 'RED', stake: 1_000_000 }] }, 'hanseo');
+  const spin = await call('POST', '/api/roulette/spin', { floor: 'gold-room', bets: [{ betType: 'RED', stake: 2_000_000 }] }, 'hanseo');
   assert.equal(spin.status, 403);
   assert.equal(spin.data.error, 'FLOOR_OUTGROWN');
   const support = await call('POST', '/api/support/claim', { kind: 'grant' });

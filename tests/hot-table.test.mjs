@@ -133,7 +133,7 @@ const call = (store, method, path, body, key) =>
 
 test('over the API: the hot game pays winners more, reports it on the round, and the state shows the window', async () => {
   forceHotTable(null);
-  const store = memoryStore(), s = 10_000_000;
+  const store = memoryStore(), s = 20_000_000;
   let wins = 0, losses = 0;
   await frozen(at('roulette'), async () => {
     const st = await call(store, 'GET', '/api/state');

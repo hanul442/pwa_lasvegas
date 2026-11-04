@@ -106,7 +106,7 @@ test('over the API: an event table sells its chips at any RP, the first bet pays
   assert.equal((await call('POST', '/api/cashier/buyin', { floor: 'penthouse', amount: 150 * 억 })).data.error, 'FLOOR_RP_LOCKED', 'not as a plain table');
   const bought = await call('POST', '/api/cashier/buyin', { floor: 'penthouse', amount: 150 * 억, event: 'casablanca' });
   assert.equal(bought.status, 200, JSON.stringify(bought.data));
-  const spin = () => call('POST', '/api/roulette/spin', { floor: 'penthouse', event: 'casablanca', bets: [{ betType: 'RED', stake: 300_000_000 }] });
+  const spin = () => call('POST', '/api/roulette/spin', { floor: 'penthouse', event: 'casablanca', bets: [{ betType: 'RED', stake: 600_000_000 }] });
   const first = await spin();
   assert.equal(first.status, 200, JSON.stringify(first.data));
   assert.equal(first.data.state.eventFees.casablanca.paid, true);

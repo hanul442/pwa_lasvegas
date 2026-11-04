@@ -101,7 +101,7 @@ test('after real bets the weekly ranking from totals matches the ledger', async 
   state.users.hanseo.account.available = 300_000_000;
   const store = { load: async () => state, mutate: async fn => fn(state) };
   const call = (p, b) => handleApi({ method: 'POST', header: () => undefined, body: async () => b }, new URL(`http://x${p}`), store, { NODE_ENV: 'production' });
-  for (let i = 0; i < 30; i++) assert.equal((await call('/api/roulette/play', { stake: 10_000_000, floor: 'high-limit', betType: 'RED' })).status, 200);
+  for (let i = 0; i < 30; i++) assert.equal((await call('/api/roulette/play', { stake: 20_000_000, floor: 'high-limit', betType: 'RED' })).status, 200);
   const week = weekBoundary(Date.now());
   assert.deepEqual(weeklySeason(state).performanceByUser, buildSeasonPerformanceFromLedger(state, week));
 });

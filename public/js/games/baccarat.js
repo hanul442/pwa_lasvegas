@@ -81,6 +81,7 @@ export async function mountBaccarat(ctx, { event = null } = {}) {
       </div>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
+  t.betLimits = { game: 'Baccarat', of: zone => ({ betType: zone }) }; // 베팅 방법별 한도 (js/bet-limits.js)
   const shoe = t.body.querySelector('[data-shoe]');
   const discard = t.body.querySelector('[data-discard]');
   const side = s => t.body.querySelector(`[data-side="${s}"]`);

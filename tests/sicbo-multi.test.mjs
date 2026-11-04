@@ -46,19 +46,19 @@ test('/api/sicbo/roll takes many spots in one idempotent round under the table l
   const s = defaultState();
   s.users.hanseo.account.available = 300_000_000;
   const h = api(s);
-  const bets = [{ betType: 'BIG', stake: 5_000_000 }, { betType: 'SINGLE', target: 6, stake: 5_000_000 }, { betType: 'TOTAL', target: 10, stake: 1_000_000 }];
+  const bets = [{ betType: 'BIG', stake: 20_000_000 }, { betType: 'SINGLE', target: 6, stake: 5_000_000 }, { betType: 'TOTAL', target: 10, stake: 1_000_000 }];
   const res = await h.call('/api/sicbo/roll', { floor: 'high-limit', bets }, 'sicbo-roll-0001');
   assert.equal(res.status, 200, JSON.stringify(res.data));
   const round = res.data.round;
   assert.equal(round.bets.length, 3);
-  assert.equal(round.stake, 11_000_000);
+  assert.equal(round.stake, 26_000_000);
   assert.equal(round.netPnl, round.bets.reduce((a, b) => a + sicboBetNet(b, round.dice), 0));
   assert.equal(res.data.state.user.account.available, 300_000_000 + round.netPnl);
   const again = await h.call('/api/sicbo/roll', { floor: 'high-limit', bets }, 'sicbo-roll-0001');
   assert.equal(again.data.replayed, true);
   assert.deepEqual(again.data.round.dice, round.dice);
   assert.equal(again.data.state.user.account.available, res.data.state.user.account.available);
-  assert.equal((await h.call('/api/sicbo/roll', { floor: 'high-limit', bets: [{ ...bets[0], stake: 6_000_000 }, ...bets.slice(1)] }, 'sicbo-roll-0001')).data.error, 'IDEMPOTENCY_CONFLICT');
+  assert.equal((await h.call('/api/sicbo/roll', { floor: 'high-limit', bets: [{ ...bets[0], stake: 30_000_000 }, ...bets.slice(1)] }, 'sicbo-roll-0001')).data.error, 'IDEMPOTENCY_CONFLICT');
   // Together at least the minimum; each spot under the maximum; whole units.
   const err = async b => (await h.call('/api/sicbo/roll', { floor: 'high-limit', bets: b })).data.error;
   assert.equal(await err([{ betType: 'BIG', stake: 1_000_000 }]), 'BET_OUTSIDE_TABLE_LIMIT');

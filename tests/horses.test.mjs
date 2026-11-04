@@ -264,7 +264,7 @@ test('the 경마 table is wired into the lobby, the guide, the music and the off
   const read = path => readFile(new URL(`../public/${path}`, import.meta.url), 'utf8');
   const [app, sw, html, client, guides, music] = await Promise.all(['app.js', 'sw.js', 'index.html', 'js/games/horses.js', 'js/guides.js', 'js/music.js'].map(read));
   assert.match(app, /\{ id: 'horses', name: '경마'/);
-  assert.match(app, /'slots', 'horses'\]/);
+  assert.match(app, /'slots', 'horses'[,\]]/);
   assert.match(sw, /'js\/games\/horses\.js'/);
   assert.match(sw, /'horses\.css'/);
   assert.match(html, /href="horses\.css"/);

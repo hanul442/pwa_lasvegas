@@ -698,6 +698,9 @@ const THEMES = {
   slots: { tempo: 158, bar: slotsBar },
   // 경마 borrows the surf band at a gallop.
   horses: { tempo: 172, bar: slotsBar },
+  // 하이로우 borrows baccarat's bossa; the exchange runs on the dice disco, a touch quicker.
+  hilo: { tempo: 124, bar: baccaratBar },
+  stocks: { tempo: 128, bar: diceBar },
   poker: { tempo: 126, bar: pokerBar },
   // 7포커 borrows the Hold'em band, a touch slower.
   sevenpoker: { tempo: 118, bar: pokerBar },

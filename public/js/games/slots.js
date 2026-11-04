@@ -93,6 +93,7 @@ export async function mountSlots(ctx) {
       <details class="slot-pays"><summary data-pays-title>배당표</summary><table data-pays></table><p data-pays-note></p></details>
     </div>`;
   t.addZone(t.body.querySelector('[data-zone="LINE"]'));
+  t.betLimits = { game: 'Slots', of: () => ({ betType: 'LINE' }) }; // 베팅 방법별 한도 (js/bet-limits.js)
   const reels = [...t.body.querySelectorAll('[data-reel]')];
   const poolEl = t.body.querySelector('[data-pool]');
   const resultEl = t.body.querySelector('[data-result]');

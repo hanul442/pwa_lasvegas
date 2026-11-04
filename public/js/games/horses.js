@@ -96,6 +96,8 @@ export async function mountHorses(ctx) {
   const slipText = root.querySelector('[data-slip-text]');
   t.addZone(pairZone);
   let kind = readKind();
+  // 베팅 방법별 한도 (js/bet-limits.js): 연승 to the table's top, 단승 5, 복승·쌍승 2 smallest bets.
+  t.betLimits = { game: 'Horse Racing', of: z => ({ betType: z === 'PAIR' ? (kind === 'EXACTA' ? 'EXACTA' : 'QUINELLA') : z[0] === 'W' ? 'WIN' : 'PLACE' }) };
   // The two horses of a 복승 / 쌍승 ticket, in the order tapped (first, second for 쌍승).
   let picks = [];
 

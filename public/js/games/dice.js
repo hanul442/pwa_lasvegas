@@ -73,6 +73,7 @@ export async function mountDice(ctx, { event = null } = {}) {
       <div class="sb-totals">${totals}</div>
     </div>`;
   t.body.querySelectorAll('[data-zone]').forEach(z => t.addZone(z));
+  t.betLimits = { game: 'Sic Bo', of: zoneBet }; // 베팅 방법별 한도 (js/bet-limits.js)
   const crowd = seatCrowd(t, { plan: crowdPlan });
   const dome = t.body.querySelector('[data-dome]');
   const dice = [...t.body.querySelectorAll('.die')];

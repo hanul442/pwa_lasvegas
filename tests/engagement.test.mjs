@@ -176,10 +176,10 @@ test('API exposes engagement and the claim routes', async () => {
   assert.ok(s.data.rankings.season, 'weekly season is always on');
   // Settling a round shows up in the weekly season board (played before 일급 lifts the player
   // past High Limit).
-  await call('POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BIG' });
+  await call('POST', '/api/sicbo/play', { stake: 20_000_000, floor: 'high-limit', betType: 'BIG' });
   const after = await call('GET', '/api/state');
   const me = after.data.rankings.season.highRoller.find(r => r.id === 'hanseo');
-  assert.equal(me.value, 10_000_000);
+  assert.equal(me.value, 20_000_000);
   const claim = await call('POST', '/api/daily/claim');
   assert.equal(claim.status, 200);
   assert.equal(claim.data.state.engagement.daily.claimed, true);

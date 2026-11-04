@@ -34,10 +34,10 @@ test('game API runs against an in-memory store with no file system', async () =>
   const before = await call(store, 'GET', '/api/state');
   assert.equal(before.status, 200);
   const start = before.data.user.account.available;
-  const res = await call(store, 'POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
+  const res = await call(store, 'POST', '/api/sicbo/play', { stake: 20_000_000, floor: 'high-limit', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
   assert.equal(res.status, 200);
   assert.equal(res.data.state.user.account.available, start + res.data.round.netPnl);
-  const replay = await call(store, 'POST', '/api/sicbo/play', { stake: 10_000_000, floor: 'high-limit', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
+  const replay = await call(store, 'POST', '/api/sicbo/play', { stake: 20_000_000, floor: 'high-limit', betType: 'BIG' }, { 'x-idempotency-key': 'k-test-1' });
   assert.equal(replay.data.replayed, true);
   assert.equal(replay.data.state.user.account.available, res.data.state.user.account.available);
 });
@@ -113,13 +113,15 @@ test('baccarat takes optional pair side bets in the same round and ledger entry'
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 2_500_000 } })).data.error, 'BET_NOT_IN_UNITS');
   assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 200_000_000 } })).status, 400);
   const before = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, stake: 100_000_000, sideBets: { PLAYER_PAIR: 100_000_000, BANKER_PAIR: 100_000_000 } }, {})).status, before < 300_000_000 ? 409 : 200);
+  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, stake: 100_000_000, sideBets: { PLAYER_PAIR: 30_000_000, BANKER_PAIR: 30_000_000 } }, {})).status, before < 160_000_000 ? 409 : 200);
+  // 베팅 방법별 한도: a pair bet holds at most 3 smallest bets (public/js/bet-limits.js).
+  assert.equal((await call(store, 'POST', '/api/baccarat/play', { ...body, sideBets: { PLAYER_PAIR: 40_000_000 } })).data.error, 'BET_TYPE_OVER_LIMIT');
 });
 
 test('lightning roulette spin: the server strikes the numbers and a retry replays them', async () => {
   const store = memoryStore();
   const start = (await call(store, 'GET', '/api/state')).data.user.account.available;
-  const body = { floor: 'high-limit', lightning: true, bets: [{ betType: 'NUMBER', target: 17, stake: 10_000_000 }, { betType: 'RED', stake: 10_000_000 }] };
+  const body = { floor: 'high-limit', lightning: true, bets: [{ betType: 'NUMBER', target: 17, stake: 10_000_000 }, { betType: 'RED', stake: 20_000_000 }] };
   const res = await call(store, 'POST', '/api/roulette/spin', body, { 'x-idempotency-key': 'k-lightning-1' });
   assert.equal(res.status, 200);
   const r = res.data.round;

@@ -11,20 +11,20 @@ const at = (t, fn) => { const real = Date.now; Date.now = () => t; try { return 
 
 test('배당 상한: at roulette and slots a win counts for RP up to 3× its bet; other games count it all', () => {
   assert.equal(RP_PAYOUT_CAP, 3);
-  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 1_000_000 }), 10);
-  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 2_000_000 }), 20, 'a column bet');
-  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 35_000_000 }), 30, 'straight-up: 35× counts as 3×');
-  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 499_000_000 }), 30, 'lightning 499×');
-  assert.equal(rpForRound({ game: 'Slots', stake: 10_000_000, netPnl: 50_000_000_000 }), 30, 'slot jackpot');
-  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000 }), -7);
-  assert.equal(rpForRound({ game: 'Sic Bo', stake: 1_000_000, netPnl: 150_000_000 }), 1500, 'sic bo is not capped');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 1_000_000 }), 5, 'roulette moves RP half as much (단순 베팅)');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 2_000_000 }), 10, 'a column bet');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 35_000_000 }), 15, 'straight-up: 35× counts as 3×, then half');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: 499_000_000 }), 15, 'lightning 499×');
+  assert.equal(rpForRound({ game: 'Slots', stake: 10_000_000, netPnl: 50_000_000_000 }), 9, 'slot jackpot: 3×, then three tenths');
+  assert.equal(rpForRound({ game: 'Roulette', stake: 1_000_000, netPnl: -1_000_000 }), -4);
+  assert.equal(rpForRound({ game: 'Sic Bo', stake: 1_000_000, netPnl: 150_000_000 }), 750, 'sic bo is not capped (half, as a game of chance)');
   assert.equal(rpForRound({ game: "Hold'em", stake: 1_000_000, netPnl: 5_000_000 }), 50, 'poker is not capped');
 });
 
 test('배당 상한: 100 lightning straight-ups no longer climb (they lose RP on average)', () => {
-  // 1 in 37 hits; even at 499× each hit is +30 while each miss is −7.
+  // 1 in 37 hits; even at 499× each hit is +15 while each miss is −4.
   const ev = (1 / 37) * rpForRound({ game: 'Roulette', stake: 1, netPnl: 499 }) + (36 / 37) * rpForRound({ game: 'Roulette', stake: 1, netPnl: -1 });
-  assert.ok(ev < -5, `EV per spin ${ev}`);
+  assert.ok(ev < -3, `EV per spin ${ev}`);
 });
 
 test('승급전: a roulette cover of 35 numbers is not a win; banker 0.95 and blackjack are', () => {

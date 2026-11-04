@@ -160,11 +160,11 @@ test('Casablanca roulette and God of Gamblers sic bo are always open and pay on 
   await call(store, 'GET', '/api/state');
   assert.ok(eventOpen(eventById('casablanca')) && eventOpen(eventById('godofgamblers')));
   holdings(store, 9_000_000_000);
-  assert.equal((await call(store, 'POST', '/api/roulette/spin', { bets: [{ betType: 'RED', stake: 1_000_000_000 }], floor: 'penthouse', event: 'casablanca' })).data.error, 'EVENT_ENTRY_REQUIRED');
-  assert.equal((await call(store, 'POST', '/api/sicbo/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'godofgamblers' })).data.error, 'EVENT_ENTRY_REQUIRED');
+  assert.equal((await call(store, 'POST', '/api/roulette/spin', { bets: [{ betType: 'RED', stake: 2_000_000_000 }], floor: 'penthouse', event: 'casablanca' })).data.error, 'EVENT_ENTRY_REQUIRED');
+  assert.equal((await call(store, 'POST', '/api/sicbo/play', { stake: 2_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'godofgamblers' })).data.error, 'EVENT_ENTRY_REQUIRED');
   holdings(store, 50_000_000_000);
-  assert.equal((await call(store, 'POST', '/api/roulette/spin', { bets: [{ betType: 'RED', stake: 1_000_000_000 }], floor: 'high-limit', event: 'casablanca' })).data.error, 'EVENT_FLOOR_ONLY');
-  assert.equal((await call(store, 'POST', '/api/sicbo/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'casablanca' })).status, 409, 'an event belongs to its own game');
+  assert.equal((await call(store, 'POST', '/api/roulette/spin', { bets: [{ betType: 'RED', stake: 2_000_000_000 }], floor: 'high-limit', event: 'casablanca' })).data.error, 'EVENT_FLOOR_ONLY');
+  assert.equal((await call(store, 'POST', '/api/sicbo/play', { stake: 2_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'casablanca' })).status, 409, 'an event belongs to its own game');
   const run = async (path, body, need, bonus) => {
     for (let i = 0; i < 300; i++) {
       holdings(store, 50_000_000_000);
@@ -175,7 +175,7 @@ test('Casablanca roulette and God of Gamblers sic bo are always open and pay on 
     }
     return false;
   };
-  assert.ok(await run('/api/roulette/spin', { bets: [{ betType: 'RED', stake: 1_000_000_000 }], floor: 'penthouse', event: 'casablanca' }, 3, 15_000_000_000), 'three reds in a row');
-  assert.ok(await run('/api/sicbo/play', { stake: 1_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'godofgamblers' }, 4, 25_000_000_000), 'four bigs in a row');
+  assert.ok(await run('/api/roulette/spin', { bets: [{ betType: 'RED', stake: 2_000_000_000 }], floor: 'penthouse', event: 'casablanca' }, 3, 15_000_000_000), 'three reds in a row');
+  assert.ok(await run('/api/sicbo/play', { stake: 2_000_000_000, floor: 'penthouse', betType: 'BIG', event: 'godofgamblers' }, 4, 25_000_000_000), 'four bigs in a row');
   assert.ok(store.peek().ledger.filter(x => x.type === 'EVENT_BONUS').length >= 2);
 });

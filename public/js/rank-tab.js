@@ -109,9 +109,10 @@ function rpRulesHtml(rp) {
       <div><dt>칸</dt><dd>티어마다 V→I 다섯 칸. 위 티어일수록 칸이 넓어요.</dd></div>
       <div><dt>승급</dt><dd>I 꼭대기에 닿으면 승급전(5판 3선승)이 자동으로 시작돼요. 참가비가 모자라면 직접 도전.</dd></div>
       <div><dt>강등</dt><dd>V 바닥에서 지면 강등 방어전(5판 3선승). 3패해야 내려가요.</dd></div>
-      ${r.payoutCap ? `<div><dt>룰렛·슬롯</dt><dd>한 판에 건 돈의 ${r.payoutCap}배(+${whole(r.perStake * r.payoutCap * r.winBy[me])} RP)까지만 쳐요.</dd></div>` : ''}
+      ${r.gameScale ? '<div><dt>단순 베팅</dt><dd>슬롯은 RP가 10분의 3만, 룰렛·식보·경마는 절반만 움직여요. 딸 때도 잃을 때도 똑같이요.</dd></div>' : ''}
+      ${r.payoutCap ? `<div><dt>룰렛·슬롯</dt><dd>한 판에 건 돈의 ${r.payoutCap}배까지만 쳐요.</dd></div>` : ''}
       <div><dt>맞고·고스톱</dt><dd>10점 보증금을 건 돈으로 쳐요.</dd></div>
-      <div><dt>홀덤·7포커</dt><dd>바이인과 상관없이 테이블 최소 베팅을 건 돈으로 쳐요.</dd></div>
+      <div><dt>홀덤·7포커</dt><dd>한 판이 끝날 때마다 바로 RP가 움직여요. 바이인과 상관없이 테이블 최소 베팅을 건 돈으로 쳐요.</dd></div>
       ${rp.floors ? '' : '<div><dt>층</dt><dd>RP 티어가 오르면 위층이 열려요.</dd></div>'}
     </dl>
   </div>`;

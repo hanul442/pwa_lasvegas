@@ -526,6 +526,38 @@ ART.sevenpoker = () => svg('poker', `${bokeh(17, '#ffe2c2')}${table()}
   ${card(414, 214, 'back', { rot: 7, scale: .92 })}
   ${chip(150, 318, 24, 'black', 7)}${chip(240, 322, 24, 'gold', 9)}${chip(330, 318, 24, 'wine', 6)}`, { label: '7포커' });
 
+// 하이로우: a card up, the next coming off the deck, HIGHER and LOWER printed in the felt.
+ART.hilo = () => svg('blue', `${bokeh(18, '#d6e4ff')}${table()}
+  ${feltArc('HIGHER  ·  OR  ·  LOWER', { cy: 366, r: 250, size: 13, spacing: 4 })}
+  <path d="M120 236l16-26 16 26z" fill="#ff6b6b" opacity=".9"/><path d="M352 210l16 26 16-26z" fill="#6aa9ff" opacity=".9"/>
+  ${card(206, 234, '7h', { rot: -5, scale: 1.35 })}
+  ${card(292, 226, 'back:#1d3f8f', { rot: 8, scale: 1.25 })}${card(296, 220, 'back:#1d3f8f', { rot: 10, scale: 1.25 })}
+  ${chip(100, 312, 24, 'ivory', 5)}${chip(390, 316, 24, 'teal', 7)}${chip(240, 322, 22, 'purple', 3)}`, { label: '하이로우' });
+
+// 거래소: a black screen on the desk with red and blue candles climbing, and a ticker tape.
+ART.stocks = () => {
+  let s = 42, p = 200;
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const candles = Array.from({ length: 16 }, (_, i) => {
+    const o = p, c = p + (rnd() - 0.38) * 26; p = c;
+    const hi = Math.max(o, c) + rnd() * 9, lo = Math.min(o, c) - rnd() * 9;
+    const x = 104 + i * 18, up = c >= o, col = up ? '#ff5a5f' : '#4d9bff';
+    const y = v => 300 - (v - 140) * 0.9;
+    return `<path d="M${x} ${f(y(hi))}V${f(y(lo))}" stroke="${col}" stroke-width="1.6"/><rect x="${x - 5}" y="${f(y(Math.max(o, c)))}" width="10" height="${f(Math.max(2, Math.abs(c - o) * 0.9))}" fill="${col}"/>`;
+  }).join('');
+  return svg('ink', `${bokeh(19, '#ffd9dc', 11)}
+  <ellipse cx="240" cy="350" rx="220" ry="20" fill="#000" opacity=".7" filter="url(#soft)"/>
+  <rect x="70" y="58" width="340" height="262" rx="18" fill="#08090b" stroke="url(#chrome)" stroke-width="2.5"/>
+  <rect x="84" y="72" width="312" height="234" rx="8" fill="#0d1014"/>
+  <rect x="84" y="72" width="312" height="26" rx="8" fill="#000"/>
+  <text x="96" y="90" font-family="${SANS}" font-size="12" font-weight="800" fill="#ff5a5f">VGE 77,300 ▲800</text><text x="236" y="90" font-family="${SANS}" font-size="12" font-weight="800" fill="#4d9bff">NBIO 18,450 ▼350</text>
+  ${[0, 1, 2, 3].map(k => `<path d="M90 ${130 + k * 40}H390" stroke="#fff" stroke-opacity=".07"/>`).join('')}
+  <path d="M90 214H390" stroke="#fff" stroke-opacity=".3" stroke-dasharray="4 4"/>
+  ${candles}
+  <text x="382" y="122" font-family="${SANS}" font-size="20" font-weight="900" fill="#ff5a5f" text-anchor="end">+12%</text>
+  ${chip(64, 318, 24, 'black', 6)}${chip(418, 320, 24, 'wine', 8)}`, { label: '주식' });
+};
+
 const out = new URL('../public/art/', import.meta.url);
 mkdirSync(out, { recursive: true });
 for (const [name, draw] of Object.entries(ART)) writeFileSync(new URL(`${name}.svg`, out), draw());

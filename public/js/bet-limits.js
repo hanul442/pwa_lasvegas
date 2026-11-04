@@ -50,6 +50,8 @@ export const BUY_IN_BY_GAME = {
   dice: { min: 10, max: 200, default: 30 },
   slots: { min: 10, max: 100, default: 20 },
   horses: { min: 10, max: 100, default: 20 },
+  hilo: { min: 10, max: 100, default: 20 },
+  stocks: { min: 10, max: 200, default: 30 },
   poker: { min: 50, max: 300, default: 100 },
   sevenpoker: { min: 50, max: 300, default: 100 },
   matgo: { min: 30, max: 300, default: 50 },

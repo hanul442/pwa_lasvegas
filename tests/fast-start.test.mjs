@@ -12,7 +12,7 @@ test('home loads no game code up front; each game is imported when its table ope
   const app = await read('app.js');
   const statics = [...app.matchAll(/^import .* from '(.+)';$/gm)].map(m => m[1]);
   for (const f of statics) assert.doesNotMatch(f, /games\/|guide\.js|daily\.js/, `${f} is imported up front`);
-  for (const g of ['blackjack', 'baccarat', 'roulette', 'dice', 'matgo', 'gostop', 'seotda', 'holdem', 'sevenpoker', 'slots', 'horses']) {
+  for (const g of ['blackjack', 'baccarat', 'roulette', 'dice', 'matgo', 'gostop', 'seotda', 'holdem', 'sevenpoker', 'slots', 'horses', 'hilo', 'stocks']) {
     assert.match(app, new RegExp(`${g}: \\(\\) => import\\('\\./js/games/${g}\\.js'\\)`), g);
   }
   // A table only mounts if the player is still waiting for it once the code arrives.

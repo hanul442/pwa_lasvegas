@@ -41,7 +41,7 @@ export const context = size => {
     ? { viewport, deviceScaleFactor: 1, locale: 'ko-KR', serviceWorkers: 'block' }
     : { viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'ko-KR', serviceWorkers: 'block' };
 };
-export const GAMES = ['blackjack', 'baccarat', 'roulette', 'dice', 'slots', 'poker', 'sevenpoker', 'seotda', 'matgo', 'gostop', 'horses'];
+export const GAMES = ['blackjack', 'baccarat', 'roulette', 'dice', 'slots', 'poker', 'sevenpoker', 'seotda', 'matgo', 'gostop', 'horses', 'hilo', 'stocks'];
 
 const games = arg('games', GAMES.join(',')).split(',').filter(Boolean);
 const sizeArg = arg('sizes', DEFAULT_SIZES.join(','));

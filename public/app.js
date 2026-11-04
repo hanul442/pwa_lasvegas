@@ -65,7 +65,9 @@ const GAME_FILES = {
   holdem: () => import('./js/games/holdem.js'),
   sevenpoker: () => import('./js/games/sevenpoker.js'),
   slots: () => import('./js/games/slots.js'),
-  horses: () => import('./js/games/horses.js')
+  horses: () => import('./js/games/horses.js'),
+  hilo: () => import('./js/games/hilo.js'),
+  stocks: () => import('./js/games/stocks.js')
 };
 const loadGuide = () => import('./js/guide.js');
 function lazyGame(file, fn, opts) {
@@ -90,6 +92,8 @@ const GAMES = [
   { id: 'sevenpoker', name: '7포커', tag: '석 장 받고 한 장 오픈, 히든까지', blurb: 'AI들과 한국식 7포커. 석 장 중 한 장을 오픈하고 히든까지 일곱 장, 삥·따당·하프로 겨뤄요.', mount: lazyGame('sevenpoker', 'mountSevenPoker') },
   { id: 'slots', name: '슬롯', tag: '별 세 개면 잭팟', blurb: '레버를 당겨요. 별 세 개면 모두가 키운 잭팟이 터져요.', mount: lazyGame('slots', 'mountSlots') },
   { id: 'horses', name: '경마', tag: '여섯 마리, 1200m 단거리', blurb: '여섯 마리 중 1등을 맞혀요. 단승은 1착, 연승은 2착 안에만 들면 돼요.', mount: lazyGame('horses', 'mountHorses') },
+  { id: 'hilo', name: '하이로우', tag: '다음 카드는 높을까 낮을까', blurb: '다음 카드가 높을지 낮을지 맞혀요. 맞힐수록 상금이 커지고, 언제 챙길지는 내 마음.', mount: lazyGame('hilo', 'mountHilo') },
+  { id: 'stocks', name: '주식', tag: '60초 장, 사고팔 타이밍', blurb: 'VEGAS 거래소의 하루 장이 60초에 열려요. 원하는 순간에 사고 원하는 순간에 팔아요.', mount: lazyGame('stocks', 'mountStocks') },
   // Event tables (lib/events.mjs): one runs each week, reached from the 이벤트 tab.
   { id: 'royale', event: 'royale', guide: 'poker', name: 'Casino Royale', blurb: '007 체험 이벤트. 하이롤러 다섯 명과 홀덤 토너먼트, 마지막 한 사람이 판돈을 전부 가져가요.', mount: lazyGame('holdem', 'mountHoldem', { royale: true }) },
   { id: 'tazza', event: 'tazza', guide: 'gostop', name: '타짜 나이트', blurb: '아귀와 고광렬이 앉는 고스톱. 모든 판이 묻고 더블 ×2로 시작해요.', mount: lazyGame('gostop', 'mountGostop', { event: 'tazza' }) },
@@ -564,6 +568,8 @@ const ICON = {
   poker: '<circle cx="24" cy="24" r="15"/><circle cx="24" cy="24" r="8.5"/><path d="M24 9v5M24 34v5M9 24h5M34 24h5M13.4 13.4l3.5 3.5M31.1 31.1l3.5 3.5M13.4 34.6l3.5-3.5M31.1 16.9l3.5-3.5"/>',
   sevenpoker: '<rect x="6" y="13" width="14" height="22" rx="2"/><rect x="13" y="12" width="14" height="22" rx="2"/><rect x="20" y="13" width="14" height="22" rx="2"/><rect x="27" y="14" width="15" height="22" rx="2" fill="currentColor" fill-opacity=".12"/><path d="M31.5 20.5h6l-3.6 9.5"/>',
   horses: '<path d="M15 40c1-7 3-12 7-16l-4-2c-1.4-.7-1.6-2.6-.3-3.5l9-6.5c1.6-4 4.6-6.4 8.3-7l-1 3.4c3.6 1.6 5.5 5.6 5.5 10.6 0 6.4-2.4 13.4-3.7 21"/><path d="M26.6 12.4l3.4-5.4M21.8 18.7l1.6.3"/><circle cx="27.8" cy="15.6" r="1.1" fill="currentColor" stroke="none"/>',
+  hilo: '<rect x="8" y="12" width="17" height="25" rx="2.5"/><rect x="23" y="12" width="17" height="25" rx="2.5" fill="currentColor" fill-opacity=".12"/><path d="M16.5 21.5l3 4.5h-6zM31.5 30.5l3-4.5h-6z"/>',
+  stocks: '<path d="M7 38h34"/><path d="M11 13v18M17 20v14M23 10v16M29 16v12M35 9v14"/><rect x="9" y="17" width="4" height="9" rx=".6"/><rect x="15" y="23" width="4" height="7" rx=".6" fill="currentColor" fill-opacity=".12"/><rect x="21" y="13" width="4" height="9" rx=".6"/><rect x="27" y="19" width="4" height="6" rx=".6" fill="currentColor" fill-opacity=".12"/><rect x="33" y="11" width="4" height="8" rx=".6"/>',
   slots: '<rect x="7" y="12" width="34" height="24" rx="3"/><path d="M18.3 12v24M29.7 12v24"/><path d="M12.6 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM24 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3zM35.4 21l1.1 2.3 2.5.3-1.8 1.8.4 2.5-2.2-1.2-2.2 1.2.4-2.5-1.8-1.8 2.5-.3z"/>'
 };
 const icon = id => `<svg class="game-row-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${ICON[id] || ICON.poker}</svg>`;
@@ -576,8 +582,8 @@ function entryMin() {
   return (open.length ? Math.min(...open.map(t => t.min)) : FIRST_TIER.min);
 }
 // Three kinds of tables, as the home cards and the 게임 tab's filter split them.
-const KINDS = [['casino', '카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'slots', 'horses']], ['poker', '포커', ['poker', 'sevenpoker']], ['hwatu', '화투', ['matgo', 'gostop', 'seotda']]];
-const POPULAR = ['blackjack', 'poker', 'seotda', 'roulette', 'matgo', 'baccarat', 'gostop', 'sevenpoker', 'dice', 'slots', 'horses'];
+const KINDS = [['casino', '카지노', ['blackjack', 'roulette', 'baccarat', 'dice', 'slots', 'horses', 'hilo', 'stocks']], ['poker', '포커', ['poker', 'sevenpoker']], ['hwatu', '화투', ['matgo', 'gostop', 'seotda']]];
+const POPULAR = ['blackjack', 'poker', 'seotda', 'roulette', 'matgo', 'baccarat', 'gostop', 'sevenpoker', 'dice', 'slots', 'horses', 'hilo', 'stocks'];
 // 인기 게임 follows today's hands across every real player (state.popular, KST day). Until a few
 // hands are in, or on a tie, the house order above stands.
 const POPULAR_MIN_PLAYS = 5;
